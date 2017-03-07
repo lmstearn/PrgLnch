@@ -28,7 +28,7 @@ Class PrgLnchOpt
 	temp := 0
 	Hwnd()
 	{
-	Gui PrgLnchOpt: +Hwndtemp
+	Gui, PrgLnchOpt: +Hwndtemp
 	This.PrgHwnd := temp
 	Return This.PrgHwnd
 	}
@@ -53,6 +53,7 @@ Class PrgLnchOpt
 	Return Width
 	}
 	}
+
 Class PrgLnch
 	{
 	temp := 0
@@ -65,7 +66,7 @@ Class PrgLnch
 	
 	Hwnd()
 	{
-	Gui PrgLnch: +Hwndtemp
+	Gui, PrgLnch: +Hwndtemp
 	This.PrgHwnd := temp
 	Return This.PrgHwnd
 	}
@@ -221,8 +222,8 @@ Tmp := 1
 
 PrgTermExit := 0
 Rego := 0
-PrgChoiceNames := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-PrgChoicePaths := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+PrgChoiceNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
+PrgChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgLnkInf := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgUrl := ["", "", "", "", "", "", "", "", "", "", "", ""]
 strPrgChoice := "|None|"
@@ -230,7 +231,7 @@ defPrgStrng := 0
 selPrgChoice := 1
 selPrgChoiceTimer := 0
 PrgChoiceClicked := 1
-txtPrgChoice := 0
+txtPrgChoice := ""
 txtCmd := 0
 
 
@@ -304,7 +305,7 @@ IniRead, disclaimer, %A_ScriptDir%`\%PrgLnchIni%, General, Disclaimer
 		IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, Disclaimer
 		FileInstall PrgLnch.chm, PrgLnch.chm
 		sleep, 300
-		RunChm("welcome")
+		SetTimer, RnChmWelcome, 3000
 		}
 		else
 		{
@@ -342,7 +343,7 @@ Gui, PrgLnchOpt: Color, FFFFCC
 Gui, PrgLnchOpt: Add, ComboBox, vPrgChoice gPrgChoice HWNDPrgChoiceHwnd
 Gui, PrgLnchOpt: Add, Button, gMakeShortcut vMkShortcut HWNDMkShortcutHwnd, &Just Change Res.
 Gui, PrgLnchOpt: Add, Edit, vCmdLinPrm gCmdLinPrmSub HWNDcmdLinHwnd
-Gui, PrgLnchOpt: Add, Text, vMonitors wp ; wp is width of previous control
+Gui, PrgLnchOpt: Add, Text, vMonitors HWNDMonitorsHwnd wp ; wp is width of previous control
 Gui, PrgLnchOpt: Add, DropDownList, AltSubmit viDevNum HWNDDevNumHwnd giDevNo
 Gui, PrgLnchOpt: Add, Checkbox, ys vDefaultPrg gCheckDefaultPrg HWNDDefaultPrgHwnd, Show at Startup ;Tip: g-labels can be used for more than one control
 Gui, PrgLnchOpt: Add, text,, Res Options:  ; Save this control's position and start a new section.
@@ -728,9 +729,8 @@ Gui, PrgLnch: Show
 
 if (goConfigStat)
 {
-EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames)
 temp := 0
-Thread, NoTimers, false
+
 	loop, % currBatchNo
 	{
 	if (PrgListPID%btchPrgPresetSel%[A_Index])
@@ -1262,6 +1262,11 @@ if (A_GuiEvent = "DoubleClick")
 	sleep, % (!PrgIntervalLnch)? 2000: (PrgIntervalLnch = -1)? 4000: 6000
 	}		
 
+	scrWidth := scrWidthArr[lnchPrgStat]
+	scrHeight := scrHeightArr[lnchPrgStat]
+	scrFreq := scrFreqArr[lnchPrgStat]
+	targMonitorNum := PrgMonToRn[lnchPrgStat]
+
 
 	retVal := LnchPrgOff(batchPrgStatus, presetNoTest, temp, currBatchno, lnchPrgStat, PrgCmdLine, iDevNumArray, PrgMonToRn, dispMonNamesNo, WindowStyle, PrgBordless, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMax, PrgStyle, x, y, w, h, dx, dy)
 
@@ -1771,6 +1776,8 @@ ifexist, PrgLnchLoading.jpg ; Is cleaning up after each run such a big drama the
 FileDelete, PrgLnchLoading.jpg
 ifexist, PrgLaunching.jpg
 FileDelete, PrgLaunching.jpg
+ifexist, PrgLnchProperties.jpg
+FileDelete, PrgLnchProperties.jpg
 ifexist, PrgLnch.chm
 FileDelete, PrgLnch.chm
 ExitApp
@@ -1801,44 +1808,47 @@ if (ItemHandle = PresetLabelHwnd)
 if (btchPrgPresetSel && currBatchNo)
 PopPrgProperties(iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, IsPrgaLnk, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width())
 else
-retVal := RunChm()
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "BatchPresetsLabel")
 }
 else
+if (ItemHandle = MonitorsHwnd)
+retVal := RunChm("PrgLnch Config`\PrgLnch Config", "MonitorName")
+else
 if (ItemHandle = MovePrgHwnd)
-traytip, UpDown Spin Control, "Yo Mama Order of Launched Prgs"
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "BatchPrgs")
 else
 if (ItemHandle = PresetHwnd)
-traytip, Batch Presets, "Yo Mama Batch Presets"
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "BatchPresets")
 else
 if (ItemHandle = BtchPrgHwnd)
-traytip, Batch Prgs, "Yo Mama Batch Prgs"
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "BatchPrgs")
 else
 if (ItemHandle = batchPrgStatusHwnd)
-traytip, Prg Status, "Yo Mama Prg Status"
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "PrgStatus")
 else
 if (ItemHandle = PrgChoiceHwnd)
-traytip, Prg Shortcuts, "Yo Mama Prg Shortcuts"
+retVal := RunChm("PrgLnch Config`\PrgLnch Config", "ShortcutSlots")
 else
 if (ItemHandle = DevNumHwnd)
 traytip, Current Display for Prg, "Yo Mama Current Display for Prg"
 else
 if (ItemHandle = cmdLinHwnd)
-traytip, Cmd Line Extras, "Yo Mama Cmd Line Extras"
+retVal := RunChm("PrgLnch Config`\PrgLnch Config", "CmdLineExtras")
 else
 if (ItemHandle = PresetNameHwnd)
-traytip, Preset Name, "Yo Mama Preset Name"
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "BatchPresetName")
 else
 if (ItemHandle = UpdturlHwnd)
 traytip, URL Progenitor of Prg, "Yo Mama URL Progenitor of Prg"
 else
 if (ItemHandle = PrgIntervalHwnd)
-traytip, Prg Lnch Interval, "Yo Mama Prg Lnch Interval"
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "PrgLnchInterval")
 else
 if (ItemHandle = DefPresetHwnd)
-traytip, This Preset at Load, "Yo Mama This Preset at Load"
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "ThisPresetatLoad")
 else
 if (ItemHandle = PrgExitTermChkHwnd)
-traytip, Terminate Prg(s) on Exit, "Yo Mama Terminate Prg(s) on Exit"
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "TerminatePrgs")
 else
 if (ItemHandle = DefaultPrgHwnd)
 traytip, Show at Startup, "Yo Mama Show at Startup"
@@ -1874,16 +1884,16 @@ if (ItemHandle = TmpHwnd)
 traytip, Temporary, "Yo Mama Temporary"
 else
 if (ItemHandle = RunBatchPrgHwnd)
-traytip, Run Batch, "Yo Mama Run Batch"
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "RunBatch")
 else
 if (ItemHandle = GoConfigHwnd)
-traytip, Prg Config, "Yo Mama Prg Config"
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "PrgConfig")
 else
 if (ItemHandle = quitHwnd)
-traytip, Quit PrgLnch, "Yo Mama Quit PrgLnch"
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "QuitPrgLnch")
 else
 if (ItemHandle = MkShortcutHwnd)
-traytip, Make Shortcut , "Yo Mama Make Shortcut"
+retVal := RunChm("PrgLnch Config`\PrgLnch Config", "ModifyShortcut")
 else
 if (ItemHandle = PrgLAAHwnd)
 traytip, Apply LAA Flag, "Yo Mama Apply LAA Flag"
@@ -1895,7 +1905,7 @@ if (ItemHandle = UpdtPrgLnchHwnd)
 traytip, Update Prg, "Yo Mama Update Prg"
 else
 if (ItemHandle = BackToPrgLnchHwnd)
-traytip, Back To PrgLnch, "Back To PrgLnch"
+traytip, Back To PrgLnch, "Yo Mama Back To PrgLnch"
 else
 {
 retVal := RunChm()
@@ -1922,7 +1932,7 @@ WM_SYSCOMMAND(wParam)
 		Gui, PrgProperties: Destroy
     }
 }
-RunChm(chmTopic := 0)
+RunChm(chmTopic := 0, Anchor := "")
 {
 local y := 0, temp := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
 
@@ -1932,10 +1942,12 @@ return -1
 WinGetPos, x, y, w, , A
 
 if chmTopic
-run %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm,, UseErrorLevel
+run %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm#%Anchor%,, UseErrorLevel
 else
-run %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/About.htm,, UseErrorLevel
+run %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/About%A_Space%PrgLnch.htm,, UseErrorLevel
 sleep, 120
+
+
 if !(A_LastError) ; uses last found window
 {
 if WinExist("PrgLnch_Help")
@@ -1958,6 +1970,13 @@ if WinExist("PrgLnch_Help")
 }
 return A_LastError 
 }
+RnChmWelcome:
+if (WinActive("A") = PrgLnch.Hwnd() || WinActive("A") = PrgLnchOpt.Hwnd())
+{
+RunChm("Welcome")
+SetTimer, RnChmWelcome, Delete
+}
+Return
 
 
 
@@ -2000,9 +2019,11 @@ return A_LastError
 
 BackToPrgLnch:
 Tooltip
+UDM_SETRANGE := 0X0465
+
 SplashImage, PrgLnchLoading.jpg, A B,,, LnchSplash
 WinGetPos, , , w, h, LnchSplash
-UDM_SETRANGE := 0X0465
+
 WinMove, LnchSplash, , % PrgLnchOpt.X() + (PrgLnchOpt.Width() - w)/2, % PrgLnchOpt.Y() + (PrgLnchOpt.Height() - h)
 
 retVal := % PopBtchListBox(PrgChoiceNames, PrgNo, PrgBdyBtchTog, PrgListIndex, batchPrgNo, 1)
@@ -2384,7 +2405,7 @@ else
 		sleep 200 ;slow down input?
 		PrgChoiceClicked := 0
 		GuiControlGet, txtPrgChoice, PrgLnchOpt:, PrgChoice
-		
+	
 		;Pre-validation
 		if (txtPrgChoice = "None")
 		txtPrgChoice := "Nada"
@@ -2534,6 +2555,7 @@ else
 				}
 				else
 				{
+
 				GuiControl, PrgLnchOpt: Enable, MkShortcut
 				GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
 				GuiControl, PrgLnchOpt: Disable, RnPrgLnch
@@ -2552,6 +2574,7 @@ else
 				GuiControl, PrgLnchOpt: Disable, PrgLAA
 
 				GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
+
 				if !(targMonitorNum = 1)
 				{
 				GoSub CheckModes
@@ -2560,7 +2583,6 @@ else
 				GoSub FixMonColours
 				}
 				}
-
 
 			}
 		else
@@ -2654,19 +2676,18 @@ if (txtPrgChoice = "")
 	GuiControl, PrgLnchOpt: , DefaultPrg, 0
 	GuiControl, PrgLnchOpt: Disable, DefaultPrg
 
-
 	PrgChoiceClicked := 1
 	txtPrgChoice := "Prg Removed"
 	WorkingDirectory(0, A_ScriptDir)
 	IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice, 1)
-	
+	strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 	PrgChoiceNames[selPrgChoice] := 
 	PrgChoiceNames[selPrgChoice] := "" ;yeah weird but get's it empty
 	PrgChoicePaths[selPrgChoice] := ""
 	PrgCmdLine[selPrgChoice] := 0
 	PrgUrl[selPrgChoice] := ""
 	PrgLnchHide[selPrgChoice] := 0
-	PrgMonToRn[selPrgChoice] := 1
+	PrgMonToRn[selPrgChoice] := 0
 	PrgLnkInf[selPrgChoice] := 0
 
 	GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
@@ -2724,7 +2745,7 @@ else
 		{
 		if (selPrgChoice != A_Index)
 		{
-		if PrgChoiceNames[selPrgChoice] == PrgChoiceNames[A_Index]
+		if (PrgChoiceNames[selPrgChoice] = PrgChoiceNames[A_Index])
 		PrgChoiceNames[selPrgChoice] := PrgChoiceNames[selPrgChoice] . selPrgChoice
 		}
 		}
@@ -2734,7 +2755,7 @@ else
 		GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 		PrgMonToRn[selPrgChoice] := targMonitorNum
 		PrgLnchHide[selPrgChoice] := 0
-
+		strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 		IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
 		fTemp := PrgChoicePaths[selPrgChoice]
 		;gets working directory of lnk, if any
@@ -2800,7 +2821,30 @@ return 1
 else
 return 0
 }
+ComboBugFix(strPrgChoice, PrgNo)
+{
+local temp := 0, temp1 := 0, foundpos1 := 0, foundpos := InStr(strPrgChoice, "||")
+;Addresses weird bug when partially matched names are removed and added
+	if (foundpos)
+	{
+		Loop, % PrgNo
+		{
+		if (InStr(strPrgChoice, "|",,, A_Index + 1) = foundpos)
+		{
+		temp := Substr(strPrgChoice, 1, foundpos) . "Prg" . A_Index
 
+		temp1 := Substr(strPrgChoice, foundpos + 1)
+		foundpos1 := InStr(temp1, "||") ;' yikes already checked! Null terminator removed?
+		if (foundpos1)
+		temp1 := "|Prg" . A_Index + 1 . Substr(temp1, foundpos1 + 1)
+		
+		Return temp . temp1
+		}
+		}
+	}
+	else
+	return strPrgChoice
+}
 
 
 
@@ -2909,6 +2953,10 @@ loop, % ((presetNoTest)? currBatchno: 1)
 		lnchPrgStat := -PrgBatchIni%btchPrgPresetSel%[A_Index]
 		temp := PrgChoicePaths[-lnchPrgStat]
 		}		
+	scrWidth := scrWidthArr[lnchPrgStat]
+	scrHeight := scrHeightArr[lnchPrgStat]
+	scrFreq := scrFreqArr[lnchPrgStat]
+	targMonitorNum := PrgMonToRn[lnchPrgStat]
 	}
 
 	retVal := LnchPrgOff(A_Index, presetNoTest, (presetNoTest)? temp: ftemp, (presetNoTest)? currBatchno: 1, (presetNoTest)? lnchPrgStat: selPrgChoice, PrgCmdLine, iDevNumArray, PrgMonToRn, dispMonNamesNo, WindowStyle, PrgBordless, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMax, PrgStyle, x, y, w, h, dx, dy)
@@ -3033,7 +3081,6 @@ if (scrWidth=scrWidthDef && scrHeight=scrHeightDef)
 
 DefResmsgDone:
 
-
 if (lnchPrgStat > 0)
 {
 	;Fix priority
@@ -3052,9 +3099,22 @@ if (lnchPrgStat > 0)
 	
 	if (targMonitorNum = 1)
 	{
-		if (((temp != targMonitorNum)) || (temp < 1))
+		if (temp < 1)
 		{
 		return "Monitor error or configuration change! Please rerun."
+		}
+		else
+		{
+			if (temp != targMonitorNum)
+			{
+				IniRead, ftemp, %A_ScriptDir%`\%PrgLnchIni%, General, LnchPrgMonWarn
+				if !(ftemp)
+				{
+				MsgBox, 8196, , PrgLnch was run from monitor %temp%`nbut the Prg is to run at %targMonitorNum%. This may be intended.`n``nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `n
+				IfMsgBox, No
+				IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, LnchPrgMonWarn
+				}
+			}
 		}
 
 
@@ -4744,6 +4804,7 @@ if !FileExist(PrgLnchIni)
 	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
 	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, ClosePrgWarn
 	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, ResClashMsg
+	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, LnchPrgMonWarn
 
 	; %A_ScriptDir%`\%PrgLnchIni% as long as the current directory isn't changed while this loads
 	spr := "0,0,0,1"
@@ -4830,14 +4891,14 @@ if !FileExist(PrgLnchIni)
 					sectCount := sectCount + 1
 					if (recCount < 0) ;General section
 					{
-						if (sectCount < 7)
+						if (sectCount < 8)
 						{
 						Continue ;don't care about the "Don't show me first" || (sectCount = 3)
 						}
 						else
 						{
 
-							if (sectCount = 7)
+							if (sectCount = 8)
 							{
 								if (selPrgChoice)
 								{
@@ -4875,7 +4936,7 @@ if !FileExist(PrgLnchIni)
 							}
 							else
 							{
-							if (sectCount = 8)
+							if (sectCount = 9)
 							{
 								if (selPrgChoice)
 								{
@@ -5038,14 +5099,15 @@ if !FileExist(PrgLnchIni)
 							{
 							if (selPrgChoice = recCount) ;write record at selPrgChoice
 							{
+							spr := ""
 								if (removeRec)
 								{
-								spr := "Prg" . recCount
-								IniWrite, %A_Space%, %PrgLnchIni%, Prg%recCount%, PrgName
+								spr .= "Prg" . recCount
+								IniWrite, %A_Space%, %PrgLnchIni%, %spr%, PrgName
 								}
 								else
 								{
-								spr := PrgChoiceNames[recCount]
+								spr .= PrgChoiceNames[recCount]
 								IniWrite, %spr%, %PrgLnchIni%, Prg%recCount%, PrgName
 								}
 							foundPos := InStr(strPrgChoice,"|", false,1, recCount + 1)
@@ -5343,27 +5405,69 @@ MsgBox, 8208, IniSpaceCleaner, Error with Ini file! `nSpecifically: %e%
 }
 Thread, NoTimers, false
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;Properties routines
 PopPrgProperties(iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, IsPrgaLnk, x, y, w)
 {
-local ftemp := 0, temp := 0, errorText := "", retval := "", fileName := ""
+local ftemp := 0, temp := 0, foundpos := 0, batchPos := 0, pathCol := 0, pathColH := 0, pathColHOld := 0, defCol := 0, defColW := 0, defColH := 0, propX := 0, propY := 0, propW := 0, propH := 0, truncFileName := "", errorText := "", retval := "", fileName := ""
 static tabName := 0
+
+
+
+
+
+IfNotExist, PrgLnchProperties.jpg
+FileInstall PrgLnchProperties.jpg, PrgLnchProperties.jpg
+sleep, 200
+SplashImage, PrgLnchProperties.jpg, A B,,,LnchSplash
+WinGetPos,, propY, propW, propH, LnchSplash
+
+	if (y > propY)
+	WinMove, LnchSplash, , % x + (w - propW)/2, y - propY
+	else
+	WinMove, LnchSplash, , % x + (w - propW)/2, propY -Y
+
+
 
 Gui, PrgProperties: Destroy
 
 sleep, 120
 
-Gui, PrgProperties: New, , Prg_Properties
-Gui, PrgProperties: -MaximizeBox -MinimizeBox +OwnDialogs +HWNDPrgPropertiesHwnd
+Gui, PrgProperties: New,, Prg_Properties
+Gui, PrgProperties: -MaximizeBox -MinimizeBox +OwnDialogs +HwndPrgPropertiesHwnd
 Gui, PrgProperties: Color, FFFFCC
+
 
 
 CLEARTYPE_QUALITY := 5
 
 loop, % currBatchNo
 {
-	ftemp := PrgBatchInibtchPrgPresetSel[A_Index]
-	fileName := PrgChoicePaths[ftemp]
-	ftemp := PrgChoiceNames[ftemp]
+	batchPos := PrgBatchInibtchPrgPresetSel[A_Index]
+	fileName := PrgChoicePaths[batchPos]
+	ftemp := PrgChoiceNames[batchPos]
 	
 	IfExist, % fileName
 	{
@@ -5374,7 +5478,7 @@ loop, % currBatchNo
 	retval .= "|" . ftemp
 	}
 	else
-	retval .= "|" . "File not Found"
+	retval .= "|" . "No File!"
 }
 
 retval := SubStr(retval, 2)
@@ -5387,78 +5491,169 @@ loop, % currBatchNo
 Gui, PrgProperties: Tab, %A_Index%
 
 
-ftemp := PrgBatchInibtchPrgPresetSel[A_Index]
-fileName := PrgChoicePaths[ftemp]
+batchPos := PrgBatchInibtchPrgPresetSel[A_Index]
+fileName := PrgChoicePaths[batchPos]
 
 IfExist, % fileName
 {
 
 	errorText := ""
-	Gui, PrgProperties: Add, Text,, Path
-	Gui, PrgProperties: Add, Text,, % fileName
 
+		Gui, PrgProperties: Add, Text, HWNDsprHwnd, Path
 
-	FileGetSize, temp, %fileName%, K ;Kb
-	sleep, 60 ; cache should work for following calls
-		if (A_LastError)
-		errorText .= "Problem with file size.`n"
-		else
+		if !(defColW)
 		{
-		Gui, PrgProperties: Add, Text,, Size
-		Gui, PrgProperties: Add, Text,, % temp "kB"
+		GuiControlGet, defCol, PrgProperties: Pos, % sprHwnd
+		defColW := defColW * 2
 		}
 
-	FileGetTime, temp, % fileName, C
+	FileGetSize, foundpos, %fileName%, K ;Kb
+	sleep, 60 ; cache should work for following calls
+		if (A_LastError)
+		{
+		errorText .= "Problem with file size.`n"
+		foundpos := 0
+		}
+
+		FileGetAttrib, temp, % fileName
+		if (A_LastError)
+		{
+		errorText .= "Problem with file size.`n"
+		temp := 0
+		}
+
+		GuiControl, PrgProperties:, %sprHwnd%, `"%temp%`" attributes and %foundpos%Kb filesize for the following Prg...
+		GuiControl, PrgProperties: Move, %sprHwnd%, % "w" PrgLnchOpt.Width()/2
+
+
+	temp := PrgLnchOpt.Width()
+	Gui, PrgProperties: Add, Text, w%temp% +wrap HWNDpathHwnd, % fileName
+	GuiControlGet, pathCol, PrgProperties: Pos, % pathHwnd
+	pathColHOld := pathColH
+		if (pathColH + 6 > 3 * defColH)
+		{
+		temp := fileName
+		While (pathColH + 6 > 3 * defColH)
+		{
+		; bisect string
+		temp := substr(temp, strlen(temp)/2, strlen(temp))
+		GuiControl, PrgProperties:, %pathHwnd%, % temp
+		GuiControl, PrgProperties: Move, %pathHwnd%, % "h" pathColH/2
+		GuiControlGet, pathCol, PrgProperties: Pos, % pathHwnd
+		}
+		pathColH := 5*pathColH/4
+		GuiControl, PrgProperties: Move, %pathHwnd%, % "h" pathColH
+		GuiControl, PrgProperties: , %pathHwnd%, % substr(temp, 1, 3) . "..." . temp
+		}
+		
+
+
+	temp := 2*defColW, ftemp := 16*defColH
+	pathColHOld := pathColHOld - pathColH
+	Gui, PrgProperties: Add, GroupBox, Section y+-%pathColHOld% w%temp% h%ftemp%
+
+
+		FileRead temp, % fileName
+		if (temp)
+		{
+			sleep, 120
+			temp := CRC32(temp,foundpos)
+
+			if (temp)
+				{
+				Gui, PrgProperties: Add, Text, xs ys+%defColH% HWNDsprHwnd, CRC
+				PrgPropFont(sprHwnd)
+				
+				ftemp := 3*defColH
+				Gui, PrgProperties: Add, Text, xs ys+%ftemp%, % temp
+				}
+			else
+				errorText .= "Problem with CRC.`n"
+		}
+		else
+		errorText .= "Problem with file read for CRC.`n"
+
+	FileGetTime, foundpos, % fileName, C
 		if (ErrorLevel)
 		errorText .= "Problem with file creation time.`n"
 		else
 		{
-			Gui, PrgProperties: Add, Text,, Creation Date
-			FormatTime, temp, % temp, ShortDate
-			Gui, PrgProperties: Add, Text,, % temp
+			ftemp := 5*defColH
+			Gui, PrgProperties: Add, Text, xs ys+%ftemp% HWNDsprHwnd, Creation Date
+			PrgPropFont(sprHwnd)
+
+			FormatTime, foundpos, % foundpos, ShortDate
+			ftemp := 7*defColH
+			Gui, PrgProperties: Add, Text, xs ys+%ftemp%, % foundpos
 		}
 
 
-	FileGetTime, temp, % fileName
+	FileGetTime, foundpos, % fileName
 		if (ErrorLevel)
 		errorText .= "Problem with file modification time.`n"
 		else
 		{
-			Gui, PrgProperties: Add, Text,, Modification Date
-			FormatTime, temp, % temp, ShortDate
-			Gui, PrgProperties: Add, Text,, % temp
+			ftemp := 9*defColH
+			Gui, PrgProperties: Add, Text, xs ys+%ftemp% HWNDsprHwnd, Modification Date
+			PrgPropFont(sprHwnd)
+
+			FormatTime, foundpos, % foundpos, ShortDate
+			ftemp := 11*defColH
+			Gui, PrgProperties: Add, Text, xs ys+%ftemp%, % foundpos
 		}
 
-	if !(PrgLnkInf[ftemp])
+	if !(PrgLnkInf[batchPos])
 	{
-		FileGetVersion, temp, % fileName
+		FileGetVersion, foundpos, % fileName
 			if (ErrorLevel)
 			errorText .= "Problem with file version.`n"
 			else
 			{
-			Gui, PrgProperties: Add, Text,, File Version Number	
-			Gui, PrgProperties: Add, Text,, % temp
+			ftemp := 13*defColH
+			Gui, PrgProperties: Add, Text, xs ys+%ftemp% HWNDsprHwnd, File Version Number
+			PrgPropFont(sprHwnd)
+
+			ftemp := 15*defColH
+			Gui, PrgProperties: Add, Text, xs ys+%ftemp%, % foundpos
 			}
+
 			
 		retval := FileGetInfo(Filename).ProductName
 		if (retval = "GetFileVersionInfoSizeFail")
 		errorText .= "Unable to retrieve extended information from the file.`n"
 		else
 		{
-		Gui, PrgProperties: Add, Text,, Product Name	
-		Gui, PrgProperties: Add, Text,, % retval
+
+		temp := PrgLnchOpt.Width()/2
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%defColH% HWNDsprHwnd, Product Name
+		PrgPropFont(sprHwnd)
+
+		ftemp := 3*defColH
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%ftemp%, % retval
 
 		retval := FileGetInfo(Filename).CompanyName
-		Gui, PrgProperties: Add, Text,, Company Name	
-		Gui, PrgProperties: Add, Text,, % retval
+		ftemp := 5*defColH
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%ftemp% HWNDsprHwnd, Company Name
+		PrgPropFont(sprHwnd)
+
+		ftemp := 7*defColH
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%ftemp%, % retval
 
 		retval := FileGetInfo(Filename).ProductVersion
-		Gui, PrgProperties: Add, Text,, Product Version	
-		Gui, PrgProperties: Add, Text,, % retval
+		ftemp := 9*defColH
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%ftemp% HWNDsprHwnd, Product Version
+		PrgPropFont(sprHwnd)
+
+		ftemp := 11*defColH
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%ftemp%, % retval
 
 		retval := FileGetInfo(Filename).LegalCopyright
-		Gui, PrgProperties: Add, Text,, Legal Copyright	
-		Gui, PrgProperties: Add, Text,, % retval
+		ftemp := 13*defColH
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%ftemp% HWNDsprHwnd, Legal Copyright
+		PrgPropFont(sprHwnd)
+
+		ftemp := 15*defColH
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%ftemp%, % retval
 		}
 	}
 
@@ -5466,7 +5661,8 @@ IfExist, % fileName
 
 	if (errorText)
 	{
-		Gui, PrgProperties: Add, Text,, Errors
+		temp := retval? (2*defColW): 0
+		Gui, PrgProperties: Add, Text, xs+-%temp% Section, Errors
 		Gui, PrgProperties: Add, Text,, % errorText
 	}
 }
@@ -5475,22 +5671,28 @@ IfExist, % fileName
 Gui, PrgProperties: Font, CLEARTYPE_QUALITY
 Gui, PrgProperties: Show, Hide, PrgProperties
 
+WinGetPos,, propY,, propH, % "ahk_id" PrgPropertiesHwnd
 
-
-
-WinGetPos, ,ftemp , , temp, % "ahk_id" PrgPropertiesHwnd
-	if (y > temp)
-	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % y - temp, w
+	if (y > propH)
+	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % y - propH, w
 	else
-	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % temp - y, w
+	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % propH - y, w
 
 SysGet, temp, MonitorWorkArea, GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo)
-if (ftemp + y > (tempBottom - tempTop))
+if (propY + y > (tempBottom - tempTop))
 	WinMove, % "ahk_id" PrgPropertiesHwnd, , , , , tempBottom - tempTop - y
 
+
+SplashImage, PrgLnchProperties.jpg, Hide,,,LnchSplash
 Gui, PrgProperties: Show
 
-
+}
+PrgPropFont(sprHwnd)
+{
+GuiControl, PrgProperties: Move, %sprHwnd%, % "w" PrgLnchOpt.Width()/4
+Gui, PrgProperties: Font, -Wrap Bold, Verdana
+GuiControl, PrgProperties: Font, % sprHwnd
+Gui, PrgProperties: Font,
 }
 FileGetInfo(lptstrFilename) ; Lex @ https://autohotkey.com/boards/viewtopic.php?&t=4282
 {
@@ -5510,4 +5712,28 @@ FileGetInfo(lptstrFilename) ; Lex @ https://autohotkey.com/boards/viewtopic.php?
 		DllCall("Version.dll\VerQueryValue", "Ptr", &lpData, "Str", "\StringFileInfo\" sLangCp "\" A_LoopField, "PtrP", lplpBuffer, "PtrP", puLen )
 		? i[A_LoopField] := StrGet(lplpBuffer, puLen) : ""
 	return i
+}
+;Laszlo's function CRC32 has three parameters.
+;- The first one is the name of a buffer, which can contain binary data.
+;- The second parameter is the length of the data in bytes. If omitted or not positive, Strlen(Buffer) is used internally.
+;- The 3rd parameter is used for continuing the CRC computation for second or later data sections. If omitted, -1 is used, the standard initial value for CRC32. If an earlier CRC operation is to be continued (which returned C), put here ~C. If a different CRC is needed than the standard CRC-32 (e.g. to resolve collisions), you can use any 32 bit integer for initialization.
+
+CRC32(ByRef Buffer, Bytes=0, Start=-1) {
+   Static CRC32, CRC32_Init, CRC32LookupTable
+   If (CRC32 = "") {
+      MCode(CRC32_Init,"33c06a088bc85af6c101740ad1e981f12083b8edeb02d1e94a75ec8b542404890c82403d0001000072d8c3")
+      MCode(CRC32,"558bec33c039450c7627568b4d080fb60c08334d108b55108b751481e1ff000000c1ea0833148e403b450c89551072db5e8b4510f7d05dc3")
+      VarSetCapacity(CRC32LookupTable, 256*4)
+      DllCall(&CRC32_Init, "uint",&CRC32LookupTable, "cdecl")
+   }
+   If Bytes <= 0
+      Bytes := StrLen(Buffer)
+   Return DllCall(&CRC32, "uint",&Buffer, "uint",Bytes, "int",Start, "uint",&CRC32LookupTable, "cdecl uint")
+}
+
+MCode(ByRef code, hex)
+{ ; allocate memory and write Machine Code there
+	VarSetCapacity(code,StrLen(hex)//2)
+	Loop % StrLen(hex)//2
+	NumPut("0x" . SubStr(hex,2*A_Index-1,2), code, A_Index-1, "Char")
 }
