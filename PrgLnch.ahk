@@ -3106,6 +3106,8 @@ loop, % ((presetNoTest)? currBatchno: 1)
 				Gui, PrgLnchOpt: Show, Hide, PrgLnchOpt
 				else
 				{
+				GuiControl, PrgLnchOpt: Hide, iDevNum
+				GuiControl, PrgLnchOpt: Hide, MkShortcut
 				GuiControl, PrgLnchOpt:, RnPrgLnch, &Cancel Prg
 				GuiControl, PrgLnchOpt: Hide, UpdturlPrgLnch
 				GuiControl, PrgLnchOpt: Hide, PrgLAA
@@ -3155,6 +3157,8 @@ else
 {
 	if (lnchPrgStat = -1) ; cancel test
 	{
+	GuiControl, PrgLnchOpt: Show, iDevNum
+	GuiControl, PrgLnchOpt: Show, MkShortcut
 	GuiControl, PrgLnchOpt: Show, UpdturlPrgLnch
 	GuiControl, PrgLnchOpt: Show, PrgLAA
 	GuiControl, PrgLnchOpt: Show, PrgLnchHd
