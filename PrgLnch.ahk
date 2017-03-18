@@ -1,4 +1,4 @@
-;AutoHotkey /Debug C:\Users\Laurie\Desktop\MyReelztuff\PrgLnch.ahk
+;AutoHotkey /Debug C:\Users\New\Desktop\PrgLnch\PrgLnch.ahk
 #SingleInstance, force
 #NoEnv  ; Performance and compatibility with future AHK releases.
 ;#Warn, All , MsgBox ; Enable warnings to assist with detecting common errors.
@@ -14,6 +14,8 @@ SetBatchLines, 20ms
 IfNotExist, PrgLnchLoading.jpg
 FileInstall PrgLnchLoading.jpg, PrgLnchLoading.jpg
 sleep, 200
+
+;Issue: chm file not deleted if in use
 
 /*If !A_IsAdmin {
 Run *RunAs "%A_ScriptFullPath%"
@@ -1029,11 +1031,11 @@ else
 	SetTimer, WatchSwitchOut, Delete
 	Thread, NoTimers	
 	
+	foundpos := btchPrgPresetSel ; save old preset
 	if (temp)
 	btchPrgPresetSel := temp
 	ftemp := 0
 
-	foundpos := 0
 
 	IniRead, temp, %A_ScriptDir%`\%PrgLnchIni%, Prgs, PrgBatchIni%btchPrgPresetSel%
 	sleep, 120
@@ -1112,14 +1114,20 @@ else
 
 		if (currBatchNo)
 		{
+
 		temp := ""
-		Loop % maxBatchPrgs
-		{
-		if (A_Index > 1)
-		temp := temp . ","
-		temp := temp . PrgBatchIni%btchPrgPresetSel%[A_Index]
-		}
+			Loop % maxBatchPrgs
+			{
+			if (A_Index > 1)
+			temp := temp . ","
+			temp := temp . PrgBatchIni%btchPrgPresetSel%[A_Index]
+			}
 		IniWrite, %temp%, %A_ScriptDir%`\%PrgLnchIni%, Prgs, PrgBatchIni%btchPrgPresetSel%
+		; copy active Prgs over
+			loop, % currBatchNo
+			{
+			PrgListPID%btchPrgPresetSel%[A_Index] := PrgListPID%foundpos%[A_Index]
+			}
 		}
 		else
 		{
@@ -1216,24 +1224,20 @@ if (A_GuiEvent = "DoubleClick")
 				return
 				}
 			}
-		IfNotExist PrgLaunching.jpg
-		FileInstall PrgLaunching.jpg, PrgLaunching.jpg
-		sleep 200
 		}
-	}
 
-
-	if (PrgListPID%btchPrgPresetSel%[batchPrgStatus])
-	{
 	lnchPrgStat := -PrgBatchIni%btchPrgPresetSel%[batchPrgStatus]
 	temp := PrgChoicePaths[-lnchPrgStat]
 	}
 	else
 	{
+		IfNotExist PrgLaunching.jpg
+		FileInstall PrgLaunching.jpg, PrgLaunching.jpg
+		sleep 200
 	lnchPrgStat := PrgBatchIni%btchPrgPresetSel%[batchPrgStatus]
 	temp := PrgChoicePaths[lnchPrgStat]
-	if !(PrgLnchHide[lnchPrgStat])
-	SplashImage, PrgLaunching.jpg, A B,,,LnchSplash
+		if !(PrgLnchHide[lnchPrgStat])
+		SplashImage, PrgLaunching.jpg, A B,,,LnchSplash
 	sleep, % (!PrgIntervalLnch)? 2000: (PrgIntervalLnch = -1)? 4000: 6000
 	}		
 
@@ -2668,7 +2672,17 @@ Tooltip
 Gui, PrgLnchOpt: +OwnDialogs
 if (txtPrgChoice = "")
 {
-
+	
+	Loop, % PrgNo
+	{
+	temp := ProgPIDMast[A_Index]
+		if (temp)
+		{
+		MsgBox, 8192, , % "Sorry, Prgs cannot be removed while any are active in Batch!"
+		Return
+		}
+	}
+	
 	;SelPrgChoice is last selected
 	MsgBox, 8193, , Remove Shortcut?
 	IfMsgBox, Ok
