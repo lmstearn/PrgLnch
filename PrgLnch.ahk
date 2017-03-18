@@ -1204,8 +1204,14 @@ if (A_GuiEvent = "DoubleClick")
 	presetNoTest := batchPrgStatus
 	
 
-	if (PrgListPID%btchPrgPresetSel%[batchPrgStatus])  ; check before launchiing not cancelling
+	if (PrgListPID%btchPrgPresetSel%[batchPrgStatus])  ; check before launching not cancelling
 	{
+	lnchPrgStat := -PrgBatchIni%btchPrgPresetSel%[batchPrgStatus]
+	temp := PrgChoicePaths[-lnchPrgStat]
+	}
+	else
+	{
+
 		ftemp := ChkExistingProcess(batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths, btchPrgPresetSel)
 
 		if (ftemp)
@@ -1226,14 +1232,15 @@ if (A_GuiEvent = "DoubleClick")
 			}
 		}
 
-	lnchPrgStat := -PrgBatchIni%btchPrgPresetSel%[batchPrgStatus]
-	temp := PrgChoicePaths[-lnchPrgStat]
-	}
-	else
-	{
 		IfNotExist PrgLaunching.jpg
 		FileInstall PrgLaunching.jpg, PrgLaunching.jpg
 		sleep 200
+	;Hide the quit and config buttons!
+	GuiControl, PrgLnch: Hide, PresetName
+	GuiControl, PrgLnch: Hide, BtchPrgPreset
+	GuiControl, PrgLnch: Hide, RunBatchPrg
+	GuiControl, PrgLnch: Hide, % quitHwnd
+	GuiControl, PrgLnch: Hide, % GoConfigHwnd
 	lnchPrgStat := PrgBatchIni%btchPrgPresetSel%[batchPrgStatus]
 	temp := PrgChoicePaths[lnchPrgStat]
 		if !(PrgLnchHide[lnchPrgStat])
@@ -1249,12 +1256,26 @@ if (A_GuiEvent = "DoubleClick")
 
 	retVal := LnchPrgOff(batchPrgStatus, presetNoTest, temp, currBatchno, lnchPrgStat, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgBordless, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMax, PrgStyle, x, y, w, h, dx, dy)
 
-	SplashImage, PrgLaunching.jpg, Hide,,,LnchSplash
 	loop, % currBatchNo
 	{
 		if (A_Index = batchPrgStatus)
 		{
-		if !(retval)
+		SplashImage, PrgLaunching.jpg, Hide,,,LnchSplash
+		GuiControl, PrgLnch: Show, PresetName
+		GuiControl, PrgLnch: Show, BtchPrgPreset
+		GuiControl, PrgLnch: Show, RunBatchPrg
+		GuiControl, PrgLnch: Show, % quitHwnd
+		GuiControl, PrgLnch: Show, % GoConfigHwnd
+
+		if (retval) ;Lnch fail
+		{
+			if (lnchPrgStat > 0)
+			{
+			foundpos .= "Failed" . "|"
+			MsgBox, 8192, , % retVal
+			}
+		}
+		else
 		{
 			SetResDefaults(targMonitorNum, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr)
 			if (lnchPrgStat > 0)
@@ -1272,14 +1293,6 @@ if (A_GuiEvent = "DoubleClick")
 			; Cancelling
 			if (lnchPrgStat < 0)
 			foundpos .= "Not Active" . "|"
-			}
-		}
-		else ;Lnch fail
-		{
-		if (lnchPrgStat > 0)
-			{
-			foundpos .= "Failed" . "|"
-			MsgBox, 8192, , % retVal
 			}
 		}
 		; Update Master
@@ -1694,57 +1707,76 @@ PrgLnchGuiEscape:
 if (PrgTermExit)
 { ;cancel Prgs
 
-	loop, % currBatchNo
-	{ 
-		temp := PrgListPID%btchPrgPresetSel%[A_Index]
+	loop, % PrgNo
+		{ 
+		ProgPIDMast[A_Index]
+		temp := ProgPIDMast[A_Index]
 		if (temp)
 		WinClose, ahk_pid%temp%
+		sleep, 200
+		if (temp != "")
+		KillPrg (temp)
+		}
+	if (PrgPID)
+	{
+	WinClose, ahk_pid%PrgPID%
+	sleep, 200
+	if (PrgPID && PrgPID != "FAILED")
+	KillPrg (PrgPID)
 	}
 }
 else
 {
 	if (presetNoTest)
 	{
-	foundpos := 0
-	loop, % batchPrgNo
+	ftemp := ""
+	temp := ""
+	loop, % PrgNo
 	{
-		if (PrgBdyBtchTog[A_Index])
+		foundpos := ProgPIDMast[A_Index]
+		if (foundpos && foundpos != "FAILED")
 		{
+			Process, Exist, % foundpos
+			if (ErrorLevel)
+			{
+			retVal := PrgChoicePaths[A_Index]
 
-		foundpos += 1
-			if (PrgListPID%btchPrgPresetSel%[foundpos])
-			{
-			temp := PrgListIndex[A_Index]
-			retVal := PrgChoicePaths[temp]
-				if !(foundpos)
-				temp := ", "
-				else
-				temp := ""
 			if (retVal := GetProcFromPath(retVal))
-				{
-				ftemp .= temp . retVal
-				}
-				else
-				Break
-			
+			{
+			if (temp)
+			ftemp .= temp . retVal
+			else
+			{
+			temp := ", "
+			ftemp := retVal
+			}
+			}
 			}
 		}
 	}
-	if (MsgOnceTerminate(ftemp))
-	Return
-	}
-	else
-	{
-		if (PrgPID && PrgPID != "FAILED")
+		if (ftemp)
 		{
-			retVal := PrgChoicePaths[selPrgChoice]
-			if (retVal := GetProcFromPath(retVal))
-			{
-			if (MsgOnceTerminate(retVal))
+			if (MsgOnceTerminate(ftemp))
 			Return
-			}
 		}
 	}
+
+	if (PrgPID && PrgPID != "FAILED")
+	{
+		Process, Exist, %PrgPID%
+		if (ErrorLevel)
+			{
+			retval := "`[Test Run`]"
+			retVal .= PrgChoicePaths[selPrgChoice]
+
+				if (retVal := GetProcFromPath(retVal))
+				{
+				if (MsgOnceTerminate(retVal))
+				Return
+				}
+			}
+	}
+
 }
 
 
@@ -3045,6 +3077,13 @@ loop, % ((presetNoTest)? currBatchno: 1)
 	{
 		if (lnchPrgStat > 0)
 		{
+		;Hide the quit and config buttons!
+		GuiControl, PrgLnch: Hide, PresetName
+		GuiControl, PrgLnch: Hide, BtchPrgPreset
+		GuiControl, PrgLnch: Hide, RunBatchPrg
+		GuiControl, PrgLnch: Hide, % quitHwnd
+		GuiControl, PrgLnch: Hide, % GoConfigHwnd
+
 		lnchPrgStat := PrgBatchIni%btchPrgPresetSel%[A_Index]
 		temp := PrgChoicePaths[lnchPrgStat]
 		if !(PrgLnchHide[lnchPrgStat])
@@ -3106,7 +3145,9 @@ loop, % ((presetNoTest)? currBatchno: 1)
 				Gui, PrgLnchOpt: Show, Hide, PrgLnchOpt
 				else
 				{
+				GuiControl, PrgLnchOpt: Hide, Allmodes
 				GuiControl, PrgLnchOpt: Hide, iDevNum
+				GuiControl, PrgLnchOpt: Hide, ResIndex
 				GuiControl, PrgLnchOpt: Hide, MkShortcut
 				GuiControl, PrgLnchOpt:, RnPrgLnch, &Cancel Prg
 				GuiControl, PrgLnchOpt: Hide, UpdturlPrgLnch
@@ -3137,6 +3178,12 @@ GuiControl, PrgLnch:, batchPrgStatus, %foundpos%
 ;Fix buttons
 if (presetNoTest)
 {
+GuiControl, PrgLnch: Show, PresetName
+GuiControl, PrgLnch: Show, BtchPrgPreset
+GuiControl, PrgLnch: Show, RunBatchPrg
+GuiControl, PrgLnch: Show, % quitHwnd
+GuiControl, PrgLnch: Show, % GoConfigHwnd
+
 temp := 0
 	loop, % currBatchno
 	{
@@ -3157,6 +3204,8 @@ else
 {
 	if (lnchPrgStat = -1) ; cancel test
 	{
+	GuiControl, PrgLnchOpt: Show, Allmodes
+	GuiControl, PrgLnchOpt: Show, ResIndex
 	GuiControl, PrgLnchOpt: Show, iDevNum
 	GuiControl, PrgLnchOpt: Show, MkShortcut
 	GuiControl, PrgLnchOpt: Show, UpdturlPrgLnch
@@ -3393,7 +3442,7 @@ else
 		{
 		temp := GetProcFromPath(PrgPaths)	
 		Process, Exist, %PrgPIDtmp%
-		if ErrorLevel
+		if (ErrorLevel)
 		{
 			;gets here if exists
 			Process, Priority, %PrgPIDtmp%, H
@@ -3416,26 +3465,7 @@ else
 				{
 				MsgBox, 8193, , There was a problem closing a Prg. It may have `njust closed but can be force terminated just in case.`n`"%temp%`"
 				IfMsgBox, OK
-				{
-				Process, Close, ahk_pid %PrgPIDtmp%
-				sleep, 200
-				if (PrgPIDtmp != "")
-					{
-					WorkingDirectory(0, A_ScriptDir)
-					if FileExist(taskkillPrg.bat)
-						{
-						FileDelete, taskkillPrg.bat
-						sleep, 200
-						}
-					ftemp := "taskkill /pid "
-					ftemp .= PrgPIDtmp . " /f /t"
-					FileAppend, %ftemp%, taskkillPrg.bat
-					sleep, 200
-					Run, taskkillPrg.bat,, Hide UseErrorLevel
-					sleep, 200
-					FileDelete, taskkillPrg.bat
-					}
-				}
+				KillPrg (PrgPIDtmp)
 				else
 				PrgPIDtmp := ""
 				}
@@ -3687,6 +3717,60 @@ WinActivate
 else
 MsgBox, 8192, , Problem with Finding the PrgLnch Window!
 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;More General file & process routines
+KillPrg(poorPID)
+{
+local ftemp := 0
+Process, Close, ahk_pid %poorPID%
+sleep, 200
+
+if (poorPID)
+	{
+	WorkingDirectory(0, A_ScriptDir)
+	if FileExist(taskkillPrg.bat)
+		{
+		FileDelete, taskkillPrg.bat
+		sleep, 200
+		}
+	ftemp := "taskkill /pid "
+	ftemp .= poorPID . " /f /t"
+	FileAppend, %ftemp%, taskkillPrg.bat
+	sleep, 200
+	Run, taskkillPrg.bat,, Hide UseErrorLevel
+	sleep, 200
+	FileDelete, taskkillPrg.bat
+	}
 }
 
 GetProcFromPath(ftemp)
@@ -3947,6 +4031,15 @@ WinMaximize, ahk_pid%PrgPID%
 
 
 
+
+
+
+
+
+
+
+
+;Monitor routines
 GetDisplayData(ByRef PrgMonToRn := 0, ByRef dispMonNamesNo := 0, ByRef selPrgChoice = 0, ByRef iDevNumArray := 0, ByRef dispMonNames := 0, ByRef scrDPI := 0, ByRef scrWidth := 0, ByRef scrHeight := 0, ByRef scrInterlace := 0, ByRef scrFreq := 0, iMode := -2, iChange := 0)
 {
 local Device_Mode := 0,	iDevNumb = 0, retVal := 0, DM_Position := 0, devFlags := 0, devKey := 0, OffsetDWORD := 4 ; Defined above but not global fn
