@@ -196,7 +196,7 @@ maxBatchPrgs := 6
 goConfigStat := 0 ; To prevent Frontend window popping up when GoConfig on active Prgs
 lnchPrgStat := 0 ; (Prg index) Run, (0) Change Res or -1 Cancel
 listPrgVar := 0 ;copy of BatchPrgs listbox id
-presetNoTest := 0 ; launch from config or batch- also batch status index
+presetNoTest := 1 ; config screen or batch screen?
 PrgPos := [0, 0, 0, 0]
 PrgLnchHide := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgRnPriority := [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] ;indetermined values are "normal"
@@ -704,37 +704,6 @@ WinMover(PrgLnch.Hwnd(),"d r", PrgLnchOpt.Width() * 3/4, PrgLnchOpt.Height())
 
 Gui, PrgLnch: Show
 
-if (goConfigStat)
-{
-temp := 0
-
-	loop, % currBatchNo
-	{
-	if (PrgListPID%btchPrgPresetSel%[A_Index])
-	{
-	temp := 1
-
-	SetTimer, WatchSwitchOut, 1000
-	Break
-	}
-	}
-
-if (temp)
-GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
-else
-{
-	retVal := "|"
-	loop, % currBatchNo
-	{
-	retVal := retVal . "Not Active" . "|"
-	}
-GuiControl, PrgLnch:, batchPrgStatus, % retVal
-GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
-}
-
-}
-
-
 SetWinDelay, 100
 
 OnMessage(0x112, "WM_SYSCOMMAND")
@@ -996,6 +965,7 @@ GuiControlGet, btchPrgPresetSel, PrgLnch:, BtchPrgPreset
 
 
 ;Backup last good PID
+
 PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, ProgPIDMast, 1)
 
 
@@ -1085,11 +1055,11 @@ else
 
 	;If PrgProperties window is showing, update it
 	Gui, PrgProperties: +LastFoundExist
-	IfWinExist
-	{
-	DetectHiddenWindows, On
-	PopPrgProperties(iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, IsPrgaLnk, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width())
-	}
+		IfWinExist
+		{
+		DetectHiddenWindows, On
+		PopPrgProperties(iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, IsPrgaLnk, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width())
+		}
 
 	}
 	else ;nothing in ini to restore, so write to it!
@@ -1201,8 +1171,6 @@ if (A_GuiEvent = "DoubleClick")
 	if !batchPrgStatus
 	Return
 
-	presetNoTest := batchPrgStatus
-	
 
 	if (PrgListPID%btchPrgPresetSel%[batchPrgStatus])  ; check before launching not cancelling
 	{
@@ -1395,18 +1363,29 @@ GoSub LnchPrgLnch
 Return
 
 GoConfig:
+presetNoTest := 0
 
 PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, ProgPIDMast, 1)
 
-if (btchPrgPresetSel)
+
+loop, % PrgNo
 {
-	loop, % maxBatchPrgs
+	if (ProgPIDMast[A_Index])
 	{
-		if (PrgListPID%btchPrgPresetSel%[A_Index])
-		{
-		goConfigStat := 1 ; Prevents window popping up when GoConfig
-		Break
-		}
+	goConfigStat := 1 ; Prevents window popping up when GoConfig
+	Break
+	}
+}
+
+
+if (PrgPID)
+{
+	Process, Exist, % PrgPID
+	if !(ErrorLevel)
+	{
+	PrgPID := 0
+	HideShowTestRunCtrls(1)
+	GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 	}
 }
 
@@ -2057,8 +2036,51 @@ ftemp := MakeLong(ftemp, temp)
 SendMessage, %UDM_SETRANGE%, , %ftemp%, , ahk_id %MovePrgHwnd%
 
 Gosub FrontendInit
+presetNoTest := 1
 goConfigStat := 0
+
 PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, ProgPIDMast)
+
+
+if (currBatchNo) ; defpreset set
+	{
+	temp := 0
+		loop, % currBatchNo
+		{
+		if (PrgListPID%btchPrgPresetSel%[A_Index])
+		{
+		temp := 1
+		SetTimer, WatchSwitchOut, 1000
+		Break
+		}
+		}
+
+		if (temp)
+		GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
+		else
+		{
+			retVal := "|"
+			loop, % currBatchNo
+			{
+			retVal := retVal . "Not Active" . "|"
+			}
+		GuiControl, PrgLnch:, batchPrgStatus, % retVal
+		GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
+		}
+	}
+	else
+	{
+		loop, % PrgNo
+		{
+			if (ProgPIDMast[A_Index])
+			{
+			SetTimer, WatchSwitchOut, 1000
+			Break
+			}
+		}
+	
+	}
+
 Gui, PrgLnchOpt: Show, Hide, PrgLnchOpt
 SplashImage, PrgLnchLoading.jpg, Hide,,,LnchSplash
 Return
@@ -3013,13 +3035,8 @@ GuiControl, PrgLnchOpt:, newVerPrg,
 }
 SetTimer, WatchSwitchBack, Delete
 SetTimer, WatchSwitchOut, Delete
-;Establish where we are running from:
-GuiControlGet, ftemp, PrgLnchOpt: FocusV
-if (ftemp = "RnPrgLnch")
-presetNoTest := 0
-else ;else  it is batchPrgStatus if that is selected
-presetNoTest := 1
 
+; set lnchPrgStat
 GuiControlGet temp, PrgLnchOpt:, RnPrgLnch
 GuiControlGet ftemp, PrgLnch:, RunBatchPrg
 if ((presetNoTest) && ftemp = "&Run Batch" || !(presetNoTest) && temp = "&Test Run Prg")
@@ -3145,21 +3162,17 @@ loop, % ((presetNoTest)? currBatchno: 1)
 				Gui, PrgLnchOpt: Show, Hide, PrgLnchOpt
 				else
 				{
-				GuiControl, PrgLnchOpt: Hide, Allmodes
-				GuiControl, PrgLnchOpt: Hide, iDevNum
-				GuiControl, PrgLnchOpt: Hide, ResIndex
-				GuiControl, PrgLnchOpt: Hide, MkShortcut
+				HideShowTestRunCtrls()
 				GuiControl, PrgLnchOpt:, RnPrgLnch, &Cancel Prg
-				GuiControl, PrgLnchOpt: Hide, UpdturlPrgLnch
-				GuiControl, PrgLnchOpt: Hide, PrgLAA
-				GuiControl, PrgLnchOpt: Hide, PrgLnchHd
-				GuiControl, PrgLnchOpt: Hide, PrgChoice
 				}
 			}
 			else ;just cancelled- but not from a hidden form!
 			{
 			if (lnchPrgStat < 0)
-			GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
+				{
+				HideShowTestRunCtrls(1)
+				GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
+				}
 			}
 	
 		}
@@ -3173,47 +3186,36 @@ Thread, NoTimers, false
 if (lnchPrgStat > 0)
 SetTimer, WatchSwitchOut, 1000
 
-GuiControl, PrgLnch:, batchPrgStatus, %foundpos%
 
 ;Fix buttons
 if (presetNoTest)
-{
-GuiControl, PrgLnch: Show, PresetName
-GuiControl, PrgLnch: Show, BtchPrgPreset
-GuiControl, PrgLnch: Show, RunBatchPrg
-GuiControl, PrgLnch: Show, % quitHwnd
-GuiControl, PrgLnch: Show, % GoConfigHwnd
-
-temp := 0
-	loop, % currBatchno
 	{
-	ftemp := PrgListPID%btchPrgPresetSel%[A_Index]
-		if (ftemp && ftemp != "FAILED")
+	GuiControl, PrgLnch:, batchPrgStatus, %foundpos%
+
+
+	GuiControl, PrgLnch: Show, PresetName
+	GuiControl, PrgLnch: Show, BtchPrgPreset
+	GuiControl, PrgLnch: Show, RunBatchPrg
+	GuiControl, PrgLnch: Show, % quitHwnd
+	GuiControl, PrgLnch: Show, % GoConfigHwnd
+
+	temp := 0
+		loop, % currBatchno
 		{
-			temp := 1
-			Break
+		ftemp := PrgListPID%btchPrgPresetSel%[A_Index]
+			if (ftemp && ftemp != "FAILED")
+			{
+				temp := 1
+				Break
+			}
 		}
+
+	if (temp)			
+	GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
+	else
+	GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 	}
 
-if (temp)			
-GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
-else
-GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
-}
-else
-{
-	if (lnchPrgStat = -1) ; cancel test
-	{
-	GuiControl, PrgLnchOpt: Show, Allmodes
-	GuiControl, PrgLnchOpt: Show, ResIndex
-	GuiControl, PrgLnchOpt: Show, iDevNum
-	GuiControl, PrgLnchOpt: Show, MkShortcut
-	GuiControl, PrgLnchOpt: Show, UpdturlPrgLnch
-	GuiControl, PrgLnchOpt: Show, PrgLAA
-	GuiControl, PrgLnchOpt: Show, PrgLnchHd
-	GuiControl, PrgLnchOpt: Show, PrgChoice
-	}
-}
 Return
 
 LnchPrgOff(prgIndex, presetNoTest, PrgPaths, currBatchno, selPrgChoice, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgBordless, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMax, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy)
@@ -3519,7 +3521,7 @@ if (presetNoTest = 1)
 	}
 	else
 	{
-		if (presetNoTest > 1)
+		if (presetNoTest)
 		PrgListPID[presetNoTest] := PrgPIDtmp
 		else
 		PrgPID := PrgPIDtmp
@@ -3543,15 +3545,15 @@ if (presetNoTest)
 	if (ftemp)
 		{
 		Process, Exist, % ftemp
-		if !ErrorLevel
-			{
-			PrgListPID%btchPrgPresetSel%[A_Index] := 0
-			temp .= "Not Active" . "|"
-			}
-			else
+		if (ErrorLevel)
 			{
 			temp .= "Active" . "|"
 			x := 1
+			}
+			else
+			{
+			PrgListPID%btchPrgPresetSel%[A_Index] := 0
+			temp .= "Not Active" . "|"
 			}
 		}
 		else
@@ -3621,16 +3623,17 @@ if (presetNoTest)
 	if (ftemp)
 		{
 		Process, Exist, % ftemp
-			if !ErrorLevel
-			{
-			PrgListPID%btchPrgPresetSel%[A_Index] := 0
-			temp .= "Not Active" . "|"
-			}
-			else
+			if (ErrorLevel)
 			{
 			temp .= "Active" . "|"
 			x := 1
 			}
+			else
+			{
+			PrgListPID%btchPrgPresetSel%[A_Index] := 0
+			temp .= "Not Active" . "|"
+			}
+
 		}
 		else
 		temp .= "Not Active" . "|"		
@@ -3702,10 +3705,7 @@ SplashImage, Hide, A B,,,LnchSplash
 	else
 	{
 	PrgPID := 0
-	GuiControl, PrgLnchOpt: Show, UpdturlPrgLnch
-	GuiControl, PrgLnchOpt: Show, PrgLAA
-	GuiControl, PrgLnchOpt: Show, PrgLnchHd
-	GuiControl, PrgLnchOpt: Show, PrgChoice
+	HideShowTestRunCtrls(1)
 	GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 
 	if PrgLnchHide[selPrgChoice]
@@ -4938,6 +4938,33 @@ WinMover(Hwnd, position, Width:=0, Height:=0)
 
 	WinMove, ahk_id %Hwnd%,,x,y
 	DetectHiddenWindows, %oldDHW%
+}
+
+HideShowTestRunCtrls(ByRef show := 0)
+{
+if (show)
+{
+	GuiControl, PrgLnchOpt: Show, Allmodes
+	GuiControl, PrgLnchOpt: Show, ResIndex
+	GuiControl, PrgLnchOpt: Show, iDevNum
+	GuiControl, PrgLnchOpt: Show, MkShortcut
+	GuiControl, PrgLnchOpt: Show, UpdturlPrgLnch
+	GuiControl, PrgLnchOpt: Show, PrgLAA
+	GuiControl, PrgLnchOpt: Show, PrgLnchHd
+	GuiControl, PrgLnchOpt: Show, PrgChoice
+
+}
+else
+{
+	GuiControl, PrgLnchOpt: Hide, Allmodes
+	GuiControl, PrgLnchOpt: Hide, iDevNum
+	GuiControl, PrgLnchOpt: Hide, ResIndex
+	GuiControl, PrgLnchOpt: Hide, MkShortcut
+	GuiControl, PrgLnchOpt: Hide, UpdturlPrgLnch
+	GuiControl, PrgLnchOpt: Hide, PrgLAA
+	GuiControl, PrgLnchOpt: Hide, PrgLnchHd
+	GuiControl, PrgLnchOpt: Hide, PrgChoice
+}
 }
 HideShowCtrls(ByRef show := 0)
 {
