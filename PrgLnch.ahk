@@ -484,14 +484,18 @@ Gui, PrgLnchOpt: Add, Button, cdefault gBackToPrgLnch HWNDBackToPrgLnchHwnd wp, 
 
 GuiControlGet, txtPrgChoice, PrgLnchOpt:, PrgChoice
 
-if (txtPrgChoice = "None")
-GuiControl, PrgLnchOpt:, RnPrgLnch, Change Res`.
 
 
 if (ChkPrgNames(txtPrgChoice)) ;shouldn't happen on load
-	GuiControl, PrgLnchOpt: Disable, UpdtPrgLnch
+	GuiControl, PrgLnchOpt: Text, PrgChoice, None
+
+if (txtPrgChoice = "None")
+	{
+	GuiControl, PrgLnchOpt:, RnPrgLnch, Change Res`.
+	ChangeResCtrls()
+	}
 else
-{
+	{
 
 	GuiControl, PrgLnchOpt:, MkShortcut, Change Shortcut
 	PrgURLEnable(selPrgChoice, PrgLnkInf, PrgUrl, PrgVer, PrgVerOld, UpdturlHwnd)
@@ -505,7 +509,7 @@ else
 	GuiControl, PrgLnchOpt:, Bordless, % PrgBordless[selPrgChoice]
 
 	GuiControl, PrgLnchOpt: Enable, PrgLAA		
-}
+	}
 
 
 
@@ -2655,26 +2659,7 @@ else
 		else
 			{
 				selPrgChoice := 1
-				GuiControl, PrgLnchOpt:, MkShortcut, Just Change Res.
-				GuiControl, PrgLnchOpt: Disable, Just Change Res.
-				GuiControl, PrgLnchOpt:, RnPrgLnch, Change Res`.
-				GuiControl, PrgLnchOpt: Enable, RnPrgLnch
-				GuiControl, PrgLnchOpt: Disable, CmdLinPrm
-				GuiControl, PrgLnchOpt:, CmdLinPrm
-				GuiControl, PrgLnchOpt: Disable, UpdtPrgLnch
-				GuiControl, PrgLnchOpt:, UpdturlPrgLnch
-				GuiControl, PrgLnchOpt: +ReadOnly, UpdturlPrgLnch
-				GuiControl, PrgLnchOpt:, newVerPrg
-				GuiControl, PrgLnchOpt:, PrgLnchHd, 0
-				GuiControl, PrgLnchOpt: Disable ,PrgLnchHd
-				GuiControl, PrgLnchOpt:, Bordless, 0
-				GuiControl, PrgLnchOpt: Disable, Bordless
-				GuiControl, PrgLnchOpt:, PrgPriority, -1				
-				GuiControl, PrgLnchOpt: Disable, PrgPriority
-
-				GuiControl, PrgLnchOpt: Disable, PrgLAA
-
-
+				ChangeResCtrls()
 
 				GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 				if (iDevNumArray[targMonitorNum] < 10)
@@ -4939,6 +4924,28 @@ WinMover(Hwnd, position, Width:=0, Height:=0)
 
 	WinMove, ahk_id %Hwnd%,,x,y
 	DetectHiddenWindows, %oldDHW%
+}
+
+ChangeResCtrls()
+{
+	GuiControl, PrgLnchOpt:, MkShortcut, Just Change Res.
+	GuiControl, PrgLnchOpt: Disable, Just Change Res.
+	GuiControl, PrgLnchOpt:, RnPrgLnch, Change Res`.
+	GuiControl, PrgLnchOpt: Enable, RnPrgLnch
+	GuiControl, PrgLnchOpt: Disable, CmdLinPrm
+	GuiControl, PrgLnchOpt:, CmdLinPrm
+	GuiControl, PrgLnchOpt: Disable, UpdtPrgLnch
+	GuiControl, PrgLnchOpt:, UpdturlPrgLnch
+	GuiControl, PrgLnchOpt: +ReadOnly, UpdturlPrgLnch
+	GuiControl, PrgLnchOpt:, newVerPrg
+	GuiControl, PrgLnchOpt:, PrgLnchHd, 0
+	GuiControl, PrgLnchOpt: Disable ,PrgLnchHd
+	GuiControl, PrgLnchOpt:, Bordless, 0
+	GuiControl, PrgLnchOpt: Disable, Bordless
+	GuiControl, PrgLnchOpt:, PrgPriority, -1				
+	GuiControl, PrgLnchOpt: Disable, PrgPriority
+
+	GuiControl, PrgLnchOpt: Disable, PrgLAA
 }
 
 HideShowTestRunCtrls(ByRef show := 0)
