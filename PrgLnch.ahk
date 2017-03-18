@@ -229,7 +229,7 @@ PrgChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgLnkInf := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgUrl := ["", "", "", "", "", "", "", "", "", "", "", ""]
 strPrgChoice := "|None|"
-defPrgStrng := 0
+defPrgStrng := "None"
 selPrgChoice := 1
 selPrgChoiceTimer := 0
 PrgChoiceClicked := 1
@@ -1380,6 +1380,7 @@ loop, % PrgNo
 
 if (PrgPID)
 {
+	msgbox % PrgPId
 	Process, Exist, % PrgPID
 	if !(ErrorLevel)
 	{
