@@ -1,2 +1,1 @@
-# PrgLnch
-Yet Another program Launcher
+# PrgLnch: [Yet Another Program Launcher](../../wiki)
