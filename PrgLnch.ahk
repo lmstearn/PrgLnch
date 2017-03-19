@@ -17,6 +17,7 @@ sleep, 200
 
 ;Issue: chm file not deleted if in use
 
+
 /*If !A_IsAdmin {
 Run *RunAs "%A_ScriptFullPath%"
 ExitApp
@@ -373,31 +374,26 @@ GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
 
 
 if (defPrgStrng = "None")
-{
-	GuiControl, PrgLnchOpt: Disable, DefaultPrg
-	GuiControl, PrgLnchOpt: Disable, Just Change Res.
 	GuiControl, PrgLnchOpt: Choose, PrgChoice, 1
-}
 else
 {
-GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
-	loop % PrgNo
-	{
-	If (PrgChoiceNames[A_Index] = defPrgStrng)
-	{
-	selPrgChoice := A_Index
-	GuiControl, PrgLnchOpt: , DefaultPrg, 1
-	Break
-	}
-	}
-GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
+	GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
+		loop % PrgNo
+		{
+		If (PrgChoiceNames[A_Index] = defPrgStrng)
+		{
+		selPrgChoice := A_Index
+		GuiControl, PrgLnchOpt: , DefaultPrg, 1
+		Break
+		}
+		}
+	GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
 }
+
+
 
 
 ;Monitors % Reslist
-
-
-
 
 Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHwnd
 
@@ -491,7 +487,6 @@ if (ChkPrgNames(txtPrgChoice)) ;shouldn't happen on load
 
 if (txtPrgChoice = "None")
 	{
-	GuiControl, PrgLnchOpt:, RnPrgLnch, Change Res`.
 	ChangeResCtrls()
 	}
 else
@@ -1384,7 +1379,6 @@ loop, % PrgNo
 
 if (PrgPID)
 {
-	msgbox % PrgPId
 	Process, Exist, % PrgPID
 	if !(ErrorLevel)
 	{
@@ -3571,11 +3565,14 @@ if (presetNoTest)
 }
 else
 {
-	Process, Exist, %PrgPID%
-	if !ErrorLevel
+	if (PrgPID)
 	{
-	CleanupPID(presetNoTest, goConfigStat, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice)
-	Return
+		Process, Exist, %PrgPID%
+		if !ErrorLevel
+		{
+		CleanupPID(presetNoTest, goConfigStat, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice)
+		Return
+		}
 	}
 }
 
@@ -3647,11 +3644,14 @@ if (presetNoTest)
 }
 else
 {
-	Process, Exist, %PrgPID%
-	if !ErrorLevel
+	if (PrgPID)
 	{
-	CleanupPID(presetNoTest, goConfigStat, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice)
-	Return
+		Process, Exist, %PrgPID%
+		if !ErrorLevel
+		{
+		CleanupPID(presetNoTest, goConfigStat, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice)
+		Return
+		}
 	}
 }
 
@@ -4862,7 +4862,6 @@ VarSetCapacity(v,8)
 if (action == "check")
 {
 	retVal := stream.ReadShort()
-	;MsgBox, 8192, , % " retVal: " retVal " Curr. Pos: " Pos " bytesToProcess: " bytesToProcess " offset: " offset
 	return retVal
 }
 else
@@ -4927,7 +4926,8 @@ WinMover(Hwnd, position, Width:=0, Height:=0)
 }
 
 ChangeResCtrls()
-{
+{	
+	GuiControl, PrgLnchOpt: Disable, DefaultPrg
 	GuiControl, PrgLnchOpt:, MkShortcut, Just Change Res.
 	GuiControl, PrgLnchOpt: Disable, Just Change Res.
 	GuiControl, PrgLnchOpt:, RnPrgLnch, Change Res`.
