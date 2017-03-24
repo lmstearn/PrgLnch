@@ -3169,17 +3169,13 @@ SplashImage, PrgLaunching.jpg, Hide,,,LnchSplash
 }
 
 
-;Start Timer & update status list
+;Start Timer & update status list & fix buttons
 Thread, NoTimers, false
-if (lnchPrgStat > 0) && !(InStr(foundpos, "Failed"))
-SetTimer, WatchSwitchOut, 1000
 
 
-;Fix buttons
 if (presetNoTest)
 	{
 	GuiControl, PrgLnch:, batchPrgStatus, %foundpos%
-
 
 	GuiControl, PrgLnch: Show, PresetName
 	GuiControl, PrgLnch: Show, BtchPrgPreset
@@ -3198,11 +3194,21 @@ if (presetNoTest)
 			}
 		}
 
-	if (temp)			
-	GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
-	else
-	GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
+		if (temp)
+		{
+		GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
+		if (lnchPrgStat > 0) 
+		SetTimer, WatchSwitchOut, 1000
+		}
+		else
+		GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 	}
+	else
+	{
+		if (lnchPrgStat > 0) && (PrgPID) 
+		SetTimer, WatchSwitchOut, 1000
+	}
+
 
 Return
 
@@ -4474,23 +4480,26 @@ SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef)
 {
 local defResmsg := 0
 
-if (scrWidth=scrWidthDef && scrHeight=scrHeightDef && !Fmode)
+if (scrWidth=scrWidthDef && scrHeight=scrHeightDef)
 {
+if (Fmode) ;always change
+Return 1
+
 IniRead, defResmsg, %A_ScriptDir%`\%PrgLnchIni%, General, DefResmsg
-	if (defResmsg < 1)
+	if !(defResmsg)
 	{
-	MsgBox, 8195, Resolution Change, The resolution on the target monitor is the same as its current resolution. `n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `n `nCancel: Do nothing: `n
+	MsgBox, 8195, Resolution Change, The resolution on the target monitor is the same as the current resolution. `n(It's automatic if "Change at every mode" in "Res Options" is selected) `n`nReply:`nYes: Change resolution (This will not show again)`nNo: Do not change resolution: (This will not show again) `n `nCancel: Do nothing: `n
 	;note msgbox isn't modal if called from function
 		IfMsgBox, No
 		{
-		IniWrite, 0, %A_ScriptDir%`\%PrgLnchIni%, General, defResmsg
+		IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, defResmsg
 		Return 0
 		}
 		else
 		{
 			ifMsgBox, Yes
 			{
-			IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, defResmsg
+			IniWrite, 2, %A_ScriptDir%`\%PrgLnchIni%, General, defResmsg
 			Return 1
 			}
 			else
@@ -4499,12 +4508,11 @@ IniRead, defResmsg, %A_ScriptDir%`\%PrgLnchIni%, General, DefResmsg
 	}
 	else
 	{
-		if (defResmsg)
-		Return 1
-		else
+		if (defResmsg = 1)
 		Return 0
+		else
+		Return 1
 	}
-	
 }
 else
 Return 1
@@ -5179,7 +5187,7 @@ Local foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, 
 if !FileExist(PrgLnchIni)
 	{
 	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, Disclaimer
-	IniWrite, -1, %A_ScriptDir%`\%PrgLnchIni%, General, DefResmsg
+	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, DefResmsg
 	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, TermPrgMsg
 	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
 	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, ClosePrgWarn
