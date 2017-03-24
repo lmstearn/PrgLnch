@@ -3214,7 +3214,7 @@ Return
 
 LnchPrgOff(prgIndex, presetNoTest, PrgPaths, currBatchno, selPrgChoice, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgBordless, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMax, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, Fmode)
 {
-local noResChange := 0, currMon := 0, temp := 0, fTemp := 0, ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, PrgPIDtmp := 0, PrgPrty := "N", mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
+local currMon := 0, temp := 0, fTemp := 0, ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, PrgPIDtmp := 0, PrgPrty := "N", mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
 
 if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) < 0)
 Return "Cancelled by User!"
@@ -3572,41 +3572,45 @@ WatchSwitchBack:
 
 if (presetNoTest)
 {
-	;WATCH USING TEMP VARIABLES IN TIMERS!!!
 	x := 0
+	if (batchActive)
+	{
 	temp := "|"	
-	loop, % currBatchno
-	{
-	ftemp := PrgListPID%btchPrgPresetSel%[A_Index]
-	if (ftemp = "FAILED")
-	temp .= "Failed" . "|"
-	else
-	{
-	if (ftemp)
+		loop, % currBatchno
 		{
-		Process, Exist, % ftemp
-		if (ErrorLevel)
+		ftemp := PrgListPID%btchPrgPresetSel%[A_Index]
+		if (ftemp = "FAILED")
+		temp .= "Failed" . "|"
+		else
+		{
+		if (ftemp)
 			{
-			temp .= "Active" . "|"
-			x := 1
+			Process, Exist, % ftemp
+				if (ErrorLevel)
+				{
+				temp .= "Active" . "|"
+				x := 1
+				}
+				else
+				{
+				PrgListPID%btchPrgPresetSel%[A_Index] := 0
+				temp .= "Not Active" . "|"
+				}
+
 			}
 			else
-			{
-			PrgListPID%btchPrgPresetSel%[A_Index] := 0
-			temp .= "Not Active" . "|"
-			}
+			temp .= "Not Active" . "|"		
 		}
-		else
-		temp .= "Not Active" . "|"
+		}
+		GuiControl, PrgLnch:, batchPrgStatus, %temp%
 	}
-	}
-	GuiControl, PrgLnch:, batchPrgStatus, %temp%
 	if (x)
 	batchActive := 1
 	else
 	{
 	batchActive := 0
 	CleanupPID(PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
+	Return
 	}
 }
 else
@@ -3643,40 +3647,44 @@ WatchSwitchOut:
 if (presetNoTest)
 {
 	x := 0
+	if (batchActive)
+	{
 	temp := "|"	
-	loop, % currBatchno
-	{
-	ftemp := PrgListPID%btchPrgPresetSel%[A_Index]
-	if (ftemp = "FAILED")
-	temp .= "Failed" . "|"
-	else
-	{
-	if (ftemp)
+		loop, % currBatchno
 		{
-		Process, Exist, % ftemp
-			if (ErrorLevel)
+		ftemp := PrgListPID%btchPrgPresetSel%[A_Index]
+		if (ftemp = "FAILED")
+		temp .= "Failed" . "|"
+		else
+		{
+		if (ftemp)
 			{
-			temp .= "Active" . "|"
-			x := 1
+			Process, Exist, % ftemp
+				if (ErrorLevel)
+				{
+				temp .= "Active" . "|"
+				x := 1
+				}
+				else
+				{
+				PrgListPID%btchPrgPresetSel%[A_Index] := 0
+				temp .= "Not Active" . "|"
+				}
+
 			}
 			else
-			{
-			PrgListPID%btchPrgPresetSel%[A_Index] := 0
-			temp .= "Not Active" . "|"
-			}
-
+			temp .= "Not Active" . "|"		
 		}
-		else
-		temp .= "Not Active" . "|"		
+		}
+		GuiControl, PrgLnch:, batchPrgStatus, %temp%
 	}
-	}
-	GuiControl, PrgLnch:, batchPrgStatus, %temp%
 	if (x)
 	batchActive := 1
 	else
 	{
 	batchActive := 0
 	CleanupPID(PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
+	Return
 	}
 }
 else
@@ -3717,15 +3725,16 @@ if (RevertRes)
 {
 	if (presetNoTest)
 	{
-		SplashImage, Hide, A B,,,LnchSplash
-		GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
-		if (PrgPID)
+		Process, Exist, % PrgPID
+		if (ErrorLevel)
 		{
-		;msgbox % lnchPrgStat " PrgMonToRn[selPrgChoice] " PrgMonToRn[selPrgChoice] " PrgLnchMon " PrgLnchMon " selPrgChoice " selPrgChoice
 			if (!batchActive && (lnchPrgStat < 100) && !(PrgMonToRn[selPrgChoice] = PrgLnchMon))
 			{
+			SplashImage, Hide, A B,,,LnchSplash
+			GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 			lnchPrgStat := 100
 			IniRead, temp, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyLaunchedMsg
+			sleep, 120
 				if !temp
 				{
 					MsgBox, 8195, , Batch has completed but a Prg has been launched via Test Run.`nIt's possible the Batch Prgs used other monitors.`nDo you wish to change the resolution of the monitor`n PrgLnch was run from back to its default resolution now?`n`nReply:`nYes: Change resolution (Warn like this next time) `nNo: Change resolution (This will not show again) `nCancel: Do not change resolution (This will not show again)`n
@@ -3741,11 +3750,13 @@ if (RevertRes)
 					}
 				}
 				else
-				if (temp = 1)
 				{
-				if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
-				ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
-				sleep, 1000
+					if (temp = 1)
+					{
+					if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+					ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
+					sleep, 1000
+					}
 				}
 			}
 		}
@@ -3754,12 +3765,16 @@ if (RevertRes)
 		SetTimer, WatchSwitchBack, Delete
 		SetTimer, WatchSwitchOut, Delete
 		lnchPrgStat := 0
+		PrgPID := 0
 		if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 		ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
 		sleep, 1000
 		}
 		if !(batchActive)
+		{
 		Gui, PrgLnch: Show
+		ActivatePrgLnch()
+		}
 	}
 	else
 	{
@@ -3790,14 +3805,18 @@ if (RevertRes)
 
 	if PrgLnchHide[selPrgChoice]
 	Gui, PrgLnchOpt: Show
+	ActivatePrgLnch()
 	}
+}
+}
+ActivatePrgLnch()
+{
 if WinExist("PrgLnch.ahk") or WinExist("ahk_class" . PrgLnch) or WinExist ("ahk_class AutoHotkeyGUI")
 WinActivate
 else
 MsgBox, 8192, , Problem with Finding the PrgLnch Window!
-}
-}
 
+}
 
 
 
@@ -4488,7 +4507,7 @@ Return 1
 IniRead, defResmsg, %A_ScriptDir%`\%PrgLnchIni%, General, DefResmsg
 	if !(defResmsg)
 	{
-	MsgBox, 8195, Resolution Change, The resolution on the target monitor is the same as the current resolution. `n(It's automatic if "Change at every mode" in "Res Options" is selected) `n`nReply:`nYes: Change resolution (This will not show again)`nNo: Do not change resolution: (This will not show again) `n `nCancel: Do nothing: `n
+	MsgBox, 8195, Resolution Change, The resolution on the target monitor is the same as the current resolution. `n(It's automatic if "Change at every mode" in "Res Options" is selected) `n`nReply:`nYes: Change resolution (This will not show again)`nNo: Do not change resolution: (Recommended: This will not show again) `n `nCancel: Do nothing: `n
 	;note msgbox isn't modal if called from function
 		IfMsgBox, No
 		{
