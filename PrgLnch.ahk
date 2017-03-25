@@ -16,7 +16,7 @@ FileInstall PrgLnchLoading.jpg, PrgLnchLoading.jpg
 sleep, 200
 
 ;Issues: chm file not deleted if in use
-; PrgLnch window is "lost" on screens changing to low resolutions
+;XP: pictures in chm don't show
 
 
 /*If !A_IsAdmin {
@@ -420,7 +420,6 @@ PrgMonToRn[A_Index] := PrgLnchMon
 
 if (PrgMonToRn[selPrgChoice] && !(defPrgStrng = "None"))
 {
-
 scrWidth := scrWidthArr[selPrgChoice]
 scrHeight := scrHeightArr[selPrgChoice]
 scrFreq := scrFreqArr[selPrgChoice]
@@ -525,7 +524,7 @@ GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
 ;ChooseString may fail if frequencies differ. Meh!
 
 
-IniProc(scrWidth, scrHeight, scrFreq, 100) ;iniializes Prgmon in ini
+IniProc(scrWidth, scrHeight, scrFreq, 100) ;initialises Prgmon in ini
 
 
 
@@ -2359,12 +2358,15 @@ Tooltip
 	ResIndexList := GetResList(PrgLnchMon, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResArray, scrWidthDef, scrHeightDef, scrFreqDef, allModes, -1)
 	GuiControlGet Tmp, PrgLnchOpt:, Tmp ; Why?
 
-	if !(PresetLabelHwnd) ;Update  all at Load
+	if !(PresetLabelHwnd)  ;Update all at Load
 	{
-	GuiControl, PrgLnchOpt:, currRes, % substr(ResIndexList, 1, StrLen(ResIndexList) - 1)
-	scrWidth := scrWidthDef
-	scrHeight := scrHeightDef
-	scrFreq := scrFreqDef
+		GuiControl, PrgLnchOpt:, currRes, % substr(ResIndexList, 1, StrLen(ResIndexList) - 1)
+		if (defPrgStrng = "None")
+		{
+		scrWidth := scrWidthDef
+		scrHeight := scrHeightDef
+		scrFreq := scrFreqDef
+		}
 	}
 	else
 	{
@@ -2455,7 +2457,7 @@ local temp := 0, ftemp := 0
 			scrFreqDefArr[targMonitorNum] := scrFreqDef
 			}
 	}
-	else
+	else ; on init
 	{
 	;Sets new defaults according to resolution changes when changing res
 		if (Dynamic || FMode)
@@ -3247,7 +3249,6 @@ if (lnchPrgStat > 0)
 		}
 	}
 
-
 	if (targMonitorNum = currMon)
 	{
 
@@ -3258,7 +3259,7 @@ if (lnchPrgStat > 0)
 		IniRead, ftemp, %A_ScriptDir%`\%PrgLnchIni%, General, LoseGuiChangeResWrn
 			if !(ftemp)
 			{
-			MsgBox, 8195, , It's possible the PrgLnch Gui can be positioned off the screen after `nswitching to low resolutions. Use <CTRL-Alt-P> to return it to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `n `nCancel: Do nothing: `n
+			MsgBox, 8195, , It's possible the PrgLnch Gui can be positioned off the screen after `nswitching to low resolutions. Use <CTRL-Alt-P> to return it to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do nothing: `n
 			IfMsgBox, No
 			IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, LnchPrgMonWarn
 			else
@@ -3266,14 +3267,14 @@ if (lnchPrgStat > 0)
 				IfMsgBox, Cancel
 				Return "Cancelled by user!"
 			}
+			}
 		}
-
 		if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 			{
 			ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 			Sleep 1200
 			}
-		}
+
 	Run, % PrgPaths, , UseErrorLevel, PrgPIDtmp
 	sleep, 120
 		if (A_LastError)
@@ -4505,7 +4506,14 @@ if (Fmode) ;always change
 Return 1
 
 IniRead, defResmsg, %A_ScriptDir%`\%PrgLnchIni%, General, DefResmsg
-	if !(defResmsg)
+	if (defResmsg)
+	{
+		if (defResmsg = 1)
+		Return 0
+		else
+		Return 1
+	}
+	else
 	{
 	MsgBox, 8195, Resolution Change, The resolution on the target monitor is the same as the current resolution. `n(It's automatic if "Change at every mode" in "Res Options" is selected) `n`nReply:`nYes: Change resolution (This will not show again)`nNo: Do not change resolution: (Recommended: This will not show again) `n `nCancel: Do nothing: `n
 	;note msgbox isn't modal if called from function
@@ -4524,13 +4532,6 @@ IniRead, defResmsg, %A_ScriptDir%`\%PrgLnchIni%, General, DefResmsg
 			else
 			Return -1
 		}
-	}
-	else
-	{
-		if (defResmsg = 1)
-		Return 0
-		else
-		Return 1
 	}
 }
 else
