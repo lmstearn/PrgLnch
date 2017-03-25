@@ -2344,7 +2344,7 @@ Tooltip
 			IniRead, ftemp, %A_ScriptDir%`\%PrgLnchIni%, General, LnchPrgMonWarn
 			if !(ftemp)
 			{
-			MsgBox, 8195, , PrgLnch was run from monitor %temp% but the`n current monitor is set at %targMonitorNum%. This may be intended.`n``nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Change the default monitor back to 1: `n
+			MsgBox, 8195, , PrgLnch was run from monitor %temp% but the`n current monitor is set at %targMonitorNum%. This may be intended.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Change the default monitor back to 1: `n
 			IfMsgBox, Cancel
 			PrgLnchMon := targMonitorNum
 			else
@@ -3241,7 +3241,7 @@ if (lnchPrgStat > 0)
 		IniRead, ftemp, %A_ScriptDir%`\%PrgLnchIni%, General, LnchPrgMonWarn
 		if !(ftemp)
 		{
-		MsgBox, 8196, , PrgLnch was run from monitor %currMon% but the Prg`n is to run at default %targMonitorNum%. This may be intended.`n``nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `n
+		MsgBox, 8196, , PrgLnch was run from monitor %currMon% but the Prg`n is to run at default %targMonitorNum%. This may be intended.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `n
 		IfMsgBox, No
 		IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, LnchPrgMonWarn
 		}
@@ -3258,7 +3258,7 @@ if (lnchPrgStat > 0)
 		IniRead, ftemp, %A_ScriptDir%`\%PrgLnchIni%, General, LoseGuiChangeResWrn
 			if !(ftemp)
 			{
-			MsgBox, 8195, , It's possible the PrgLnch Gui can be positioned off the screen after `nswitching to low resolutions. Use <CTRL-Alt-P> to return it to focus.`n``nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `n `nCancel: Do nothing: `n
+			MsgBox, 8195, , It's possible the PrgLnch Gui can be positioned off the screen after `nswitching to low resolutions. Use <CTRL-Alt-P> to return it to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `n `nCancel: Do nothing: `n
 			IfMsgBox, No
 			IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, LnchPrgMonWarn
 			else
