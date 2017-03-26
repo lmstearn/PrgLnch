@@ -3566,69 +3566,8 @@ if (presetNoTest = 1)
 	}
 }
 
-TimerGuiCtrls(currBatchno, PrgListPIDbtchPrgPresetSel, btchPrgPresetSel, PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, ByRef batchActive, ByRef lnchPrgStat, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
-{
-local temp := 0, ftemp := 0
-if (presetNoTest)
-{
-	x := 0
-	if (batchActive)
-	{
-	temp := "|"	
-		loop, % currBatchno
-		{
-		ftemp := PrgListPIDbtchPrgPresetSel[A_Index]
-		if (ftemp = "FAILED")
-		temp .= "Failed" . "|"
-		else
-		{
-		if (ftemp)
-			{
-			Process, Exist, % ftemp
-				if (ErrorLevel)
-				{
-				temp .= "Active" . "|"
-				x := 1
-				}
-				else
-				{
-				PrgListPIDbtchPrgPresetSel[A_Index] := 0
-				temp .= "Not Active" . "|"
-				}
-
-			}
-			else
-			temp .= "Not Active" . "|"		
-		}
-		}
-		GuiControl, PrgLnch:, batchPrgStatus, %temp%
-	}
-	if (x)
-	batchActive := 1
-	else
-	{
-	batchActive := 0
-	CleanupPID(PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
-	Return
-	}
-}
-else
-{
-	if (PrgPID)
-	{
-		Process, Exist, %PrgPID%
-		if !ErrorLevel
-		{
-		CleanupPID(PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
-		Return
-		}
-	}
-}
-}
 
 WatchSwitchBack:
-
-TimerGuiCtrls(currBatchno, PrgListPID%btchPrgPresetSel%, btchPrgPresetSel, PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 
 ;Problem is, this only deals with switching to and from Prglnch ATM . Not other applications.
 WinWaitActive, PrgLnch
@@ -3646,7 +3585,62 @@ Return
 
 WatchSwitchOut:
 
-TimerGuiCtrls(currBatchno, PrgListPID%btchPrgPresetSel%, btchPrgPresetSel, PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+	if (presetNoTest)
+	{
+		x := 0
+		if (batchActive)
+		{
+		temp := "|"	
+			loop, % currBatchno
+			{
+			ftemp := PrgListPID%btchPrgPresetSel%[A_Index]
+			if (ftemp = "FAILED")
+			temp .= "Failed" . "|"
+			else
+			{
+			if (ftemp)
+				{
+				Process, Exist, % ftemp
+					if (ErrorLevel)
+					{
+					temp .= "Active" . "|"
+					x := 1
+					}
+					else
+					{
+					PrgListPID%btchPrgPresetSel%[A_Index] := 0
+					temp .= "Not Active" . "|"
+					}
+
+				}
+				else
+				temp .= "Not Active" . "|"		
+			}
+			}
+			GuiControl, PrgLnch:, batchPrgStatus, %temp%
+		}
+		if (x)
+		batchActive := 1
+		else
+		{
+		batchActive := 0
+		CleanupPID(PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
+		Return
+		}
+	}
+	else
+	{
+		if (PrgPID)
+		{
+			Process, Exist, %PrgPID%
+			if !ErrorLevel
+			{
+			CleanupPID(PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
+			Return
+			}
+		}
+	}
+
 WinWaitNotActive, PrgLnch
 
 IfWinNotActive, PrgLnch
@@ -3689,6 +3683,7 @@ IfWinNotActive, PrgLnch
 		}
 	}
 }
+
 Return
 
 CleanupPID(PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, ByRef lnchPrgStat, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID := 0, selPrgChoice := 0, Fmode := 0, scrWidth := 0, scrHeight := 0, scrWidthDef := 0, scrHeightDef := 0, scrFreqDef := 0, RevertRes := 0)
