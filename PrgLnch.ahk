@@ -17,7 +17,7 @@ sleep, 200
 
 ;Issues: chm file not deleted if in use
 ;XP: pictures in chm don't show
-
+;Res changes occur when switching only between active Prgs and Prglnch ATM . Not other applications or  switching between active Prgs.
 
 /*If !A_IsAdmin {
 Run *RunAs "%A_ScriptFullPath%"
@@ -126,8 +126,6 @@ SplashImage, PrgLnchLoading.jpg, A B,,,LnchSplash
 
 (A_PtrSize = 8)? 64bit := 1 : 64bit := 0 ; ONLY checks .exe bitness
 updateStatus := 1
-switchBackRes := 0
-switchOutRes := 0
 ;Change display flags
 CDS_TEST := 0x00000002
 CDS_RESET := 0x40000000
@@ -195,7 +193,7 @@ boundListBtchCtl := 0 ; PrgList sel or Updown toggle
 btchPrgPresetSel := 0 ;What preset is currently selected- 0 for none
 PrgBatchIniStartup := 0 ;Batch Preset read from Startup
 maxBatchPrgs := 6
-batchActive := 0 ; Batch is Active
+batchActive := 0 ; Batch is Active for current Preset
 lnchPrgStat := 0 ; (Prg index) Run, 100, Test Run, (0) Change Res or -1 Cancel
 listPrgVar := 0 ;copy of BatchPrgs listbox id
 presetNoTest := 1 ; config screen or batch screen?
@@ -1133,19 +1131,19 @@ else
 	}
 
 EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames)
-temp := 0
+batchActive := 0
 Thread, NoTimers, false
 	loop, % currBatchNo
 	{
 	if (PrgListPID%btchPrgPresetSel%[A_Index])
 	{
-	temp := 1
+	batchActive := 1
 	SetTimer, WatchSwitchOut, 1000
 	Break
 	}
 	}
 
-if (temp)
+if (batchActive)
 GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
 else
 {
@@ -1196,6 +1194,10 @@ if (A_GuiEvent = "DoubleClick")
 	{
 	lnchPrgStat := -PrgBatchIni%btchPrgPresetSel%[batchPrgStatus]
 	temp := PrgChoicePaths[-lnchPrgStat]
+	scrWidth := scrWidthArr[-lnchPrgStat]
+	scrHeight := scrHeightArr[-lnchPrgStat]
+	scrFreq := scrFreqArr[-lnchPrgStat]
+	targMonitorNum := PrgMonToRn[-lnchPrgStat]
 	}
 	else
 	{
@@ -1234,15 +1236,17 @@ if (A_GuiEvent = "DoubleClick")
 		if !(PrgLnchHide[lnchPrgStat])
 		SplashImage, PrgLaunching.jpg, A B,,,LnchSplash
 	sleep, % (!PrgIntervalLnch)? 2000: (PrgIntervalLnch = -1)? 4000: 6000
-	}		
 
 	scrWidth := scrWidthArr[lnchPrgStat]
 	scrHeight := scrHeightArr[lnchPrgStat]
 	scrFreq := scrFreqArr[lnchPrgStat]
 	targMonitorNum := PrgMonToRn[lnchPrgStat]
+	}		
+
 
 
 	retVal := LnchPrgOff(batchPrgStatus, presetNoTest, temp, currBatchno, lnchPrgStat, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgBordless, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMax, PrgStyle, x, y, w, h, dx, dy, Fmode)
+
 
 	loop, % currBatchNo
 	{
@@ -1268,23 +1272,25 @@ if (A_GuiEvent = "DoubleClick")
 			SetResDefaults(targMonitorNum, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr)
 			if (lnchPrgStat > 0)
 			{
-				if (PrgLnchHide[lnchPrgStat])
-				Gui, PrgLnch: Show, Hide, PrgLnch
-				else
-				{
-				Gui, PrgLnch: Show
-				}
+					if (PrgLnchHide[lnchPrgStat])
+					Gui, PrgLnch: Show, Hide, PrgLnch
+					else
+					Gui, PrgLnch: Show
+
 				foundpos .= "Active" . "|"
 			}
 			else
 			{
-			; Cancelling
+			; ASSUME it's cancelled
 			if (lnchPrgStat < 0)
 			foundpos .= "Not Active" . "|"
 			}
 		}
 		; Update Master
-		ProgPIDMast[lnchPrgStat] := PrgListPID%btchPrgPresetSel%[A_Index]
+			if lnchPrgStat > 0
+			ProgPIDMast[lnchPrgStat] := PrgListPID%btchPrgPresetSel%[A_Index]
+			else
+			ProgPIDMast[-lnchPrgStat] := PrgListPID%btchPrgPresetSel%[A_Index]
 		}
 		else
 		{
@@ -1295,33 +1301,30 @@ if (A_GuiEvent = "DoubleClick")
 		}
 	}
 
-
-Thread, NoTimers, false
-if (lnchPrgStat > 0)
-SetTimer, WatchSwitchOut, 1000
-
 GuiControl, PrgLnch:, batchPrgStatus, %foundpos%
 
-;Fix buttons
-if (presetNoTest)
+;Fix buttons and timer
+Thread, NoTimers, false
+batchActive := 0
+	loop, % currBatchno
 	{
-	temp := 0
-		loop, % currBatchno
+		if (PrgListPID%btchPrgPresetSel%[A_Index])
 		{
-			if (PrgListPID%btchPrgPresetSel%[A_Index])
-			{
-			temp := 1
-			Break
-			}
+		batchActive := 1
+		Break
 		}
+	}
 
-	if (temp)			
+	if (batchActive)
+	{
 	GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
+	SetTimer, WatchSwitchOut, 1000
+	}
 	else
 	GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 	}
 
-}
+
 
 Return
 
@@ -3218,7 +3221,7 @@ LnchPrgOff(prgIndex, presetNoTest, PrgPaths, currBatchno, selPrgChoice, PrgCmdLi
 {
 local currMon := 0, temp := 0, fTemp := 0, ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, PrgPIDtmp := 0, PrgPrty := "N", mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
 
-if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) < 0)
+if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) < 0)
 Return "Cancelled by User!"
 
 
@@ -3269,7 +3272,7 @@ if (lnchPrgStat > 0)
 			}
 			}
 		}
-		if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+		if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 			{
 			ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 			Sleep 1200
@@ -3286,7 +3289,7 @@ if (lnchPrgStat > 0)
 
 
 			;WinShow ahk_class Shell_TrayWnd
-			if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+			if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 			{
 			ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum) ;defaults for the monitor
 			sleep, 1000
@@ -3353,7 +3356,7 @@ if (lnchPrgStat > 0)
 	else ; monitor other than current
 	{
 
-			if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+			if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 			{
 			ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 			Sleep 1200
@@ -3367,7 +3370,7 @@ if (lnchPrgStat > 0)
 			PrgPIDtmp := "FAILED"
 			FixPrgPIDStatus(currBatchno, presetNoTest, PrgPIDtmp, PrgPID, PrgListPID)
 			
-			if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+			if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 			{
 			ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum)
 			sleep, 1000
@@ -3444,10 +3447,6 @@ else
 		return "Could not find " . PrgChoiceNames[selPrgChoice] . " in this directory!"
 	}
 
-
-switchBackRes := 1
-
-
 ;WinWaitClose What about suspended task?
 
 
@@ -3459,14 +3458,12 @@ else
 	{
 		GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 
-		if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+		if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 		{
 		ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 		sleep, 1200
 		}
 	}
-
-
 	else ;Cancel Prg: Either this or Waitclose
 	{
 
@@ -3569,8 +3566,9 @@ if (presetNoTest = 1)
 	}
 }
 
-WatchSwitchBack:
-
+TimerGuiCtrls(currBatchno, PrgListPIDbtchPrgPresetSel, btchPrgPresetSel, PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, ByRef batchActive, ByRef lnchPrgStat, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+{
+local temp := 0, ftemp := 0
 if (presetNoTest)
 {
 	x := 0
@@ -3579,7 +3577,7 @@ if (presetNoTest)
 	temp := "|"	
 		loop, % currBatchno
 		{
-		ftemp := PrgListPID%btchPrgPresetSel%[A_Index]
+		ftemp := PrgListPIDbtchPrgPresetSel[A_Index]
 		if (ftemp = "FAILED")
 		temp .= "Failed" . "|"
 		else
@@ -3594,7 +3592,7 @@ if (presetNoTest)
 				}
 				else
 				{
-				PrgListPID%btchPrgPresetSel%[A_Index] := 0
+				PrgListPIDbtchPrgPresetSel[A_Index] := 0
 				temp .= "Not Active" . "|"
 				}
 
@@ -3626,93 +3624,71 @@ else
 		}
 	}
 }
+}
 
+WatchSwitchBack:
 
-if !switchBackRes
-	{
+TimerGuiCtrls(currBatchno, PrgListPID%btchPrgPresetSel%, btchPrgPresetSel, PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+
+;Problem is, this only deals with switching to and from Prglnch ATM . Not other applications.
+WinWaitActive, PrgLnch
 IfWinActive, PrgLnch
 	{
-	switchBackRes := 1
-	switchOutRes := 0
-
-	if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
-	ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
+	WinWaitActive, PrgLnch
+	if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+	targMonitorNum := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo)
+	ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum)
+	sleep, 1000
 	SetTimer, WatchSwitchBack, Off
 	SetTimer, WatchSwitchOut, 1000
-	}
 	}
 Return
 
 WatchSwitchOut:
 
-if (presetNoTest)
-{
-	x := 0
-	if (batchActive)
-	{
-	temp := "|"	
-		loop, % currBatchno
-		{
-		ftemp := PrgListPID%btchPrgPresetSel%[A_Index]
-		if (ftemp = "FAILED")
-		temp .= "Failed" . "|"
-		else
-		{
-		if (ftemp)
-			{
-			Process, Exist, % ftemp
-				if (ErrorLevel)
-				{
-				temp .= "Active" . "|"
-				x := 1
-				}
-				else
-				{
-				PrgListPID%btchPrgPresetSel%[A_Index] := 0
-				temp .= "Not Active" . "|"
-				}
+TimerGuiCtrls(currBatchno, PrgListPID%btchPrgPresetSel%, btchPrgPresetSel, PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+WinWaitNotActive, PrgLnch
 
+IfWinNotActive, PrgLnch
+{
+	; check the PID of app. If it matches a Prg, use the index to retrieve the resolution
+
+	WinGet, temp, PID, A
+	ftemp := 0
+	if (presetNoTest)
+	{
+		loop, % currBatchNo
+		{
+			if (temp = PrgListPID%btchPrgPresetSel%[A_Index])
+			{
+			ftemp := A_Index
+			foundpos := PrgBatchIni%btchPrgPresetSel%[A_Index]
+			Break
 			}
-			else
-			temp .= "Not Active" . "|"		
 		}
-		}
-		GuiControl, PrgLnch:, batchPrgStatus, %temp%
 	}
-	if (x)
-	batchActive := 1
 	else
 	{
-	batchActive := 0
-	CleanupPID(PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
-	Return
+		if (temp = PrgPID)
+		ftemp := 100
 	}
-}
-else
-{
-	if (PrgPID)
+
+	if (ftemp)
 	{
-		Process, Exist, %PrgPID%
-		if !ErrorLevel
+	scrWidth := (presetNoTest)? scrWidthArr[foundpos]: scrWidthDef
+	scrHeight := (presetNoTest)? scrHeightArr[foundpos]: scrWidthDef
+	scrFreq := (presetNoTest)? scrFreqArr[foundpos]: scrWidthDef
+	targMonitorNum := (presetNoTest)? PrgMonToRn[foundpos]: PrgMonToRn[selPrgChoice]
+	
+	if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 		{
-		CleanupPID(PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, lnchPrgStat, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
-		Return
+		ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
+		sleep, 1000
+		SetTimer, WatchSwitchOut, Off
+		SetTimer, WatchSwitchBack, 1000
 		}
 	}
 }
-
-if !switchOutRes
-	{
-IfWinActive, PrgLnch
-	{
-	if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
-	ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum)
-	switchOutRes := 1
-	switchBackRes := 0
-	SetTimer, WatchSwitchOut, Off
-	SetTimer, WatchSwitchBack, 1000
-	}
-	}
 Return
 
 CleanupPID(PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, ByRef lnchPrgStat, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID := 0, selPrgChoice := 0, Fmode := 0, scrWidth := 0, scrHeight := 0, scrWidthDef := 0, scrHeightDef := 0, scrFreqDef := 0, RevertRes := 0)
@@ -3743,7 +3719,7 @@ if (RevertRes)
 					IniWrite, 2, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
 					else
 					{
-						if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+						if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 						ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
 						IfMsgBox, No
 						IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
@@ -3754,7 +3730,7 @@ if (RevertRes)
 				{
 					if (temp = 1)
 					{
-					if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+					if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 					ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
 					sleep, 1000
 					}
@@ -3767,7 +3743,7 @@ if (RevertRes)
 		SetTimer, WatchSwitchOut, Delete
 		lnchPrgStat := 0
 		PrgPID := 0
-		if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+		if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 		ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
 		sleep, 1000
 		}
@@ -3795,7 +3771,7 @@ if (RevertRes)
 		{
 			if (PrgMonToRn[selPrgChoice] = PrgLnchMon)
 			{
-			if (SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+			if (DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 			ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
 			sleep, 1000
 			}
@@ -4227,7 +4203,6 @@ Local iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 			}
 
 			dispMonNames[iDevNumb] := StrGet(&DISPLAY_DEVICE + OffsetDWORD, offsetWordStr)
-			;msgbox % "iDevNumArray[iDevNumb]: " iDevNumArray[iDevNumb] " , dispMonNames[iDevNumb]: " dispMonNames[iDevNumb] " , devFlags: " devFlags " , devKey: " devKey
 
 		}
 
@@ -4496,7 +4471,7 @@ local scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast :
 	}
 Return ResList
 }
-SameDefRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef)
+DefResNoMatchRes(Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef)
 {
 local defResmsg := 0
 
