@@ -772,8 +772,11 @@ MovePrgProc:
 boundListBtchCtl := % MovePrg + 1
 Gui, PrgLnch: Submit, Nohide
 
+if (btchPrgPresetSel)
+{
 if (IsCurrentBatchRunning(currBatchNo, PrgListPID%btchPrgPresetSel%))
 Return
+}
 
 if (listPrgVar)
 {
@@ -1351,7 +1354,7 @@ if (A_GuiEvent = "DoubleClick")
 		}
 		else
 		{
-			if (ftemp = "NS" || ftemp = "FAILED" || ftemp = "TERM" || ftemp = "ENDED")
+			if (ftemp = "NS" || ftemp = "FAILED" || ftemp = "TERM" || ftemp = "ENDED" || !ftemp)
 			foundpos .= "Not Active" . "|"	
 			else
 			foundpos .= "Active" . "|"
@@ -1375,6 +1378,7 @@ Thread, NoTimers, false
 	SetTimer, WatchSwitchOut, -1000
 	}
 	else
+	{
 		if (PrgPID)
 		{
 		waitBreak := 0
@@ -1382,7 +1386,7 @@ Thread, NoTimers, false
 		}
 	GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 	}
-
+}
 Return
 
 PresetNameSub:
@@ -1533,7 +1537,6 @@ ftemp := 0
 		if !(ftemp = "NS" || ftemp = "FAILED" || ftemp = "TERM" || ftemp = "ENDED" || !ftemp)
 		return 1
 	}
-
 Return 0
 }
 ReorgBatch(batchPrgNo, maxBatchPrgs, btchPrgPresetSel, PrgMonToRn, PrgBatchInibtchPrgPresetSel, ByRef currBatchNo, ByRef PrgListIndex, ByRef PrgBdyBtchTog, ByRef PrgBatchIniStartup := 0)
@@ -3267,29 +3270,21 @@ if (presetNoTest)
 
 	temp := 0
 
-	loop, % currBatchno
-		{
-		ftemp := PrgListPID%btchPrgPresetSel%[A_Index]
-		if !(ftemp = "NS" || ftemp = "FAILED" || ftemp = "TERM" || ftemp = "ENDED")
-			{
-				temp := 1
-				Break
-			}
-		}
-
-		if (temp)
+	if (IsCurrentBatchRunning(currBatchNo, PrgListPID%btchPrgPresetSel%))
 		{
 		GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
 		waitBreak := 0
 		SetTimer, WatchSwitchOut, -1000
 		}
 		else
-		if (PrgPID)
 		{
-		waitBreak := 0
-		SetTimer, WatchSwitchOut, -1000
-		}
+			if (PrgPID)
+			{
+			waitBreak := 0
+			SetTimer, WatchSwitchOut, -1000
+			}
 		GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
+		}
 	}
 	else
 	{
@@ -3681,6 +3676,7 @@ if (lnchStat = -1)
 
 WatchSwitchBack:
 
+Thread, Priority, -1147483648
 ;Problem is, this only deals with switching to and from Prglnch ATM . Not other apps.
 WinWaitActive, PrgLnch
 IfWinActive, PrgLnch
@@ -3704,6 +3700,8 @@ IfWinActive, PrgLnch
 Return
 
 WatchSwitchOut:
+
+Thread, Priority, -1147483648 ; https://autohotkey.com/boards/viewtopic.php?f=13&t=29911
 
 	if (presetNoTest) ; in the Prglnch screen
 	{
@@ -3735,7 +3733,7 @@ WatchSwitchOut:
 					if (ErrorLevel)
 					{
 					temp .= "Active" . "|"
-					x := 1
+					x := PrgBatchIni%btchPrgPresetSel%[A_Index] ;FIX
 					}
 					else
 					{
@@ -3874,8 +3872,10 @@ if (presetNoTest)
 	{
 	SetTimer, WatchSwitchBack, Delete
 	SetTimer, WatchSwitchOut, Delete
-	PrgPID := 0
-	if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+	if (PrgPID)
+	PrgPID := 0 ; rare case this is required
+	;FIX Want the monitor the last batch Prg ran on!
+	if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) && (PrgMonToRn[selPrgChoice] = PrgLnchMon))
 	ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
 	sleep, 1000
 	}
@@ -3908,10 +3908,13 @@ if !(temp)
 		}
 	SetTimer, WatchSwitchBack, Delete
 	SetTimer, WatchSwitchOut, Delete
+	if PrgLnchHide[selPrgChoice]
+	Gui, PrgLnchOpt: Show
 	}
+	; What if a batch preset completes here???
+	;FIX How do we know which batch preset did and what monitor?
 
-if PrgLnchHide[selPrgChoice]
-Gui, PrgLnchOpt: Show
+
 }
 
 }
