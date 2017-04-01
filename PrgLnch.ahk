@@ -196,7 +196,8 @@ maxBatchPrgs := 6
 batchActive := 0 ; Batch is Active for current Preset
 lnchPrgStat := 0 ; (PrgIndex) Run, (0) Change Res or -(PrgIndex) Cancel
 lnchStat := 0 ; (-1) Test Run; (1) Batch Run; (0) BatchPrgStatus Select
-listPrgVar := 0 ;copy of BatchPrgs listbox id
+lastMonitorUsedInBatch := 0
+listPrgVar := 0 ; copy of BatchPrgs listbox id
 presetNoTest := 1 ; config screen or batch screen?
 prgSwitchIndex := 0 ; saves index of Prg switched to when active
 waitBreak := 0 ; Switch to break the Prg watch
@@ -1229,10 +1230,10 @@ if (A_GuiEvent = "DoubleClick")
 
 	; check before launching not cancelling
 	temp := PrgListPID%btchPrgPresetSel%[batchPrgStatus]
-	if (temp = "NS" || temp = "FAILED" || temp = "ENDED" || !temp)
+	if (temp = "NS" || temp = "FAILED" || temp = "TERM" || temp = "ENDED" || !temp)
 	{
 
-		ftemp := ChkExistingProcess(batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths, btchPrgPresetSel)
+		ftemp := ChkExistingProcess(presetNoTest, batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths)
 
 		if (ftemp)
 		{
@@ -1257,7 +1258,7 @@ if (A_GuiEvent = "DoubleClick")
 		sleep 200
 	
 	
-	if !(temp)
+	if !(temp) ; fresh start
 	{
 	; Initialise all to batch
 		loop, % currBatchNo
@@ -1268,12 +1269,7 @@ if (A_GuiEvent = "DoubleClick")
 	}
 	
 	;Hide the quit and config buttons!
-	GuiControl, PrgLnch: Hide, ListPrg
-	GuiControl, PrgLnch: Hide, PresetName
-	GuiControl, PrgLnch: Hide, BtchPrgPreset
-	GuiControl, PrgLnch: Hide, RunBatchPrg
-	GuiControl, PrgLnch: Hide, % quitHwnd
-	GuiControl, PrgLnch: Hide, % GoConfigHwnd
+	HideShowLnchControls(quitHwnd, GoConfigHwnd)
 	lnchPrgStat := PrgBatchIni%btchPrgPresetSel%[batchPrgStatus]
 		temp := PrgChoicePaths[lnchPrgStat]
 		if !(PrgLnchHide[lnchPrgStat])
@@ -1307,12 +1303,7 @@ if (A_GuiEvent = "DoubleClick")
 		if (A_Index = batchPrgStatus)
 		{
 		SplashImage, PrgLaunching.jpg, Hide,,,LnchSplash
-		GuiControl, PrgLnch: Show, ListPrg
-		GuiControl, PrgLnch: Show, PresetName
-		GuiControl, PrgLnch: Show, BtchPrgPreset
-		GuiControl, PrgLnch: Show, RunBatchPrg
-		GuiControl, PrgLnch: Show, % quitHwnd
-		GuiControl, PrgLnch: Show, % GoConfigHwnd
+		HideShowLnchControls(quitHwnd, GoConfigHwnd, 1)
 
 		if (retval) ;Lnch fail
 		{
@@ -1462,8 +1453,6 @@ if (PrgPID)
 	}
 }
 
-btchPrgPresetSel := 0
-currBatchno := 0
 Gui, PrgLnchOpt: Show
 sleep, 100
 Gui, PrgLnch: Show, Hide, PrgLnch
@@ -1526,7 +1515,38 @@ Return
 
 
 
+
+
+
+
+
+
+
 ;More Frontend functions
+HideShowLnchControls(quitHwnd, GoConfigHwnd, showCtl := 0)
+{
+if (showCtl)
+	{
+		GuiControl, PrgLnch: Show, ListPrg
+		GuiControl, PrgLnch: Show, MovePrg
+		GuiControl, PrgLnch: Show, PresetName
+		GuiControl, PrgLnch: Show, BtchPrgPreset
+		GuiControl, PrgLnch: Show, RunBatchPrg
+		GuiControl, PrgLnch: Show, % quitHwnd
+		GuiControl, PrgLnch: Show, % GoConfigHwnd
+	}
+	else
+	{
+	GuiControl, PrgLnch: Hide, ListPrg
+	GuiControl, PrgLnch: Hide, MovePrg
+	GuiControl, PrgLnch: Hide, PresetName
+	GuiControl, PrgLnch: Hide, BtchPrgPreset
+	GuiControl, PrgLnch: Hide, RunBatchPrg
+	GuiControl, PrgLnch: Hide, % quitHwnd
+	GuiControl, PrgLnch: Hide, % GoConfigHwnd
+	}
+}
+
 IsCurrentBatchRunning(currBatchNo, PrgListPIDbtchPrgPresetSel)
 {
 ftemp := 0
@@ -3097,7 +3117,7 @@ GuiControlGet ftemp, PrgLnch:, RunBatchPrg
 if ((presetNoTest) && ftemp = "&Run Batch" || !(presetNoTest) && temp = "&Test Run Prg")
 {
 	lnchPrgStat := 100 ; changes shortly
-	foundpos := ChkExistingProcess(selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths)
+	foundpos := ChkExistingProcess(presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths, 1)
 
 	if (foundpos)
 	{
@@ -3169,12 +3189,7 @@ loop, % ((presetNoTest)? currBatchno: 1)
 		;Init all to batch
 		PrgListPID%btchPrgPresetSel%[A_Index] := "NS"
 		;Hide the quit and config buttons!
-		GuiControl, PrgLnch: Hide, PresetName
-		GuiControl, PrgLnch: Hide, ListPrg
-		GuiControl, PrgLnch: Hide, BtchPrgPreset
-		GuiControl, PrgLnch: Hide, RunBatchPrg
-		GuiControl, PrgLnch: Hide, % quitHwnd
-		GuiControl, PrgLnch: Hide, % GoConfigHwnd
+		HideShowLnchControls(quitHwnd, GoConfigHwnd)
 
 		lnchPrgStat := PrgBatchIni%btchPrgPresetSel%[A_Index]
 		temp := PrgChoicePaths[lnchPrgStat]
@@ -3261,12 +3276,7 @@ if (presetNoTest)
 	{
 	GuiControl, PrgLnch:, batchPrgStatus, %foundpos%
 
-	GuiControl, PrgLnch: Show, PresetName
-	GuiControl, PrgLnch: Show, BtchPrgPreset
-	GuiControl, PrgLnch: Show, ListPrg
-	GuiControl, PrgLnch: Show, RunBatchPrg
-	GuiControl, PrgLnch: Show, % quitHwnd
-	GuiControl, PrgLnch: Show, % GoConfigHwnd
+	HideShowLnchControls(quitHwnd, GoConfigHwnd, 1)
 
 	temp := 0
 
@@ -3676,7 +3686,7 @@ if (lnchStat = -1)
 
 WatchSwitchBack:
 
-Thread, Priority, -1147483648
+Thread, Priority, -536870911
 ;Problem is, this only deals with switching to and from Prglnch ATM . Not other apps.
 WinWaitActive, PrgLnch
 IfWinActive, PrgLnch
@@ -3701,7 +3711,7 @@ Return
 
 WatchSwitchOut:
 
-Thread, Priority, -1147483648 ; https://autohotkey.com/boards/viewtopic.php?f=13&t=29911
+Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&t=29911
 
 	if (presetNoTest) ; in the Prglnch screen
 	{
@@ -3733,7 +3743,8 @@ Thread, Priority, -1147483648 ; https://autohotkey.com/boards/viewtopic.php?f=13
 					if (ErrorLevel)
 					{
 					temp .= "Active" . "|"
-					x := PrgBatchIni%btchPrgPresetSel%[A_Index] ;FIX
+					x := PrgBatchIni%btchPrgPresetSel%[A_Index] ;
+					lastMonitorUsedInBatch := PrgMontoRun[x]
 					}
 					else
 					{
@@ -3755,7 +3766,7 @@ Thread, Priority, -1147483648 ; https://autohotkey.com/boards/viewtopic.php?f=13
 		else
 		{
 		batchActive := 0
-		CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+		CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 		if !(PrgPID)
 		Return
 		}
@@ -3767,7 +3778,7 @@ Thread, Priority, -1147483648 ; https://autohotkey.com/boards/viewtopic.php?f=13
 			Process, Exist, %PrgPID%
 			if !ErrorLevel
 			{
-			CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+			CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 			Return
 			}
 		}
@@ -3823,7 +3834,7 @@ global
 	return state
 }
 
-CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID := 0, selPrgChoice := 0, Fmode := 0, scrWidth := 0, scrHeight := 0, scrWidthDef := 0, scrHeightDef := 0, scrFreqDef := 0)
+CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 {
 temp := 0, PrgStyle := 0, dx := 0, dy:= 0
 WorkingDirectory(0, A_ScriptDir)
@@ -3837,72 +3848,55 @@ if (presetNoTest)
 		SplashImage, Hide, A B,,,LnchSplash
 		GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 		;must zero array
-		Loop, % currBatchNo
-		{
-		PrgListPIDbtchPrgPresetSel[A_Index] := 0
-		}
-		IniRead, temp, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyLaunchedMsg
-		sleep, 120
-			if !temp
+			Loop, % currBatchNo
 			{
-				MsgBox, 8195, , Batch has completed but a Prg has been launched via Test Run.`nIt's possible the Batch Prgs used other monitors.`nDo you wish to change the resolution of the monitor`n PrgLnch was run from back to its default resolution now?`n`nReply:`nYes: Change resolution (Warn like this next time) `nNo: Change resolution (This will not show again) `nCancel: Do not change resolution (This will not show again)`n
-				IfMsgBox, Cancel
-				IniWrite, 2, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
-				else
-				{
-					if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
-					ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
-					IfMsgBox, No
-					IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
-					sleep, 1000
-				}
+			PrgListPIDbtchPrgPresetSel[A_Index] := 0
 			}
-			else
-			{
-				if (temp = 1)
-				{
-				if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
-				ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
-				sleep, 1000
-				}
-			}
+		PrgAlreadyLaunched(PrgLnchIni, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 		}
 	}
 	else
 	{
 	SetTimer, WatchSwitchBack, Delete
 	SetTimer, WatchSwitchOut, Delete
-	if (PrgPID)
-	PrgPID := 0 ; rare case this is required
-	;FIX Want the monitor the last batch Prg ran on!
-	if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) && (PrgMonToRn[selPrgChoice] = PrgLnchMon))
-	ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
-	sleep, 1000
+		if (PrgPID)
+		PrgPID := 0 ; rare case this is required
+	
+		if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) && (PrgLnchMon = lastMonitorUsedInBatch))
+		{
+		ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
+		sleep, 1000
+		}
 	}
-	if !(batchActive)
+	if (batchActive)
 	{
-	Gui, PrgLnch: Show
+	if PrgLnchHide[selPrgChoice]
+	Gui, PrgLnchOpt: Show
 	}
+	else ;Must show as awkward obtaining completed batch Prg ID
+	Gui, PrgLnch: Show
 }
 else
 {
-PrgPID := 0
-HideShowTestRunCtrls(1)
-GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 
-Loop, % PrgNo
-{
-	if (ProgPIDMast[A_Index])
+	if (PrgPID) ;Then the Batch has completed
 	{
-	temp := 1
-	Break
+		PrgAlreadyLaunched(PrgLnchIni, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+		;Gui Must show as awkward obtaining completed batch Prg ID
+		;must zero array
+			Loop, % currBatchNo
+			{
+			PrgListPIDbtchPrgPresetSel[A_Index] := 0
+			}
+		Gui, PrgLnchOpt: Show
 	}
-}
-if !(temp)
+	else
 	{
-		if (PrgMonToRn[selPrgChoice] = PrgLnchMon)
+	PrgPID := 0
+	HideShowTestRunCtrls(1)
+	GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
+		if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) && (PrgMonToRn[selPrgChoice] = PrgLnchMon))
 		{
-		if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 		ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
 		sleep, 1000
 		}
@@ -3911,11 +3905,44 @@ if !(temp)
 	if PrgLnchHide[selPrgChoice]
 	Gui, PrgLnchOpt: Show
 	}
-	; What if a batch preset completes here???
-	;FIX How do we know which batch preset did and what monitor?
-
+	; What if a batch preset completes at exactly the same tine???
 
 }
+
+}
+PrgAlreadyLaunched(PrgLnchIni, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+{
+temp := 0
+IniRead, temp, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyLaunchedMsg
+sleep, 120
+	if temp
+	{
+		if (temp = 1)
+		{
+			if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+			{
+			ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
+			sleep, 1000
+			}
+		}
+	}
+	else
+	{
+		MsgBox, 8195, , Batch has completed but a Prg has been launched via Test Run.`nIt's possible the Batch Prgs used other monitors.`nDo you wish to change the resolution of the monitor`n PrgLnch was run from back to its default resolution now?`n`nReply:`nYes: Change resolution (Warn like this next time) `nNo: Change resolution (This will not show again) `nCancel: Do not change resolution (This will not show again)`n
+		IfMsgBox, Cancel
+		IniWrite, 2, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
+		else
+		{
+				if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+				{
+				ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
+				sleep, 1000
+				}
+			IfMsgBox, No
+			IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
+			
+		}
+	}
 
 }
 
@@ -4019,11 +4046,11 @@ retVal := SubStr(ftemp, InStr(ftemp, "\",, -1) + 1)
 Return retVal
 }
 
-ChkExistingProcess(selPrgChoice, currBatchNo, PrgBatchIni, PrgListIndex, PrgChoicePaths, btchPrgPresetSel := 0)
+ChkExistingProcess(presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgListIndex, PrgChoicePaths, btchRun := 0)
 {
 dupList := "", temp := 0, ftemp := 0
 
-if (currBatchNo && !btchPrgPresetSel)
+if (presetNoTest && btchRun)
 {
 loop, % currBatchNo
 	{
@@ -4046,7 +4073,7 @@ loop, % currBatchNo
 }
 else
 {
-	if (btchPrgPresetSel)
+	if (presetNoTest)
 	{
 	temp := PrgBatchIni[selPrgChoice]
 	ftemp := PrgChoicePaths[temp]
@@ -5234,7 +5261,7 @@ DisableVariousResCtrls()
 	GuiControl, PrgLnchOpt: Disable, PrgLAA
 }
 
-HideShowTestRunCtrls(ByRef show := 0)
+HideShowTestRunCtrls(show := 0)
 {
 if (show)
 {
