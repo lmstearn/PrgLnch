@@ -1238,17 +1238,17 @@ if (A_GuiEvent = "DoubleClick")
 		if (ftemp)
 		{
 			IniRead, ftemp, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
-			if !ftemp
+			if !(ftemp)
 			{
 			MsgBox, 8195, , Selected Prg matches a process already running with `nthe same name. Might be an issue depending on instance requisites.`n`"%ftemp%`"`n`nReply:`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `nCancel: Do nothing: `n
 				IfMsgBox, Yes
 				ftemp := 0 ; dummy condition
 				else
 				{
-				IfMsgBox, No
-				IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
-				else
-				return
+					IfMsgBox, No
+					IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
+					else
+					return
 				}
 			}
 		}
@@ -3864,6 +3864,7 @@ if (presetNoTest)
 			{
 			PrgListPIDbtchPrgPresetSel[A_Index] := 0
 			}
+		if (PrgLnchMon = lastMonitorUsedInBatch)
 		PrgAlreadyLaunched(PrgLnchIni, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 		}
 	}
@@ -3890,34 +3891,38 @@ if (presetNoTest)
 }
 else
 {
-
-	if (PrgPID) ;Then the Batch has completed
+	Process, Exist, % PrgPID
+	if (Errorlevel) ;Then the Batch has completed
 	{
+		if (!(PrgMonToRn[selPrgChoice] = PrgLnchMon) && (PrgLnchMon = lastMonitorUsedInBatch))
 		PrgAlreadyLaunched(PrgLnchIni, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
-		;Gui Must show as awkward obtaining completed batch Prg ID
+
 		;must zero array
 			Loop, % currBatchNo
 			{
 			PrgListPIDbtchPrgPresetSel[A_Index] := 0
 			}
+		;Gui Must show else it's awkward obtaining completed batch Prg ID
 		Gui, PrgLnchOpt: Show
 	}
 	else
 	{
-	PrgPID := 0
-	HideShowTestRunCtrls(1)
-		if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) && (PrgMonToRn[selPrgChoice] = PrgLnchMon))
+		if (PrgPID)
 		{
-		ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
-		sleep, 1000
+		PrgPID := 0
+		HideShowTestRunCtrls(1)
+			if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) && (PrgMonToRn[selPrgChoice] = PrgLnchMon))
+			{
+			ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
+			sleep, 1000
+			}
+		SetTimer, WatchSwitchBack, Delete
+		SetTimer, WatchSwitchOut, Delete
+		if PrgLnchHide[selPrgChoice]
+		Gui, PrgLnchOpt: Show
 		}
-	SetTimer, WatchSwitchBack, Delete
-	SetTimer, WatchSwitchOut, Delete
-	if PrgLnchHide[selPrgChoice]
-	Gui, PrgLnchOpt: Show
 	}
 	; What if a batch preset completes at exactly the same time???
-
 }
 
 }
@@ -3940,7 +3945,7 @@ sleep, 120
 	}
 	else
 	{
-		MsgBox, 8195, , Batch has completed but a Prg has been launched via Test Run.`nIt's possible the Batch Prgs used other monitors.`nDo you wish to change the resolution of the monitor`n PrgLnch was run from back to its default resolution now?`n`nReply:`nYes: Change resolution (Warn like this next time) `nNo: Change resolution (This will not show again) `nCancel: Do not change resolution (This will not show again)`n
+		MsgBox, 8195, , Batch has completed but a Prg has been launched via Test Run.`nIt's possible Batch Prgs used other monitors other than the default.`nDo you wish to change the resolution of the monitor`n PrgLnch was run from back to its default resolution now?`n`nReply:`nYes: Change resolution (Warn like this next time) `nNo: Change resolution (This will not show again) `nCancel: Do not change resolution (This will not show again)`n
 		IfMsgBox, Cancel
 		IniWrite, 2, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyLaunchedMsg
 		else
@@ -4068,9 +4073,10 @@ loop, % currBatchNo
 	{
 	temp := PrgBatchIni[A_Index]
 	ftemp := PrgChoicePaths[temp]
+
 	if !(ftemp := GetProcFromPath(ftemp))
 	Return 0
-
+		; Does not work for lnk files
 		for process in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process")
 		{
 			temp := ""
