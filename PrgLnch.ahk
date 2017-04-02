@@ -1526,6 +1526,7 @@ HideShowLnchControls(quitHwnd, GoConfigHwnd, showCtl := 0)
 {
 if (showCtl)
 	{
+		GuiControl, PrgLnch: Show, PresetLabel
 		GuiControl, PrgLnch: Show, ListPrg
 		GuiControl, PrgLnch: Show, MovePrg
 		GuiControl, PrgLnch: Show, PresetName
@@ -1536,6 +1537,7 @@ if (showCtl)
 	}
 	else
 	{
+	GuiControl, PrgLnch: Hide, PresetLabel
 	GuiControl, PrgLnch: Hide, ListPrg
 	GuiControl, PrgLnch: Hide, MovePrg
 	GuiControl, PrgLnch: Hide, PresetName
@@ -3167,6 +3169,7 @@ else
 		if (presetNoTest)
 		{
 		lnchStat := 1
+		lnchPrgIndex := -1 ; lnchPrgIndex again set in loop
 		}
 		else
 		{
@@ -3765,10 +3768,19 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 		batchActive := 1
 		else
 		{
-		batchActive := 0
-		CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
-		if !(PrgPID)
-		Return
+			if (PrgPID)
+			{
+				if (batchActive)
+				{
+				batchActive := 0 ; call once to clean batch
+				CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+				}
+			}
+			else
+			{
+			CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)			
+			Return
+			}
 		}
 	}
 	else
@@ -3914,7 +3926,8 @@ PrgAlreadyLaunched(PrgLnchIni, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthD
 temp := 0
 IniRead, temp, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyLaunchedMsg
 sleep, 120
-	if temp
+
+	if (temp)
 	{
 		if (temp = 1)
 		{
@@ -3929,7 +3942,7 @@ sleep, 120
 	{
 		MsgBox, 8195, , Batch has completed but a Prg has been launched via Test Run.`nIt's possible the Batch Prgs used other monitors.`nDo you wish to change the resolution of the monitor`n PrgLnch was run from back to its default resolution now?`n`nReply:`nYes: Change resolution (Warn like this next time) `nNo: Change resolution (This will not show again) `nCancel: Do not change resolution (This will not show again)`n
 		IfMsgBox, Cancel
-		IniWrite, 2, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
+		IniWrite, 2, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyLaunchedMsg
 		else
 		{
 				if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
@@ -3938,7 +3951,7 @@ sleep, 120
 				sleep, 1000
 				}
 			IfMsgBox, No
-			IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyMsg
+			IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyLaunchedMsg
 			
 		}
 	}
