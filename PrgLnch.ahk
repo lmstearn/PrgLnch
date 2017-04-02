@@ -1233,7 +1233,7 @@ if (A_GuiEvent = "DoubleClick")
 	if (temp = "NS" || temp = "FAILED" || temp = "TERM" || temp = "ENDED" || !temp)
 	{
 
-		ftemp := ChkExistingProcess(presetNoTest, batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths)
+		ftemp := ChkExistingProcess(PrgLnkInf, presetNoTest, batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths)
 
 		if (ftemp)
 		{
@@ -3119,7 +3119,7 @@ GuiControlGet ftemp, PrgLnch:, RunBatchPrg
 if ((presetNoTest) && ftemp = "&Run Batch" || !(presetNoTest) && temp = "&Test Run Prg")
 {
 	lnchPrgIndex := selPrgChoice ; changes shortly
-	foundpos := ChkExistingProcess(presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths, 1)
+	foundpos := ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths, 1)
 
 	if (foundpos)
 	{
@@ -3778,6 +3778,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			}
 			else
 			{
+			batchActive := 0
 			CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)			
 			Return
 			}
@@ -3855,10 +3856,9 @@ if (presetNoTest)
 	Process, Exist, % PrgPID
 	if (ErrorLevel)
 	{
-		if (!batchActive && !(PrgMonToRn[selPrgChoice] = PrgLnchMon))
+		if !(PrgMonToRn[selPrgChoice] = PrgLnchMon)
 		{
 		SplashImage, Hide, A B,,,LnchSplash
-		GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 		;must zero array
 			Loop, % currBatchNo
 			{
@@ -3867,27 +3867,31 @@ if (presetNoTest)
 		if (PrgLnchMon = lastMonitorUsedInBatch)
 		PrgAlreadyLaunched(PrgLnchIni, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 		}
+		GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
+		Gui, PrgLnch: Show
 	}
 	else
 	{
-	SetTimer, WatchSwitchBack, Delete
-	SetTimer, WatchSwitchOut, Delete
 		if (PrgPID)
-		PrgPID := 0 ; rare case this is required
-	
-		if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) && (PrgLnchMon = lastMonitorUsedInBatch))
 		{
-		ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
-		sleep, 1000
+		PrgPID := 0
+		if PrgLnchHide[selPrgChoice]
+		Gui, PrgLnch: Show
+		}
+		else
+		{
+		SetTimer, WatchSwitchBack, Delete
+		SetTimer, WatchSwitchOut, Delete
+
+		if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) && (PrgLnchMon = lastMonitorUsedInBatch))
+			{
+			ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
+			sleep, 1000
+			}
+		GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
+		Gui, PrgLnch: Show
 		}
 	}
-	if (batchActive)
-	{
-	if PrgLnchHide[selPrgChoice]
-	Gui, PrgLnchOpt: Show
-	}
-	else ;Must show as awkward obtaining completed batch Prg ID
-	Gui, PrgLnch: Show
 }
 else
 {
@@ -4052,10 +4056,16 @@ if (poorPID)
 	}
 }
 
-GetProcFromPath(ftemp)
+GetProcFromPath(ftemp, lnkInfo := 0)
 {
-
+if (lnkInfo)
+{
 retVal := SubStr(ftemp, InStr(ftemp, "\",, -1) + 1)
+retval := SubStr(retval, 1, strlen(retval)-3) . "exe" ; assume exe
+}
+else
+retVal := SubStr(ftemp, InStr(ftemp, "\",, -1) + 1)
+
 	if !(retVal)
 		{
 			MsgBox, 8192, , Invalid path! Cannot continue process check.
@@ -4063,7 +4073,7 @@ retVal := SubStr(ftemp, InStr(ftemp, "\",, -1) + 1)
 Return retVal
 }
 
-ChkExistingProcess(presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgListIndex, PrgChoicePaths, btchRun := 0)
+ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgListIndex, PrgChoicePaths, btchRun := 0)
 {
 dupList := "", temp := 0, ftemp := 0
 
@@ -4074,10 +4084,11 @@ loop, % currBatchNo
 	temp := PrgBatchIni[A_Index]
 	ftemp := PrgChoicePaths[temp]
 
-	if !(ftemp := GetProcFromPath(ftemp))
+	if !(ftemp := GetProcFromPath(ftemp, PrgLnkInf[temp]))
 	Return 0
 		; Does not work for lnk files
-		for process in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process")
+
+		for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2").ExecQuery("Select * from Win32_Process")
 		{
 			temp := ""
 			if (ftemp = process.Name)
@@ -4097,12 +4108,14 @@ else
 	ftemp := PrgChoicePaths[temp]
 	}
 	else
+	{
 	ftemp := PrgChoicePaths[selPrgChoice]
-
-	if !(ftemp := GetProcFromPath(ftemp))
+	temp := selPrgChoice
+	}
+	if !(ftemp := GetProcFromPath(ftemp, PrgLnkInf[temp]))
 	Return 0
 
-	for process in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process")
+	for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2").ExecQuery("Select * from Win32_Process")
 	{
 		temp := ""
 		if (ftemp = process.Name)
