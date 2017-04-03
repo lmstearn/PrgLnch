@@ -3768,7 +3768,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 					{
 					temp .= "Active" . "|"
 					x := PrgBatchIni%btchPrgPresetSel%[A_Index] ;
-					lastMonitorUsedInBatch := PrgMontoRun[x]
+					lastMonitorUsedInBatch := PrgMontoRn[x]
 					}
 					else
 					{
@@ -3807,14 +3807,39 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 	}
 	else
 	{
+		if (batchActive)
+		{
+		;get lastMonitorUsedInBatch
+			x := 0
+			loop, % currBatchNo
+			{
+			ftemp := PrgListPID%btchPrgPresetSel%[A_Index]
+			Process, Exist, % ftemp
+				if (ErrorLevel)
+				{
+				x := PrgBatchIni%btchPrgPresetSel%[A_Index] ;
+				lastMonitorUsedInBatch := PrgMontoRn[x]
+				}
+			}
+			if !(x)
+			{
+			batchActive := 0
+			CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)			
+			}
+		}
+		else
+		{
 		if (PrgPID)
 		{
 			Process, Exist, %PrgPID%
-			if !ErrorLevel
+			if !(ErrorLevel)
 			{
+			PrgPID := 0
 			CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
-			Return
 			}
+		}
+		else
+		Return
 		}
 	}
 
@@ -3877,6 +3902,7 @@ if (presetNoTest)
 	Process, Exist, % PrgPID
 	if (ErrorLevel)
 	{
+		
 		if !(PrgMonToRn[selPrgChoice] = PrgLnchMon)
 		{
 		SplashImage, Hide, A B,,,LnchSplash
@@ -3916,8 +3942,7 @@ if (presetNoTest)
 }
 else
 {
-	Process, Exist, % PrgPID
-	if (Errorlevel) ;Then the Batch has completed
+	if (PrgPID) ;Then the Batch has completed
 	{
 		if (!(PrgMonToRn[selPrgChoice] = PrgLnchMon) && (PrgLnchMon = lastMonitorUsedInBatch))
 		PrgAlreadyLaunched(PrgLnchIni, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
@@ -3932,20 +3957,17 @@ else
 	}
 	else
 	{
-		if (PrgPID)
+
+	HideShowTestRunCtrls(1)
+		if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) && (PrgMonToRn[selPrgChoice] = PrgLnchMon))
 		{
-		PrgPID := 0
-		HideShowTestRunCtrls(1)
-			if (DefResNoMatchRes(PrgLnchIni, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) && (PrgMonToRn[selPrgChoice] = PrgLnchMon))
-			{
-			ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
-			sleep, 1000
-			}
-		SetTimer, WatchSwitchBack, Delete
-		SetTimer, WatchSwitchOut, Delete
-		if PrgLnchHide[selPrgChoice]
-		Gui, PrgLnchOpt: Show
+		ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
+		sleep, 1000
 		}
+	SetTimer, WatchSwitchBack, Delete
+	SetTimer, WatchSwitchOut, Delete
+	if PrgLnchHide[selPrgChoice]
+	Gui, PrgLnchOpt: Show
 	}
 	; What if a batch preset completes at exactly the same time???
 }
@@ -3970,7 +3992,7 @@ sleep, 120
 	}
 	else
 	{
-		MsgBox, 8195, , Batch has completed but a Prg has been launched via Test Run.`nIt's possible Batch Prgs used other monitors other than the default.`nDo you wish to change the resolution of the monitor`n PrgLnch was run from back to its default resolution now?`n`nReply:`nYes: Change resolution (Warn like this next time) `nNo: Change resolution (This will not show again) `nCancel: Do not change resolution (This will not show again)`n
+		MsgBox, 8195, , Batch has completed but a Prg has been launched via Test Run.`nIt's possible Batch Prgs used other monitors other than the default.`nDo you wish to change the resolution of the monitor `nPrgLnch was run from back to its default resolution now?`n`nReply:`nYes: Change resolution (Warn like this next time) `nNo: Change resolution (This will not show again) `nCancel: Do not change resolution (This will not show again)`n
 		IfMsgBox, Cancel
 		IniWrite, 2, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyLaunchedMsg
 		else
