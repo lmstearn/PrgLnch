@@ -237,7 +237,6 @@ strPrgChoice := "|None|"
 defPrgStrng := "None"
 selPrgChoice := 1
 selPrgChoiceTimer := 0
-PrgChoiceClicked := 1
 txtPrgChoice := ""
 txtCmd := 0
 
@@ -632,7 +631,7 @@ Gui, PrgLnch: Add, ListBox, vBtchPrgPreset gBtchPrgPresetSub HWNDPresetHwnd AltS
 
 Gui, PrgLnch: Add, Text, ys vbatchListPrg wp, Batch Prgs
 ;initialise batch
-retVal := % PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo, 1)
+retVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo, 1)
 temp := batchPrgNo-1
 Gui, PrgLnch: Add, ListBox, vListPrg gListPrgProc HWNDBtchPrgHwnd AltSubmit
 Gui, PrgLnch: Add, UpDown, vMovePrg gMovePrgProc HWNDMovePrgHwnd Range%temp%-0 ;MovePrg ZERO based: https://autohotkey.com/boards/viewtopic.php?f=5&t=26703&p=125603#p125603
@@ -689,7 +688,7 @@ else
 EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, 1)
 
 }
-retVal := % PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
+retVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
 sleep 100
 GuiControl, PrgLnch:, ListPrg, % retVal
 Thread, NoTimers, false
@@ -785,6 +784,7 @@ if (listPrgVar)
 	{
 		if (MovePrg + 1 = A_Index)
 		{
+
 			if !(MovePrg + 1 = listPrgVar)
 			{
 				if (listPrgVar < MovePrg + 1) ; down :A_Index increases(PrgListIndex[A_Index] < A_Index) ;swap with item below
@@ -900,26 +900,26 @@ Return
 }
 
 if !boundListBtchCtl
-	{
-	GuiControl, PrgLnch:, MovePrg, % ListPrg + 1
-	listPrgVar := 1
-	boundListBtchCtl := 1
-	;called once: MovePrg Initialised if no presets loaded!
-	}
+{
+GuiControl, PrgLnch:, MovePrg, % ListPrg + 1
+listPrgVar := 1
+boundListBtchCtl := 1
+;called once: MovePrg Initialised if no presets loaded!
+}
 
 	MouseGetPos,,,,temp,3
 	if (temp = BtchPrgHwnd) ;actually clicked the Listbox
 	{
-
+	GuiControlGet, listPrgVar, PrgLnch:, listPrg
 	ftemp := PrgListIndex[listPrg]
 	if (PrgBdyBtchTog[listPrg] = MonStr(PrgMonToRn, ftemp))
 	{
-	PrgBdyBtchTog[listPrg] := ""
-	currBatchNo -= 1
-	if currBatchNo < 0
-	currBatchNo := 0
-	if !(currBatchNo)
-	EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, 1)
+		PrgBdyBtchTog[listPrg] := ""
+		currBatchNo -= 1
+		if currBatchNo < 0
+		currBatchNo := 0
+		if !(currBatchNo)
+		EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, 1)
 	}
 	else
 	{
@@ -1682,20 +1682,16 @@ if (AtLoad)
 }
 else
 {
-Loop, % PrgNo
-{
-
-}
 	Loop, % batchPrgNo
 		{
 		temp := PrgListIndex[A_Index]
 		ftemp := MonStr(PrgMonToRn, temp)
-		if (PrgBdyBtchTog[A_Index] = ftemp)
-		retVal := retVal . ftemp . A_Space . PrgChoiceNames[temp] . "|"
-		else
-		retVal := retVal . PrgChoiceNames[temp] . "|"
+			if (PrgBdyBtchTog[A_Index] = ftemp)
+			retVal := retVal . ftemp . A_Space . PrgChoiceNames[temp] . "|"
+			else
+			retVal := retVal . PrgChoiceNames[temp] . "|"
 		}
-	}
+}
 return retVal
 }
 MonStr(PrgMonToRn, selPrgChoice)
@@ -2132,9 +2128,9 @@ SplashImage, PrgLnchLoading.jpg, A B,,, LnchSplash
 WinGetPos, , , w, h, LnchSplash
 
 WinMove, LnchSplash, , % PrgLnchOpt.X() + (PrgLnchOpt.Width() - w)/2, % PrgLnchOpt.Y() + (PrgLnchOpt.Height() - h)
+sleep, 120
 
-retVal := % PopBtchListBox(PrgChoiceNames, PrgNo, PrgBdyBtchTog, PrgListIndex, batchPrgNo, 1)
-GuiControl, PrgLnch:, ListPrg, % retval
+GuiControl, PrgLnch:, ListPrg, % PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo, 1)
 ;fix the updown
 temp := batchPrgNo-1
 ftemp := 0
@@ -2615,7 +2611,6 @@ else
 	if (retVal < 0) ;Did the user type?
 		{
 		sleep 200 ;slow down input?
-		PrgChoiceClicked := 0
 		GuiControlGet, txtPrgChoice, PrgLnchOpt:, PrgChoice
 	
 		;Pre-validation
@@ -2682,7 +2677,6 @@ else
 		{
 		SetTimer, CheckVerPrg, Delete ;vital
 
-		PrgChoiceClicked := 1
 		selPrgChoice := retVal
 		if (retVal)
 			{
@@ -2836,7 +2830,6 @@ if (txtPrgChoice = "")
 	GuiControl, PrgLnchOpt: , DefaultPrg, 0
 	GuiControl, PrgLnchOpt: Disable, DefaultPrg
 
-	PrgChoiceClicked := 1
 	txtPrgChoice := "Prg Removed"
 	WorkingDirectory(0, A_ScriptDir)
 	IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice, 1)
@@ -2866,6 +2859,42 @@ if (txtPrgChoice = "")
 }
 else
 {
+	GuiControlGet, temp, PrgLnchOpt:, MkShortcut
+	if (temp = "Change Shortcut")
+	{
+		IniRead, ftemp, %A_ScriptDir%`\%PrgLnchIni%, General, ChangeShortcutMsg
+		if (ftemp)
+		temp := 1
+		else
+		{
+		MsgBox, 8195, , Change the name of the Prg or select a new path?`nIf "No," the entry can be later removed with <DEL>.`n`nReply:`nYes: Change the name (Warn like this next time) `nNo: Change the name (This will not show again)`n Cancel: Select a new path (Warn like this next time)`n
+			IfMsgBox, Cancel
+			temp := 0
+			else
+			{
+				IfMsgBox, No
+				{
+				temp := 1
+				IniWrite, 1, %A_ScriptDir%`\%PrgLnchIni%, General, ChangeShortcutMsg
+				}
+				else
+				temp := 1
+			}
+		}
+	}
+	else
+	temp := 0
+	
+	if (temp)
+	{	
+	PrgChoiceNames[selPrgChoice] := txtPrgChoice
+	IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+	strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
+	GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
+	GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
+	}
+	else
+	{
 	;Watch out for TIMERS!
 	Thread, NoTimers
 	if (PrgCanBeShortcut)
@@ -2875,16 +2904,9 @@ else
 	Thread, NoTimers, false
 	if (!ErrorLevel)
 		{
-			if (PrgChoiceClicked) ;No typing in Combobox
-			{
 			PrgChoicePaths[selPrgChoice] := fTemp
 			temp := SubStr(fTemp, 1, InStr(fTemp, ".") - 1)
 			PrgChoiceNames[selPrgChoice] := SubStr(temp, InStr(temp, "\",, -1) + 1)
-			}
-			else
-			{
-			PrgChoiceNames[selPrgChoice] := txtPrgChoice
-			}
 		
 		;check dup names
 		Loop, % PrgNo
@@ -2897,8 +2919,6 @@ else
 		}
 		
 
-		PrgChoiceClicked := 1
-
 		GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 		;valid monitor?
 		if (iDevNumArray[targMonitorNum] < 10)
@@ -2906,8 +2926,8 @@ else
 		PrgMonToRn[selPrgChoice] := targMonitorNum
 
 		PrgLnchHide[selPrgChoice] := 0
-		strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 		IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+		strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 		fTemp := PrgChoicePaths[selPrgChoice]
 		;gets working directory of lnk, if any
 		foundpos := IsPrgaLnk(fTemp)
@@ -2948,6 +2968,7 @@ else
 
 		}
 	;else PrgChoicePaths is made blank
+	}
 }
 Return
 ChkPrgNames(testName)
@@ -3773,13 +3794,13 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				if (batchActive)
 				{
 				batchActive := 0 ; call once to clean batch
-				CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+				CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 				}
 			}
 			else
 			{
 			batchActive := 0
-			CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)			
+			CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 			Return
 			}
 		}
@@ -3791,7 +3812,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			Process, Exist, %PrgPID%
 			if !ErrorLevel
 			{
-			CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+			CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 			Return
 			}
 		}
@@ -3847,7 +3868,7 @@ global
 	return state
 }
 
-CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, batchActive, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 {
 temp := 0, PrgStyle := 0, dx := 0, dy:= 0
 WorkingDirectory(0, A_ScriptDir)
@@ -5391,7 +5412,7 @@ IniProcStart:
 
 Local foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, k := 0, spr := 0
 
-; local implies golbal function
+; Local implies  or assumes global function
 if !FileExist(PrgLnchIni)
 	{
 	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, Disclaimer
@@ -5403,6 +5424,7 @@ if !FileExist(PrgLnchIni)
 	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, LnchPrgMonWarn
 	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, LoseGuiChangeResWrn
 	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, PrgAlreadyLaunchedMsg
+	IniWrite, %A_Space%, %A_ScriptDir%`\%PrgLnchIni%, General, ChangeShortcutMsg
 
 	; %A_ScriptDir%`\%PrgLnchIni% as long as the current directory isn't changed while this loads
 	spr := "0,0,0,1"
@@ -5478,8 +5500,6 @@ if !FileExist(PrgLnchIni)
 				}
 
 
-				;if !selPrgChoice && !recCount
-				;if p && recCount
 				p := InStr(A_LoopField, "=")
 
 				if (p)
@@ -5488,14 +5508,14 @@ if !FileExist(PrgLnchIni)
 					sectCount := sectCount + 1
 					if (recCount < 0) ;General section
 					{
-						if (sectCount < 10)
+						if (sectCount < 11)
 						{
 						Continue ;don't care about the "Don't show me first" || (sectCount = 3)
 						}
 						else
 						{
 
-							if (sectCount = 10)
+							if (sectCount = 11)
 							{
 								if (selPrgChoice)
 								{
@@ -5532,7 +5552,7 @@ if !FileExist(PrgLnchIni)
 							}
 							else
 							{
-							if (sectCount = 11)
+							if (sectCount = 12)
 							{
 								if (selPrgChoice)
 								{
@@ -5997,7 +6017,7 @@ if (oldVerChg)
 {
 	if !(InStr(retVal, "LoseGuiChangeResWrn"))
 	{
-	StringReplace, retVal, retVal, ResMode= , LoseGuiChangeResWrn= `nPrgAlreadyLaunchedMsg= `nResMode= 
+	StringReplace, retVal, retVal, ResMode= , LoseGuiChangeResWrn= `nPrgAlreadyLaunchedMsg= `nChangeShortcutMsg= `nResMode= 
 	}
 }
 else
