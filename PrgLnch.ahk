@@ -2276,7 +2276,10 @@ Gui, PrgLnchOpt: Submit, Nohide
 	UpdturlPrgLnch := ""
 	}
 	if (!PrgUrl[selPrgChoice])
-	ToolTip , "Click `"Update Prg`" to save."
+	{
+	ToolTip , % "Click ""Update Prg"" to save."
+	GuiControl, PrgLnchOpt: Enable, UpdtPrgLnch	
+	}
 	PrgUrl[selPrgChoice] := UpdturlPrgLnch
 	}
 Return
@@ -3014,7 +3017,7 @@ if (PrgLnkInf[selPrgChoice])
 		SetEditCueBanner(cmdLinHwnd, "Cmd Line Extras")
 	}
 }
-PrgURLEnable(selPrgChoice, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerOld, UpdturlHwnd)
+PrgURLEnable(selPrgChoice, ByRef selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, ByRef PrgVerOld, UpdturlHwnd)
 {
 temp := PrgUrl[selPrgChoice]
 GuiControl, PrgLnchOpt: -ReadOnly, UpdturlPrgLnch
