@@ -315,10 +315,7 @@ IniRead, disclaimer, %PrgLnchIni%, General, Disclaimer
 		IniWrite, 1, %PrgLnchIni%, General, Disclaimer
 		FileInstall PrgLnch.chm, PrgLnch.chm
 		sleep, 300
-		temp := A_ScriptDir . "\" . PrgLnchIni
-		IniSpaceCleaner(temp, 1) ;  fix old version
-		sleep, 120
-		SetTimer, RnChmWelcome, 3000
+		SetTimer, RnChmWelcome, 3500
 		}
 		else
 		{
@@ -328,14 +325,13 @@ IniRead, disclaimer, %PrgLnchIni%, General, Disclaimer
 	}
 	else
 	{
-	ifnotexist PrgLnch.chm
-	FileInstall PrgLnch.chm, PrgLnch.chm
-	sleep, 100
+		ifnotexist PrgLnch.chm
+		FileInstall PrgLnch.chm, PrgLnch.chm
+	sleep, 120
+	IniSpaceCleaner(PrgLnchIni, 1) ;  fix old version
+	sleep, 120
 		if A_Min < 22 ; Do this approx every 3 runs
-		{
-		temp := A_ScriptDir . "\" . PrgLnchIni
-		IniSpaceCleaner(temp)
-		}
+		IniSpaceCleaner(PrgLnchIni)
 	}
 
 
@@ -2838,29 +2834,34 @@ if (txtPrgChoice = "")
 }
 else
 {
-	if (ChgShortcutVar = "Change Shortcut Name")
-	temp := 1
+	if (ChkPrgNames(txtPrgChoice))
+	temp := 0
 	else
 	{
-		if (ChgShortcutVar = "Change Shortcut")
+		if (ChgShortcutVar = "Change Shortcut Name")
+		temp := 1
+		else
 		{
-		MsgBox, 8195, , Change the name of the Prg or select a new path?`nIf "No," the entry can be later removed with <DEL>.`n`nReply:`nYes: Change the name (Warn like this next time) `nNo: Change the name (Recommended: This will not show again)`n Cancel: Select a new path (Warn like this next time)`n
-			IfMsgBox, Cancel
-			temp := 0
-			else
+			if (ChgShortcutVar = "Change Shortcut")
 			{
-			temp := 1
-				IfMsgBox, No
+			MsgBox, 8195, , Change the name of the Prg or select a new path?`nIf "No," the entry can be later removed with <DEL>.`n`nReply:`nYes: Change the name (Warn like this next time) `nNo: Change the name (Recommended: This will not show again)`n Cancel: Select a new path (Warn like this next time)`n
+				IfMsgBox, Cancel
+				temp := 0
+				else
 				{
-				IniWrite, 1, %PrgLnchIni%, General, ChangeShortcutMsg
-				ChgShortcutVar := "Change Shortcut Name"
+				temp := 1
+					IfMsgBox, No
+					{
+					IniWrite, 1, %PrgLnchIni%, General, ChangeShortcutMsg
+					ChgShortcutVar := "Change Shortcut Name"
+					}
 				}
 			}
+			else
+			temp := 0
 		}
-		else
-		temp := 0
 	}
-	
+
 	if (temp)
 	{
 	SetStartupname(PrgLnchIni, defPrgStrng, PrgChoiceNames, selPrgChoice, txtPrgChoice)
@@ -6050,28 +6051,31 @@ if !FileExist(PrgLnchIni)
 IniSpaceCleaner(IniFile, oldVerChg := 0)
 {
 ; https://autohotkey.com/boards/viewtopic.php?f=13&t=26556&p=124630#p124630
-retVal := 0, temp := ""
+retVal := 0, temp := "", e := ""
 Thread, NoTimers
 try
 {
-FileRead, retVal, %IniFile%
-if (oldVerChg)
-{
-	if !(InStr(retVal, "LoseGuiChangeResWrn"))
+	FileRead, retVal, %IniFile%
+	if (oldVerChg)
 	{
-	StringReplace, retVal, retVal, ResMode= , LoseGuiChangeResWrn= `nPrgAlreadyLaunchedMsg= `nChangeShortcutMsg= `nResMode= 
+		if (InStr(retVal, "LoseGuiChangeResWrn"))
+		Return
+		else
+		{
+		StringReplace, retVal, retVal, ResMode= , LoseGuiChangeResWrn= `nPrgAlreadyLaunchedMsg= `nChangeShortcutMsg= `nResMode= 
+		}
 	}
-}
-else
-retVal := RegExReplace(retVal, "m) +$", " ") ;m multilineselect; " +" one or more spaces; $ only at EOL
+	else
+	retVal := RegExReplace(retVal, "m) +$", " ") ;m multilineselect; " +" one or more spaces; $ only at EOL
 
-FileDelete, %Inifile%
-sleep, 100
-FileAppend, %retVal%, %IniFile%
-sleep, 100
+	FileDelete, %Inifile%
+	sleep, 100
+	FileAppend, %retVal%, %IniFile%
+	sleep, 100
 }
 catch e
 {
+if (e)
 MsgBox, 8208, IniSpaceCleaner, Error with Ini file! `nSpecifically: %e%
 }
 Thread, NoTimers, false
