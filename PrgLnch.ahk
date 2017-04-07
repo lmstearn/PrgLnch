@@ -18,6 +18,8 @@ sleep, 200
 ;Issues: chm file not deleted if in use
 ;XP: pictures in chm don't show
 ;Res changes occur when switching only between active Prgs and Prglnch ATM . Not other applications or  switching between active Prgs.
+;Hotkeys for DegaussMonitor ?
+
 
 /*If !A_IsAdmin {
 Run *RunAs "%A_ScriptFullPath%"
@@ -25,7 +27,7 @@ ExitApp
 }
 */
 
-;https://msdn.microsoft.com/en-us/library/vs/alm/dd145136(v=vs.85).aspx
+; Virtual screen: https://msdn.microsoft.com/en-us/library/vs/alm/dd145136(v=vs.85).aspx
 
 Class PrgLnchOpt
 	{
