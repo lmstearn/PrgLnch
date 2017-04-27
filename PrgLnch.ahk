@@ -15,10 +15,7 @@ IfNotExist, PrgLnchLoading.jpg
 FileInstall PrgLnchLoading.jpg, PrgLnchLoading.jpg
 sleep, 200
 
-;Issues: chm file not deleted if in use
-;XP: pictures in chm don't show
-;Res changes occur when switching only between active Prgs and Prglnch ATM . Not other applications or  switching between active Prgs.
-;Hotkeys for DegaussMonitor ?
+
 
 
 /*If !A_IsAdmin {
@@ -358,7 +355,7 @@ Gui, PrgLnchOpt: Color, FFFFCC
 Gui, PrgLnchOpt: Add, ComboBox, vPrgChoice gPrgChoice HWNDPrgChoiceHwnd
 Gui, PrgLnchOpt: Add, Button, gMakeShortcut vMkShortcut HWNDMkShortcutHwnd wp, &Just Change Res.
 Gui, PrgLnchOpt: Add, Edit, vCmdLinPrm gCmdLinPrmSub HWNDcmdLinHwnd
-Gui, PrgLnchOpt: Add, Text, vMonitors HWNDMonitorsHwnd wp ; wp is width of previous control
+Gui, PrgLnchOpt: Add, Text, vMonitors gMonitorsSub HWNDMonitorsHwnd wp ; wp is width of previous control
 Gui, PrgLnchOpt: Add, DropDownList, AltSubmit viDevNum HWNDDevNumHwnd giDevNo
 Gui, PrgLnchOpt: Add, Checkbox, ys vDefaultPrg gCheckDefaultPrg HWNDDefaultPrgHwnd, Show at Startup ;Tip: g-labels can be used for more than one control
 Gui, PrgLnchOpt: Add, text,, Res Options:  ; Save this control's position and start a new section.
@@ -444,6 +441,7 @@ scrFreqDef := scrFreq
 
 GuiControl, PrgLnchOpt:, Monitors, % dispMonNames[targMonitorNum]
 ;Build monitor list
+
 Loop, % dispMonNamesNo
 {
 	if iDevNumArray[A_Index] < 10 ;dec masks
@@ -2193,6 +2191,20 @@ SetTimer, CheckVerPrg, Delete
 IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
 Return
 
+MonitorsSub:
+Tooltip
+if A_OSVersion in WIN_2003,WIN_XP,WIN_2000
+; Above expression : No spaces and doesn't like brackets!
+{
+ToolTip, % "Unable to display VSync for this OS!"
+;Probably bombs the script anyway
+}
+else
+{
+MDMF_GetMonHandle(targMonitorNum) ; only works for Vista+
+}
+Return
+
 TestMode:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
@@ -2279,7 +2291,7 @@ Gui, PrgLnchOpt: Submit, Nohide
 	}
 	if (!PrgUrl[selPrgChoice])
 	{
-	ToolTip , % "Click ""Update Prg"" to save."
+	ToolTip, % "Click ""Update Prg"" to save."
 	GuiControl, PrgLnchOpt: Enable, UpdtPrgLnch	
 	}
 	PrgUrl[selPrgChoice] := UpdturlPrgLnch
@@ -2356,6 +2368,7 @@ return (HiWord << 16) | (LoWord & 0xffff)
 
 
 
+;Monitor functions
 iDevNo:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
@@ -2599,6 +2612,7 @@ temp := 0, ftemp := 0
 
 
 
+
 PrgChoice:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
@@ -2660,10 +2674,10 @@ else
 				if (txtPrgChoice)
 				{
 					if (temp="Make Shortcut")
-					ToolTip , "Click `"Make Shortcut`" to save."
+					ToolTip, "Click `"Make Shortcut`" to save."
 					else
 					{
-					ToolTip , "Click `"Change Shortcut`" to save."
+					ToolTip, "Click `"Change Shortcut`" to save."
 					GuiControl, PrgLnchOpt:, Remove Shortcut, % ChgShortcutVar
 					}
 				}
@@ -2671,9 +2685,9 @@ else
 				{
 				GuiControl, PrgLnchOpt:, MkShortcut, Remove Shortcut
 					if (PrgChoicePaths[selPrgChoice]) ;Path already exist?
-					ToolTip , "Click `"Remove Shortcut`" or hit Del to confirm."
+					ToolTip, "Click `"Remove Shortcut`" or hit Del to confirm."
 					else
-					ToolTip , "Click `"Remove Shortcut`" or hit Del to remove unexpected data from reference."
+					ToolTip, "Click `"Remove Shortcut`" or hit Del to remove unexpected data from reference."
 				}
 			}
 		}
@@ -3065,9 +3079,9 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 	ControlSetText,,,ahk_id %PrgChoiceHwnd%
 	GuiControl, PrgLnchOpt:, MkShortcut, Remove Shortcut
 	if (PrgChoicePaths[selPrgChoice])
-	ToolTip , "Click `"Remove Shortcut`" or hit Del to confirm."
+	ToolTip, "Click `"Remove Shortcut`" or hit Del to confirm."
 	else
-	ToolTip , "Click `"Remove Shortcut`" or hit Del to remove unexpected data from reference."
+	ToolTip, "Click `"Remove Shortcut`" or hit Del to remove unexpected data from reference."
 	Return
 	}
 	else
@@ -3124,6 +3138,11 @@ SetStartupname(PrgLnchIni, ByRef defPrgStrng, PrgChoiceNames, selPrgChoice, newN
 	}
 	}
 }
+~LButton:: ; https://autohotkey.com/boards/viewtopic.php?f=5&t=17712&p=144840#p144840
+    MouseGetPos,,, winID
+    if (winID = WinExist("ahk_class tooltips_class32"))
+		ToolTip
+return
 
 
 
@@ -3150,7 +3169,7 @@ SetStartupname(PrgLnchIni, ByRef defPrgStrng, PrgChoiceNames, selPrgChoice, newN
 
 
 
-
+;Batch Launch
 LnchPrgLnch:
 Tooltip
 Thread, NoTimers
@@ -3414,7 +3433,7 @@ if (lnchPrgIndex > 0) ;Running
 
 	if (scrWidth <= 1024)
 		{
-		IniRead, ftemp, %PrgLnchIni%, General, LoseGuiChangeResWrn
+		IniRead, ftemp, %PrgLnchIni%, General, LnchPrgMonWarn
 			if !(ftemp)
 			{
 			MsgBox, 8195, , It's possible the PrgLnch Gui can be positioned off the screen after `nswitching to low resolutions. Use <CTRL-Alt-P> to return it to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do nothing: `n
@@ -4404,7 +4423,7 @@ WinMaximize, ahk_pid%PrgPID%
 ;Monitor routines
 GetDisplayData(PrgLnchMon, targMonitorNum, ByRef dispMonNamesNo := 0, ByRef iDevNumArray := 0, ByRef dispMonNames := 0, ByRef scrDPI := 0, ByRef scrWidth := 0, ByRef scrHeight := 0, ByRef scrInterlace := 0, ByRef scrFreq := 0, iMode := -2, iChange := 0)
 {
-Device_Mode := 0, iDevNumb = 0, retVal := 0, DM_Position := 0, devFlags := 0, devKey := 0, OffsetDWORD := 4 ; Defined above but not global fn
+Device_Mode := 0, iDevNumb = 0, temp := 0, retVal := 0, DM_Position := 0, devFlags := 0, devKey := 0, OffsetDWORD := 4 ; Defined above but not global fn
 iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 	
 	if (iMode = -3)
@@ -4452,7 +4471,9 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 		devFlags := NumGet(DISPLAY_DEVICE, OffsetDWORD + offsetWordStr + OffsetLongStr, UInt)
 		devKey := StrGet(&DISPLAY_DEVICE + OffsetDWORD + OffsetDWORD + offsetWordStr + OffsetLongStr + OffsetLongStr, OffsetLongStr)
 		
-		If !(devFlags & DISPLAY_DEVICE_MIRRORING_DRIVER)
+		If (devFlags & DISPLAY_DEVICE_MIRRORING_DRIVER)
+		temp += 1
+		else
 		{
 
 		iDevNumb := iDevNumb + 1
@@ -4460,45 +4481,42 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 			;How do we differentiate between ....
 			If (devFlags & DISPLAY_DEVICE_PRIMARY_DEVICE)
 				{
-				If (devFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)
-					{
+					If (devFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)
 					iLocDevNumArray[iDevNumb] := iDevNumb + 110
-					}
-				else
-				{
-				iLocDevNumArray[iDevNumb] := iDevNumb + 100
-				}	
+					else
+					iLocDevNumArray[iDevNumb] := iDevNumb + 100
 				}
 			else
 				{
-				If (devFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)
-					{
+					If (devFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)
 					iLocDevNumArray[iDevNumb] := iDevNumb + 10
-					}
-				else
+					else
 					iLocDevNumArray[iDevNumb] := iDevNumb
 				}
 			
-			if (!iDevNumArray[iDevNumb])
-			iDevNumArray[iDevNumb] := iLocDevNumArray[iDevNumb]
-			else
+			if (iDevNumArray[iDevNumb])
 			{
 			if !(iDevNumArray[iDevNumb] = iLocDevNumArray[iDevNumb])
 			MsgBox, 8192, , "A configurational change in the monitor setup has been detected. This may affect how some Prgs run."
 			}
-
+			else
+			iDevNumArray[iDevNumb] := iLocDevNumArray[iDevNumb]
+			
 			dispMonNames[iDevNumb] := StrGet(&DISPLAY_DEVICE + OffsetDWORD, offsetWordStr)
 
-		}
+			if !(dispMonNames[iDevNumb])
+			{
+			; happens on XP
+			dispMonNamesNo := iDevNumb
+			msgbox % " GetDisplay Break: dispMonNamesNo: " dispMonNamesNo
+			break
+			}			
 
 		}
-	
-		
-
+		}
+	dispMonNamesNo := dispMonNamesNo - temp
 
 	}
-
-
 	else
 	{
 
@@ -4703,8 +4721,8 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 		
 		if (scrWidthlast = scrWidth)
 		{
-			;many iModes here are equivalent for the above params. scrFreq may vary for a subset of those
-			if  (allModes && !(scrFreqlast = scrFreq))
+			;many iModes here are equivalent for the above params. scrFreq & scrHeight may vary for a subset of those
+			if  (allModes && !(scrHeightlast = scrHeight))
 			{
 			iModeCt += 1
 			Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq . "Hz |"
@@ -4721,6 +4739,7 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 				}
 				else
 				{
+				scrHeightlast := scrHeight
 				ResList .= Strng
 				}
 			}
@@ -4733,7 +4752,6 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 		scrDPIlast := scrDPI
 		scrInterlacelast := scrInterlace
 		scrFreqlast := scrFreq
-		
 		;https://autohotkey.com/boards/viewtopic.php?f=5&t=23021&p=108567#p108567
 		Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
 			ResArray[iModeCt, 1] := scrWidth
@@ -4798,6 +4816,101 @@ Return 1
 }
 
 
+MDMF_GetMonHandle(targMonitorNum)
+{
+Static Monitors := 0
+Monitors := {Count: 0, targetMonitorNum: 0}
+Monitors.targetMonitorNum := targMonitorNum
+
+
+;If (Monitors.MaxIndex() = "") ; enumerate
+Static EnumProc := RegisterCallback("MonitorEnumProc", "", 4)
+
+; enumerates monitors in the same order as sysget.
+If !DllCall("User32.dll\EnumDisplayMonitors", "ptr", 0, "ptr", 0, "ptr", EnumProc, "ptr", &Monitors)
+Return False
+}
+
+MonitorEnumProc(hMonitor, hdcMonitor, lprcMonitor, MonitorsObj)
+{
+Physical_Monitor := 0, temp := 0, ftemp := 0, physHand := 0, outStr := "", Monitors := Object(MonitorsObj)
+Monitors.Count++
+MonitorsObj := Monitors
+
+if (Monitors.Count = Monitors.targetMonitorNum)
+{
+
+; Get Physical Monitor(s) from handle
+
+
+	if !(DllCall("dxva2\GetNumberOfPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint*", nMon))
+	{
+	ToolTip, % "GetNumberOfPhysicalMonitorsFromHMONITOR failed with code: " A_LastError " .", 0, 0
+	return False
+	}
+
+	; Get Physical Monitor from handle
+	(A_PtrSize = 8)? 64bit := 2 : 64bit := 1
+	OffsetDWORD := 4, OffsetUchar := 1
+	Physical_Monitor_size_single:= 64bit * OffsetDWORD + (A_IsUnicode ? 2 : 1)*128
+	VarSetCapacity(Physical_Monitor, nMon*Physical_Monitor_size_single, 0)
+	if (DllCall("dxva2\GetPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint", nMon, "Ptr", &Physical_Monitor))
+	{
+		Loop, %nMon%
+		{
+			if (nMon > 1)
+			outStr .= "`n"
+			physHand := NumGet(Physical_Monitor, (A_Index-1)*Physical_Monitor_size_single)
+			; 0 value Physical Monitor Handles are valid and common!!!
+			VarSetCapacity(MC_TIMING_REPORT, OffsetUchar + OffsetDWORD + OffsetDWORD)
+			retVal := DllCall("dxva2\GetTimingReport", "Ptr", physHand, "Ptr", &MC_TIMING_REPORT)
+			sleep 100
+			if (retVal)
+			{
+			; Get Monitor description
+			temp := &Physical_Monitor + 64bit * OffsetDWORD + (A_Index-1)*(Physical_Monitor_size_single + 64bit * OffsetDWORD)
+			temp := StrGet(temp, Physical_Monitor_size_single)
+
+			;Horizontal scan HZ
+			ftemp := NumGet(MC_TIMING_REPORT, 0, "Int")
+			outStr .= "Monitor Description: " . temp . "`nHorizontal Frequency: " . ftemp/100 . " KHz"
+			}
+			else
+			{
+			if (A_LastError = -1071241854)
+			retVal := "ERROR_GRAPHICS_I2C_ERROR_TRANSMITTING_DATA"
+			else
+			retVal := A_LastError
+			outStr .= "GetTimingReport failed with code: " retVal " ."
+			}
+
+			if !(DllCall("dxva2\DestroyPhysicalMonitor", "ptr", physHand))
+			{
+			if (A_LastError = -1071241844)
+			retVal := "ERROR_GRAPHICS_INVALID_PHYSICAL_MONITOR_HANDLE"
+			else
+			if (A_LastError = -1071241852)
+			retVal := "ERROR_GRAPHICS_DDCCI_VCP_NOT_SUPPORTED"
+			else
+			retVal := A_LastError
+			outStr .= "DestroyPhysicalMonitor failed with code: " retVal " ."
+			}
+
+
+		}
+		ToolTip, % outStr, 0, 0
+	}
+	else
+	{
+	ToolTip, % "GetPhysicalMonitorsFromHMONITOR failed with code: " A_LastError " .", 0, 0
+	}
+	
+
+return False ;No more iterations required
+}
+else
+Return True
+}
 
 
 
@@ -4843,6 +4956,26 @@ Return 1
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+; Downloading
 UpdtPrg:
 GuiEscape:
 Gui, PrgLnchOpt: +OwnDialogs
@@ -6359,8 +6492,9 @@ WinGetPos,, propY,, propH, % "ahk_id" PrgPropertiesHwnd
 	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % propH - y, w
 
 SysGet, temp, MonitorWorkArea, GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo)
-if (propY + y > (tempBottom - tempTop))
-	WinMove, % "ahk_id" PrgPropertiesHwnd, , , , , tempBottom - tempTop - y
+;For low screen res
+if (propH + h > (tempBottom - tempTop))
+	WinMove, % "ahk_id" PrgPropertiesHwnd, , , tempBottom, , tempBottom - tempTop
 
 
 SplashImage, PrgLnchProperties.jpg, Hide,,,LnchSplash
