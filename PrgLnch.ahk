@@ -16,7 +16,8 @@ FileInstall PrgLnchLoading.jpg, PrgLnchLoading.jpg
 sleep, 200
 
 
-
+;Issues:
+; Close properties on change prg path
 
 /*If !A_IsAdmin {
 Run *RunAs "%A_ScriptFullPath%"
@@ -2857,6 +2858,10 @@ else
 	temp := 0
 	else
 	{
+		if txtPrgChoice = "Prg Removed"
+		temp = 0
+		else
+		{
 		if (ChgShortcutVar = "Change Shortcut Name")
 		temp := 1
 		else
@@ -2878,6 +2883,7 @@ else
 			}
 			else
 			temp := 0
+		}
 		}
 	}
 
@@ -2976,7 +2982,7 @@ else
 Return
 ChkPrgNames(testName)
 {
-if (testName = "0" || testName = "Prg1" || testName = "Prg2" || testName = "Prg3" || testName = "Prg4" || testName = "Prg5" || testName = "Prg6" || testName = "Prg7" || testName = "Prg8" || testName = "Prg9")
+if (testName = "0" || testName = "Prg1" || testName = "Prg2" || testName = "Prg3" || testName = "Prg4" || testName = "Prg5" || testName = "Prg6" || testName = "Prg7" || testName = "Prg8" || testName = "Prg9" || testName = "Prg10" || testName = "Prg11" || testName = "Prg12")
 return 1
 else
 return 0
@@ -3406,11 +3412,11 @@ if (lnchPrgIndex > 0) ;Running
 	(!temp)? PrgPrty := "B": (temp = 1)? PrgPrty := "H": PrgPrty := "N"
 
 
-	WorkingDirectory(1, PrgPaths)
-
 	IfExist, % PrgPaths
 	;If Notepad, copy Notepad exe to  %A_ScriptDir% and it will not run! (Windows 10 1607)
 	{
+	WorkingDirectory(0, PrgPaths)
+	if PrgCmdLine[lnchPrgIndex]
 	PrgPaths := PrgPaths . A_Space . PrgCmdLine[lnchPrgIndex]
 
 	currMon := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo)
