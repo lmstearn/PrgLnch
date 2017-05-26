@@ -2,7 +2,7 @@
 #SingleInstance, force
 #NoEnv  ; Performance and compatibility with future AHK releases.
 ;#Warn, All , MsgBox ; Enable warnings to assist with detecting common errors.
-SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+SendMode Input  ; Recommended for new scripts due to superior speed & reliability.
 WorkingDirectory(0, A_ScriptDir) ; Ensures a consistent starting directory.
 SetTitleMatchMode, 2
 #MaxThreads 3
