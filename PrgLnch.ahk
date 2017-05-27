@@ -3,7 +3,7 @@
 #NoEnv  ; Performance and compatibility with future AHK releases.
 ;#Warn, All , MsgBox ; Enable warnings to assist with detecting common errors.
 SendMode Input  ; Recommended for new scripts due to superior speed & reliability.
-WorkingDirectory(0, A_ScriptDir) ; Ensures a consistent starting directory.
+WorkingDirectory(1, A_ScriptDir) ; Ensures a consistent starting directory.
 SetTitleMatchMode, 2
 #MaxThreads 3
 #Persistent
@@ -1862,7 +1862,11 @@ else
 
 SetTimer, NewThreadforDownload, Delete ;Cleanup
 Gui, PrgLnchOpt:Submit  ; Save each control's contents to its associated variable.
-WorkingDirectory(0, A_ScriptDir)
+retVal = WorkingDirectory(1, A_ScriptDir)
+if retVal
+MsgBox, 8192, , % "Clean up failed with error: " retVal
+else
+{
 ifexist, PrgLnchLoading.jpg ; Is cleaning up after each run such a big drama these days?
 FileDelete, PrgLnchLoading.jpg
 ifexist, PrgLaunching.jpg
@@ -1873,6 +1877,7 @@ ifexist, PrgLnch.chm
 FileDelete, PrgLnch.chm
 ifexist, taskkillPrg.bat
 FileDelete, taskkillPrg.bat
+}
 ExitApp
 
 WM_HELP(wp_notused, lParam, _msg, _hwnd)
@@ -2647,7 +2652,7 @@ else
 			}
 		
 			if (txtPrgChoice = "|")
-			txtPrgChoice := Prg%selPrgChoice%
+			txtPrgChoice := "Prg" . selPrgChoice
 			else
 			{
 			if (InStr(txtPrgChoice, "|"))
@@ -2709,10 +2714,11 @@ else
 				;gets, tests working directory of possible lnk, if any
 				foundpos := PrgLnkInf[selPrgChoice]
 					if (foundpos && !(foundpos = "*"))
-					WorkingDirectory(1, foundpos)
+					retVal := WorkingDirectory(0, foundpos)
 					else
-					WorkingDirectory(1, fTemp)		
-
+					retVal := WorkingDirectory(0, fTemp)
+				if retVal
+				MsgBox, 8192, , % "Read of Prg Path failed with error: " retVal "!"
 
 				scrWidth := scrWidthArr[selPrgChoice]
 				scrHeight := scrHeightArr[selPrgChoice]
@@ -2796,6 +2802,12 @@ MakeShortcut:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 Gui, PrgLnchOpt: +OwnDialogs
+
+GuiControlGet temp, PrgLnchOpt:, MkShortcut
+
+if (txtPrgChoice = "Prg Removed" || txtPrgChoice = "") && (temp="Make Shortcut")
+txtPrgChoice := "Prg" . selPrgChoice
+
 if (txtPrgChoice = "")
 {
 	
@@ -2825,8 +2837,7 @@ if (txtPrgChoice = "")
 	GuiControl, PrgLnchOpt: , DefaultPrg, 0
 	GuiControl, PrgLnchOpt: Disable, DefaultPrg
 
-	txtPrgChoice := "Prg Removed"
-	WorkingDirectory(0, A_ScriptDir)
+	WorkingDirectory(1, A_ScriptDir)
 	IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice, 1)
 	strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 	PrgChoiceNames[selPrgChoice] := 
@@ -2859,7 +2870,10 @@ else
 	else
 	{
 		if txtPrgChoice = "Prg Removed"
+		{
+		txtPrgChoice = ""
 		temp = 0
+		}
 		else
 		{
 		if (ChgShortcutVar = "Change Shortcut Name")
@@ -2935,10 +2949,13 @@ else
 		;gets working directory of lnk, if any
 		foundpos := IsPrgaLnk(fTemp)
 		PrgLnkInf[selPrgChoice] := foundpos
-		if (foundpos && !(foundpos = "*"))
-		WorkingDirectory(1, foundpos)
-		else
-		WorkingDirectory(1, fTemp)		
+			if (foundpos && !(foundpos = "*"))
+			retVal := WorkingDirectory(0, foundpos)
+			else
+			retVal := WorkingDirectory(0, fTemp)
+			if retVal
+			MsgBox, 8192, , % "Read of Prg Path failed with error: " retVal "!"
+
 		PrgCmdLineEnable(selPrgChoice, PrgLnkInf, PrgCmdLine, cmdLinHwnd)
 
 		GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
@@ -2997,7 +3014,7 @@ StringReplace, temp, strPrgChoice, |, |, UseErrorLevel ; finds all occurrences o
 	if !(ErrorLevel = PrgNo + 2)
 	{
 	MsgBox, 8192, , PrgLnch has an encountered an unexpected error! Attempting Restart!
-	WorkingDirectory(0, A_ScriptDir)
+	WorkingDirectory(1, A_ScriptDir)
 	Run, PrgLnch.exe Force
 	ExitApp
 	}
@@ -3415,7 +3432,9 @@ if (lnchPrgIndex > 0) ;Running
 	IfExist, % PrgPaths
 	;If Notepad, copy Notepad exe to  %A_ScriptDir% and it will not run! (Windows 10 1607)
 	{
-	WorkingDirectory(0, PrgPaths)
+	if WorkingDirectory(1, PrgPaths)
+	Return % "Read of Prg Path failed with error: " retVal "!"
+
 	if PrgCmdLine[lnchPrgIndex]
 	PrgPaths := PrgPaths . A_Space . PrgCmdLine[lnchPrgIndex]
 
@@ -3952,7 +3971,7 @@ global
 CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, batchActive := 0)
 {
 temp := 0, PrgStyle := 0, dx := 0, dy:= 0
-WorkingDirectory(0, A_ScriptDir)
+WorkingDirectory(1, A_ScriptDir)
 if (presetNoTest)
 {
 	if (PrgPID)
@@ -4134,7 +4153,7 @@ sleep, 200
 
 if (poorPID)
 	{
-	WorkingDirectory(0, A_ScriptDir)
+	WorkingDirectory(1, A_ScriptDir)
 	if FileExist(taskkillPrg.bat)
 		{
 		FileDelete, taskkillPrg.bat
@@ -4297,31 +4316,31 @@ IsPrgaLnk(ftemp)
 	}
 	return workDir
 }
-WorkingDirectory(noSet, fTemp)
+WorkingDirectory(SetNow, fTemp)
 {
 	retVal := 0, temp := 0
-		if noSet
-		SetWorkingDir %A_ScriptDir% ; Caution: Working Dir can be altered by other processes
-		else
+		if SetNow
+			{
+			if (ftemp = A_ScriptDir)
+			temp := ftemp
+			else
+			{
+			temp := InStr(fTemp, "\", false, -1)
+			temp := SubStr(fTemp, 1, temp)
+			}
+			SetWorkingDir %temp%
+			retVal := ErrorLevel
+			}
+		else ; just testing: never called with A_ScriptDir
 		{
 		temp := InStr(fTemp, "\", false, -1)
 		temp := SubStr(fTemp, 1, temp)
 		SetWorkingDir %temp%
-		If (ErrorLevel) & (ftemp = A_ScriptDir)
-		SetWorkingDir %A_WorkingDir%
+		retVal := ErrorLevel
+		sleep 50
+		if retval
+		SetWorkingDir %A_ScriptDir% ; Caution: Working Dir can be altered by other processes
 		}
-	If (ErrorLevel)
-	{
-	retVal := false
-	MsgBox, 8192, , % "Cannot set working directory! Is " ftemp " accessible? `nError: " ErrorLevel
-	}
-	else
-	{
-	retVal := false
-	}
-
-if !noSet
-SetWorkingDir %A_ScriptDir%
 Return retVal
 }
 
