@@ -1862,7 +1862,7 @@ else
 
 SetTimer, NewThreadforDownload, Delete ;Cleanup
 Gui, PrgLnchOpt:Submit  ; Save each control's contents to its associated variable.
-retVal = WorkingDirectory(1, A_ScriptDir)
+retVal := WorkingDirectory(1, A_ScriptDir)
 if retVal
 MsgBox, 8192, , % "Clean up failed with error: " retVal
 else
@@ -2808,6 +2808,7 @@ GuiControlGet temp, PrgLnchOpt:, MkShortcut
 if (txtPrgChoice = "Prg Removed" || txtPrgChoice = "") && (temp="Make Shortcut")
 txtPrgChoice := "Prg" . selPrgChoice
 
+
 if (txtPrgChoice = "")
 {
 	
@@ -2870,10 +2871,7 @@ else
 	else
 	{
 		if txtPrgChoice = "Prg Removed"
-		{
-		txtPrgChoice = ""
 		temp = 0
-		}
 		else
 		{
 		if (ChgShortcutVar = "Change Shortcut Name")
@@ -2921,10 +2919,30 @@ else
 	Thread, NoTimers, false
 	if (!ErrorLevel)
 		{
-			PrgChoicePaths[selPrgChoice] := fTemp
-			temp := SubStr(fTemp, 1, InStr(fTemp, ".") - 1)
-			PrgChoiceNames[selPrgChoice] := SubStr(temp, InStr(temp, "\",, -1) + 1)
-		
+		PrgChoicePaths[selPrgChoice] := fTemp
+		temp := SubStr(fTemp, 1, InStr(fTemp, ".") - 1)
+		PrgChoiceNames[selPrgChoice] := SubStr(temp, InStr(temp, "\",, -1) + 1)
+
+		; check paths once more
+		fTemp := PrgChoicePaths[selPrgChoice]
+		;gets working directory of lnk, if any
+		foundpos := IsPrgaLnk(fTemp)
+		PrgLnkInf[selPrgChoice] := foundpos
+			if (foundpos && !(foundpos = "*"))
+			retVal := WorkingDirectory(0, foundpos)
+			else
+			retVal := WorkingDirectory(0, fTemp)
+			if retVal
+			{
+			txtPrgChoice := "Prg" . selPrgChoice
+			PrgLnkInf[selPrgChoice] := ""
+			PrgChoicePaths[selPrgChoice] := ""
+			MsgBox, 8192, , % "Read of Prg Path failed with error: " retVal "!"
+			Return
+			}
+			else
+			txtPrgChoice := PrgChoiceNames[selPrgChoice]
+
 		;check dup names
 		Loop, % PrgNo
 		{
@@ -2935,26 +2953,16 @@ else
 		}
 		}
 		
-
-		GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 		;valid monitor?
+		GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 		if (iDevNumArray[targMonitorNum] < 10)
 		targMonitorNum := PrgLnchMon
+
 		PrgMonToRn[selPrgChoice] := targMonitorNum
 
 		PrgLnchHide[selPrgChoice] := 0
 		IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
 		strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
-		fTemp := PrgChoicePaths[selPrgChoice]
-		;gets working directory of lnk, if any
-		foundpos := IsPrgaLnk(fTemp)
-		PrgLnkInf[selPrgChoice] := foundpos
-			if (foundpos && !(foundpos = "*"))
-			retVal := WorkingDirectory(0, foundpos)
-			else
-			retVal := WorkingDirectory(0, fTemp)
-			if retVal
-			MsgBox, 8192, , % "Read of Prg Path failed with error: " retVal "!"
 
 		PrgCmdLineEnable(selPrgChoice, PrgLnkInf, PrgCmdLine, cmdLinHwnd)
 
