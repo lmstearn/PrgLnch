@@ -2890,6 +2890,7 @@ else
 					{
 					IniWrite, 1, %PrgLnchIni%, General, ChangeShortcutMsg
 					ChgShortcutVar := "Change Shortcut Name"
+					GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
 					}
 				}
 			}
