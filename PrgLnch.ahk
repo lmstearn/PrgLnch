@@ -163,6 +163,7 @@ PrgLnchHdHwnd := 0
 BordlessHwnd := 0
 PrgPriorityHwnd := 0
 PrgCanBeShortctHwnd := 0
+PrgPropsHwnd := 0
 ;Radio
 TestHwnd := 0
 HWNDFModeHwnd := 0
@@ -997,7 +998,7 @@ sleep, 120
 	IfWinExist
 	{
 	DetectHiddenWindows, On
-	PopPrgProperties(iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width())
+	PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width())
 	}
 }
 
@@ -1118,7 +1119,7 @@ else
 		IfWinExist
 		{
 		DetectHiddenWindows, On
-		PopPrgProperties(iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width())
+		PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width())
 		}
 
 	}
@@ -1444,6 +1445,12 @@ presetNoTest := 0
 
 PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, ProgPIDMast, 1)
 
+IfWinExist, % "ahk_id" PrgPropsHwnd
+{
+Gui, PrgProperties: Destroy
+PrgPropsHwnd := 0
+}
+
 if (PrgPID)
 {
 	Process, Exist, % PrgPID
@@ -1480,7 +1487,7 @@ Return
 
 PresetLabelSub:
 if (btchPrgPresetSel && currBatchNo)
-PopPrgProperties(iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width())
+PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width())
 Return
 
 
@@ -1903,7 +1910,7 @@ MousePosY    := NumGet(lParam + 24 + 64bit * 8, "int")
 if (ItemHandle = PresetLabelHwnd)
 {
 if (btchPrgPresetSel && currBatchNo)
-PopPrgProperties(iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width())
+PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width())
 else
 retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "BatchPresetsLabel")
 }
@@ -2130,6 +2137,8 @@ Return
 BackToPrgLnch:
 Tooltip
 UDM_SETRANGE := 0X0465
+
+WorkingDirectory(1, A_ScriptDir)
 
 SplashImage, PrgLnchLoading.jpg, A B,,, LnchSplash
 WinGetPos, , , w, h, LnchSplash
@@ -6276,7 +6285,7 @@ Thread, NoTimers, false
 
 
 ;Properties routines
-PopPrgProperties(iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, x, y, w)
+PopPrgProperties(ByRef PrgPropertiesHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, x, y, w)
 {
 ftemp := 0, temp := 0, foundpos := 0, batchPos := 0, pathCol := 0, pathColH := 0, pathColHOld := 0, defCol := 0, defColW := 0, defColH := 0, propX := 0, propY := 0, propW := 0, propH := 0, truncFileName := "", errorText := "", retval := "", fileName := ""
 static tabName := 0
@@ -6305,7 +6314,6 @@ sleep, 120
 Gui, PrgProperties: New,, Prg_Properties
 Gui, PrgProperties: -MaximizeBox -MinimizeBox +OwnDialogs +HwndPrgPropertiesHwnd
 Gui, PrgProperties: Color, FFFFCC
-
 
 
 CLEARTYPE_QUALITY := 5
