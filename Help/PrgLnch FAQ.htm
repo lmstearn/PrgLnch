@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<title>PrgLnch FAQ</title>
+<meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<link href="theme.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<h1>PrgLnch FAQ</h1>
+About <span style="color: #40e0d0;">P</span> <span style="color: #8b4513;">r</span> <span style="color: #40e0d0;">g</span> <span style="color: #ffd700">L</span><span style="color: #8b4513;">n</span> <span style="color: #40e0d0;">c</span> <span style="color: #8b4513;">h</span>:
+<dl>
+  <dt>Can PrgLnch run in more than one instance?</dt>
+  <dd>No. At this stage there is no provision in the code even if it were run from different locations on the same machine.</dd>
+  <dt>Does PrgLnch create or delete files?</dt>
+  <dd>PrgLnch creates an <B>ini</B> file, 3 <B>jpg</B>s and one <B>chm</B> file each time it is run. Provided PrgLnch is terminated by the <a href="PrgLnch Batch/PrgLnch Batch.htm#QuitPrgLnch">Quit_PrgLnch</a> button all files excepting PrgLnch.ini are erased each run.
+  <dt>How is data saved to the <B>ini</B> file?</dt>
+  <dd>PrgLnch writes every time configurational changes are made in PrgLnch. If there is no <B>ini</B> file in the folder the script is run from, PrgLnch creates a new one.</dd>
+  <dt>Are there issues with security or UAC</dt>
+  <dd>PrgLnch runs at the level of the invoker. If it is run from a location where there are restricted permissions on files, it may not be able to write, create or delete any files it uses.
+ <dt href="#" id="PrgCancellation">Can launched Prgs be cancelled by PrgLnch?</dt>
+  <dd>Yes. If Prglnch fails to close a Prg it will attempt to force terminate it. If the termination fails, the Prg is no longer considered active and other methods will have to be employed to address the issue. However, if the Prg launches other processes, they will not be cancelled.
+ </dd>
+  <dt>My Prg ended when it wasn't supposed to. What happened?</dt>
+  <dd>PrgLnch doesn't track what a Prg does operationally. If the Prg has its own requirements for display or resolution which conflict with PrgLnch settings there may be a problem.
+ </dd>
+  <dt>Can PrgLnch forms be postioned of the currently used (default) display?</dt>
+  <dd>Possible if target resolutions are less than 1024 pixels wide. A hotkey combination (CTRL-ALT-P) should bring the window to the location of the mouse. Another edge case is if when the screen height is less than 600 pixels, <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a> may clip off the top edge of the display. 
+ </dd>
+  <dt>Can a Prg exhibit different behaviour when run from an explorer folder or desktop shortcut instead of from within PrgLnch?</dt>
+  <dd>Yes, even if PrgLnch settings for it match the "native" environment, See <a href="https://autohotkey.com/boards/viewtopic.php?f=5&t=29200">here</a> for an example. It also helps to check the environment requisites in the Prg's documentation, as it may set its own dedicated resolution mode for execution.
+ </dd>
+ <dt>What are the limitations of PrgLnch?</dt>
+  <dd>It can manage up to and including 12 Prgs but no more than 6 can be run through a batch at a time. As AutoHotKey <I>v</I>. 1.x does not <a href="https://autohotkey.com/boards/viewtopic.php?f=5&t=13941">support long paths</a>, so PrgLnch does not.
+ <dt>Can PrgLnch forms go off the display?</dt>
+  <dd>They shouldn't. Edge case is when the screen height is less than 600 pixels, <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a> may clip off the top edge of the display. 
+ </dd>
+  <dt>Why does PrgLnch produce a <a href="https://autohotkey.com/docs/FAQ.htm#Virus">virus alert</a> ?</dt>
+  <dd>It's possible the vendor of the antivirus program has not analysed the file yet. If the issue will not resolve, please refer to any notifications provided on one of these <a href="About PrgLnch.htm#Links">links</a>.
+ </dd>
+  <dt>Why doesn't a Prg run on a certain monitor?</dt>
+  <dd>They should, However some older programs (e.g. those compiled in VB6) only run on the primary monitor, regardless of the Prglnch setting. Occasionally displays are fully functional only when systems running certain drivers are rebooted after monitors are added or reconfigured.
+ </dd>
+  <dt href="#" id="Del">Pressing the <B>Del</B> key deletes entire contents of the Edit Box without undo.</dt>
+  <dd>By "design." Text tracking routines would impact the performance of PrgLnch. A combination of <B>Backspace</B> and the <B>Home</B>/<B>Arrow</B>/<B>End</B> keys provide equivalent functionality.
+ </dd>
+  <dt href="#" id="Browser">New browser instances opened through PrgLnch cannot be controlled by PrgLnch .</dt>
+  <dd>Modern browsers typically run under one process ID, so they require different handling, currently not on offer by PrgLnch.
+ </dd>
+
+</dl>
+
+</BODY>
+</HTML>

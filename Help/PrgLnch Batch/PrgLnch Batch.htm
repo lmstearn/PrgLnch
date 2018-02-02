@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<title>PrgLnch Batch</title>
+<meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<link href="theme.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<h1>PrgLnch Batch</h1>
+<table class="info">
+ <tr href="#" id="BatchPresetsLabel">
+  <td>Batch Presets label:
+</td>
+<td>Bluish colour on a selected preset, becoming a clickable portal to <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a>. Closed when the  <a href="#BatchPresets">Preset</a> is de-activated.</td>
+ </tr>
+ <tr href="#" id="BatchPresetName">
+<td>
+Preset Name:
+</td>
+<td>
+Type in a Batch Preset Name corresponding to this Preset. The <a href="PrgLnch FAQ.htm#Del">Del key</a> deletes all contents of the edit box.
+</td>
+</tr>
+<tr href="#" id="BatchPresets">
+<td>
+List of Batch Presets:
+</td>
+<td>Select a preset will commit the preset to the .<B>ini</B> file slot on disk if it exists. If the .<B>ini</B> file slot is empty the current Preset list is written to it. Deselect a preset removes the corresponding Preset info from the .<B>ini</B> file. The status of a Prg that is selected from the adjacent <a href="#BatchPrgs">Batch Prgs List</a> is also displayed in the <a href="#PrgStatus">Prg Status List</a>.
+</td>
+<tr href="#" id="BatchPrgs">
+<td>
+Batch Prgs List:
+</td>
+<td>Select a Prg to add it to a selected <a href="#BatchPresets">Preset</a> and create a corresponding entry in the <a href="#PrgStatus">Prg Status List</a>. The number within the askerisks indicates the monitor configured for the Prg. Deselect it to remove the Prg from the Preset. The Up/Down spin control to the right of the list moves the Prg up and down to change its order in the batch. The selected item highest in the list will be the first Prg to run in the batch, the lowest will be the last Prg run.
+</td>
+ </tr>
+<tr href="#" id="PrgStatus">
+<td>
+Prg Status List:
+</td>
+<td>
+Prg Status. Double click a Prg to start or <a href="PrgLnch FAQ.htm#PrgCancellation">terminate</a> it. 
+If a Prg has started before Prglnch is run, there will be a notification, but the Prg will not be added to the Prg Status list. Prgs on a <a href="PrgLnch Config/PrgLnch Config.htm#TestRunPrg">Test Run</a> are not added to the list either.
+</td>
+</tr>
+<tr href="#" id="PrgLnchInterval">
+<td>
+Prg Lnch Interval:
+</td>
+<td>
+Default setting is a medium wait between launch of Prgs in the batch. Check the box for a longer wait, clear it for a short wait.
+</td>
+ </tr>
+<tr href="#" id="ThisPresetatLoad">
+<td>
+This Preset at Load:
+</td>
+<td>
+When checked, the current <a href="#BatchPresets">Preset</a> is shown and selected when PrgLnch starts.
+</td>
+ </tr>
+<tr href="#" id="TerminatePrgs">
+<td>
+Terminate Prg(s) on PrgLnch Exit:
+</td>
+<td>
+If checked, and PrgLnch is terminated via <a href="#QuitPrgLnch">Quit_Prglnch</a>, any Prgs launched in a Batch or Test Run are terminated as well.
+</td>
+ </tr>
+<tr href="#" id="RunBatch">
+<td>
+Run Batch:
+</td>
+<td>
+Runs the Prg(s) in the specified Preset. After the Preset is successfully launched, it can be <a href="PrgLnch FAQ.htm#PrgCancellation">cancelled</a> by clicking this button again. More than one Preset can be run concurrently.
+</td>
+</tr>
+<tr href="#" id="PrgConfig">
+<td>
+Prg Config:
+</td>
+<td>
+Launches the <a href="PrgLnch Config/PrgLnch Config.htm">Prg Configuration</a> option dialog. 
+</td>
+ </tr>
+<tr href="#" id="QuitPrgLnch">
+<td>
+Quit_PrgLnch:
+</td>
+<td>
+Quits the program. As the close buttons are disabled on both of the <a href="PrgLnch Batch/PrgLnch Batch.htm">PrgLnch Batch</a> and <a href="PrgLnch Config/PrgLnch Config.htm">PrgLnch Config</a> dialogs, it's the only way to exit PrgLnch without error.
+</td>
+ </tr>
+</table> 
+
+</BODY>
+</HTML>

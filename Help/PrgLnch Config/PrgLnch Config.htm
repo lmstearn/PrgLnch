@@ -1,0 +1,218 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<title>PrgLnch Config</title>
+<meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<link href="theme.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<h1>PrgLnch Config</h1>
+<table class="info">
+ <tr href="#" id="ShortcutSlots">
+  <td>Shortcut Slots:
+</td>
+<td>Select a Shortcut Slot to fill or modify it, or clear the text in order to remove it with the <I>del</I> key or <a href="#ModifyShortcut">Modify Shortcut</a> button below. Else leave at "None" to change the resolution of the selected monitor. The <a href="PrgLnch FAQ.htm#Del">Del key</a> is reserved for removing all contents of the box.
+</td>
+ </tr>
+ <tr href="#" id="ModifyShortcut">
+<td>
+Modify Shortcut:
+</td>
+<td>
+Depending on the contents of <a href="#ShortcutSlots">Shortcut Slot</a> above, the current Prg name and/or path can be added, modified, or removed with this button.
+</td>
+</tr>
+<tr href="#" id="CmdLineExtras">
+<td>
+Command Line Extras:
+</td>
+<td>Paste in any extra parameters or arguments required for the Prg to run. Not available if the Prg is a <a href="#PrgCanBeShortcutToFile">shortcut</a>. The <a href="PrgLnch FAQ.htm#Del">Del key</a> removes everything in the box.
+</td>
+<tr href="#" id="MonitorName" >
+<td>
+Monitor Name:
+</td>
+<td>This displays the system name of the monitor that the current Prg will run on. Blue indicates a primary monitor, orange indicates a secondary monitor, and the grey, spare monitor slots,
+</td>
+ </tr>
+<tr href="#" id="MonitorList">
+<td>
+Monitor List:
+</td>
+<td>
+Numbered list of monitors. The colour of the <a href="#MonitorName">MonitorName</a> above indicates its usabilty.
+</td>
+</tr>
+<tr href="#" id="ShowAtStartup">
+<td>
+Show At Startup:
+</td>
+<td>
+If checked, the current Prg shows as selected at next PrgLnch run.
+</td>
+ </tr>
+</table> 
+
+<h2>Res Options</h2>
+<dl>
+  <dt href="#" id="TestMode">TestMode:
+</dt>
+  <dd>
+System tests if the resolution works and PrgLnch notifies on success or fail.
+</dd>
+  <dt href="#" id="ChangeAtEveryMode">Change at every mode:
+</dt>
+  <dd>
+Resolution is changed as in <a href="#Dynamic">Dynamic</a> below even if the target resolution matches the current resolution. PrgLnch will advise, even if this option is not chosen.
+</dd>
+  <dt href="#" id="Dynamic">Dynamic: (All running Apps):
+</dt>
+  <dd>
+Resolution change is permanent. All apps running will receive this change and may or may not resize accordingly. The position of the items on the desktop will change.
+</dd>
+  <dt href="#" id="Temporary">Temporary (Recommended):
+</dt>
+  <dd>
+Resolution changes are in effect only while PrgLnch is running.
+</dd>
+</dl>
+<dl href="#" id="PullValuesFromRegistry">
+  <dt><h3>Pull values from registry</h3>
+</dt>
+  <dd>Retrieves the settings for the monitor that are currently stored in the registry rather than those used for the current monitor before changing resolution. In most cases they will match.</dd>
+</dl>
+
+<table class="info">
+<tr id="DefaultResolution">
+<td>
+Default Resolution:
+</td>
+<td>
+Currently  used (or default) resolution for the selected monitor.
+</td>
+ </tr>
+<tr href="#" id="ListAllCompatible" >
+<td>
+List All Compatible:
+</td>
+<td>
+Checking this box expands the <a href="#ResolutionModes">list below</a> to all available resolution modes for the selected monitor.
+</td>
+ </tr>
+<tr href="#" id="ResolutionModes">
+<td>
+Resolution Modes:
+</td>
+<td>
+List of resolution modes for the selected monitor. 32 bit bits per pixel (<a href="https://en.wikipedia.org/wiki/Color_depth#True_color_.2824-bit.29">True Colour</a>) is the current standard.
+</td>
+</tr>
+<tr href="#" id="ChgResonSwitch">
+<td>
+Change Resolution on Switch:
+</td>
+<td>
+Advanced Users: If a Prg is run on the same monitor as PrgLnch at a resolution other than the <a href="PrgLnch Config/PrgLnch Config.htm#DefaultResolution">Default Resolution</a>, switching from Prg to PrgLnch and vice-versa will change the resolutions accordingly.
+</td>
+<tr href="#" id="HidePrgLnchonRun">
+<td>
+Hide PrgLnch on Run:
+</td>
+<td>
+Hides the PrgLnch Gui after a Prg is launched. The Gui will re-appear when either the Prg is terminated, or is active in a Batch Preset followed by other Prgs launched in the Preset that do not have this setting checked.
+</td>
+ </tr>
+<tr href="#" id="Borderless">
+<td>
+Borderless:
+</td>
+<td>
+Applies the Borderless Attribute to the Prgs Window. Can be toggled while the Prg is active.
+</td>
+ </tr>
+<tr href="#" id="Priority">
+<td>
+Priority:
+</td>
+<td>
+Default value is N (Normal). Check the box for H (High) priority or clear it for BN (Below Normal). Can be toggled while the Prg is active.
+</td>
+ </tr>
+<tr href="#" id="PrgCanBeShortcutToFile">
+<td>
+Prg Can Be a Shortcut to File:
+</td>
+<td>
+When checked, Prg can be a file with a <B>*.lnk</B> extension. This happens when selecting a <B>.lnk</B> file in the <a href="#ModifyShortcut">Modify Shortcut</a> dialog. Otherwise <B>.lnk</B> targets are resolved.
+</td>
+ </tr>
+<tr href="#" id="ApplyLAAFlag">
+<td>
+Apply LAA Flag:
+</td>
+<td>
+Writes an <B>L</B>arge <B>A</B>ddress <B>A</B>ware flag to the executable. Most Prgs have this setting already.
+</td>
+ </tr>
+<tr href="#" id="TestRunPrg">
+<td>
+Test Run Prg:
+</td>
+<td>
+Either runs the Prg or <a href="PrgLnch FAQ.htm#PrgCancellation">cancels</a> one that is running already. A notification is generated if the Prg is already active in a Batch Preset.
+</td>
+ </tr>
+<tr href="#" id="UpdatePrg">
+<td>
+Update Prg:
+</td>
+<td>
+Click this to update Prg to a newer version<sup><a href="PrgLnch Config/PrgLnch Config.htm#ref1">1</a></sup>  at the <a href="#UrlName">URL Location</a> displayed in the box underneath. A progress bar and <a href="#UrlName">Prg Update Status</a> indicate the download status, and on completion of the download a prompt will appear for the Prg to be launched. If Prg is a <B>.lnk</B> file, the Update Prg button is unavailable. Although executable files at remote URLs are better handled by PrgLnch, compressed files require external decompression programs before use.
+</td>
+ </tr>
+<tr href="#" id="UrlName">
+<td>
+Url Name:
+</td>
+<td>
+Type in a valid <a href="https://en.wikipedia.org/wiki/Uniform_Resource_Locator">Url</a> of where the newer version of Prg is expected to reside. The <a href="PrgLnch FAQ.htm#Del">Del key</a> deletes all contents of the edit box
+</td>
+</tr>
+<tr href="#" id="PrgUpdateStatus">
+<td>
+Prg Update Status:
+</td>
+<td>
+A brief informational message relating to the version and availablity of Prg at the <a href="PrgLnch Config/PrgLnch Config.htm#UrlName">above Url.</a>
+</td>
+</tr>
+<tr href="#" id="BackToPrglnch">
+<td>
+Back to Prglnch:
+</td>
+<td>
+All values are saved and returns to the <a href="PrgLnch Batch/PrgLnch Batch.htm">PrgLnch Batch</a> dialog.
+</td>
+</tr>
+</table>
+
+<a href="#" id="ref1"></a>
+<p><I>Author reference: Version checking is done as described <a href="https://autohotkey.com/docs/commands/URLDownloadToFile.htm#Examples">here</a>:
+</p>
+<pre><code>
+UrlDownloadToFile,
+https://autohotkey.com/download/1.1/version.txt, C:\AutoHotkey Latest Version.txt
+UrlDownloadToFile, http://someorg.org/archive.zip, C:\SomeOrg's Archive.zip<br>
+; <U>Example: Download text to a variable:</U>
+whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+whr.Open("GET", "https://autohotkey.com/download/1.1/version.txt", true)
+whr.Send()
+; Using 'true' above and the call below allows the script to remain responsive.
+whr.WaitForResponse()
+version := whr.ResponseText
+MsgBox % version
+</code></pre>
+</BODY>
+</HTML>
