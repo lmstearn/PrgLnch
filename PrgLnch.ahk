@@ -2328,7 +2328,7 @@ Return
 UpdturlPrgLnchText:
 Tooltip
 GuiControlGet, temp, PrgLnchOpt: FocusV
-if (temp = "MkShortcut")
+if (temp = "MkShortcut") || (temp = "CmdLinPrm")
 Return
 Gui, PrgLnchOpt: Submit, Nohide
 
@@ -2382,6 +2382,10 @@ IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
 Return
 
 CmdLinPrmSub:
+GuiControlGet, temp, PrgLnchOpt: FocusV
+if !(temp = "CmdLinPrm")
+Return
+
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 sleep 150 ;slow input
@@ -2395,7 +2399,6 @@ if (fTemp)
 	}
 
 	GuiControl, PrgLnchOpt:, PrgCanBeShortct, 0
-	if (ChgShortcutVar = "Change Shortcut Name")
 	GuiControl, PrgLnchOpt: Disable, PrgCanBeShortct
 }
 else
@@ -2861,6 +2864,8 @@ else
 				GuiControl, PrgLnchOpt: Enable, MkShortcut
 				GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
 				GuiControl, PrgLnchOpt: Disable, RnPrgLnch
+				GuiControl, PrgLnchOpt:, PrgCanBeShortct, 0
+				GuiControl, PrgLnchOpt: Enable, PrgCanBeShortct
 				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, 1)
 				DisableVariousResCtrls()
 				}
@@ -2874,7 +2879,8 @@ else
 				GuiControl, PrgLnchOpt: Disable, DefaultPrg
 				GuiControl, PrgLnchOpt:, MkShortcut, Just Change Res.
 				GuiControl, PrgLnchOpt: Disable, Just Change Res.
-
+				GuiControl, PrgLnchOpt:, PrgCanBeShortct, 0
+				GuiControl, PrgLnchOpt: Disable, PrgCanBeShortct
 				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, 1)
 				DisableVariousResCtrls()
 
@@ -2954,6 +2960,8 @@ if (txtPrgChoice = "")
 	GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
 	GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
 	GuiControl, PrgLnchOpt: Disable, RnPrgLnch
+	GuiControl, PrgLnchOpt: Enable, PrgCanBeShortct
+	GuiControl, PrgLnchOpt:, PrgCanBeShortct, 0
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, 1)
 	DisableVariousResCtrls()
 	iDevNum := 1
@@ -2976,28 +2984,23 @@ else
 		{
 		if (ChgShortcutVar = "Change Shortcut Name")
 		temp := 1
-		else
+		else ; "Change Shortcut"
 		{
-			if (ChgShortcutVar = "Change Shortcut")
+			if PrgChoicePaths[selPrgChoice]
 			{
-				if PrgChoicePaths[selPrgChoice]
+			MsgBox, 8195, , Change the name of the Prg or select a new path?`nIf "No," the entry can be later removed with <DEL>.`n`nReply:`nYes: Change the name (Warn like this next time) `nNo: Change the name (Recommended: This will not show again)`n Cancel: Select a new path (Warn like this next time)`n
+				IfMsgBox, Cancel
+				temp := 0
+				else
 				{
-				MsgBox, 8195, , Change the name of the Prg or select a new path?`nIf "No," the entry can be later removed with <DEL>.`n`nReply:`nYes: Change the name (Warn like this next time) `nNo: Change the name (Recommended: This will not show again)`n Cancel: Select a new path (Warn like this next time)`n
-					IfMsgBox, Cancel
-					temp := 0
-					else
+				temp := 1
+					IfMsgBox, No
 					{
-					temp := 1
-						IfMsgBox, No
-						{
-						IniWrite, 1, %PrgLnchIni%, General, ChangeShortcutMsg
-						ChgShortcutVar := "Change Shortcut Name"
-						GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
-						}
+					IniWrite, 1, %PrgLnchIni%, General, ChangeShortcutMsg
+					ChgShortcutVar := "Change Shortcut Name"
+					GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
 					}
 				}
-				else
-				temp = 0
 			}
 			else
 			temp := 0
@@ -3013,6 +3016,7 @@ else
 	strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 	GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
 	GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
+	PrgCmdLineEnable(selPrgChoice, ChgShortcutVar, PrgLnkInf, PrgCmdLine, cmdLinHwnd)
 	}
 	else
 	{
@@ -3162,8 +3166,8 @@ if (PrgLnkInf[selPrgChoice])
 	GuiControl, PrgLnchOpt:, CmdLinPrm
 	SetEditCueBanner(cmdLinHwnd, "Cmd Line Extras")
 	GuiControl, PrgLnchOpt: Disable, CmdLinPrm
-	GuiControl, PrgLnchOpt: Enable, PrgCanBeShortct
 	GuiControl, PrgLnchOpt:, PrgCanBeShortct, 1
+	GuiControl, PrgLnchOpt: Disable, PrgCanBeShortct
 	}
 	else
 	{
@@ -3179,6 +3183,9 @@ if (PrgLnkInf[selPrgChoice])
 		{
 		if (ChgShortcutVar = "Change Shortcut")		
 		GuiControl, PrgLnchOpt: Enable, PrgCanBeShortct
+		else
+		GuiControl, PrgLnchOpt: Disable, PrgCanBeShortct
+
 		GuiControl, PrgLnchOpt:, CmdLinPrm
 		SetEditCueBanner(cmdLinHwnd, "Cmd Line Extras")
 		}
@@ -5332,7 +5339,7 @@ else ;interrupted download but wish to continue
 		UrlPrgIsCompressed := ChkURLPrgExe(PrgUrlTest)
 		if (UrlPrgIsCompressed < 0)
 		{
-			MsgBox, 8193, , The URL doesn't appear to have a known extension for a compressed or executable file. Use it?
+			MsgBox, 8193, , The URL doesn't appear to have an extension for a compressed or executable file.`nUse it?
 			IfMsgBox, Cancel
 			Return
 		}
