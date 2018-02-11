@@ -519,6 +519,8 @@ if (txtPrgChoice = "None")
 	GuiControl, PrgLnchOpt: Disable, DefaultPrg
 	GuiControl, PrgLnchOpt:, MkShortcut, Just Change Res.
 	GuiControl, PrgLnchOpt: Disable, Just Change Res.
+	GuiControl, PrgLnchOpt:, PrgCanBeShortct, 0
+	GuiControl, PrgLnchOpt: Disable, PrgCanBeShortct
 	DisableVariousResCtrls()
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, 1)
 	}
