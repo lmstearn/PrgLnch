@@ -3,7 +3,11 @@
 #NoEnv  ; Performance and compatibility with future AHK releases.
 ;#Warn, All , MsgBox ; Enable warnings to assist with detecting common errors.
 SendMode Input  ; Recommended for new scripts due to superior speed & reliability.
-WorkingDirectory(1, A_ScriptDir) ; Ensures a consistent starting directory.
+
+retVal := 0 ;Ensures a consistent starting directory.
+retVal := WorkingDirectory(1, A_ScriptDir)
+If retVal
+MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
 SetTitleMatchMode, 2
 #MaxThreads 3
 #Persistent
@@ -139,7 +143,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 ;listBox
 LB_GETITEMHEIGHT := 0x01A1
 LB_GETCOUNT := 0x018B
-LB_GETCURSEL := 0x0188
+;LB_GETCURSEL := 0x0188
 LB_SETCURSEL := 0x0186
 
 ;HWND
@@ -253,9 +257,12 @@ txtCmd := 0
 
 
 ; General temp variables
+;retVal above
+strReval := ""
 foundPos := 0
 temp := 0
 fTemp := 0
+MakeLongVar := 0
 ;Prevents unecessary extra reads when this counter exceeds 4
 inputOnceOnly := 0
 PrgLnchIni := A_ScriptDir . "`\" . SubStr( A_ScriptName, 1, -3 ) . "ini"
@@ -650,7 +657,7 @@ Gui, PrgLnch: Add, ListBox, vBtchPrgPreset gBtchPrgPresetSub HWNDPresetHwnd AltS
 
 Gui, PrgLnch: Add, Text, ys vbatchListPrg wp, Batch Prgs
 ;initialise batch
-retVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo, 1)
+strRetVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo, 1)
 temp := batchPrgNo-1
 Gui, PrgLnch: Add, ListBox, vListPrg gListPrgProc HWNDBtchPrgHwnd AltSubmit
 Gui, PrgLnch: Add, UpDown, vMovePrg gMovePrgProc HWNDMovePrgHwnd Range%temp%-0 ;MovePrg ZERO based: https://autohotkey.com/boards/viewtopic.php?f=5&t=26703&p=125603#p125603
@@ -678,19 +685,19 @@ FrontendInit:
 sleep 100
 Thread, NoTimers
 
-retVal := "|"
+strRetVal := "|"
 
 loop, %maxBatchPrgs% ;Preset limit is also Prgs_in_preset limit! 
 {
 	if PresetNames[A_Index]
 	{
 	PresetNamesBak[A_Index] := PresetNames[A_Index]
-	retVal := retVal . PresetNames[A_Index] . "|"
+	strRetVal := strRetVal . PresetNames[A_Index] . "|"
 	}
 	else
-	retVal := retVal . "Preset" . A_Index . "|"
+	strRetVal := strRetVal . "Preset" . A_Index . "|"
 }
-GuiControl, PrgLnch:, BtchPrgPreset, %retVal%
+GuiControl, PrgLnch:, BtchPrgPreset, %strRetVal%
 
 if (PrgBatchIniStartup)
 {
@@ -711,12 +718,12 @@ else
 EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, 1)
 
 }
-retVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
+strRetVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
 
 
 
 sleep 100
-GuiControl, PrgLnch:, ListPrg, % retVal
+GuiControl, PrgLnch:, ListPrg, % strRetVal
 Thread, NoTimers, false
 
 
@@ -1074,9 +1081,9 @@ if (btchPrgPresetSel = temp)
 		GuiControl, PrgLnch:, DefPreset, 0	
 
 
-		retVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
+		strRetVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
 		sleep 100
-		GuiControl, PrgLnch:, ListPrg, % retVal
+		GuiControl, PrgLnch:, ListPrg, % strRetVal
 		GuiControl, PrgLnch: Show, ListPrg
 		
 		batchActive := 1
@@ -1098,9 +1105,9 @@ if (btchPrgPresetSel = temp)
 		else
 		GuiControl, PrgLnch:, DefPreset, 0	
 
-		retVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
+		strRetVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
 		sleep 100
-		GuiControl, PrgLnch:, ListPrg, % retVal
+		GuiControl, PrgLnch:, ListPrg, % strRetVal
 	EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames)
 
 	;GuiControl, PrgLnch:, ListPrg, % PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
@@ -1277,12 +1284,12 @@ if (batchActive)
 GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
 else
 {
-	retVal := "|"
+	strRetVal := "|"
 	loop, % currBatchNo
 	{
-	retVal := retVal . "Not Active" . "|"
+	strRetVal := strRetVal . "Not Active" . "|"
 	}
-GuiControl, PrgLnch:, batchPrgStatus, % retVal
+GuiControl, PrgLnch:, batchPrgStatus, % strRetVal
 GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 }
 
@@ -1325,16 +1332,16 @@ if (A_GuiEvent = "DoubleClick")
 	if (temp = "NS" || temp = "FAILED" || temp = "TERM" || temp = "ENDED" || !temp)
 	{
 
-		retVal := ChkExistingProcess(PrgLnkInf, presetNoTest, batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths)
+		strRetVal := ChkExistingProcess(PrgLnkInf, presetNoTest, batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths)
 
-		if (retVal)
+		if (strRetVal)
 		{
-			if (retVal == "PrgLnch")
+			if (strRetVal == "PrgLnch")
 			{
 			MsgBox, 8192, , Cannot launch this Prg!
 			Return
 			}
-			if (retVal == "BadPath")
+			if (strRetVal == "BadPath")
 			Return
 
 			IniRead, fTemp, %PrgLnchIni%, General, PrgAlreadyMsg
@@ -1393,7 +1400,7 @@ if (A_GuiEvent = "DoubleClick")
 	lnchStat := 0
 
 
-	retVal := LnchPrgOff(PrgLnchIni, batchPrgStatus, lnchStat, temp, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgBordless, PrgRnPriority, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMax, PrgStyle, x, y, w, h, dx, dy, Fmode)
+	strRetVal := LnchPrgOff(PrgLnchIni, batchPrgStatus, lnchStat, temp, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgBordless, PrgRnPriority, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMax, PrgStyle, x, y, w, h, dx, dy, Fmode)
 
 
 	loop, % currBatchNo
@@ -1404,12 +1411,12 @@ if (A_GuiEvent = "DoubleClick")
 		SplashImage, PrgLaunching.jpg, Hide,,,LnchSplash
 		HideShowLnchControls(quitHwnd, GoConfigHwnd, 1)
 
-		if (retval) ;Lnch fail
+		if (strRetVal) ;Lnch fail
 		{
 			if (lnchPrgIndex > 0)
 			{
 			foundpos .= "Failed" . "|"
-			MsgBox, 8192, , % retVal
+			MsgBox, 8192, , % strRetVal
 			}
 		}
 		else
@@ -1439,7 +1446,7 @@ if (A_GuiEvent = "DoubleClick")
 		; Update Master
 			if lnchPrgIndex > 0
 			{
-				if (retVal)
+				if (strRetVal)
 				ProgPIDMast[lnchPrgIndex] := 0
 				else
 				ProgPIDMast[lnchPrgIndex] := fTemp
@@ -1572,6 +1579,7 @@ if (PrgPID)
 WinMover(PrgLnchOpt.Hwnd(),"d r")
 Gui, PrgLnchOpt: Show
 sleep, 100
+Gosub PrgChoice
 Gui, PrgLnch: Show, Hide, PrgLnch
 Return
 
@@ -1681,7 +1689,7 @@ Return 0
 ReorgBatch(batchPrgNo, maxBatchPrgs, btchPrgPresetSel, PrgMonToRn, PrgBatchInibtchPrgPresetSel, ByRef currBatchNo, ByRef PrgListIndex, ByRef PrgBdyBtchTog, ByRef PrgBatchIniStartup := 0)
 {
 ;confirm new items and merge, swapping entries
-temp := 0, fTemp := 0, foundpos := 0, x := 0, retVal := "|"
+temp := 0, fTemp := 0, foundpos := 0, x := 0, strRetVal := "|"
 currBatchNo := 0
 
 	loop, % maxBatchPrgs
@@ -1733,10 +1741,10 @@ Loop, % currBatchNo
 	}
 
 	;init Status List
-	retVal := retVal . "Unknown" . "|"
+	strRetVal := strRetVal . "Unknown" . "|"
 
 }
-return retval
+return strRetVal
 }
 EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, disableThem := 0)
 {
@@ -1777,7 +1785,7 @@ Gui, PrgLnch: Font
 
 PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, ByRef PrgBdyBtchTog, ByRef PrgListIndex, ByRef batchPrgNo, AtLoad := 0)
 {
-temp := 0, fTemp := 0, retVal := "|" ;vital, or listBox won't refresh
+temp := 0, fTemp := 0, strRetVal := "|" ;vital, or listBox won't refresh
 
 
 if (AtLoad)
@@ -1789,14 +1797,14 @@ if (AtLoad)
 	if (temp)
 		{
 		batchPrgNo += 1
-		retVal := retVal . temp . "|"
+		strRetVal := strRetVal . temp . "|"
 		PrgListIndex[batchPrgNo] := A_Index
 		PrgBdyBtchTog[batchPrgNo] := "" ;sanitize as well!
 		}
 	}
 
 	if !(batchPrgNo)
-	retVal := retVal . "No Prgs Configured |"
+	strRetVal := strRetVal . "No Prgs Configured |"
 }
 else
 {
@@ -1805,12 +1813,12 @@ else
 		temp := PrgListIndex[A_Index]
 		fTemp := MonStr(PrgMonToRn, temp)
 			if (PrgBdyBtchTog[A_Index] = fTemp)
-			retVal := retVal . fTemp . A_Space . PrgChoiceNames[temp] . "|"
+			strRetVal := strRetVal . fTemp . A_Space . PrgChoiceNames[temp] . "|"
 			else
-			retVal := retVal . PrgChoiceNames[temp] . "|"
+			strRetVal := strRetVal . PrgChoiceNames[temp] . "|"
 		}
 }
-return retVal
+return strRetVal
 }
 MonStr(PrgMonToRn, selPrgChoice)
 ; Rather than worry about multi-select listboxes, we have this to show selection ... - and monitor number!
@@ -1935,16 +1943,16 @@ else
 			Process, Exist, % foundpos
 			if (ErrorLevel)
 			{
-			retVal := PrgChoicePaths[A_Index]
+			strRetVal := PrgChoicePaths[A_Index]
 
-			if (retVal := GetProcFromPath(retVal))
+			if (strRetVal := GetProcFromPath(strRetVal))
 			{
 			if (temp)
-			fTemp .= temp . retVal
+			fTemp .= temp . strRetVal
 			else
 			{
 			temp := ", "
-			fTemp := retVal
+			fTemp := strRetVal
 			}
 			}
 			}
@@ -1962,12 +1970,12 @@ else
 		Process, Exist, %PrgPID%
 		if (ErrorLevel)
 			{
-			retval := "`[Test Run`]"
-			retVal .= PrgChoicePaths[selPrgChoice]
+			strRetVal := "`[Test Run`]"
+			strRetVal .= PrgChoicePaths[selPrgChoice]
 
-				if (retVal := GetProcFromPath(retVal))
+				if (strRetVal := GetProcFromPath(strRetVal))
 				{
-				if (MsgOnceTerminate(PrgLnchIni, retVal))
+				if (MsgOnceTerminate(PrgLnchIni, strRetVal))
 				Return
 				}
 			}
@@ -1985,18 +1993,15 @@ loop % PrgNo
 	if fTemp
 	{
 	retVal := WorkingDirectory(1, fTemp)
-
-	if retVal
+	If retVal
 	MsgBox, 8192, , % "Clean up failed with error: " retVal
 	else
 	KleenupPrgLnchFiles()
 	}
-retVal := WorkingDirectory(1, A_ScriptDir)
 }
 
 retVal := WorkingDirectory(1, A_ScriptDir)
-
-if retVal
+If retVal
 MsgBox, 8192, , % "Clean up failed with error: " retVal
 else
 KleenupPrgLnchFiles()
@@ -2266,12 +2271,14 @@ Return
 BackToPrgLnch:
 SetTimer, WatchSwitchOut, Off
 SetTimer, WatchSwitchBack, Off
-Thread, NoTimers
+
 Tooltip
 
 UDM_SETRANGE := 0X0465
 
-WorkingDirectory(1, A_ScriptDir)
+retVal := WorkingDirectory(1, A_ScriptDir)
+If retVal
+MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
 
 SplashImage, PrgLnchLoading.jpg, A B,,, LnchSplash
 WinGetPos, , , w, h, LnchSplash
@@ -2293,8 +2300,6 @@ presetNoTest := 2
 PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, ProgPIDMast)
 
 
-Thread, NoTimers, false
-
 
 if (currBatchNo) ; defpreset set
 {
@@ -2305,12 +2310,12 @@ if (currBatchNo) ; defpreset set
 	}
 	else
 	{
-			retVal := "|"
+			strRetVal := "|"
 			loop, % currBatchNo
 			{
-			retVal := retVal . "Not Active" . "|"
+			strRetVal := strRetVal . "Not Active" . "|"
 			}
-		GuiControl, PrgLnch:, batchPrgStatus, % retVal
+		GuiControl, PrgLnch:, batchPrgStatus, % strRetVal
 		GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 	}
 }
@@ -2922,11 +2927,11 @@ else
 				;gets, tests working directory of possible lnk, if any
 				foundpos := PrgLnkInf[selPrgChoice]
 					if (foundpos && !(foundpos = "*"))
-					retVal := WorkingDirectory(0, foundpos)
+					temp := WorkingDirectory(0, foundpos)
 					else
-					retVal := WorkingDirectory(0, fTemp)
-				if retVal
-				MsgBox, 8192, , % "Read of Prg Path failed with error: " retVal "!"
+					temp := WorkingDirectory(0, fTemp)
+				if temp
+				MsgBox, 8192, , % "Read of Prg Path failed with error: " temp "!"
 
 				scrWidth := scrWidthArr[selPrgChoice]
 				scrHeight := scrHeightArr[selPrgChoice]
@@ -3052,7 +3057,10 @@ if (txtPrgChoice = "")
 	GuiControl, PrgLnchOpt: , DefaultPrg, 0
 	GuiControl, PrgLnchOpt: Disable, DefaultPrg
 
-	WorkingDirectory(1, A_ScriptDir)
+	retVal := WorkingDirectory(1, A_ScriptDir)
+	If retVal
+	MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
+	
 	IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice, 1)
 	strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 	PrgChoiceNames[selPrgChoice] := 
@@ -3157,16 +3165,16 @@ else
 		PrgLnkInf[selPrgChoice] := foundpos
 
 			if (foundpos && !(foundpos = "*"))
-			retVal := WorkingDirectory(0, foundpos)
+			temp := WorkingDirectory(0, foundpos)
 			else
-			retVal := WorkingDirectory(0, fTemp)
-			if retVal
+			temp := WorkingDirectory(0, fTemp)
+			if temp
 			{
 			txtPrgChoice := "Prg" . selPrgChoice
 			PrgLnkInf[selPrgChoice] := ""
 			PrgChoicePaths[selPrgChoice] := ""
 			PrgChoiceNames[selPrgChoice] := ""
-			MsgBox, 8192, , % "Read of Prg Path failed with error: " retVal "!"
+			MsgBox, 8192, , % "Read of Prg Path failed with error: " temp "!"
 			Return
 			}
 			else
@@ -3250,7 +3258,9 @@ StringReplace, temp, strPrgChoice, |, |, UseErrorLevel ; finds all occurrences o
 	if !(ErrorLevel = PrgNo + 2)
 	{
 	MsgBox, 8192, , PrgLnch has an encountered an unexpected error! Attempting Restart!
-	WorkingDirectory(1, A_ScriptDir)
+	retVal := WorkingDirectory(1, A_ScriptDir)
+	If retVal
+	MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
 	if FileExist(PrgLnch.exe)
 	Run, PrgLnch.exe Force
 	ExitApp
@@ -3629,23 +3639,23 @@ GuiControlGet fTemp, PrgLnch:, RunBatchPrg
 if ((presetNoTest) && fTemp = "&Run Batch" || !(presetNoTest) && temp = "&Test Run Prg")
 {
 	lnchPrgIndex := selPrgChoice ; changes shortly
-	foundpos := ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths, 1)
+	strRetVal := ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgListIndex, PrgChoicePaths, 1)
 
 	
-	if (foundpos)
+	if (strRetVal)
 	{
-		if (foundpos == "PrgLnch")
+		if (strRetVal == "PrgLnch")
 		{
 		MsgBox, 8192, , Cannot launch this Prg!
 		Return
 		}
-		if (foundpos == "BadPath")
+		if (strRetVal == "BadPath")
 		Return
 
 		IniRead, fTemp, %PrgLnchIni%, General, PrgAlreadyMsg
 		if !fTemp
 		{
-		MsgBox, 8195, , One or more Prgs scheduled for start matches a process running with `nthe same name. Might be an issue depending on instance requisites.`n`"%foundpos%`"`n`nReply:`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `nCancel: Do nothing: `n
+		MsgBox, 8195, , One or more Prgs scheduled for start matches a process running with `nthe same name. Might be an issue depending on instance requisites.`n`"%strRetVal%`"`n`nReply:`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `nCancel: Do nothing: `n
 			IfMsgBox, Yes
 			fTemp := 0 ; dummy condition
 			else
@@ -3734,16 +3744,16 @@ loop, % ((presetNoTest)? currBatchno: 1)
 	targMonitorNum := PrgMonToRn[lnchPrgIndex]
 	}
 
-	retVal := LnchPrgOff(PrgLnchIni, A_Index, lnchStat, (presetNoTest)? temp: fTemp, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgBordless, PrgRnPriority, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMax, PrgStyle, x, y, w, h, dx, dy, Fmode)
+	strRetVal := LnchPrgOff(PrgLnchIni, A_Index, lnchStat, (presetNoTest)? temp: fTemp, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgBordless, PrgRnPriority, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMax, PrgStyle, x, y, w, h, dx, dy, Fmode)
 
-	if (retVal)
+	if (strRetVal)
 	{  ;Lnch failed for current Prg
 	if (lnchPrgIndex > 0)
 		{
 		if (lnchStat = 1)
 		foundpos .= "Failed" . "|"
 
-		MsgBox, 8192, , % retVal
+		MsgBox, 8192, , % strRetVal
 		}
 	}
 	else
@@ -3867,7 +3877,8 @@ if (lnchPrgIndex > 0) ;Running
 	IfExist, % PrgPaths
 	;If Notepad, copy Notepad exe to  %A_ScriptDir% and it will not run! (Windows 10 1607)
 	{
-	if WorkingDirectory(1, PrgPaths)
+	retVal := WorkingDirectory(1, PrgPaths)
+	If retVal
 	Return % "Read of Prg Path failed with error: " retVal "!"
 
 	if PrgCmdLine[lnchPrgIndex]
@@ -3896,7 +3907,7 @@ if (lnchPrgIndex > 0) ;Running
 		IniRead, fTemp, %PrgLnchIni%, General, LnchPrgMonWarn
 			if !(fTemp)
 			{
-			MsgBox, 8195, , In the unlikely situation of the PrgLnch Gui relocating off the screen after `nswitching to lower resolutions, use <CTRL-Alt-P> to return it to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do nothing: `n
+			MsgBox, 8195, , In the unlikely situation of the PrgLnch Gui relocating `noff the screen after switching to lower resolutions, `nuse <CTRL-Alt-P> to return the Gui to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do nothing: `n
 			IfMsgBox, No
 			IniWrite, 1, %PrgLnchIni%, General, LnchPrgMonWarn
 			else
@@ -4429,7 +4440,10 @@ global
 CleanupPID(PrgLnchIni, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, ProgPIDMast, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, batchActive := 0)
 {
 temp := 0, PrgStyle := 0, dx := 0, dy:= 0
-WorkingDirectory(1, A_ScriptDir)
+
+retVal := WorkingDirectory(1, A_ScriptDir)
+If retVal
+MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
 if (presetNoTest)
 {
 	if (PrgPID)
@@ -4620,7 +4634,9 @@ sleep, 200
 
 if (poorPID)
 	{
-	WorkingDirectory(1, A_ScriptDir)
+	retVal := WorkingDirectory(1, A_ScriptDir)
+	If retVal
+	MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
 	if FileExist(taskkillPrg.bat)
 		{
 		FileDelete, taskkillPrg.bat
@@ -4640,17 +4656,17 @@ GetProcFromPath(fTemp, lnkInfo := 0)
 {
 if (lnkInfo)
 {
-retVal := SubStr(fTemp, InStr(fTemp, "\",, -1) + 1)
-retval := SubStr(retval, 1, strlen(retval)-3) . "exe" ; assume exe
+strRetVal := SubStr(fTemp, InStr(fTemp, "\",, -1) + 1)
+strRetVal := SubStr(strRetVal, 1, strlen(strRetVal)-3) . "exe" ; assume exe
 }
 else
-retVal := SubStr(fTemp, InStr(fTemp, "\",, -1) + 1)
+strRetVal := SubStr(fTemp, InStr(fTemp, "\",, -1) + 1)
 
-	if !(retVal)
+	if !(strRetVal)
 		{
 			MsgBox, 8192, , % "Invalid path with " & ftemp "! Cannot continue process check."
 		}
-Return retVal
+Return strRetVal
 }
 
 ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgListIndex, PrgChoicePaths, btchRun := 0)
@@ -5373,7 +5389,7 @@ if (Monitors.Count = Monitors.targetMonitorNum)
 			else
 			{
 			if (A_LastError = -1071241854)
-			retVal := "ERROR_GRAPHICS_I2C_ERROR_TRANSMITTING_DATA"
+			strRetVal := "ERROR_GRAPHICS_I2C_ERROR_TRANSMITTING_DATA"
 			else
 			retVal := A_LastError
 			outStr .= "GetTimingReport failed with code: " retVal " ."
@@ -5382,10 +5398,10 @@ if (Monitors.Count = Monitors.targetMonitorNum)
 			if !(DllCall("dxva2\DestroyPhysicalMonitor", "ptr", physHand))
 			{
 			if (A_LastError = -1071241844)
-			retVal := "ERROR_GRAPHICS_INVALID_PHYSICAL_MONITOR_HANDLE"
+			strRetVal := "ERROR_GRAPHICS_INVALID_PHYSICAL_MONITOR_HANDLE"
 			else
 			if (A_LastError = -1071241852)
-			retVal := "ERROR_GRAPHICS_DDCCI_VCP_NOT_SUPPORTED"
+			strRetVal := "ERROR_GRAPHICS_DDCCI_VCP_NOT_SUPPORTED"
 			else
 			retVal := A_LastError
 			outStr .= "DestroyPhysicalMonitor failed with code: " retVal " ."
@@ -6786,26 +6802,26 @@ if !FileExist(PrgLnchIni)
 IniSpaceCleaner(IniFile, oldVerChg := 0)
 {
 ; https://autohotkey.com/boards/viewtopic.php?f=13&t=26556&p=124630#p124630
-retVal := 0, temp := "", e := ""
+retVal := "", temp := "", e := ""
 Thread, NoTimers
 try
 {
-	FileRead, retVal, %IniFile%
+	FileRead, strRetVal, %IniFile%
 	if (oldVerChg)
 	{
-		if (InStr(retVal, "LoseGuiChangeResWrn"))
+		if (InStr(strRetVal, "LoseGuiChangeResWrn"))
 		Return
 		else
 		{
-		StringReplace, retVal, retVal, ResMode= , LoseGuiChangeResWrn= `nPrgAlreadyLaunchedMsg= `nChangeShortcutMsg= `nResMode= 
+		StringReplace, strRetVal, strRetVal, ResMode= , LoseGuiChangeResWrn= `nPrgAlreadyLaunchedMsg= `nChangeShortcutMsg= `nResMode= 
 		}
 	}
 	else
-	retVal := RegExReplace(retVal, "m) +$", " ") ;m multilineselect; " +" one or more spaces; $ only at EOL
+	strRetVal := RegExReplace(strRetVal, "m) +$", " ") ;m multilineselect; " +" one or more spaces; $ only at EOL
 
 	FileDelete, %Inifile%
 	sleep, 100
-	FileAppend, %retVal%, %IniFile%
+	FileAppend, %strRetVal%, %IniFile%
 	sleep, 100
 }
 catch e
@@ -6841,7 +6857,7 @@ Thread, NoTimers, false
 ;Properties routines
 PopPrgProperties(ByRef PrgPropertiesHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, x, y, w)
 {
-fTemp := 0, temp := 0, foundpos := 0, batchPos := 0, pathCol := 0, pathColH := 0, pathColHOld := 0, defCol := 0, defColW := 0, defColH := 0, propX := 0, propY := 0, propW := 0, propH := 0, truncFileName := "", errorText := "", retval := "", fileName := ""
+fTemp := 0, temp := 0, foundpos := 0, batchPos := 0, pathCol := 0, pathColH := 0, pathColHOld := 0, defCol := 0, defColW := 0, defColH := 0, propX := 0, propY := 0, propW := 0, propH := 0, truncFileName := "", errorText := "", strRetVal := "", fileName := ""
 static tabName := 0
 
 
@@ -6884,15 +6900,15 @@ loop, % currBatchNo
 		{
 		fTemp := SubStr(fTemp, 1, 12) . "..."
 		}
-	retval .= "|" . fTemp
+	strRetVal .= "|" . fTemp
 	}
 	else
-	retval .= "|" . "No File!"
+	strRetVal .= "|" . "No File!"
 }
 
-retval := SubStr(retval, 2)
+strRetVal := SubStr(strRetVal, 2)
 ;remove first pipe
-Gui, PrgProperties: Add, Tab3, w%w% vtabName -Theme -wrap AltSubmit, % retval
+Gui, PrgProperties: Add, Tab3, w%w% vtabName -Theme -wrap AltSubmit, % strRetVal
 
 
 loop, % currBatchNo
@@ -7027,8 +7043,8 @@ IfExist, % fileName
 			}
 
 			
-		retval := FileGetInfo(Filename).ProductName
-		if (retval = "GetFileVersionInfoSizeFail")
+		strRetVal := FileGetInfo(Filename).ProductName
+		if (strRetVal = "GetFileVersionInfoSizeFail")
 		errorText .= "Unable to retrieve extended information from the file.`n"
 		else
 		{
@@ -7038,31 +7054,31 @@ IfExist, % fileName
 		PrgPropFont(sprHwnd)
 
 		fTemp := 3*defColH
-		Gui, PrgProperties: Add, Text, xs+%temp% ys+%fTemp%, % retval
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%fTemp%, % strRetVal
 
-		retval := FileGetInfo(Filename).CompanyName
+		strRetVal := FileGetInfo(Filename).CompanyName
 		fTemp := 5*defColH
 		Gui, PrgProperties: Add, Text, xs+%temp% ys+%fTemp% HWNDsprHwnd, Company Name
 		PrgPropFont(sprHwnd)
 
 		fTemp := 7*defColH
-		Gui, PrgProperties: Add, Text, xs+%temp% ys+%fTemp%, % retval
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%fTemp%, % strRetVal
 
-		retval := FileGetInfo(Filename).ProductVersion
+		strRetVal := FileGetInfo(Filename).ProductVersion
 		fTemp := 9*defColH
 		Gui, PrgProperties: Add, Text, xs+%temp% ys+%fTemp% HWNDsprHwnd, Product Version
 		PrgPropFont(sprHwnd)
 
 		fTemp := 11*defColH
-		Gui, PrgProperties: Add, Text, xs+%temp% ys+%fTemp%, % retval
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%fTemp%, % strRetVal
 
-		retval := FileGetInfo(Filename).LegalCopyright
+		strRetVal := FileGetInfo(Filename).LegalCopyright
 		fTemp := 13*defColH
 		Gui, PrgProperties: Add, Text, xs+%temp% ys+%fTemp% HWNDsprHwnd, Legal Copyright
 		PrgPropFont(sprHwnd)
 
 		fTemp := 15*defColH
-		Gui, PrgProperties: Add, Text, xs+%temp% ys+%fTemp%, % retval
+		Gui, PrgProperties: Add, Text, xs+%temp% ys+%fTemp%, % strRetVal
 		}
 	}
 
@@ -7070,7 +7086,7 @@ IfExist, % fileName
 
 	if (errorText)
 	{
-		temp := retval? (2*defColW): 0
+		temp := strRetVal? (2*defColW): 0
 		Gui, PrgProperties: Add, Text, xs+-%temp% Section, Errors
 		Gui, PrgProperties: Add, Text,, % errorText
 	}
