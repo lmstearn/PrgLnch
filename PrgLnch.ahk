@@ -368,7 +368,8 @@ sleep, 120
 }
 
 ; RestartPrgLnch?
-fTemp := 0
+strTemp := 0
+temp := 0
 for temp, strTemp in A_Args  ; For each parameter (or file dropped onto a script):
 {
 	if (InStr(strTemp, "|"))
@@ -1108,7 +1109,7 @@ sleep, 120
 	IfWinExist
 	{
 	DetectHiddenWindows, On
-	PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
+	PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
 	}
 }
 
@@ -1291,7 +1292,7 @@ else
 		IfWinExist
 		{
 		DetectHiddenWindows, On
-		PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
+		PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
 		}
 
 	}
@@ -1694,7 +1695,7 @@ Return
 
 PresetLabelSub:
 if (btchPrgPresetSel && currBatchNo)
-PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
+PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
 Return
 
 
@@ -2131,7 +2132,7 @@ MousePosY    := NumGet(lParam + 24 + 64bit * 8, "int")
 if (ItemHandle = PresetLabelHwnd)
 {
 if (btchPrgPresetSel && currBatchNo)
-PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
+PopPrgProperties(PrgPropsHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
 else
 retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "BatchPresetsLabel")
 }
@@ -7430,9 +7431,9 @@ Thread, NoTimers, false
 
 
 ;Properties routines
-PopPrgProperties(ByRef PrgPropertiesHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, x, y, w, h)
+PopPrgProperties(ByRef PrgPropertiesHwnd, iDevNumArray, dispMonNamesNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, x, y, w, h)
 {
-strTemp := 0, fTemp := 0, temp := 0, foundpos := 0, batchPos := 0, pathCol := 0, pathColH := 0, pathColHOld := 0, defCol := 0, defColW := 0, defColH := 0, propX := 0, propY := 0, propW := 0, propH := 0, truncFileName := "", errorText := "", strRetVal := "", fileName := ""
+IsaPrgLnk := 0, strTemp := 0, fTemp := 0, temp := 0, foundpos := 0, batchPos := 0, pathCol := 0, pathColH := 0, pathColHOld := 0, defCol := 0, defColW := 0, defColH := 0, propX := 0, propY := 0, propW := 0, propH := 0, truncFileName := "", errorText := "", strRetVal := "", fileName := ""
 static tabName := 0
 
 
@@ -7466,7 +7467,7 @@ CLEARTYPE_QUALITY := 5
 loop % currBatchNo
 {
 	batchPos := PrgBatchInibtchPrgPresetSel[A_Index]
-	fileName := PrgChoicePaths[batchPos]
+	fileName := ExtractPrgPath(batchPos, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
 	strTemp := PrgChoiceNames[batchPos]
 
 	IfExist, % fileName
@@ -7492,7 +7493,7 @@ Gui, PrgProperties: Tab, %A_Index%
 
 
 batchPos := PrgBatchInibtchPrgPresetSel[A_Index]
-fileName := PrgChoicePaths[batchPos]
+fileName := ExtractPrgPath(batchPos, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
 
 IfExist, % fileName
 {
@@ -7602,7 +7603,7 @@ IfExist, % fileName
 			Gui, PrgProperties: Add, Text, xs ys+%fTemp%, % strTemp
 		}
 
-	if (!PrgLnkInf[batchPos])
+	if (!IsaPrgLnk)
 	{
 		FileGetVersion, foundpos, % fileName
 			if (ErrorLevel)
