@@ -2588,7 +2588,7 @@ Return
 
 PrgLAARn:
 Tooltip
-DoLAAPatch(PrgChoicePaths[selPrgChoice])
+DoLAAPatch(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep)
 Return
 
 UpdturlPrgLnchText:
@@ -3673,33 +3673,37 @@ AssocQueryApp(prgPath)
 {
 SplitPath, prgPath, , , Ext
 
-RegRead, type, HKCU, Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.%Ext%, Application
-	If (ErrorLevel)
-	{
-		;Default setting
-	RegRead, type, HKCR, .%Ext%
-	RegRead, act , HKCR, %type%\shell
+if (InStr(Ext, "exe") || InStr(Ext, "com") || InStr(Ext, "scr")) ; "real" executables
+	strPrg := prgPath
+else
+{
+	RegRead, type, HKCU, Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.%Ext%, Application
 		If (ErrorLevel)
-		act = open
-	RegRead, strPrg , HKCR, %type%\shell\%act%\command
-	}
-	else
-	{ ;Current user has overridden default setting
-	RegRead, act, HKCU, Software\Classes\Applications\%type%\shell
-		If (ErrorLevel)
-		act = open
-	RegRead, strPrg, HKCU, Software\Classes\Applications\%type%\shell\%act%\command
-	}
-	; strip first quote
-foundpos := InStr(strPrg, "")
+		{
+			;Default setting
+		RegRead, type, HKCR, .%Ext%
+		RegRead, act , HKCR, %type%\shell
+			If (ErrorLevel)
+			act = open
+		RegRead, strPrg , HKCR, %type%\shell\%act%\command
+		}
+		else
+		{ ;Current user has overridden default setting
+		RegRead, act, HKCU, Software\Classes\Applications\%type%\shell
+			If (ErrorLevel)
+			act = open
+		RegRead, strPrg, HKCU, Software\Classes\Applications\%type%\shell\%act%\command
+		}
+		; strip first quote
+	foundpos := InStr(strPrg, """")
 
-strPrg := SubStr(strPrg, foundpos + 1, StrLen(strPrg))
-; strip last quote and all that follows
-foundpos := InStr(strPrg, """")
+	strPrg := SubStr(strPrg, foundpos + 1, StrLen(strPrg))
+	; strip last quote and all that follows
+	foundpos := InStr(strPrg, """")
 
-if (foundpos)
-strPrg := SubStr(strPrg, 1, foundpos-1)
-
+	if (foundpos)
+	strPrg := SubStr(strPrg, 1, foundpos-1)
+}
 return strPrg
 }
 
@@ -6012,13 +6016,7 @@ NewThreadforDownload: ;Timer!
 		{
 		IniRead, fTemp, %PrgLnchIni%, General, PrgLaunchAfterDL
 
-			if (!fTemp)
-			{
-			FileGetVersion, PrgverNew, % strTemp
-			PrgVer[selPrgChoice] := PrgVerNew
-			IniWrite, %PrgVerNew%, %PrgLnchIni%, Prg%selPrgChoice%, PrgVer
-			}
-			else
+			if (fTemp)
 			{
 			MsgBox, 8195, , Launch the newly downloaded Prg to test it? `nIf replying 'Yes', PrgLnch will require the launched Prg to be closed before continuing any further.`n`nReply:`nYes: Launch (Warn like this next time)`nNo: Do not launch (Warn like this next time) `nCancel: Do not launch (This will not show again): `n
 				IfMsgBox, Yes
@@ -6040,6 +6038,13 @@ NewThreadforDownload: ;Timer!
 					IniWrite, 1, %PrgLnchIni%, General, PrgLaunchAfterDL
 				}
 			}
+			else
+			{
+			FileGetVersion, PrgverNew, % strTemp
+			PrgVer[selPrgChoice] := PrgVerNew
+			IniWrite, %PrgVerNew%, %PrgLnchIni%, Prg%selPrgChoice%, PrgVer
+			}
+
 		strTemp2 := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
 		if (strTemp != strTemp2)
 		{
@@ -6047,7 +6052,7 @@ NewThreadforDownload: ;Timer!
 		SplitPath, strTemp,, strTemp
 			if (strTemp2 = strTemp)
 			{
-				MsgBox, 8193, , % "The updated Prg has been given this path name:`n" strTemp "`nThe original Prg still exists with this path name.`n" strTemp2 "`nOK: Delete the original`nCancel: Keep the original as a backup copy."
+				MsgBox, 8193, , % "The updated Prg is allocated this path name:`n" strTemp "`nThe original Prg still exists with this path name.`n" strTemp2 "`nOK: Delete the original`nCancel: Keep the original as a backup copy."
 				IfMsgBox, Ok
 				{
 					Try
@@ -6063,7 +6068,7 @@ NewThreadforDownload: ;Timer!
 			IniWrite, %strTemp%, %PrgLnchIni%, Prg%selPrgChoice%, PrgPath
 			}
 			else
-			MsgBox, 8208, % "The updated Prg has this path name:`n" strTemp "`nThe original Prg has this path name.`n" strTemp2 "`nIf the location used for the download of Prg is to be the desired one, then delete the existing Prg shortcut entry before creating a new shortcut for this new location."
+			MsgBox, 8208, % "The updated Prg is allocated this folder:`n" strTemp "`nThe original Prg is allocated this folder.`n" strTemp2 "`nGiven the location used for the download of Prg is preferred, for the purposes of housekeeping, consider the manual removal of the old location."
 		}
 		; else Prg is overwritten
 		}
@@ -6300,8 +6305,7 @@ req.SetTimeouts(1000,1000,1000,1000)
 	Return 0
 }
 
-
-DoLAAPatch(targExe)
+DoLAAPatch(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep)
 {
 e_lfanew := 0, e_magic := 0, ntHeaders32 := 0, temp := 0
 
@@ -6330,8 +6334,11 @@ IMAGE_FILE_DLL := 0x2000
 IMAGE_FILE_UP_SYSTEM_ONLY := 0x4000 ; What's an UP machine?
 IMAGE_FILE_BYTES_REVERSED_HI := 0x8000 ;obsolete
 
+exeStr := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, temp, IniFileShortctSep)
+exeStr := AssocQueryApp(exeStr)
 
-exeStr := FileOpen(targExe, "rw" "-rwd")
+exeStr := FileOpen(exeStr , "rw" "-rwd")
+
 
 if (IsObject(exeStr))
 {
@@ -7605,6 +7612,11 @@ IfExist, % fileName
 
 	if (!IsaPrgLnk)
 	{
+		FileGetVersion, foundpos, % fileName
+			if (ErrorLevel)
+			fileName := AssocQueryApp(fileName)
+
+		; Try again if association
 		FileGetVersion, foundpos, % fileName
 			if (ErrorLevel)
 			errorText .= "Problem with file version.`n"
