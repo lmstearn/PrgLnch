@@ -1669,7 +1669,8 @@ if (PrgPID)
 	}
 }
 WinMover(PrgLnchOpt.Hwnd(),"d r")
-Gui, PrgLnchOpt: Show
+Gui, PrgLnchOpt: Show, , PrgLnch Options
+
 sleep, 100
 
 Gui, PrgLnch: Show, Hide, PrgLnch
@@ -2199,10 +2200,10 @@ if (ItemHandle = ChgResonSwitchHwnd)
 retVal := RunChm("PrgLnch Config`\PrgLnch Config", "ChgResonSwitch")
 else
 if (ItemHandle = PrgPriorityHwnd)
-retVal := RunChm("PrgLnch Config`\PrgLnch Config", "MinMax")
+retVal := RunChm("PrgLnch Config`\PrgLnch Config", "Priority")
 else
 if (ItemHandle = PrgMinMaxHwnd)
-retVal := RunChm("PrgLnch Config`\PrgLnch Config", "Priority")
+retVal := RunChm("PrgLnch Config`\PrgLnch Config", "MinMax")
 else
 if (ItemHandle = BordlessHwnd)
 retVal := RunChm("PrgLnch Config`\PrgLnch Config", "Borderless")
@@ -2211,7 +2212,7 @@ if (ItemHandle = PrgLnchHdHwnd)
 retVal := RunChm("PrgLnch Config`\PrgLnch Config", "HidePrgLnchonRun")
 else
 if (ItemHandle = resolveShortctHwnd)
-retVal := RunChm("PrgLnch Config`\PrgLnch Config", "resolveShortcutToFile")
+retVal := RunChm("PrgLnch Config`\PrgLnch Config", "ResolveShortcut")
 else
 if (ItemHandle = TestHwnd)
 retVal := RunChm("PrgLnch Config`\PrgLnch Config", "TestMode")
@@ -3722,7 +3723,7 @@ Util_VersionCompare(other,local)
 }
 
 
-#IfWinActive, PrgLnchOpt ahk_class AutoHotkeyGUI
+#IfWinActive, PrgLnch Options ahk_class AutoHotkeyGUI
 {
 Del::
 
