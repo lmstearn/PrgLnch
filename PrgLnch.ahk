@@ -342,6 +342,7 @@ sleep 120
 if (!disclaimer)
 IniRead, disclaimer, %PrgLnchIni%, General, Disclaimer
 
+msgbox % disclaimer " " PrgLnchIni
 if (!disclaimer || disclaimer = "Error")
 {
 msgbox, 8196 ,Disclaimer, % disclaimtxt
@@ -6678,7 +6679,7 @@ IniProcStart:
 
 if (!FileExistPrgLnchIni)
 	{
-	IniWrite, 1, %PrgLnchIni%, General, Disclaimer
+	IniWrite, % (reWriteini)? 1: 0, %PrgLnchIni%, General, Disclaimer
 	IniWrite, %A_Space%, %PrgLnchIni%, General, DefResmsg
 	IniWrite, %A_Space%, %PrgLnchIni%, General, TermPrgMsg
 
@@ -7698,7 +7699,7 @@ if (propH + h > (tempBottom - tempTop))
 
 
 SplashImage, PrgLnchProperties.jpg, Hide,,,LnchSplash
-Gui, PrgProperties: Show
+Gui, PrgProperties: Show, , Prg Properties (Version 2.x)
 
 }
 PrgPropFont(sprHwnd)
