@@ -342,7 +342,7 @@ sleep 120
 if (!disclaimer)
 IniRead, disclaimer, %PrgLnchIni%, General, Disclaimer
 
-msgbox % disclaimer " " PrgLnchIni
+
 if (!disclaimer || disclaimer = "Error")
 {
 msgbox, 8196 ,Disclaimer, % disclaimtxt
