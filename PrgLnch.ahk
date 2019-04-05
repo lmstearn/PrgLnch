@@ -561,7 +561,7 @@ Gui, PrgLnchOpt: font ;factory  defaults
 
 Gui, PrgLnchOpt: Add, Checkbox, vChgResonSwitch gChgResonSwitchChk HWNDChgResonSwitchHwnd, Change Res on Switch
 GuiControl, PrgLnchOpt: Disable, ChgResonSwitch
-Gui, PrgLnchOpt: Add, Checkbox, ys vPrgMinMax gPrgMinMaxChk HWNDPrgMinMaxHwnd Check3 wp, Min/Max (Min-Norm-Max)
+Gui, PrgLnchOpt: Add, Checkbox, ys vPrgMinMax gPrgMinMaxChk HWNDPrgMinMaxHwnd Check3 wp, Window (Min-Norm-Max)
 GuiControl, PrgLnchOpt: Enable, PrgMinMax
 GuiControl, PrgLnchOpt:, PrgMinMax, -1
 Gui, PrgLnchOpt: Add, Checkbox, vPrgPriority gPrgPriorityChk HWNDPrgPriorityHwnd Check3 wp, Prg Priority (N-BN-H)
@@ -5292,10 +5292,7 @@ strRetVal := "", strTemp2 := ""
 	; get workdir: This blanks  all if not lnk file so expect return of "*"
 	FileGetShortcut, % strTemp, , strRetVal
 		if (strRetVal)
-		{
 		strRetVal .= "\"
-		msgbox % strTemp "    " strRetVal
-		}
 		else ; lnk might be a directory shortcut
 		{
 		FileGetShortcut, % strTemp, strRetVal
@@ -6795,6 +6792,7 @@ if (!FileExistPrgLnchIni)
 	IniWrite, %A_Space%, %PrgLnchIni%, General, UseReg
 	IniWrite, %A_Space%, %PrgLnchIni%, General, NavShortcut
 	IniWrite, %A_Space%, %PrgLnchIni%, General, WarnAlreadyRunning
+	IniWrite, %A_Space%, %PrgLnchIni%, General, OnlyOneMonitor
 
 
 	IniWrite, % (defPrgStrng)? defPrgStrng: None, %PrgLnchIni%, Prgs, StartupPrgName
@@ -7043,7 +7041,15 @@ if (!FileExistPrgLnchIni)
 								Continue
 								}
 								else
-								MsgBox, 8192, One Monitor, No more than one logical monitor!`nMost likely cause is driver removal.`nInformational only- if driver has just been updated.
+								{
+								IniRead, foundpos, %PrgLnchIni%, General, OnlyOneMonitor
+									if (!foundpos)
+									{
+									MsgBox, 8196, , % "One Monitor, No more than one logical monitor!`nMost likely cause is driver removal.`nInformational only- if driver has just been updated.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
+										IfMsgBox, No
+										IniWrite, 1, %PrgLnchIni%, General, OnlyOneMonitor
+									}
+								}
 								}
 								}
 								}
