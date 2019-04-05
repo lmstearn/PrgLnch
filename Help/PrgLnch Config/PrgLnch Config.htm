@@ -9,19 +9,20 @@
 </HEAD>
 <BODY>
 <h1>PrgLnch Config</h1>
+<h2>Prg Options</h2>
 <table class="info">
  <tr href="#" id="ShortcutSlots">
   <td>Shortcut Slots:
 </td>
-<td>Select a Shortcut Slot to fill or modify it, or clear the text in order to remove it with the <I>del</I> key or <a href="#ModifyShortcut">Modify Shortcut</a> button below. Else leave at "None" to change the resolution of the selected monitor. The <a href="PrgLnch FAQ.htm#Del">Del key</a> is reserved for removing all contents of the box.
+<td>Select a Shortcut Slot to fill or modify the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a>, or clear the text in order to remove it with the <I>del</I> key or <a href="#ModifyShortcut">Modify Shortcut</a> button below. Else leave at "None" to change the resolution of the selected monitor. The <a href="PrgLnch FAQ.htm#Del">Del key</a> is reserved for removing all contents of the box.
 </td>
  </tr>
  <tr href="#" id="ModifyShortcut">
 <td>
-Modify Shortcut:
+Change, or modify Shortcut:
 </td>
 <td>
-Depending on the contents of <a href="#ShortcutSlots">Shortcut Slot</a> above, the current Prg name and/or path can be added, modified, or removed with this button.
+Depending on the contents of <a href="#ShortcutSlots">Shortcut Slot</a> above, the current Prg name and/or path associated with the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a> can be added, modified, or removed with this button.
 </td>
 </tr>
 <tr href="#" id="CmdLineExtras">
@@ -45,15 +46,21 @@ Monitor List:
 Numbered list of monitors. The colour of the <a href="#MonitorName">MonitorName</a> above indicates its usabilty.
 </td>
 </tr>
-<tr href="#" id="ShowAtStartup">
+<tr href="#" id="ResolveShortcut">
 <td>
-Show At Startup:
+Shortcut Nav. (Dlg.)/Resolve Shortcut:
 </td>
 <td>
-If checked, the current Prg shows as selected at next PrgLnch run.
+This check (greyed if Prg is linked directly to an executable) refers to two settings:<br>
+<STRONG>Shortcut Nav. (Dlg.)</STRONG>:
+If checked, all links in the <a href="#ModifyShortcut">Make Shortcut</a> dialog are supposed to be resolved, so all executable files bar <B>*.lnk</B> files are available.
+ When unchecked, navigation through links in the <a href="#ModifyShortcut">Make Shortcut</a> dialog is not possible, thus it's possible for the selected Prg to be a file with a <B>*.lnk</B> extension.<br>
+<STRONG>Resolve Shortcut</STRONG>:
+This is greyed if Prg is not a <B>.lnk</B> file.<br>
+When unchecked, the linked executable file or verb is then launched with the properties specified in the <B>.lnk</B> file (seen through the file explorer) in play. Here, the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a> command line and URL options are unavailable. When checked, the <B>*.lnk</B> properties are ignored, command line options are available, and the selected resolved target is now used.</a>.
 </td>
  </tr>
-</table> 
+</table>
 
 <h2>Res Options</h2>
 <dl>
@@ -79,36 +86,35 @@ Resolution changes are in effect only while PrgLnch is running.
 </dd>
 </dl>
 <dl href="#" id="PullValuesFromRegistry">
-  <dt><h3>Pull values from registry</h3>
-</dt>
+  <dt><h3>Pull values from registry</h3></dt>
   <dd>Retrieves the settings for the monitor that are currently stored in the registry rather than those used for the current monitor before changing resolution. In most cases they will match.</dd>
 </dl>
-
-<table class="info">
-<tr id="DefaultResolution">
-<td>
+<dl id="DefaultResolution">
+<dt>
 Default Resolution:
-</td>
-<td>
-Currently  used (or default) resolution for the selected monitor.
-</td>
- </tr>
-<tr href="#" id="ListAllCompatible" >
-<td>
+</dt>
+<dd>
+Currently used (or default) resolution for the selected monitor.
+</dd>
+ </dl>
+<dl href="#" id="ListAllCompatible" >
+<dt>
 List All Compatible:
-</td>
-<td>
+</dt>
+<dd>
 Checking this box expands the <a href="#ResolutionModes">list below</a> to all available resolution modes for the selected monitor.
-</td>
- </tr>
-<tr href="#" id="ResolutionModes">
-<td>
+</dd>
+ </dl>
+<dt href="#" id="ResolutionModes">
+<dt>
 Resolution Modes:
-</td>
-<td>
-List of resolution modes for the selected monitor. 32 bit bits per pixel (<a href="https://en.wikipedia.org/wiki/Color_depth#True_color_.2824-bit.29">True Colour</a>) is the current standard.
-</td>
-</tr>
+</dt>
+<dd>
+List of resolution modes for the selected monitor. 32 bit bits per pixel (<a href="https://en.wikipedia.org/wiki/Color_depth#True_color_.2824-bit.29">True Colour</a>) is the current standard. 
+</dd>
+</dl>
+<h2>More Prg Options</h2>
+<table class="info">
 <tr href="#" id="ChgResonSwitch">
 <td>
 Change Resolution on Switch:
@@ -116,20 +122,13 @@ Change Resolution on Switch:
 <td>
 Advanced Users: If a Prg is run on the same monitor as PrgLnch at a resolution other than the <a href="PrgLnch Config/PrgLnch Config.htm#DefaultResolution">Default Resolution</a>, switching from Prg to PrgLnch and vice-versa will change the resolutions accordingly.
 </td>
-<tr href="#" id="HidePrgLnchonRun">
+</tr>
+<tr href="#" id="MinMax">
 <td>
-Hide PrgLnch on Run:
+Window Minimised, Normal, or Maximised:
 </td>
 <td>
-Hides the PrgLnch Gui after a Prg is launched. The Gui will re-appear when either the Prg is terminated, or is active in a Batch Preset followed by other Prgs launched in the Preset that do not have this setting checked.
-</td>
- </tr>
-<tr href="#" id="Borderless">
-<td>
-Borderless:
-</td>
-<td>
-Applies the Borderless Attribute to the Prgs Window. Can be toggled while the Prg is active.
+Provisional on certain window properties of Prg, the default value is Norm (Normal) for its expected window positions and dimensions, else the Prg can be run maximised or minimised. Disabled for <B>*.lnk</B> files which have their own window settings configurable through explorer.
 </td>
  </tr>
 <tr href="#" id="Priority">
@@ -140,14 +139,30 @@ Priority:
 Default value is N (Normal). Check the box for H (High) priority or clear it for BN (Below Normal). Can be toggled while the Prg is active.
 </td>
  </tr>
-<tr href="#" id="PrgCanBeShortcutToFile">
+<tr href="#" id="Borderless">
 <td>
-Prg Can Be a Shortcut to File:
+Borderless:
 </td>
 <td>
-When checked, Prg can be a file with a <B>*.lnk</B> extension. This happens when selecting a <B>.lnk</B> file in the <a href="#ModifyShortcut">Modify Shortcut</a> dialog. Otherwise <B>.lnk</B> targets are resolved.
+Applies the Borderless Attribute to the Prgs Window. Can be toggled while the Prg is active.
 </td>
  </tr>
+<tr href="#" id="HidePrgLnchonRun">
+<td>
+Hide PrgLnch on Run:
+</td>
+<td>
+Hides the PrgLnch Gui after a Prg is launched. The Gui will re-appear when either the Prg is terminated, or is active in a Batch Preset followed by other Prgs launched in the Preset that do not have this setting checked.
+</td>
+ </tr>
+<tr href="#" id="ShowAtStartup">
+<td>
+Show At Startup:
+</td>
+<td>
+If checked, the current Prg shows as selected at the next run of PrgLnch.
+</td>
+ </tr> 
 <tr href="#" id="ApplyLAAFlag">
 <td>
 Apply LAA Flag:
@@ -161,8 +176,7 @@ Writes an <B>L</B>arge <B>A</B>ddress <B>A</B>ware flag to the executable. Most 
 Test Run Prg:
 </td>
 <td>
-Either runs the Prg or <a href="PrgLnch FAQ.htm#PrgCancellation">cancels</a> one that is running already. A notification is generated if the Prg is already active in a Batch Preset.
-</td>
+Either runs the Prg or <a href="PrgLnch FAQ.htm#PrgCancellation">cancels</a> one that is running already. A notification is generated if the Prg is already active in a Batch Preset. When <a href="#ShortcutSlots">Shortcut Slots</a> is "None", the button changes the resolution for the selected <a href="#MonitorList">monitor</a>. If a Prg on a <a href="PrgLnch Config/PrgLnch Config.htm#TestRunPrg">Test Run</a> is running after PrgLnch closes, it will not be detected as running in PrgLnch Config when PrgLnch restarts.</td>
  </tr>
 <tr href="#" id="UpdatePrg">
 <td>
