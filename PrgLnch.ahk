@@ -564,7 +564,7 @@ GuiControl, PrgLnchOpt: Disable, ChgResonSwitch
 Gui, PrgLnchOpt: Add, Checkbox, ys vPrgMinMax gPrgMinMaxChk HWNDPrgMinMaxHwnd Check3 wp, Window (Min-Norm-Max)
 GuiControl, PrgLnchOpt: Enable, PrgMinMax
 GuiControl, PrgLnchOpt:, PrgMinMax, -1
-Gui, PrgLnchOpt: Add, Checkbox, vPrgPriority gPrgPriorityChk HWNDPrgPriorityHwnd Check3 wp, Prg Priority (N-BN-H)
+Gui, PrgLnchOpt: Add, Checkbox, vPrgPriority gPrgPriorityChk HWNDPrgPriorityHwnd Check3 wp, Prg Priority (BN-N-H)
 ;check3 enables 3 values in checkbox
 GuiControl, PrgLnchOpt: Enable, PrgPriority
 GuiControl, PrgLnchOpt:, PrgPriority, -1
@@ -731,7 +731,7 @@ Gui, PrgLnch: Add, UpDown, vMovePrg gMovePrgProc HWNDMovePrgHwnd Range%temp%-0 ;
 
 Gui, PrgLnch: Add, Text, ys vstatic wp, Prg Status
 Gui, PrgLnch: Add, ListBox, vbatchPrgStatus gbatchPrgStatusSub HWNDbatchPrgStatusHwnd AltSubmit
-Gui, PrgLnch: Add, Checkbox, vPrgInterval gPrgIntervalChk HWNDPrgIntervalHwnd Check3 wp, Prg Lnch Interval: (Med-Short-Long)
+Gui, PrgLnch: Add, Checkbox, vPrgInterval gPrgIntervalChk HWNDPrgIntervalHwnd Check3 wp, Prg Lnch Interval: (Short-Med-Long)
 GuiControl, PrgLnch: Enable, PrgInterval
 GuiControl, PrgLnch:, PrgInterval, % PrgIntervalLnch
 sleep 20
