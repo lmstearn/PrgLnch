@@ -737,7 +737,7 @@ GuiControl, PrgLnch:, PrgInterval, % PrgIntervalLnch
 sleep 20
 
 Gui, PrgLnch: Add, Checkbox, ys vDefPreset gDefPresetSub HWNDDefPresetHwnd, This Preset at Load
-Gui, PrgLnch: Add, Checkbox, vPrgExitTerm gPrgExitTermChk HWNDPrgExitTermChkHwnd wp, Terminate Prg(s) on PrgLnch Exit
+Gui, PrgLnch: Add, Checkbox, vPrgExitTerm gPrgExitTermChk HWNDPrgExitTermChkHwnd wp, Terminate Batch `non PrgLnch Exit
 GuiControl, PrgLnch: Enable, PrgExitTerm
 GuiControl, PrgLnch:, PrgExitTerm, % PrgTermExit
 sleep 20
@@ -2009,19 +2009,14 @@ if (PrgTermExit)
 	loop % PrgNo
 		{ 
 		temp := PrgPIDMast[A_Index]
-		if (temp)
-		WinClose, ahk_pid%temp%
-		sleep, 200
-		if (temp)
-		KillPrg(temp)
+			if (temp)
+			{
+			WinClose, ahk_pid%temp%
+			sleep, 200
+			if (temp)
+			KillPrg(temp)
+			}
 		}
-	if (PrgPID)
-	{
-	WinClose, ahk_pid%PrgPID%
-	sleep, 200
-	if (PrgPID)
-	KillPrg(PrgPID)
-	}
 }
 else
 {
@@ -2186,7 +2181,7 @@ if (ItemHandle = DefPresetHwnd)
 retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "ThisPresetatLoad")
 else
 if (ItemHandle = PrgExitTermChkHwnd)
-retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "TerminatePrgs")
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "TerminateBatch")
 else
 if (ItemHandle = DefaultPrgHwnd)
 retVal := RunChm("PrgLnch Config`\PrgLnch Config", "ShowAtStartup")
@@ -5439,7 +5434,7 @@ WinMaximize, ahk_pid%PrgPID%
 ;Monitor routines
 GetDisplayData(PrgLnchMon, targMonitorNum, ByRef dispMonNamesNo := 0, ByRef iDevNumArray := 0, ByRef dispMonNames := 0, ByRef scrDPI := 0, ByRef scrWidth := 0, ByRef scrHeight := 0, ByRef scrInterlace := 0, ByRef scrFreq := 0, iMode := -2, iChange := 0)
 {
-Device_Mode := 0, iDevNumb = 0, temp := 0, retVal := 0, DM_Position := 0, devFlags := 0, devKey := 0, OffsetDWORD := 4 ; Defined above but not global fn
+Device_Mode := 0, iDevNumb = 0, ftemp := 0, temp := 0, retVal := 0, DM_Position := 0, devFlags := 0, devKey := 0, OffsetDWORD := 4 ; Defined above but not global fn
 iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 	if (iMode = -3)
@@ -5513,7 +5508,13 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 			if (iDevNumArray[iDevNumb])
 			{
 			if (iDevNumArray[iDevNumb] != iLocDevNumArray[iDevNumb])
-			x := x ;MsgBox, 8192, , A configurational change in the monitor setup is detected.`nThis may affect how some Prgs run.
+			{
+				if (!ftemp)
+				{
+				MsgBox, 8192, , A configurational change in the monitor setup is detected.`nThis may affect how some Prgs run.
+				ftemp := 1
+				}
+			}
 			}
 			else
 			iDevNumArray[iDevNumb] := iLocDevNumArray[iDevNumb]
