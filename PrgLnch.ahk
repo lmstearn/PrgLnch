@@ -5,13 +5,15 @@
 ;#Warn, All , MsgBox ; Enable warnings to assist with detecting common errors.
 SendMode Input  ; Recommended for new scripts due to superior speed & reliability.
 
-retVal := 0 ;Ensures a consistent starting directory.
-retVal := WorkingDirectory(A_ScriptDir, 1)
-If (retVal)
-MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
+FileSetAttrib, -RH, % A_ScriptDir . "`\*.*", 1
+
+;Ensures a consistent starting directory.
+strRetVal := WorkingDirectory(A_ScriptDir, 1)
+If (strRetVal)
+MsgBox, 8192, Initialise, % strRetVal
 
 SetTitleMatchMode, 2
-#MaxThreads 3
+#MaxThreads 5
 #Persistent
 #Warn UseUnsetLocal, OutputDebug  ; Warn when a local variable is used before it's set; send to OutputDebug
 ; ListVars for debugging
@@ -161,7 +163,6 @@ UpdturlHwnd := 0
 ;check
 PrgIntervalHwnd := 0
 DefPresetHwnd := 0
-PrgExitTermChkHwnd := 0
 DefaultPrgHwnd := 0
 RegoHwnd := 0
 allModesHwnd := 0
@@ -227,7 +228,7 @@ PrgBdyBtchTog := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgBdyBtchTogTmp := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PresetNames := ["", "", "", "", "", ""]
 PresetNamesBak := ["", "", "", "", "", ""]
-IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
+IniChoiceNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgPIDMast := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 Loop %maxBatchPrgs%
 {
@@ -254,6 +255,9 @@ strPrgChoice := "|None|"
 defPrgStrng := "None"
 ChgShortcutVar := "Change Shortcut"
 txtPrgChoice := ""
+iniTxtPrgChoice := ""
+GoConfigTxt = Prg Config
+iniSel := 0
 selPrgChoice := 1
 selPrgChoiceTimer := 0
 txtCmd := 0
@@ -277,9 +281,10 @@ strTemp2 := ""
 MakeLongVar := 0
 ;Prevents unecessary extra reads when this counter exceeds 4
 inputOnceOnly := 0
-PrgLnchIni := A_ScriptDir . "`\" . SubStr( A_ScriptName, 1, -3 ) . "ini"
+PrgLnchIni := A_ScriptDir . "`\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
 SelIniChoicePath := PrgLnchIni
 SelIniChoiceName := ""
+oldSelIniChoiceName := ""
 dispMonNames := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 ResArray := [[],[],[]]
 iDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -337,16 +342,47 @@ IfExist, % PrgLnchIni
 	sleep, 90
 	}
 
-
-if (IniProcIniFile(0, SelIniChoicePath, IniChoicePaths, PrgNo, strIniChoice))
+strTemp := 0
+strTemp2 := 0
+temp := 0
+for temp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
 {
-SelIniChoicePath := PrgLnchIni
-IniWrite, %A_Space%, %SelIniChoicePath%, General, SelIniChoicePath
-IniWrite, %IniChoicePaths%, %SelIniChoicePath%, General, IniChoicePaths
-(IniProcIniFile(0, SelIniChoicePath, IniChoicePaths, PrgNo, strIniChoice))
+	if (InStr(strRetVal, "|"))
+	strTemp := strRetVal ; dealt with after Iniproc
+	else
+	{
+		if (temp = 2)
+		{
+		SelIniChoiceName := strRetVal
+			if (strRetVal != "PrgLnch")
+			Break
+		}
+	strTemp2 := strRetVal ;Warning: Temp variable used long way down
+	}
 }
-SplitPath, SelIniChoicePath, , , , SelIniChoiceName
 
+strRetVal := IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+if (strRetVal)
+{
+msgbox, 8192 , Ini File, % strRetVal
+	if (FileExist("%PrgLnchIni%"))
+	{
+	SelIniChoicePath := PrgLnchIni
+	IniWrite, %A_Space%, %SelIniChoicePath%, General, SelIniChoicePath
+	IniWrite, %IniChoiceNames%, %SelIniChoicePath%, General, IniChoiceNames
+	IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+	}
+	; If file missing go to Disclaimer
+}
+oldSelIniChoiceName := selIniChoiceName
+Loop % PrgNo
+{
+	if (IniChoiceNames[A_Index] = SelIniChoiceName)
+	{
+	iniSel := A_Index
+	Break
+	}
+}
 
 IniProc(scrWidth, scrHeight, scrFreq)
 sleep 90
@@ -359,7 +395,7 @@ IniRead, disclaimer, %SelIniChoicePath%, General, Disclaimer
 
 if (!disclaimer || disclaimer = "Error")
 {
-msgbox, 8196 ,Disclaimer, % disclaimtxt
+msgbox, 8196 , Disclaimer, % disclaimtxt
 	IfMsgBox, Yes
 	{
 	IniWrite, 1, %SelIniChoicePath%, General, Disclaimer
@@ -382,14 +418,7 @@ sleep, 120
 	IniSpaceCleaner(SelIniChoicePath)
 }
 
-; RestartPrgLnch?
-strTemp := 0
-temp := 0
-for temp, strTemp in A_Args  ; For each parameter (or file dropped onto a script):
-{
-	if (InStr(strTemp, "|"))
-	Break
-}
+; Restarted PrgLnch (see above): Must happen after inialising PrgPID, PrgListPID.
 if (strTemp)
 {
 	Loop, parse, strTemp, | ; Parse the string based on the pipe symbol.
@@ -601,7 +630,7 @@ GuiControlGet, txtPrgChoice, PrgLnchOpt:, PrgChoice
 
 
 
-if (ChkPrgNames(txtPrgChoice)) ;shouldn't happen on load
+if (ChkPrgNames(txtPrgChoice, PrgNo)) ;shouldn't happen on load
 {
 	txtPrgChoice := "None"
 	GuiControl, PrgLnchOpt: Text, PrgChoice, None
@@ -751,19 +780,28 @@ GuiControl, PrgLnch:, PrgInterval, % PrgIntervalLnch
 sleep 20
 
 Gui, PrgLnch: Add, Checkbox, ys vDefPreset gDefPresetSub HWNDDefPresetHwnd, This Preset at Load
-;Gui, PrgLnch: Add, Checkbox, vPrgExitTerm gPrgExitTermChk HWNDPrgExitTermChkHwnd wp, Terminate Batch `non PrgLnch Exit
-;GuiControl, PrgLnch: Enable, PrgExitTerm
-;GuiControl, PrgLnch:, PrgExitTerm, % PrgTermExit
+
 sleep 20
 
 Gui, PrgLnch: Add, Button, cdefault vRunBatchPrg gRunBatchPrgSub HWNDRunBatchPrgHwnd wp, &Run Batch
-Gui, PrgLnch: Add, Button, cdefault gGoConfig HWNDGoConfigHwnd wp, &Prg Config
-Gui, PrgLnch: Add, Button, cdefault HWNDquitHwnd wp, &Quit_PrgLnch
+Gui, PrgLnch: Add, Button, cdefault vGoConfigVar gGoConfig HWNDGoConfigHwnd wp, % "&" GoConfigTxt
+
 Gui, PrgLnch: Add, ComboBox, vIniChoice gIniChoiceSel HWNDIniChoiceHwnd
-
 GuiControl, PrgLnch:, IniChoice, %strIniChoice%
-GuiControl, % "PrgLnch:" (SelIniChoiceName = "PrgLnch")? "Text": "Choose", IniChoice, % SelIniChoiceName
 
+
+if (SelIniChoiceName = "PrgLnch")
+{
+	if (strTemp2)
+	GuiControl, PrgLnch: Choose, IniChoice, %strTemp2%
+	else
+	SetEditCueBanner(IniChoiceHwnd, "Lnch Pad Slot", 1)
+	}
+else
+GuiControl, PrgLnch: Choose, IniChoice, %SelIniChoiceName%
+
+
+Gui, PrgLnch: Add, Button, cdefault HWNDquitHwnd wp, &Quit_PrgLnch
 
 ; init conditions
 currBatchNo := 0
@@ -1669,41 +1707,91 @@ GoSub LnchPrgLnch
 
 Return
 
-GoConfig:
-presetNoTest := 0
-PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, PrgPIDMast, 1)
-IfWinExist, % "ahk_id" PrgPropsHwnd
-{
-Gui, PrgProperties: Destroy
-PrgPropsHwnd := 0
-}
 
-if (PrgPID)
+GoConfig:
+Gui PrgLnch: +OwnDialogs
+
+if (GoConfigTxt = "Save Lnch Pad")
 {
-	Process, Exist, % PrgPID
-	if (!ErrorLevel)
+ToolTip
+GoConfigTxt = Prg Config
+GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
+
+
+Loop, % prgNo
+{
+	if (iniTxtPrgChoice = IniChoiceNames[A_Index])
 	{
-	PrgPID := 0
-	HideShowTestRunCtrls(1)
+	iniTxtPrgChoice = IniName
+	GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+	Return
 	}
 }
-WinMover(PrgLnchOpt.Hwnd(),"d r")
-Gui, PrgLnchOpt: Show, , PrgLnch Options
 
-sleep, 100
+SelIniChoiceName := iniTxtPrgChoice
+SelIniChoicePath := A_ScriptDir . "`\" . SelIniChoiceName . ".ini"
 
-Gui, PrgLnch: Show, Hide, PrgLnch
-Return
-
-
-PrgExitTermChk:
-Gui, PrgLnch: Submit, Nohide
-PrgTermExit := PrgExitTerm
-if (PrgTermExit)
-IniWrite, %PrgTermExit%, %SelIniChoicePath%, Prgs, PrgTermExit
+;Not replacing if exists!
+FileCopy %PrgLnchini%, %SelIniChoicePath%
+	if (ErrorLevel)
+	{
+	MsgBox, 8192, File Copy , % SelIniChoiceName " Lnch Pad Slot could not be created!"
+	iniTxtPrgChoice = IniName
+	GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+	Return
+	}
+	; Type at start
+	if (!iniSel)
+	iniSel := 1
+IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+oldSelIniChoiceName := selIniChoiceName
+GuiControl, PrgLnch:, IniChoice, %strIniChoice%
+GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
+}
 else
-IniWrite, %A_Space%, %SelIniChoicePath%, Prgs, PrgTermExit
+{
+
+	if (GoConfigTxt = "Del Lnch Pad")
+	{
+		ControlSetText,,,ahk_id %IniChoiceHwnd%
+		GuiControl, PrgLnch:, IniChoice,
+		;  iniTxtPrgChoice should be null
+			if (!ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini"))
+			GoSub IniChoiceSel
+
+	}
+	else
+	{
+
+
+
+	presetNoTest := 0
+	PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, PrgPIDMast, 1)
+	IfWinExist, % "ahk_id" PrgPropsHwnd
+	{
+	Gui, PrgProperties: Destroy
+	PrgPropsHwnd := 0
+	}
+
+	if (PrgPID)
+	{
+		Process, Exist, % PrgPID
+		if (!ErrorLevel)
+		{
+		PrgPID := 0
+		HideShowTestRunCtrls(1)
+		}
+	}
+	WinMover(PrgLnchOpt.Hwnd(),"d r")
+	Gui, PrgLnchOpt: Show, , PrgLnch Options
+
+	sleep, 100
+
+	Gui, PrgLnch: Show, Hide, PrgLnch
+	}
+}
 Return
+
 
 PrgIntervalChk:
 Gui, PrgLnch: Submit, Nohide
@@ -1736,44 +1824,230 @@ Return
 
 ;IniChoice section
 IniChoiceSel:
+Gui, PrgLnch: Submit, Nohide
+Gui PrgLnch: +OwnDialogs
+Tooltip
+SendMessage 0x147, 0, 0, , ahk_id %IniChoiceHwnd%  ; CB_GETCURSEL
+
+
+If (ErrorLevel = "FAIL")
+	{
+	Gui, PrgLnch: Submit, Nohide
+	MsgBox, 8192, , CB_GETCURSEL Failed
+	}
+else
+	{
+
+	retVal := ErrorLevel << 32 >> 32
+		if (retVal < 0) ;Did the user type?
+		{
+		sleep 200 ;slow down input?
+		GuiControlGet, iniTxtPrgChoice, PrgLnch:, IniChoice
+
+		;Pre-validation
+
+		if (ChkCmdLineValidFName(iniTxtPrgChoice, 1))
+		GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+
+
+		if (StrLen(iniTxtPrgChoice) > 20000) ;length?
+		{
+		iniTxtPrgChoice := SubStr(iniTxtPrgChoice, 1, 20000)
+		GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+		}
+
+		if (ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini"))
+		{
+		;"0" happens rarely on "timing glitch??"
+		iniTxtPrgChoice := "IniName"
+		GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+		}
+		else
+		{
+			if (iniTxtPrgChoice)
+			{
+				GoConfigTxt := "Save Lnch Pad"
+				ToolTip, "Click `"Save Lnch Pad`" to save."
+				GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+
+			}
+			else
+			{
+				if (GoConfigTxt = "Del Lnch Pad")
+				{
+				ToolTip
+				MsgBox, 8193, Del Lnch Pad, Really delete the Lnch Pad?`nThis will also remove the file.
+					IfMsgBox, Ok
+					{
+					IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
+					GuiControl, PrgLnch:, IniChoice, %strIniChoice%
+					GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
+					oldSelIniChoiceName := SelIniChoiceName
+					FileDelete, %SelIniChoicePath%
+						if (ErrorLevel)
+						MsgBox, 8192, File Delete , % SelIniChoicePath " Lnch Pad file could not be removed!"
+					}
+					else
+					{
+					iniTxtPrgChoice := SelIniChoiceName
+					GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+					}
+					GoConfigTxt = Prg Config
+				}
+				else
+				{
+				GoConfigTxt = Del Lnch Pad
+				ToolTip, "Click `"Del Lnch Pad`" or hit Del to confirm."
+				}
+			GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+			}
+		}
+		}
+		else ; Clicked here
+		{
+		GuiControlGet, iniTxtPrgChoice, PrgLnch:, IniChoice
+		if (iniTxtPrgChoice = oldSelIniChoiceName)
+		Return
+		iniSel := retVal + 1
+
+		strRetVal := WorkingDirectory(A_ScriptDir, 1)
+		If (strRetVal)
+		MsgBox, 8192, Script Directory, % strRetVal "`nCannot load Lnch Pad file!"
+		else
+		{
+		if (ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini"))
+		{
+			if (!ChkPrgNames(oldSelIniChoiceName, PrgNo, "Ini"))
+			{
+			IniRead, fTemp, %PrgLnchIni%, General, DefPresetSettings
+
+			if (!fTemp)
+			{
+			temp := 0
+			MsgBox, 8195, Current or default settings, A spare Lnch Pad slot has just been clicked.`nIt can be initialised with either the current or default Lnch Pad.`n`nReply:`nYes: Use current (Warn like this next time)`nNo: Do not use current (Recommended: This will not show again)`nCancel: Do not use current (Warn like this next time):`n
+				IfMsgBox, Yes
+				{
+				strTemp := SelIniChoicePath
+				SelIniChoiceName .= iniSel
+				iniTxtPrgChoice := SelIniChoiceName
+				IniChoiceNames[iniSel] := SelIniChoiceName
+				SelIniChoicePath := A_ScriptDir . "`\" . SelIniChoiceName . ".ini"
+
+				FileCopy %strTemp%, %SelIniChoicePath%
+
+					if (ErrorLevel)
+					MsgBox, 8192, File Copy , % SelIniChoiceName " Lnch Pad could not be created!"
+				}
+				else
+				{
+					IfMsgBox, No
+					temp := 1
+
+				SelIniChoiceName := "PrgLnch"
+				; Update all ini files
+				UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames, temp)
+				RestartPrgLnch(0, SelIniChoiceName, iniTxtPrgChoice)
+				}
+			}
+			}
+
+		}
+		else
+		RestartPrgLnch(0, iniTxtPrgChoice)
+		
+		oldSelIniChoiceName := SelIniChoiceName
+		}
+		}
+	}
 Return
 
-
-IniProcIniFile(iniSel, ByRef SelIniChoicePath, ByRef IniChoicePaths, PrgNo, ByRef strIniChoice, removeIni := 0)
+UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames := 0, DefPresetSettings := 0) ; won't allow A_Space
 {
-strTemp := "", spr := "", foundPos := 0
-if (iniSel)
-{
+spr := "", strTemp := "", fTemp := 0
+IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
-	if (removeIni)
-	IniChoicePaths[iniSel] := "Ini" . iniSel
+	strTemp := % (SelIniChoiceName = "Ini" . iniSel)? A_Space: SelIniChoiceName
+	Loop % PrgNo
+	{
+		if (IniChoiceNames[A_Index] = "Ini" . A_Index)
+		spr .= ","
+		else
+		{
+		spr .= IniChoiceNames[A_Index] . ","
+		IniChoicePaths[A_Index] := A_ScriptDir . "`\" . IniChoiceNames[A_Index] . ".ini"
+		IniWrite, %strTemp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
+			if (Errorlevel)
+			{
+			MsgBox, 8196, , % "The following Lnch Pad Slot file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others, `nNo: Quit updating (Not recommended): `n"
+				IfMsgBox, No
+				Return
+			}
+		}
+	}
+	
+	IniWrite, %strTemp%, %PrgLnchIni%, General, SelIniChoiceName
+		if (Errorlevel)
+		MsgBox, 8192, , % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTemp
+	
+	; Trim last ","
+	spr := SubStr(spr, 1, StrLen(spr) - 1)
+	Loop % PrgNo
+	{
+		if (IniChoicePaths[A_Index])
+		IniWrite, %spr%, % IniChoicePaths[A_Index], General, IniChoiceNames
+	}
+	IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
+
 
 	Loop % PrgNo
 	{
-		if (IniChoicePaths[iniSel] = "Ini" . A_Index)
-		spr .= ","
-		else
-		spr .= IniChoicePaths[iniSel]
+		if (IniChoicePaths[A_Index])
+		IniWrite, % (DefPresetSettings)? 1: A_Space, % IniChoicePaths[A_Index], General, DefPresetSettings
 	}
-	IniWrite, %spr%, % IniChoicePaths[iniSel], General, IniChoicePaths
-	foundPos := InStr(strIniChoice, "|", false, 1, iniSel + 1)
-	spr := SubStr(strIniChoice, 1, foundPos) . spr ;Bar is  to replace, not append  the  gui control string
+	IniWrite, % (DefPresetSettings)? 1: A_Space, %PrgLnchIni%, General, DefPresetSettings
+
+}
+
+
+IniProcIniFile(iniSel, ByRef SelIniChoicePath, ByRef SelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, removeIni := 0)
+{
+strTemp := "", spr := "", foundPos := 0
+PrgLnchPath := A_ScriptDir . "`\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
+if (iniSel)
+{
+	if (removeIni)
+	{
+	SelIniChoiceName := "Ini" . iniSel
+	IniChoiceNames[iniSel] := SelIniChoiceName
+	}
+	else
+	IniChoiceNames[iniSel] := SelIniChoiceName
+
+	UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchPath, SelIniChoiceName, IniChoiceNames)
+	foundPos := InStr(strIniChoice, "|", false, 1, iniSel)
+	spr := SubStr(strIniChoice, 1, foundPos) . SelIniChoiceName ;Bar is  to replace, not append  the  gui control string
 	foundPos := InStr(strIniChoice, "|", false, foundPos + 1)
 	strIniChoice := spr . SubStr(strIniChoice, foundPos)
 
 }
 else ; Read in names
 {
-IniRead, spr, %SelIniChoicePath%, General, SelIniChoicePath
+if (SelIniChoiceName)
+SelIniChoicePath := A_ScriptDir . "`\" . SelIniChoiceName . ".ini" 
 
-;Happens at start
-if !spr
-IniWrite, %SelIniChoicePath%, %SelIniChoicePath%, General, SelIniChoicePath
+;Update PrgLnch.ini & SelIniChoiceName.ini with IniChoiceNames list
+IniRead, spr, %SelIniChoicePath%, General, SelIniChoiceName
 
-IniRead, spr,  %SelIniChoicePath%, General, IniChoicePaths
+
+if (spr)
+SelIniChoiceName := spr
+else ;Happens on first run
+IniWrite, PrgLnch, %SelIniChoicePath%, General, SelIniChoiceName
+
+IniRead, spr, %SelIniChoicePath%, General, IniChoiceNames
 
 if (spr = "Error" || SelIniChoicePath = "Error")
-Return Ini file has an error- Reverting to PrgLnch.ini
+Return "Lnch Pad Slot file is in error- Reverting to PrgLnch.ini."
 
 strIniChoice := "|"
 	Loop, Parse, spr, CSV, %A_Space%%A_Tab%
@@ -1781,22 +2055,21 @@ strIniChoice := "|"
 		if (A_LoopField)
 		{
 		foundPos := 1
-		IniChoicePaths[A_Index] := A_LoopField
-		SplitPath, A_LoopField, , , , strTemp
-		strIniChoice .= strTemp . "|"
+		IniChoiceNames[A_Index] := A_LoopField
+		;SplitPath, A_LoopField, , , , strTemp
+		strIniChoice .= A_LoopField . "|"
 		}
 		else
 		{
-		IniChoicePaths[A_Index] := "Ini" . A_Index
-		strIniChoice .= IniChoicePaths[A_Index] . "|"
+		IniChoiceNames[A_Index] := "Ini" . A_Index
+		strIniChoice .= IniChoiceNames[A_Index] . "|"
 		}
 	}
 }
+
 if (!foundPos)
-{
-SplitPath, SelIniChoicePath, , , , strTemp
-IniChoicePaths[1] := strTemp
-}
+SplitPath, SelIniChoicePath, , , , SelIniChoiceName
+
 
 Return 0
 }
@@ -2178,17 +2451,17 @@ loop % PrgNo
 	{
 	if (!InStr(PrgLnkInf[A_Index], "*"))
 	strTemp := PrgLnkInf[A_Index]
-	retVal := WorkingDirectory(strTemp, 1)
-	If (retVal)
-	MsgBox, 8192, , % "Clean up failed for `n" strTemp "`nwith error: " retVal
+	strRetVal := WorkingDirectory(strTemp, 1)
+	If (strRetVal)
+	MsgBox, 8192, File Deletion, % strRetVal "`nClean up failed!"
 	else
 	KleenupPrgLnchFiles()
 	}
 }
 
-retVal := WorkingDirectory(A_ScriptDir, 1)
-If (retVal)
-MsgBox, 8192, , % "Clean up failed with error: " retVal
+strRetVal := WorkingDirectory(A_ScriptDir, 1)
+If (strRetVal)
+MsgBox, 8192, File Deletion, % strRetVal "`nClean up failed!"
 else
 KleenupPrgLnchFiles()
 
@@ -2276,8 +2549,8 @@ else
 if (ItemHandle = DefPresetHwnd)
 retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "ThisPresetatLoad")
 else
-if (ItemHandle = PrgExitTermChkHwnd)
-retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "TerminateBatch")
+if (ItemHandle = IniChoiceHwnd)
+retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "LnchPadSlots")
 else
 if (ItemHandle = DefaultPrgHwnd)
 retVal := RunChm("PrgLnch Config`\PrgLnch Config", "ShowAtStartup")
@@ -2378,9 +2651,9 @@ return -1
 WinGetPos, x, y, w, , A
 
 if (chmTopic)
-run %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm#%Anchor%,, UseErrorLevel
+run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm#%Anchor%,, UseErrorLevel
 else
-run %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/About%A_Space%PrgLnch.htm,, UseErrorLevel
+run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/About%A_Space%PrgLnch.htm,, UseErrorLevel
 sleep, 120
 
 
@@ -2461,9 +2734,9 @@ Tooltip
 
 UDM_SETRANGE := 0X0465
 
-retVal := WorkingDirectory(A_ScriptDir, 1)
-If (retVal)
-MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
+strRetVal := WorkingDirectory(A_ScriptDir, 1)
+If (strRetVal)
+MsgBox, 8192, Missing script, % strRetVal
 
 SplashImage, PrgLnchLoading.jpg, A B,,, LnchSplash
 WinGetPos, , , w, h, LnchSplash
@@ -2634,7 +2907,7 @@ Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 ;ChkPrgNames better than txtPrgChoice
 
-if (!PrgChoiceNames[selPrgChoice] || ChkPrgNames(PrgChoiceNames[selPrgChoice]))
+if (!PrgChoiceNames[selPrgChoice] || ChkPrgNames(PrgChoiceNames[selPrgChoice], PrgNo))
 navShortcut := resolveShortct
 else
 {
@@ -2794,10 +3067,14 @@ PrgURLGui(ByRef PrgUrl, ByRef PrgUrlTest, SelPrgChoice, NoSaveURL := 0)
 	}
 }
 
-SetEditCueBanner(HWND, Cue)
+SetEditCueBanner(HWND, Cue, IsCombo := 0)
 {
 ; requires AHL_L: JustMe
 Static EM_SETCUEBANNER := (0x1500 + 1)
+Static CB_SETCUEBANNER := (0x1700 + 3)
+if (IsCombo)
+Return DllCall("User32.dll\SendMessageW", "Ptr", HWND, "Uint", CB_SETCUEBANNER, "Ptr", True, "WStr", Cue)
+else
 Return DllCall("User32.dll\SendMessageW", "Ptr", HWND, "Uint", EM_SETCUEBANNER, "Ptr", True, "WStr", Cue)
 }
 MakeLong(LoWord, HiWord) ; courtesy Chris
@@ -3007,10 +3284,7 @@ if (!stat)
 		IfMsgBox, Yes
 		strTemp := "" ; dummy condition
 		else
-		{
-		IfMsgBox, No
 		IniWrite, 1, %SelIniChoicePath%, General, ResClashMsg
-		}
 	}
 }
 Return stat
@@ -3075,6 +3349,11 @@ SetResDefaults(targMonitorNum, currRes, Dynamic, FMode, ByRef scrWidth, ByRef sc
 
 
 
+
+
+
+
+;Navigational
 PrgChoice:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
@@ -3124,7 +3403,7 @@ else
 
 		if (temp != "Just Change Res.") ; Otherwise don't care if typed over "None"
 		{
-			if (ChkPrgNames(txtPrgChoice))
+			if (ChkPrgNames(txtPrgChoice, PrgNo))
 			{
 			;"0" happens rarely on "timing glitch??"
 			txtPrgChoice := "PrgName"
@@ -3255,14 +3534,10 @@ txtPrgChoice := "Prg" . selPrgChoice
 if (txtPrgChoice = "")
 {
 
-	Loop % PrgNo
+	if (batchActive)
 	{
-	temp := PrgPIDMast[A_Index]
-		if (temp)
-		{
-		MsgBox, 8192, , % "Sorry, Prgs cannot be removed while any are active in Batch!"
-		Return
-		}
+	MsgBox, 8192, , % "Sorry, Prgs cannot be removed while any are active in Batch!"
+	Return
 	}
 
 	;SelPrgChoice is last selected
@@ -3282,9 +3557,9 @@ if (txtPrgChoice = "")
 	GuiControl, PrgLnchOpt: , DefaultPrg, 0
 	GuiControl, PrgLnchOpt: Disable, DefaultPrg
 
-	retVal := WorkingDirectory(A_ScriptDir, 1)
-	If (retVal)
-	MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
+	strRetVal := WorkingDirectory(A_ScriptDir, 1)
+	If (strRetVal)
+	MsgBox, 8192, Prg Path, % strRetVal
 
 	IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice, 1)
 	strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
@@ -3316,7 +3591,7 @@ if (txtPrgChoice = "")
 }
 else
 {
-	if (ChkPrgNames(txtPrgChoice))
+	if (ChkPrgNames(txtPrgChoice, PrgNo))
 	temp := 0
 	else
 	{
@@ -3417,26 +3692,26 @@ else
 		strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 			if (InStr(strRetVal, "*"))
 			;Invalid working  directory- now strip the last "\"
-			temp := WorkingDirectory(strTemp)
+			strTemp2 := WorkingDirectory(strTemp)
 			else
 			{
 				if (InStr(strRetVal, "|"))
 				{
 				; Directory links cannot be "resolved"
-				temp := WorkingDirectory(strTemp)
+				strTemp2 := WorkingDirectory(strTemp)
 				strRetVal .= "*"
 				}
 				else
 				{
 				PrgResolveShortcut[selPrgChoice] := 0
 				; strip the last "\":  gets working directory of lnk, if any
-				temp := WorkingDirectory(strRetVal)
+				strTemp2 := WorkingDirectory(strRetVal)
 				}
 			}
 
-			if (temp)
+			if (strTemp2)
 			{
-			MsgBox, 8192, , % "Read of Prg Path:`n" PrgChoicePaths[selPrgChoice] "`nfailed with error: " temp "!"
+			MsgBox, 8192, Prg Path, % strTemp2
 			txtPrgChoice := "Prg" . selPrgChoice
 			PrgLnkInf[selPrgChoice] := ""
 			PrgChoicePaths[selPrgChoice] := ""
@@ -3495,16 +3770,42 @@ else
 	}
 }
 Return
-ChkPrgNames(testName)
+
+ChkCmdLineValidFName(ByRef testStr, CmdLine := 0)
 {
-if (testName = "0" || testName = "Prg1" || testName = "Prg2" || testName = "Prg3" || testName = "Prg4" || testName = "Prg5" || testName = "Prg6" || testName = "Prg7" || testName = "Prg8" || testName = "Prg9" || testName = "Prg10" || testName = "Prg11" || testName = "Prg12" || testName = "PrgLnch" || testName = "BadPath")
+temp := 0, fTemp := 0
+;No commas either
+testStr := RegExReplace(testStr, "[\\\/:*?""<>|,]", , temp)
+; "
+
+if (CmdLine)
+testStr := RegExReplace(testStr, "\s+", , (!temp)? temp: fTemp)
+
+Return % (!temp)? temp: fTemp
+}
+
+
+ChkPrgNames(testName, PrgNo, IniBox := "")
+{
+If (Inibox)
+spr := IniBox
+else
+spr = Prg
+
+Loop % PrgNo
+{
+if (testName = spr . A_Index)
+return 1
+}
+
+if (testName = "0" || testName = "PrgLnch" || testName = "BadPath")
 return 1
 else
 return 0
 }
 ComboBugFix(strPrgChoice, PrgNo)
 {
-temp := 0, temp1 := 0, foundpos1 := 0, foundpos := InStr(strPrgChoice, "||")
+temp := 0, temp1 := 0, foundpos1 := 0, strRetVal:= "", foundpos := InStr(strPrgChoice, "||")
 ;Addresses weird bug when partially matched names are removed and added to the combobox
 
 StringReplace, temp, strPrgChoice, |, |, UseErrorLevel ; finds all occurrences of needle in haystack
@@ -3512,9 +3813,9 @@ StringReplace, temp, strPrgChoice, |, |, UseErrorLevel ; finds all occurrences o
 	if (ErrorLevel != PrgNo + 2)
 	{
 	MsgBox, 8192, , PrgLnch has an encountered an unexpected error! Attempting Restart!
-	retVal := WorkingDirectory(A_ScriptDir, 1)
-	If (retVal)
-	MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
+	strRetVal := WorkingDirectory(A_ScriptDir, 1)
+	If (strRetVal)
+	MsgBox, 8192, ComboBugFix, % strRetVal
 	if (FileExist(PrgLnch.exe))
 	Return RestartPrgLnch()
 	}
@@ -3842,7 +4143,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 		{
 			if (temp = "Remove Shortcut")
 			{
-				if (ChkPrgNames(txtPrgChoice))
+				if (ChkPrgNames(txtPrgChoice, PrgNo))
 				{
 				strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 				}
@@ -3878,7 +4179,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 			{
 			if (temp = "Remove Shortcut")
 			{
-				if (ChkPrgNames(txtPrgChoice))
+				if (ChkPrgNames(txtPrgChoice, PrgNo))
 				{
 				strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 				}
@@ -3896,6 +4197,8 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 Return
 }
 
+
+
 #IfWinActive, PrgLnch ahk_class AutoHotkeyGUI
 {
 Del::
@@ -3904,6 +4207,16 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 	{
 	GuiControl, PrgLnch:, PresetName,
 	;PresetNameSub automatically invoked
+	}
+	else
+	{
+		if (strTemp = "IniChoice")
+		{
+		ControlSetText,,,ahk_id %IniChoiceHwnd%
+		GuiControl, PrgLnch:, IniChoice,
+			if (!ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini"))
+			GoSub IniChoiceSel
+		}
 	}
 Return
 }
@@ -4267,9 +4580,9 @@ if (lnchPrgIndex > 0) ;Running
 	IfExist, % PrgPaths
 	;If Notepad, copy Notepad exe to  %A_ScriptDir% and it will not run! (Windows 10 1607)
 	{
-	retVal := WorkingDirectory(PrgPaths, 1)
-	If (retVal)
-	Return % "Read of Prg Path:`n" PrgPaths "`nfailed with error: " retVal "!"
+	strRetVal := WorkingDirectory(PrgPaths, 1)
+	If (strRetVal)
+	Return % strRetVal
 
 	If (!IsaPrgLnk && PrgCmdLine[lnchPrgIndex])
 	PrgPaths := PrgPaths . A_Space . PrgCmdLine[lnchPrgIndex]
@@ -4312,7 +4625,7 @@ if (lnchPrgIndex > 0) ;Running
 		strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 		if (strRetVal)
 		{
-		MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n`" strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo, Do not launch the Prg: `n"
+		MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n`" strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
 		IfMsgBox, No
 		Return "Cancelled by user!"
 		}
@@ -4422,7 +4735,7 @@ if (lnchPrgIndex > 0) ;Running
 			strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 			if (strRetVal)
 			{
-			MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n` " strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo, Do not launch the Prg: `n"
+			MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n` " strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
 			IfMsgBox, No
 			Return "Cancelled by user!"
 			}
@@ -4865,11 +5178,11 @@ global
 
 CleanupPID(SelIniChoicePath, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, batchActive := 0)
 {
-temp := 0, PrgStyle := 0, dx := 0, dy:= 0
+temp := 0, strRetVal := "", PrgStyle := 0, dx := 0, dy:= 0
 
-retVal := WorkingDirectory(A_ScriptDir, 1)
-If (retVal)
-MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
+strRetVal := WorkingDirectory(A_ScriptDir, 1)
+If (strRetVal)
+MsgBox, 8192, Cleanup PID, % strRetVal
 if (presetNoTest)
 {
 	if (PrgPID)
@@ -5039,12 +5352,12 @@ join(strArray)
 }
 CheckPrgPaths(selPrgChoice, IniFileShortctSep, ByRef PrgChoicePaths, ByRef PrgLnkInf, ByRef PrgResolveShortcut, scrWidth, scrHeight, scrFreq)
 {
-Local retVal := 0, strTemp := PrgChoicePaths[selPrgChoice], temp := PrgLnkInf[selPrgChoice]
+Local strRetVal := "", strTemp := PrgChoicePaths[selPrgChoice], strTemp2 := PrgLnkInf[selPrgChoice]
 ;gets, tests working directory of possible lnk, if any
-	if (InStr(temp, "*"))
+	if (InStr(strTemp2, "*"))
 	{
-	retVal := WorkingDirectory(strTemp)
-		if (!retVal && InStr(strTemp, ".lnk", False, StrLen(strTemp) - 4))
+	strRetVal := WorkingDirectory(strTemp)
+		if (!strRetVal && InStr(strTemp, ".lnk", False, StrLen(strTemp) - 4))
 		{
 			if ("*" = GetPrgLnkVal(strTemp, IniFileShortctSep))
 			MsgBox, 8192, , The link %strTemp% is invalid!
@@ -5056,7 +5369,7 @@ Local retVal := 0, strTemp := PrgChoicePaths[selPrgChoice], temp := PrgLnkInf[se
 	lnkPrg := Substr(strTemp, 1, InStr(strTemp, IniFileShortctSep,, 0) -1)
 		IfNotExist, % lnkPrg
 		{
-			if (InStr(temp, "\", false, StrLen(temp)))
+			if (InStr(strTemp2, "\", false, StrLen(strTemp2)))
 			{
 			MsgBox, 8196, , The link %lnkPrg% is invalid.`nGiven that its target stil exists, the Prg can still be used.`n`nReply:`nYes: Attempt to use the target`nNo: Do nothing, in case the lnk file can be recovered.`n
 				IfMsgBox, Yes
@@ -5066,19 +5379,19 @@ Local retVal := 0, strTemp := PrgChoicePaths[selPrgChoice], temp := PrgLnkInf[se
 				PrgResolveShortcut[selPrgChoice] := 0
 				PrgLnkInf[selPrgChoice] := "*"
 				IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
-				retVal := WorkingDirectory(strTemp)
+				strRetVal := WorkingDirectory(strTemp)
 				}
 				else
-				retVal := 0				
+				strRetVal := ""
 			}
 			else
-			retVal := 1
+			strRetVal := % strTemp "`nwas supposed to have a backslash terminator!"
 		}
 	}
-if (retVal)
-MsgBox, 8192, , % "Read of Prg Path:`n" strTemp "`nfailed with error: " retVal "!"
+if (strRetVal)
+MsgBox, 8192, Checking Prg Paths, % strRetVal
 
-Return retval
+Return strRetVal
 }
 FindMatchingPID(lnchStat, currBatchNo, PrgListPIDbtchPrgPresetSel, PrgPID)
 {
@@ -5104,15 +5417,15 @@ Return 0
 
 KillPrg(poorPID)
 {
-strTemp := 0
+strTemp := "" , strRetVal := ""
 Process, Close, ahk_pid %poorPID%
 sleep, 200
 
 if (poorPID)
 	{
-	retVal := WorkingDirectory(A_ScriptDir, 1)
-	If (retVal)
-	MsgBox, 8192, , % "Read of Script Path failed with error: " retVal "!"
+	strRetVal := WorkingDirectory(A_ScriptDir, 1)
+	If (strRetVal)
+	MsgBox, 8192, Cancel Prg, % strRetVal
 	if (FileExist(taskkillPrg.bat))
 		{
 		FileDelete, taskkillPrg.bat
@@ -5422,7 +5735,10 @@ retVal := 0, strTemp2 := ""
 		SetWorkingDir %A_ScriptDir% ; Caution: Working Dir can be altered by other processes
 	}
 ; 0 success
-Return retVal
+if (retVal)
+Return "An error of " retVal " occurred while reading path:`n" strTemp
+else
+Return ""
 }
 
 /*
@@ -6119,7 +6435,7 @@ else ;interrupted download but wish to continue
 	{
 
 		;;verify URL
-
+									
 		If (!RegExMatch(PrgUrlTest, "^(https?://|www\.)[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(/\S*)?$"))
 		{
 			MsgBox, 8193, , The URL doesn't appear valid. Use it?
@@ -6292,7 +6608,7 @@ DownloadFile(UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 			}
 
 
-
+			ChkCmdLineValidFName(temp)
 			SaveFileAs := temp
 			Gui, PrgLnchOpt: -OwnDialogs
 
@@ -6860,7 +7176,7 @@ GuiControl, PrgLnchOpt: Show, PrgLAA
 IniProc(ByRef scrWidth := 1920, ByRef scrHeight := 1080, ByRef scrFreq := 60, selPrgChoice := 0, removeRec := 0)
 {
 
-Local foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, k := 0, spr := 0, reWriteIni := 0, FileExistSelIniChoicePath:= FileExist(SelIniChoicePath)
+Local foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, k := 0, spr := "", reWriteIni := 0, FileExistSelIniChoicePath:= FileExist(SelIniChoicePath)
 ; Local implies  or assumes global function
 
 IniProcStart:
@@ -6890,10 +7206,12 @@ if (!FileExistSelIniChoicePath)
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, NavShortcut
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, WarnAlreadyRunning
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, OnlyOneMonitor
+	IniWrite, %A_Space%, %SelIniChoicePath%, General, DefPresetSettings
+
 	if (reWriteini) ; always write ini names to PrgLnch.ini !
-	IniWrite,  % SelIniChoicePath, %PrgLnchIni%, General, SelIniChoicePath
+	IniWrite,  %SelIniChoiceName%, %PrgLnchIni%, General, SelIniChoiceName
 	else
-	IniWrite,  % PrgLnchIni, %PrgLnchIni%, General, SelIniChoicePath
+	IniWrite,  PrgLnch, %PrgLnchIni%, General, SelIniChoiceName
 	
 	spr := ""
 	strIniChoice := "" ; Global variable
@@ -6901,15 +7219,15 @@ if (!FileExistSelIniChoicePath)
 		{
 			loop % PrgNo
 			{
-			if (IniChoicePaths[A_Index] = "Ini" . A_Index)
+			if (IniChoiceNames[A_Index] = "Ini" . A_Index)
 			{
 			spr .= ","
 			strIniChoice .= "Ini" . A_Index . "|"
 			}
 			else
 			{
-			spr .= "IniChoicePaths[A_Index],"
-			strIniChoice .= IniChoicePaths[A_Index] . "|"
+			spr .= "IniChoiceNames[A_Index],"
+			strIniChoice .= IniChoiceNames[A_Index] . "|"
 			}
 			}
 		}
@@ -6923,7 +7241,7 @@ if (!FileExistSelIniChoicePath)
 		}
 
 	spr := Substr(spr, 1, InStr(spr, ",",, 0) -1)
-	IniWrite, %spr%, %PrgLnchIni%, General, IniChoicePaths
+	IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
 
 
 
@@ -6956,13 +7274,13 @@ if (!FileExistSelIniChoicePath)
 		;for  each PrgChoicePaths[%A_Index%]
 		if (reWriteini)
 		{
-		strTemp := PrgChoicePaths[A_Index]
-		if (strTemp)
+		spr := PrgChoicePaths[A_Index]
+		if (spr)
 		{
-			if (InStr(strTemp, ".lnk", False, StrLen(strTemp) - 4))
+			if (InStr(spr, ".lnk", False, StrLen(spr) - 4))
 				{
 				;Append resolved path
-				strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
+				strRetVal := GetPrgLnkVal(spr, IniFileShortctSep)
 				if (!InStr(strRetVal, "*") || InStr(strRetVal, "|"))
 				PrgChoicePaths[A_Index] .= IniFileShortctSep . strRetVal
 				}
@@ -7997,10 +8315,11 @@ MCode(ByRef code, hex)
 	Loop % StrLen(hex)//2
 	NumPut("0x" . SubStr(hex,2*A_Index-1,2), code, A_Index-1, "Char")
 }
-RestartPrgLnch(AsAdmin := 0)
+RestartPrgLnch(AsAdmin := 0, chgPreset := "", SprIniSlot := "")
 {
 Global
 Local strTemp := "", temp := 0, strTemp2 := ""
+
 
 strTemp := PrgPID . "|"
 	loop % maxBatchPrgs
@@ -8008,22 +8327,29 @@ strTemp := PrgPID . "|"
 	temp := A_Index
 		loop % maxBatchPrgs
 		{
-		strTemp .= PrgListPID%temp%[A_Index] . ","
+		strTemp .= PrgListPID%temp%[A_Index] . "`,"
 		}
 	strTemp .= "|"
 	}
-temp := ""
+temp := (AsAdmin)? "*RunAs ": ""
 full_command_line := DllCall("GetCommandLine", "str")
 
-	if (!RegExMatch(full_command_line, " /restart(?!\S)"))
+	; Is this condition absolutely necessary here?
+	if (!RegExMatch(full_command_line, " /restart(?!\S)") || chgPreset)
 	{
 		try
 		{
 		if (A_IsCompiled)
-		temp .= ((AsAdmin)? "*RunAs ": " ") . """" . A_ScriptFullPath . """" . " /restart " . strTemp
+		temp .= """" . A_ScriptFullPath . """" . " /restart """ . strTemp . """ """ . chgPreset . """ """ . SprIniSlot . """"
 		else
-		temp .= ((AsAdmin)? "*RunAs ": " ") . """" . A_AhkPath . """" . " /restart " . """" . A_ScriptFullPath . """" . " " . strTemp
-		Run % temp
+		temp .= """" . A_AhkPath . """" . " /restart " . """" . A_ScriptFullPath . """ """ . strTemp . """ """ . chgPreset . """ """ . SprIniSlot . """"
+		; restart may not work if LOAD phase is not completed- test it!!!
+		Run, %temp%, %A_ScriptDir%
+		}
+		catch fTemp
+		{
+		MsgBox, 8192, ReLaunch, % "PrgLnch could not restart with error " fTemp "."
+		KleenupPrgLnchFiles()
 		}
 	SetTimer, NewThreadforDownload, Delete ;Cleanup
 	ExitApp
@@ -8033,7 +8359,7 @@ full_command_line := DllCall("GetCommandLine", "str")
 	Return %strTemp2%
 	else
 	{
-	MsgBox, 8192, , % strTemp2
+	MsgBox, 8192, ReLaunch, % strTemp2
 	Return 1
 	}
 }
