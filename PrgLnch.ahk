@@ -336,52 +336,50 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 	} 
 }
 
-IfExist, % PrgLnchIni
+if (FileExist(PrgLnchIni))
 	{
 	IniSpaceCleaner(PrgLnchIni, 1) ;  fix old version
 	sleep, 90
-	}
 
-strTemp := 0
-strTemp2 := 0
-temp := 0
-for temp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
-{
-	if (InStr(strRetVal, "|"))
-	strTemp := strRetVal ; dealt with after Iniproc
-	else
+	strTemp := 0
+	strTemp2 := 0
+	temp := 0
+	for temp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
 	{
-		if (temp = 2)
+		if (InStr(strRetVal, "|"))
+		strTemp := strRetVal ; dealt with after Iniproc
+		else
 		{
-		SelIniChoiceName := strRetVal
-			if (strRetVal != "PrgLnch")
-			Break
+			if (temp = 2)
+			{
+			SelIniChoiceName := strRetVal
+				if (strRetVal != "PrgLnch")
+				Break
+			}
+		strTemp2 := strRetVal ;Warning: Temp variable used long way down
 		}
-	strTemp2 := strRetVal ;Warning: Temp variable used long way down
 	}
-}
 
-strRetVal := IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
-if (strRetVal)
-{
-msgbox, 8192 , Ini File, % strRetVal
-	if (FileExist("%PrgLnchIni%"))
-	{
-	SelIniChoicePath := PrgLnchIni
-	IniWrite, %A_Space%, %SelIniChoicePath%, General, SelIniChoicePath
-	IniWrite, %IniChoiceNames%, %SelIniChoicePath%, General, IniChoiceNames
-	IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
-	}
-	; If file missing go to Disclaimer
-}
-oldSelIniChoiceName := selIniChoiceName
-Loop % PrgNo
-{
-	if (IniChoiceNames[A_Index] = SelIniChoiceName)
-	{
-	iniSel := A_Index
-	Break
-	}
+
+	strRetVal := IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+		if (strRetVal)
+		{
+		msgbox, 8192 , Ini File, % strRetVal
+		SelIniChoicePath := PrgLnchIni
+		IniWrite, %A_Space%, %SelIniChoicePath%, General, SelIniChoiceName
+		IniWrite, %IniChoiceNames%, %SelIniChoicePath%, General, IniChoiceNames
+		IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+		; If file missing go to Disclaimer
+		}
+	oldSelIniChoiceName := selIniChoiceName
+		Loop % PrgNo
+		{
+			if (IniChoiceNames[A_Index] = SelIniChoiceName)
+			{
+			iniSel := A_Index
+			Break
+			}
+		}
 }
 
 IniProc(scrWidth, scrHeight, scrFreq)
@@ -389,7 +387,7 @@ sleep 90
 
 
 
-if (!disclaimer)
+
 IniRead, disclaimer, %SelIniChoicePath%, General, Disclaimer
 
 
@@ -402,6 +400,9 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 	FileInstall PrgLnch.chm, PrgLnch.chm
 	sleep, 300
 	SetTimer, RnChmWelcome, 3500
+	; init Lnch Pad here
+	IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+	oldSelIniChoiceName := selIniChoiceName
 	}
 	else
 	{
@@ -1735,7 +1736,7 @@ SelIniChoicePath := A_ScriptDir . "`\" . SelIniChoiceName . ".ini"
 FileCopy %PrgLnchini%, %SelIniChoicePath%
 	if (ErrorLevel)
 	{
-	MsgBox, 8192, File Copy , % SelIniChoiceName " Lnch Pad Slot could not be created!"
+	MsgBox, 8192, File Copy , % SelIniChoiceName " Lnch Pad could not be created!"
 	iniTxtPrgChoice = IniName
 	GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
 	Return
@@ -1930,19 +1931,21 @@ else
 				strTemp := SelIniChoicePath
 				SelIniChoiceName .= iniSel
 				iniTxtPrgChoice := SelIniChoiceName
-				IniChoiceNames[iniSel] := SelIniChoiceName
 				SelIniChoicePath := A_ScriptDir . "`\" . SelIniChoiceName . ".ini"
 
 				FileCopy %strTemp%, %SelIniChoicePath%
 
 					if (ErrorLevel)
 					MsgBox, 8192, File Copy , % SelIniChoiceName " Lnch Pad could not be created!"
+				IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+				GuiControl, PrgLnch:, IniChoice, %strIniChoice%
+				GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
 				}
 				else
 				{
 					IfMsgBox, No
 					temp := 1
-
+msgbox % "bad iniTxtPrgChoice " iniTxtPrgChoice
 				SelIniChoiceName := "PrgLnch"
 				; Update all ini files
 				UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames, temp)
@@ -1953,7 +1956,11 @@ else
 
 		}
 		else
+		{
+		msgbox % "good iniTxtPrgChoice " iniTxtPrgChoice
+		UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, iniTxtPrgChoice, IniChoiceNames)
 		RestartPrgLnch(0, iniTxtPrgChoice)
+		}
 		
 		oldSelIniChoiceName := SelIniChoiceName
 		}
@@ -1978,7 +1985,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		IniWrite, %strTemp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
 			if (Errorlevel)
 			{
-			MsgBox, 8196, , % "The following Lnch Pad Slot file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others, `nNo: Quit updating (Not recommended): `n"
+			MsgBox, 8196, , % "The following Lnch Pad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the Lnch Pads. `n"
 				IfMsgBox, No
 				Return
 			}
@@ -2047,7 +2054,7 @@ IniWrite, PrgLnch, %SelIniChoicePath%, General, SelIniChoiceName
 IniRead, spr, %SelIniChoicePath%, General, IniChoiceNames
 
 if (spr = "Error" || SelIniChoicePath = "Error")
-Return "Lnch Pad Slot file is in error- Reverting to PrgLnch.ini."
+Return "Lnch Pad file is in error- Reverting to PrgLnch.ini."
 
 strIniChoice := "|"
 	Loop, Parse, spr, CSV, %A_Space%%A_Tab%
@@ -2477,6 +2484,8 @@ ifexist, PrgLnchProperties.jpg
 FileDelete, PrgLnchProperties.jpg
 ifexist, PrgLnch.chm
 FileDelete, PrgLnch.chm
+ifexist, PrgLnch.chw
+FileDelete, PrgLnch.chw
 ifexist, taskkillPrg.bat
 FileDelete, taskkillPrg.bat
 }
