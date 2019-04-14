@@ -57,7 +57,7 @@ If checked, all links in the <a href="#ModifyShortcut">Make Shortcut</a> dialog 
  When unchecked, navigation through links in the <a href="#ModifyShortcut">Make Shortcut</a> dialog is not possible, thus it's possible for the selected Prg to be a file with a <B>*.lnk</B> extension.<br>
 <STRONG>Resolve Shortcut</STRONG>:
 This is greyed if Prg is not a <B>.lnk</B> file.<br>
-When unchecked, the linked executable file or verb is then launched with the properties specified in the <B>.lnk</B> file (seen through the file explorer) in play. Here, the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a> command line and URL options are unavailable. When checked, the <B>*.lnk</B> properties are ignored, command line options are available, and the selected resolved target is now used.</a>.
+When unchecked, the linked executable file or verb is then launched with the properties specified in the <B>.lnk</B> file (seen through the file explorer) in play. Here, the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a> command line and URL options are unavailable. When checked, the <B>*.lnk</B> properties are ignored, command line options are available, and the selected resolved target is now used.
 </td>
  </tr>
 </table>
@@ -85,21 +85,20 @@ Resolution change is permanent. All apps running will receive this change and ma
 Resolution changes are in effect only while PrgLnch is running.
 </dd>
 </dl>
-<dl href="#" id="PullValuesFromRegistry">
-  <dt><h3>Pull values from registry</h3></dt>
+<dl>
+  <dt href="#" id="PullValuesFromRegistry"><h3>Pull values from registry</h3></dt>
   <dd>Retrieves the settings for the monitor that are currently stored in the registry rather than those used for the current monitor before changing resolution. In most cases they will match.</dd>
 </dl>
-<dl id="DefaultResolution">
-<dt>
+<dl>
+<dt href="#" id="DefaultResolution">
 Default Resolution:
 </dt>
 <dd>
 Currently used (or default) resolution for the selected monitor.
 </dd>
  </dl>
-<dl href="#" id="ListAllCompatible" >
-<dt>
-List All Compatible:
+<dl>
+<dt href="#" id="ListAllCompatible">List All Compatible:
 </dt>
 <dd>
 Checking this box expands the <a href="#ResolutionModes">list below</a> to all available resolution modes for the selected monitor.
@@ -212,10 +211,10 @@ All values are saved and returns to the <a href="PrgLnch Batch/PrgLnch Batch.htm
 </tr>
 </table>
 
-<a href="#" id="ref1"></a>
-<p><I>Author reference: Version checking is done as described <a href="https://autohotkey.com/docs/commands/URLDownloadToFile.htm#Examples">here</a>:
+<a href="#" id="Authref"></a>
+<p><I>Author reference: Version checking is done as described <a href="https://autohotkey.com/docs/commands/URLDownloadToFile.htm#Examples">here</a>:</I>
 </p>
-<pre><code>
+<pre><code><I>
 UrlDownloadToFile,
 https://autohotkey.com/download/1.1/version.txt, C:\AutoHotkey Latest Version.txt
 UrlDownloadToFile, http://someorg.org/archive.zip, C:\SomeOrg's Archive.zip<br>
@@ -227,6 +226,6 @@ whr.Send()
 whr.WaitForResponse()
 version := whr.ResponseText
 MsgBox % version
-</code></pre>
+</I></code></pre>
 </BODY>
 </HTML>
