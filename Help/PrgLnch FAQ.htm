@@ -15,7 +15,7 @@ About <span style="color: #40e0d0;">P</span> <span style="color: #8b4513;">r</sp
   <dd>A PrgLnch Shortcut, or template for a Prg, isn't a Windows shortcut, but a kind of extension of it. Most of the items in <a href="PrgLnch Config/PrgLnch Config.htm"> PrgLnch Config </a> can be considered to make up a PrgLnch shortcut. These items allow the Prg various monitor and resolution settings, and much more.
  The <a href="PrgLnch Config/PrgLnch Config.htm#ModifyShortcut">Make Shortcut</a> button and dialog can launch Windows shortcut files, but in not modifying them, they are able to <a href="PrgLnch Config/PrgLnch Config.htm#ResolveShortcut">resolve</a> them for extra options in the dialog.</dd>
  <dt>Why doesn't PrgLnch detect more than one monitor in a multi monitor setup?</dt>
- <dd>The extra monitors may be configured as <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/dd145179%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396">independent displays</a>, or using either <a href="https://en.wikipedia.org/wiki/AMD_Eyefinity">Eyefinity</a> or <a href="https://www.geforce.com/hardware/technology/surround/system-requirements">NVIDIA Surround</a> .
+ <dd>The extra monitors may be configured as <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/dd145179%28v=vs.85%29.aspx">independent displays</a>, or using either <a href="https://en.wikipedia.org/wiki/AMD_Eyefinity">Eyefinity</a> or <a href="https://www.geforce.com/hardware/technology/surround/system-requirements">NVIDIA Surround</a> .
  </dd>
   <dt>Can PrgLnch run in more than one instance?</dt>
   <dd>No. At this stage there is no provision in the code even if it were run from different locations on the same machine.</dd>
@@ -35,10 +35,10 @@ About <span style="color: #40e0d0;">P</span> <span style="color: #8b4513;">r</sp
   <dd>Possible if target resolutions are less than 1024 pixels wide. A hotkey combination (CTRL-ALT-P) should bring the window to the location of the mouse. Another edge case is if when the screen height is less than 600 pixels, <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a> may clip off the top edge of the display. 
 </dd>
   <dt>Can a Prg exhibit different behaviour when run from an explorer folder or desktop shortcut instead of from within PrgLnch?</dt>
-  <dd>Yes, even when PrgLnch settings for Prg match the "native" environment. See <a href="https://autohotkey.com/boards/viewtopic.php?f=5&t=29200">here</a> for an example. It also helps to check the environment requisites in the Prg's documentation, as it may set its own dedicated resolution mode for execution.</dd>
- <dt href="#" id="Limitations">What are the limitations of PrgLnch?
-</dt>
-  <dd>It can manage up to and including 12 Prgs but no more than 6 can be run through a batch at a time. As AutoHotKey <I>v</I>. 1.x does not <a href="https://autohotkey.com/boards/viewtopic.php?f=5&t=13941">support long paths</a>, so PrgLnch does not.
+  <dd>Yes, even when PrgLnch settings for Prg match the "native" environment. See <a href="https://autohotkey.com/boards/viewtopic.php?f=5&amp;t=29200">here</a> for an example. It also helps to check the environment requisites in the Prg's documentation, as it may set its own dedicated resolution mode for execution.</dd>
+ <dt href="#" id="Limitations">What are the limitations of PrgLnch?</dt>
+  <dd>It can manage up to and including 12 Prgs but no more than 6 can be run through a batch at a time. As AutoHotKey <I>v</I>. 1.x does not <a href="https://autohotkey.com/boards/viewtopic.php?f=5&amp;t=13941">support long paths</a>, so PrgLnch does not.<br>
+Another limitation on Prg batching is the rigid start time schedule. There is, for example, no option for a Prg to start as soon as the preceding Prg has become inactive, an important requirement for certain batch runs. Or no option for a Prg to wait until the IO activity of its precedent reaches a given threshold..
 </dd>
  <dt href="#" id="ScreenSavers">Can PrgLnch run Screensavers on other Monitors?</dt>
   <dd>Yes. One of the quirks of Windows is that screensaver animations are run only from shortcuts (<B>lnk</B> files),- so if running a <B>lnk</B>, uncheck the <a href="PrgLnch Config/PrgLnch Config.htm#ResolveShortcut">Resolve Shortcut</a> box, else the screensaver Properties dialogs are displayed.
@@ -49,14 +49,20 @@ About <span style="color: #40e0d0;">P</span> <span style="color: #8b4513;">r</sp
   <dt>Why doesn't a Prg run on a certain monitor?</dt>
   <dd>They should, However some older programs (e.g. those compiled in VB6) only run on the primary monitor, regardless of the Prglnch setting. Occasionally displays are fully functional only when systems running certain drivers are rebooted after monitors are added or reconfigured.
  </dd>
-  <dt>Why does PrgLnch show just one monitor and one resolution?
-</dt>
-  <dd>Have the video drivers been uninstalled? Can happen when Device Manager shows more than one <I>Generic PnP</I> monitor in the Monitors section. Alterntively, if the display driver OEMs detect other operating systems on your machine, they may not then strictly adhere to the <a href="https://technet.microsoft.com/en-us/windows/dn932166%28v=vs.92%29?f=255&MSPPError=-2147217396">WDDM</a> model. 
-To see a better range of monitors and resolutions, install the <a href="https://support.microsoft.com/en-au/help/4026648/windows-microsoft-basic-display-adapter-on-windows-10">Microsoft Basic Display Adapter</a>.
+  <dt>Why does PrgLnch show just one monitor and one resolution?</dt>
+  <dd>Have the video drivers been uninstalled? Can happen when Device Manager shows more than one <I>Generic PnP</I> monitor in the Monitors section. Alternatively, if the OEM display drivers detect other operating systems on your machine, they may not then strictly adhere to the <a href="https://technet.microsoft.com/en-us/windows/dn932166%28v=vs.92%29">WDDM</a> model. 
+For a wider range of monitors and resolutions without an OEM driver, consider the <a href="https://support.microsoft.com/en-au/help/4026648/windows-microsoft-basic-display-adapter-on-windows-10">Microsoft Basic Display Adapter</a>.
+ </dd>
+  <dt>Why does PrgLnch show the range of monitors starting from Display<B>N</B>?</dt>
+  <dd>It's how they are emumerated. In most cases the first monitor is <B>1</B>, but after driver removal &amp; installation it might be temporarily incremented by the number of monitors detected.
  </dd>
   <dt href="#" id="Del">Pressing the <B>Del</B> key deletes entire contents of an Edit Box without undo.</dt>
   <dd>By "design." Text tracking routines would impact the performance of PrgLnch. A combination of <B>Backspace</B> and the <B>Home</B>/<B>Arrow</B>/<B>End</B> keys provide equivalent functionality. for a future release.
  </dd>
+  <dt href="#" id="TerminatePrgs">What happens to Prgs still active after quitting PrgLnch?
+</dt>
+  <dd>User will be prompted as to whether active Prgs remain so, when quitting Prglnch. If cancellation is preferred, and more than one instance of Prg is active, only those monitored in PrgLnch are cancelled.
+</dd>
   <dt href="#" id="Browser">New browser instances opened through PrgLnch cannot be controlled by PrgLnch.
 </dt>
   <dd>Modern browsers typically run under one process ID, so they require different handling, currently not on offer by PrgLnch.
