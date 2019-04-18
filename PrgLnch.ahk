@@ -283,7 +283,7 @@ MakeLongVar := 0
 inputOnceOnly := 0
 PrgLnchIni := A_ScriptDir . "`\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
 SelIniChoicePath := PrgLnchIni
-SelIniChoiceName := ""
+SelIniChoiceName = PrgLnch
 oldSelIniChoiceName := ""
 dispMonNames := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 ResArray := [[],[],[]]
@@ -336,7 +336,7 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 	} 
 }
 
-if (FileExist(PrgLnchIni))
+	if (FileExist(PrgLnchIni))
 	{
 	IniSpaceCleaner(PrgLnchIni, 1) ;  fix old version
 	sleep, 90
@@ -380,7 +380,7 @@ if (FileExist(PrgLnchIni))
 			Break
 			}
 		}
-}
+	}
 
 IniProc(scrWidth, scrHeight, scrFreq)
 sleep 90
@@ -2039,45 +2039,53 @@ if (iniSel)
 }
 else ; Read in names
 {
-if (SelIniChoiceName)
-SelIniChoicePath := A_ScriptDir . "`\" . SelIniChoiceName . ".ini" 
+SelIniChoicePath := A_ScriptDir . "`\" . SelIniChoiceName . ".ini"
 
 ;Update PrgLnch.ini & SelIniChoiceName.ini with IniChoiceNames list
-IniRead, spr, %SelIniChoicePath%, General, SelIniChoiceName
-
-
-if (spr)
-SelIniChoiceName := spr
-else ;Happens on first run
-IniWrite, PrgLnch, %SelIniChoicePath%, General, SelIniChoiceName
-
+IniRead, strTemp, %SelIniChoicePath%, General, SelIniChoiceName
 IniRead, spr, %SelIniChoicePath%, General, IniChoiceNames
 
-if (spr = "Error" || SelIniChoicePath = "Error")
-Return "Lnch Pad file is in error- Reverting to PrgLnch.ini."
 
-strIniChoice := "|"
-	Loop, Parse, spr, CSV, %A_Space%%A_Tab%
+if (strTemp = "Error" && spr = "Error")
+; *Assume*  old version of PrgLnch
+Return 0
+Else
+{
+	if (spr != "Error" || SelIniChoicePath != "Error")
 	{
-		if (A_LoopField)
-		{
-		foundPos := 1
-		IniChoiceNames[A_Index] := A_LoopField
-		;SplitPath, A_LoopField, , , , strTemp
-		strIniChoice .= A_LoopField . "|"
-		}
-		else
-		{
-		IniChoiceNames[A_Index] := "Ini" . A_Index
-		strIniChoice .= IniChoiceNames[A_Index] . "|"
-		}
+	; Reset all
+	if (strTemp != "PrgLnch")
+	{
+	SelIniChoiceName := strTemp
+	SelIniChoicePath := A_ScriptDir . "`\" . SelIniChoiceName . ".ini"
 	}
+
+
+	strIniChoice := "|"
+		Loop, Parse, spr, CSV, %A_Space%%A_Tab%
+		{
+			if (A_LoopField)
+			{
+			foundPos := 1
+			IniChoiceNames[A_Index] := A_LoopField
+			;SplitPath, A_LoopField, , , , strTemp
+			strIniChoice .= A_LoopField . "|"
+			}
+			else
+			{
+			IniChoiceNames[A_Index] := "Ini" . A_Index
+			strIniChoice .= IniChoiceNames[A_Index] . "|"
+			}
+		}
+
+	if (!foundPos)
+	SplitPath, SelIniChoicePath, , , , SelIniChoiceName
+	}
+	else
+	Return "Lnch Pad file is in error- Reverting to PrgLnch.ini."
 }
 
-if (!foundPos)
-SplitPath, SelIniChoicePath, , , , SelIniChoiceName
-
-
+}
 Return 0
 }
 
@@ -2298,7 +2306,7 @@ retVal := 0, TermPrgMsgOnce := 0
 IniRead, TermPrgMsgOnce, %SelIniChoicePath%, General, TermPrgMsg
 if (!TermPrgMsgOnce)
 	{
-	MsgBox, 8195, , A Prg or Batched Prg is still running! It can be terminated `nat exit by switching on "Terminate Prg(s) on PrgLnch Exit". `n `"%strTemp%`"`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do nothing: `n
+	MsgBox, 8195, Active Prg on Quit, A Prg or Batched Prg is still running:`n `"%strTemp%`"`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do not Quit: `n
 	IfMsgBox, Yes
 	retVal := 0
 	else
@@ -3807,7 +3815,7 @@ if (testName = spr . A_Index)
 return 1
 }
 
-if (testName = "0" || testName = "PrgLnch" || testName = "BadPath")
+if (testName = "0" || testName = "Error" || testName = "PrgLnch" || testName = "BadPath")
 return 1
 else
 return 0
@@ -5540,7 +5548,9 @@ Return duplist
 ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, ByRef PrgPIDMast)
 {
 ProcNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
+MultInstPrg := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 strTemp := ""
+strTemp2 := ""
 multipleInstance := 0
 foundpos := 0
 retVal := 0
@@ -5557,7 +5567,6 @@ Loop % PrgNo
 
 		if (strRetVal)
 		{
-
 		foundpos := 1
 			if (Instr(strRetVal, "|"))
 			{
@@ -5565,12 +5574,24 @@ Loop % PrgNo
 				{
 				foundpos += 1
 				multipleInstance := 1
+				MultInstPrg[A_Index] := 1
+				strTemp2 := A_Loopfield
+				;Remove single instance
+					Loop % A_Index - 1
+					{
+					if (ProcNames[A_Index] = strTemp2)
+					{
+					ProcNames[A_Index] := ""
+					MultInstPrg[A_Index] := 0
+					}
+					
+					}
 				}
 			}
 
-		ProcNames[A_Index] := (multipleInstance)? SubStr(strRetVal, 1, Instr(strRetVal, "|") - 1): strRetVal
+		ProcNames[A_Index] := (MultInstPrg[A_Index])? SubStr(strRetVal, 1, Instr(strRetVal, "|") - 1): strRetVal
 
-		strTemp .= "`n" . ((foundpos > 1)? (foundpos - 1 . " instances of "): ("One instance of ")) . ProcNames[A_Index] . "."
+		strTemp .= ((A_Index > 9)? "`nPrg ": "`nPrg  ") . A_Index . ": " . ((foundpos > 1)? (foundpos - 1 . " instances of "): ("One instance of ")) . ProcNames[A_Index] . "."
 		}
 	}
 }
@@ -7213,14 +7234,11 @@ if (!FileExistSelIniChoicePath)
 	IniWrite, %spr%, %SelIniChoicePath%, General, ResMode
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, UseReg
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, NavShortcut
-	IniWrite, %A_Space%, %SelIniChoicePath%, General, WarnAlreadyRunning
+ 	IniWrite, %A_Space%, %SelIniChoicePath%, General, WarnAlreadyRunning
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, OnlyOneMonitor
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, DefPresetSettings
 
-	if (reWriteini) ; always write ini names to PrgLnch.ini !
-	IniWrite,  %SelIniChoiceName%, %PrgLnchIni%, General, SelIniChoiceName
-	else
-	IniWrite,  PrgLnch, %PrgLnchIni%, General, SelIniChoiceName
+	IniWrite, %SelIniChoiceName%, %PrgLnchIni%, General, SelIniChoiceName
 	
 	spr := ""
 	strIniChoice := "" ; Global variable
@@ -7235,7 +7253,7 @@ if (!FileExistSelIniChoicePath)
 			}
 			else
 			{
-			spr .= "IniChoiceNames[A_Index],"
+			spr .= IniChoiceNames[A_Index] . ","
 			strIniChoice .= IniChoiceNames[A_Index] . "|"
 			}
 			}
@@ -7251,7 +7269,6 @@ if (!FileExistSelIniChoicePath)
 
 	spr := Substr(spr, 1, InStr(spr, ",",, 0) -1)
 	IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
-
 
 
 	IniWrite, % (defPrgStrng)? defPrgStrng: None, %SelIniChoicePath%, Prgs, StartupPrgName
@@ -7313,6 +7330,8 @@ if (!FileExistSelIniChoicePath)
 		spr := PrgMonToRn[A_Index] . "," . PrgChgResonSwitch[A_Index] . ",-1," . PrgRnPriority[A_Index] . "," . PrgBordless[A_Index] . "," . PrgLnchHide[A_Index] . ",0"
 
 		IniWrite, % spr, %SelIniChoicePath%, Prg%A_Index%, PrgMisc
+
+		IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 		}
 		else
 		IniWrite, %A_Space%, %SelIniChoicePath%, Prg%A_Index%, PrgMisc
@@ -7439,7 +7458,7 @@ if (!FileExistSelIniChoicePath)
 								navShortcut := k
 								}
 							}
-							; section 15 : WarnAlreadyRunning: don't show me this again
+							; section 15+ : WarnAlreadyRunning: don't show me this again
 							}
 							}
 						}
@@ -7493,23 +7512,29 @@ if (!FileExistSelIniChoicePath)
 								}
 								if (!iDevNumArray[1]) ;  cannot handle old ini files
 								{
-								if (k < 111) ;case when driver is uninstalled and only one monitor!
+									if (k < 111) ;case when driver is uninstalled and only one monitor!
+									{
+									sectCount -= 1
+									reWriteIni := 1
+									Continue
+									}
+									else
+									{
+									IniRead, foundpos, %SelIniChoicePath%, General, OnlyOneMonitor
+										if (!foundpos)
+										{
+										MsgBox, 8196, , % "One Monitor, No more than one logical monitor!`nMost likely cause is driver removal.`nInformational only- if driver has just been updated.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
+											IfMsgBox, No
+											IniWrite, 1, %SelIniChoicePath%, General, OnlyOneMonitor
+										}
+									}
+								}
+								}
+								else
 								{
 								sectCount -= 1
 								reWriteIni := 1
 								Continue
-								}
-								else
-								{
-								IniRead, foundpos, %SelIniChoicePath%, General, OnlyOneMonitor
-									if (!foundpos)
-									{
-									MsgBox, 8196, , % "One Monitor, No more than one logical monitor!`nMost likely cause is driver removal.`nInformational only- if driver has just been updated.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
-										IfMsgBox, No
-										IniWrite, 1, %SelIniChoicePath%, General, OnlyOneMonitor
-									}
-								}
-								}
 								}
 								}
 							}
