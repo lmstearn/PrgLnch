@@ -5364,8 +5364,8 @@ join(strArray)
 {
   s := ""
   for i,v in strArray
-    s .= ", " . v
-  return substr(s, 3)
+    s .= "," . v
+  return substr(s, 2)
 }
 CheckPrgPaths(selPrgChoice, IniFileShortctSep, ByRef PrgChoicePaths, ByRef PrgLnkInf, ByRef PrgResolveShortcut, scrWidth, scrHeight, scrFreq)
 {
@@ -5548,9 +5548,7 @@ Return duplist
 ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, ByRef PrgPIDMast)
 {
 ProcNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
-MultInstPrg := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 strTemp := ""
-strTemp2 := ""
 multipleInstance := 0
 foundpos := 0
 retVal := 0
@@ -5567,29 +5565,19 @@ Loop % PrgNo
 
 		if (strRetVal)
 		{
+		MultInstPrg := 0
 		foundpos := 1
 			if (Instr(strRetVal, "|"))
 			{
 				Loop, Parse, strRetVal, |
 				{
 				foundpos += 1
-				multipleInstance := 1
-				MultInstPrg[A_Index] := 1
-				strTemp2 := A_Loopfield
-				;Remove single instance
-					Loop % A_Index - 1
-					{
-					if (ProcNames[A_Index] = strTemp2)
-					{
-					ProcNames[A_Index] := ""
-					MultInstPrg[A_Index] := 0
-					}
-					
-					}
+				multipleInstanceExist := 1
+				MultInstPrg := 1
 				}
 			}
 
-		ProcNames[A_Index] := (MultInstPrg[A_Index])? SubStr(strRetVal, 1, Instr(strRetVal, "|") - 1): strRetVal
+		ProcNames[A_Index] := (MultInstPrg)? (SubStr(strRetVal, 1, Instr(strRetVal, "|") - 1)): strRetVal
 
 		strTemp .= ((A_Index > 9)? "`nPrg ": "`nPrg  ") . A_Index . ": " . ((foundpos > 1)? (foundpos - 1 . " instances of "): ("One instance of ")) . ProcNames[A_Index] . "."
 		}
@@ -7279,14 +7267,17 @@ if (!FileExistSelIniChoicePath)
 	IniWrite, % (PrgBatchIniStartup)? PrgBatchIniStartup: A_Space, %SelIniChoicePath%, Prgs, PrgBatchIniStartup
 	IniWrite, % (PrgTermExit)? PrgTermExit: A_Space, %SelIniChoicePath%, Prgs, PrgTermExit
 	IniWrite, % (PrgIntervalLnch)? PrgIntervalLnch: A_Space, %SelIniChoicePath%, Prgs, PrgInterval
-	IniWrite, %A_Space%, %SelIniChoicePath%, Prgs, PresetNames
 
+	spr := join(PresetNames)
+	spr := (spr)? spr: %A_Space%
+	
+	IniWrite, %spr%, %SelIniChoicePath%, Prgs, PresetNames
 
 		Loop % maxBatchPrgs
 		{
 			spr := join(PrgBatchIni%A_Index%)
 			spr := (spr)? spr: %A_Space%
-			IniWrite, %spr% , %SelIniChoicePath%, Prgs, PrgBatchIni%A_Index%
+			IniWrite, %spr%, %SelIniChoicePath%, Prgs, PrgBatchIni%A_Index%
 		}
 
 		loop % PrgNo
