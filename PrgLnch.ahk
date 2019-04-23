@@ -147,6 +147,15 @@ LB_GETCOUNT := 0x018B
 ;LB_GETCURSEL := 0x0188
 LB_SETCURSEL := 0x0186
 
+DISP_CHANGE_BADDUALVIEW := -6
+DISP_CHANGE_BADPARAM := -5
+DISP_CHANGE_BADFLAGS := -4
+DISP_CHANGE_NOTUPDATED := -3
+DISP_CHANGE_BADMODE := -2
+DISP_CHANGE_FAILED := -1
+DISP_CHANGE_RESTART := 1
+
+
 ;HWND
 PresetHwnd := 0
 BtchPrgHwnd := 0
@@ -323,13 +332,13 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 	{
 	temp := foundpos%A_Index%
 	WinGetClass, strRetVal, % "ahk_id" temp
-
+	; This "fails" when any non-PrgLnch ahk script is run from the PrgLnch folder
 	if (InStr(strRetVal, PrgLnch.Class()) || InStr(PrgLnch.Class(), strRetVal))
 	fTemp += 1
 
 	if (fTemp > 1)
 	{
-	MsgBox, 8192, PrgLnch Running!,Already Running: only one instance in memory!
+	MsgBox, 8192, PrgLnch Running!, An instance of PrgLnch is already in memory!
 	GoSub PrgLnchGuiClose
 	}
 
@@ -4457,18 +4466,21 @@ loop % ((presetNoTest)? currBatchno: 1)
 	{  ;Lnch failed for current Prg
 
 	if (strRetVal = "|*")
-	{
 	strTemp .= "Started" . "|"
-	}
 	else
 	{
-		if (lnchPrgIndex > 0)
+		if (lnchPrgIndex)
 		{
-			if (lnchStat = 1)
-			strTemp .= "Failed" . "|"
+			if (lnchPrgIndex > 0)
+			{
+				if (lnchStat = 1)
+				strTemp .= "Failed" . "|"
 
-		MsgBox, 8192, , % strRetVal
+			MsgBox, 8192, , % strRetVal
+			}
 		}
+		else
+		MsgBox, 8192, , % strRetVal
 	}
 	}
 	else
@@ -4591,7 +4603,6 @@ if (lnchPrgIndex > 0) ;Running
 	temp := (PrgRnPriority[lnchPrgIndex])
 	(!temp)? PrgPrty := "B": (temp = 1)? PrgPrty := "H": PrgPrty := "N"
 
-
 	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
 
 	IfExist, % PrgPaths
@@ -4639,10 +4650,11 @@ if (lnchPrgIndex > 0) ;Running
 		}
 	if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 		{
+
 		strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 		if (strRetVal)
 		{
-		MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n`" strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
+		MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n" strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
 		IfMsgBox, No
 		Return "Cancelled by user!"
 		}
@@ -4752,7 +4764,7 @@ if (lnchPrgIndex > 0) ;Running
 			strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 			if (strRetVal)
 			{
-			MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n` " strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
+			MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n " strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
 			IfMsgBox, No
 			Return "Cancelled by user!"
 			}
@@ -4881,11 +4893,13 @@ else
 	{
 		GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 
+
 		if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 		{
 			strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
+
 			if (strRetVal)
-			Return "Requested resolution change did not work. Reason: `n`" %strRetVal%
+			Return % "Requested resolution change did not work. Reason: `n" strRetVal
 		}
 	}
 	else ;Cancel Prg: Either this or Waitclose
@@ -5864,7 +5878,7 @@ WinMaximize, ahk_pid%PrgPID%
 ;Monitor routines
 GetDisplayData(PrgLnchMon, targMonitorNum, ByRef dispMonNamesNo := 0, ByRef iDevNumArray := 0, ByRef dispMonNames := 0, ByRef scrDPI := 0, ByRef scrWidth := 0, ByRef scrHeight := 0, ByRef scrInterlace := 0, ByRef scrFreq := 0, iMode := -2, iChange := 0)
 {
-Device_Mode := 0, iDevNumb = 0, ftemp := 0, temp := 0, retVal := 0, DM_Position := 0, devFlags := 0, devKey := 0, OffsetDWORD := 4 ; Defined above but not global fn
+Device_Mode := 0, iDevNumb = 0, ftemp := 0, temp := 0, retVal := 0, devFlags := 0, devKey := 0, OffsetDWORD := 4 ; Defined above but not global fn
 iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 	if (iMode = -3)
@@ -6018,8 +6032,9 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitorNum := 1)
 {
-	local DM_Position := 0, mdLeft := 0, mdTop := 0, offsetWORD := 0. OffsetDWORD := 0, cbSize := 0, Device_Mode := 0, monName := 0, devFlags := 0 , CDSopt := 0, scrInterlace := 0, scrDPI := 32, strRetVal := ""
- 
+	local Device_Mode := 0, monName := 0, devFlags := 0 , CDSopt := 0, scrInterlace := 0, scrDPI := 32, strRetVal := "", DM_Position := 0, mdLeft := 0, mdTop := 0, cbSize := 0, OffsetWORD := 0
+	; OffsetDWORD  as a local variable is PROBLEMATIC!
+
 	GuiControlGet Test, PrgLnchOpt:, Test
 		If (Test)
 		CDSopt := CDS_TEST
@@ -6032,15 +6047,15 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 
 		if (A_IsUnicode)
 		{
-		cbSize := 220 ;  2 + 2 +  64
-		offsetWORD := 64
+		cbSize := 220 ;  2 + 2 + 64
+		OffsetWORD := 64
 		VarSetCapacity(Device_Mode, cbSize, 0)
 		NumPut(cbSize, Device_Mode, OffsetDWORD + 64, "Ushort")
 		}
 		else
 		{
-		cbSize := 156 ;  2 + 2 +  32
-		offsetWORD := 0
+		cbSize := 156 ;  2 + 2 + 32
+		OffsetWORD := 0
 		VarSetCapacity(Device_Mode,cbSize,0)
 		NumPut(cbSize, Device_Mode, OffsetDWORD + 32, "Ushort")
 		}
@@ -6059,19 +6074,19 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 
 
 	;The following values should never change, but just in case!
-	;offsetWORD of dmPosition = 44
-	;offsetWORD of dmDisplayOrientation = 52
-	;offsetWORD of dmDisplayFixedOutput = 56
+	;OffsetWORD of dmPosition = 44
+	;OffsetWORD of dmDisplayOrientation = 52
+	;OffsetWORD of dmDisplayFixedOutput = 56
 
-	NumPut(scrDPI,Device_Mode,104+offsetWORD, "UInt")
-	NumPut(scrInterlace,Device_Mode,116+offsetWORD, "UInt")
-	NumPut(scrWidth,Device_Mode,108+offsetWORD, "UInt") ; A_ScreenWidth
-	NumPut(scrHeight,Device_Mode,112+offsetWORD, "UInt") ; A_ScreenHeight
-	NumPut(scrFreq,Device_Mode,120+offsetWORD, "UInt") ;
+	NumPut(scrDPI,Device_Mode,104+OffsetWORD, "UInt")
+	NumPut(scrInterlace,Device_Mode,116+OffsetWORD, "UInt")
+	NumPut(scrWidth,Device_Mode,108+OffsetWORD, "UInt") ; A_ScreenWidth
+	NumPut(scrHeight,Device_Mode,112+OffsetWORD, "UInt") ; A_ScreenHeight
+	NumPut(scrFreq,Device_Mode,120+OffsetWORD, "UInt") ;
 
 
 
-	NumPut(0, Device_Mode,38+offsetWORD/2, "Ushort") ;dmDriverExtra
+	NumPut(0, Device_Mode,38+OffsetWORD/2, "Ushort") ;dmDriverExtra
 
 
 
@@ -6084,22 +6099,24 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 	VarSetCapacity(DM_Position,8,0)
 	Numput(mdLeft + 1,DM_Position, 0, "UInt")
 	Numput(mdTop + 1,DM_Position, 4, "UInt")
-	Numput(&DM_Position,Device_Mode,44+offsetWORD/2)
+	Numput(&DM_Position,Device_Mode,44+OffsetWORD/2)
 	}
 	else
 	{
 	devFlags := 0x00080000 | 0x00100000
 	}
-	NumPut(devFlags, Device_Mode,40+offsetWORD/2, "UInt")
-	;offsetWORD of dmDisplayOrientation = 52
-	;offsetWORD of dmDisplayFixedOutput = 56
+	NumPut(devFlags, Device_Mode,40+OffsetWORD/2, "UInt")
+	;OffsetWORD of dmDisplayOrientation = 52
+	;OffsetWORD of dmDisplayFixedOutput = 56
 
 
 	monName := dispMonNames[targMonitorNum]
 
 	;to change state CDS_UPDATEREGISTRY | CDS_NORESET then recall fn with NULL for all parms
 	retVal := DllCall("ChangeDisplaySettingsEx", "Ptr",&monName, "Ptr",&Device_Mode, "Ptr",0, "UInt",CDSopt, "Ptr",0)
+	;retVal:= DllCall("ChangeDisplaySettingsEx","Ptr", &monName,"Ptr", &Device_Mode,"Ptr", 0,"UInt", CDSopt,"Ptr", 0)
 	Sleep 100
+
 	VarSetCapacity(DM_Position, 0)
 	VarSetCapacity(Device_Mode, 0)
 	;ChangeDisplaySettingsEx for all monitors (need EnumDisplayDevices)
@@ -6109,42 +6126,42 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 	;retVal = 0: Success
 	if (retVal = 0)
 	{
-	If (Test)
-	traytip, Resolution Test, "Resolution Test Succeeded!"
+		If (Test)
+		traytip, Resolution Test, "Resolution Test Succeeded!"
 	}
 	else
 	{
-	if (retVal = DISP_CHANGE_BADDUALVIEW) ;-6
-	strRetVal := "Change Settings Failed: (Windows XP & later) The settings change was unsuccessful because system is DualView capable."
-	else
-	{
-		if (retVal = DISP_CHANGE_BADPARAM) ;-5
-		strRetVal := "Change Settings Failed: An invalid parameter was passed in. This can include an invalid flag or combination of flags."
+		if (retVal = DISP_CHANGE_BADDUALVIEW) ;-6
+		strRetVal := "Change Settings Failed: (Windows XP & later) The settings change was unsuccessful because system is DualView capable."
 		else
 		{
-		if (retVal = DISP_CHANGE_BADFLAGS) ;-4
-		strRetVal := "An invalid set of flags was passed in."
-		else
-		{
-		if (retVal = DISP_CHANGE_NOTUPDATED) ;-3
-		strRetVal := "(Windows NT/2000/XP: Unable to write settings to the registry."
-		else
-		{
-		if (retVal = DISP_CHANGE_BADMODE) ;-2
-		strRetVal := "The graphics mode is not supported."
-		else
-		{
-		if (retVal = DISP_CHANGE_FAILED) ;-1
-		strRetVal := "The display driver failed the specified graphics mode."
-		else
-		if (retVal = DISP_CHANGE_RESTART) ;1
-		strRetVal := "The computer must be restarted in order for the graphics mode to work."
-		}
-		}
-		}
-		}
+			if (retVal = DISP_CHANGE_BADPARAM) ;-5
+			strRetVal := "Change Settings Failed: An invalid parameter was passed in. This can include an invalid flag or combination of flags."
+			else
+			{
+			if (retVal = DISP_CHANGE_BADFLAGS) ;-4
+			strRetVal := "An invalid set of flags was passed in."
+			else
+			{
+			if (retVal = DISP_CHANGE_NOTUPDATED) ;-3
+			strRetVal := "(Windows NT/2000/XP: Unable to write settings to the registry."
+			else
+			{
+			if (retVal = DISP_CHANGE_BADMODE) ;-2
+			strRetVal := "The graphics mode is not supported."
+			else
+			{
+			if (retVal = DISP_CHANGE_FAILED) ;-1
+			strRetVal := "The display driver failed the specified graphics mode."
+			else
+			if (retVal = DISP_CHANGE_RESTART) ;1
+			strRetVal := "The computer must be restarted in order for the graphics mode to work."
+			}
+			}
+			}
+			}
 
-	}
+		}
 	}
 
 Return strRetVal
@@ -6240,7 +6257,7 @@ IniRead, defResmsg, %SelIniChoicePath%, General, DefResmsg
 	}
 	else
 	{
-	MsgBox, 8195, Resolution Change, The resolution on the target monitor is the same as the current resolution. `n(It's automatic if "Change at every mode" in "Res Options" is selected) `n`nReply:`nYes: Change resolution (This will not show again)`nNo: Do not change resolution: (Recommended: This will not show again) `n `nCancel: Do nothing: `n
+	MsgBox, 8195, Resolution Change, The resolution on the target monitor is the same as the current resolution. `n(It will automatically change when "Change at every mode" in "Res Options" is selected, irrespective of the following choice):`n`nReply:`nYes: Change resolution (This will not show again)`nNo: Do not change resolution: (Recommended: This will not show again) `n `nCancel: Do nothing: `n
 	;note msgbox isn't modal if called from function
 		IfMsgBox, No
 		{
@@ -6786,6 +6803,7 @@ LC_UriDecode(Uri)
 }
 GetPrgVersion(currPrgUrl, ByRef PrgVerNew := 0)
 {
+
 err := 0
 ; Example: Make an asynchronous HTTP request.
 req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
@@ -6807,6 +6825,7 @@ req.SetTimeouts(1000,1000,1000,1000)
 	req.WaitForResponse()
 	PrgVerNew := req.ResponseText
 	;version is never going to exceed 1000 bytes, so Returns junk if version.txt not found
+
 	if (!PrgVerNew || StrLen(PrgVerNew)>1000)
 	{
 	PrgVerNew := 0
@@ -6823,10 +6842,25 @@ req.SetTimeouts(1000,1000,1000,1000)
 		If (Results <> "")
 		Break
 		}
-	MsgBox, 8198,, %Results% and version.txt not found at `n%verLoctmp%`nIf no URL displayed, it's a timing issue or a temporary error.
+	DoVersionErrorMessage(Results, verLoctmp)
+
 	Return 1
 	}
+
 	Return 0
+}
+
+DoVersionErrorMessage(Results, verLoctmp)
+{
+Local strTemp2 := ""
+
+	IniRead, strTemp2, %SelIniChoicePath%, General, PrgVersionError
+	if (!strTemp2)
+	{
+	MsgBox, 8196, , % "Prg Url Version, " Results " and version.txt not found at `n" verLoctmp "`nIf no URL displayed, it's a timing issue or a temporary error.`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
+		IfMsgBox, No
+		IniWrite, 1, %SelIniChoicePath%, General, PrgVersionError
+	}
 }
 
 DoLAAPatch(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep)
@@ -7225,6 +7259,7 @@ if (!FileExistSelIniChoicePath)
  	IniWrite, %A_Space%, %SelIniChoicePath%, General, WarnAlreadyRunning
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, OnlyOneMonitor
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, DefPresetSettings
+	IniWrite, %A_Space%, %SelIniChoicePath%, General, PrgVersionError
 
 	IniWrite, %SelIniChoiceName%, %PrgLnchIni%, General, SelIniChoiceName
 	
