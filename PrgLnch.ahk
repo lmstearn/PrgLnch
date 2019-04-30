@@ -135,7 +135,6 @@ updateStatus := 1
 CDS_TEST := 0x00000002
 CDS_RESET := 0x40000000
 CDS_FULLSCREEN := 0x00000004
-OffsetDWORD := 4
 WS_CAPTION := 0x00C00000
 WS_SIZEBOX := 0x00040000
 WM_HELPMSG := 0x0053
@@ -306,6 +305,7 @@ scrFreqArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 dispMonNamesNo := 9 ;No more than 9 displays!?
 PrgLnchMon := 0 ; Device PrgLnch is run from
 targMonitorNum := 1
+primaryMon := 1
 ResIndexList := ""
 scrWidth := 0
 scrHeight := 0
@@ -559,7 +559,7 @@ Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHwnd
 GetDisplayData(PrgLnchMon, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, scrDPI, scrWidth, scrHeight, scrInterlace, scrFreq, -3)
 
 ; Sanitize- just in case: use current monitor if invalid one saved
-PrgLnchMon := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo)
+PrgLnchMon := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, primaryMon)
 
 loop %PrgNo% 
 {
@@ -3213,8 +3213,8 @@ CheckModes:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 
-	temp := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo)
-	if (targMonitorNum = 1)
+	temp := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, primaryMon)
+	if (targMonitorNum = primaryMon)
 	{
 		if (!temp = targMonitorNum)
 		{
@@ -3842,7 +3842,7 @@ StringReplace, temp, strPrgChoice, |, |, UseErrorLevel ; finds all occurrences o
 	strRetVal := WorkingDirectory(A_ScriptDir, 1)
 	If (strRetVal)
 	MsgBox, 8192, ComboBugFix, % strRetVal
-	if (FileExist(PrgLnch.exe))
+	if (FileExist("PrgLnch.exe"))
 	Return RestartPrgLnch()
 	}
 
@@ -4588,7 +4588,7 @@ Return
 
 LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgRnMinMax, PrgBordless, PrgRnPriority, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, Fmode)
 {
-strRetVal := "", currMon := 0, temp := 0, fTemp := 0, ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
+strRetVal := "", currMon := 0, primaryMon := 0, temp := 0, fTemp := 0, ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
 ERROR_FILE_NOT_FOUND := 0x2
 ERROR_ACCESS_DENIED := 0x5
 ERROR_CANCELLED := 0x4C7
@@ -4615,9 +4615,9 @@ if (lnchPrgIndex > 0) ;Running
 	If (!IsaPrgLnk && PrgCmdLine[lnchPrgIndex])
 	PrgPaths := PrgPaths . A_Space . PrgCmdLine[lnchPrgIndex]
 
-	currMon := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo)
+	currMon := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, primaryMon)
 
-	if (currMon != targMonitorNum && targMonitorNum = 1)
+	if (currMon != targMonitorNum && targMonitorNum = primaryMon)
 	{
 		IniRead, fTemp, %SelIniChoicePath%, General, LnchPrgMonWarn
 		if (!fTemp)
@@ -5457,7 +5457,7 @@ if (poorPID)
 	strRetVal := WorkingDirectory(A_ScriptDir, 1)
 	If (strRetVal)
 	MsgBox, 8192, Cancel Prg, % strRetVal
-	if (FileExist(taskkillPrg.bat))
+	if (FileExist("taskkillPrg.bat"))
 		{
 		FileDelete, taskkillPrg.bat
 		sleep, 200
@@ -5636,9 +5636,9 @@ foundpos := 0
 Return retVal
 }
 
-GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, monitorHandle := 0)
+GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, ByRef primaryMon)
 {
-	iDevNumb := 0, MONITOR_DEFAULTTONULL := 0
+	iDevNumb := 0, monitorHandle := 0,  MONITOR_DEFAULTTONULL := 0
 	VarSetCapacity(monitorInfo, 40)
 	NumPut(40, monitorInfo)
 
@@ -5654,8 +5654,12 @@ GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, monitorHandle := 0)
 
 	loop %dispMonNamesNo%
 	{
-	if (iDevNumArray[A_Index] > 99 || iDevNumArray[A_Index] > 9)
-	iDevNumb += 1
+		if (iDevNumArray[A_Index] > 9)
+		{
+		iDevNumb += 1
+			if (iDevNumArray[A_Index] > 99)
+			primaryMon := SubStr(iDevNumArray[A_Index], 1, 1)
+		}
 	}
 
 	if (monitorHandle := DllCall("MonitorFromWindow", "uint", hWnd, "uint", MONITOR_DEFAULTTONULL)) 
@@ -5878,7 +5882,7 @@ WinMaximize, ahk_pid%PrgPID%
 ;Monitor routines
 GetDisplayData(PrgLnchMon, targMonitorNum, ByRef dispMonNamesNo := 0, ByRef iDevNumArray := 0, ByRef dispMonNames := 0, ByRef scrDPI := 0, ByRef scrWidth := 0, ByRef scrHeight := 0, ByRef scrInterlace := 0, ByRef scrFreq := 0, iMode := -2, iChange := 0)
 {
-Device_Mode := 0, iDevNumb = 0, ftemp := 0, temp := 0, retVal := 0, devFlags := 0, devKey := 0, OffsetDWORD := 4 ; Defined above but not global fn
+Device_Mode := 0, iDevNumb = 0, ftemp := 0, temp := 0, retVal := 0, devFlags := 0, devKey := 0, OffsetDWORD := 4
 iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 	if (iMode = -3)
@@ -6032,8 +6036,7 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitorNum := 1)
 {
-	local Device_Mode := 0, monName := 0, devFlags := 0 , CDSopt := 0, scrInterlace := 0, scrDPI := 32, strRetVal := "", DM_Position := 0, mdLeft := 0, mdTop := 0, cbSize := 0, OffsetWORD := 0
-	; OffsetDWORD  as a local variable is PROBLEMATIC!
+	local Device_Mode := 0, monName := 0, devFlags := 0, CDSopt := 0, scrInterlace := 0, scrDPI := 32, strRetVal := "", DM_Position := 0, mdLeft := 0, mdTop := 0, cbSize := 0, OffsetWORD := 0, OffsetDWORD := 4
 
 	GuiControlGet Test, PrgLnchOpt:, Test
 		If (Test)
@@ -8310,7 +8313,7 @@ WinGetPos,, propY,, propH, % "ahk_id" PrgPropertiesHwnd
 	else
 	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % propH - y, w
 
-SysGet, temp, MonitorWorkArea, GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo)
+SysGet, temp, MonitorWorkArea, GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, fTemp)
 ;For low screen res
 if (propH + h > (tempBottom - tempTop))
 	WinMove, % "ahk_id" PrgPropertiesHwnd, , , tempBottom, , tempBottom - tempTop
@@ -8320,6 +8323,7 @@ SplashImage, PrgLnchProperties.jpg, Hide,,,LnchSplash
 Gui, PrgProperties: Show, , Prg Properties (Version 2.x)
 
 }
+
 PrgPropFont(sprHwnd)
 {
 GuiControl, PrgProperties: Move, %sprHwnd%, % "w" PrgLnchOpt.Width()/4
