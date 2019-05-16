@@ -283,7 +283,7 @@ iniSel := 0
 selPrgChoice := 1
 selPrgChoiceTimer := 0
 txtCmd := 0
-Rego := 0
+RegoVar := 0
 fromRestart := 0
 navShortcut := 0
 
@@ -549,7 +549,7 @@ Gui, PrgLnchOpt: Add, Checkbox, vallModes gCheckModes HWNDallModesHwnd, List all
 
 ;ini section
 
-GuiControl, PrgLnchOpt: , Rego, % Rego
+GuiControl, PrgLnchOpt:, Rego, % RegoVar
 
 
 GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
@@ -6169,7 +6169,7 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 		NumPut(cbSize, Device_Mode, OffsetDWORD + 32, "Ushort")
 		}
 
-		if (Rego)
+		if (RegoVar)
 		{
 		ENUM_REGISTRY_SETTINGS := -2
 		GetDisplayData(PrgLnch.Monitor, targMonitorNum, dispMonNamesNo, , , scrDPI, , , scrInterlace, , ENUM_REGISTRY_SETTINGS, 1)
@@ -7572,7 +7572,7 @@ if (!FileExistSelIniChoicePath)
 							{
 								if (selPrgChoice)
 								{
-								IniWrite, %Rego%, %SelIniChoicePath%, General, UseReg
+								IniWrite, %RegoVar%, %SelIniChoicePath%, General, UseReg
 								}
 								else
 								{
@@ -7580,7 +7580,7 @@ if (!FileExistSelIniChoicePath)
 								;if (spr = "UseReg")
 								;{
 								if (k)
-								Rego := k
+								RegoVar := k
 								;}
 								;else
 								}
