@@ -232,7 +232,7 @@ lnchPrgIndex := 0 ; (PrgIndex) Run, (0) Change Res or -(PrgIndex) Cancel
 lnchStat := 0 ; (-1) Test Run; (1) Batch Run; (0) BatchPrgStatus Select
 lastMonitorUsedInBatch := 0
 listPrgVar := 0 ; copy of BatchPrgs listbox id
-presetNoTest := 1 ; config screen: 0 2: batch screen: Not click on preset :1 batch screen: preset clicked
+presetNoTest := 1 ; 0: config screen 2: batch screen: 1: Not click on preset 1: batch screen: preset clicked
 prgSwitchIndex := 0 ; saves index of Prg switched to when active
 waitBreak := 0 ; Switch to break the Prg watch
 PrgPos := [0, 0, 0, 0]
@@ -2324,11 +2324,11 @@ MonStr(PrgMonToRn, selPrgChoice)
 Return "*" . PrgMonToRn[selPrgChoice] . "*"
 }
 
-MsgOnceTerminate(SelIniChoicePath, strTemp)
+MsgOnceTerminate(SelIniChoicePath, strTemp, PrgTermExit)
 {
-retVal := 0, TermPrgMsgOnce := 0
-IniRead, TermPrgMsgOnce, %SelIniChoicePath%, General, TermPrgMsg
-if (!TermPrgMsgOnce)
+retVal := 0
+
+if (!PrgTermExit)
 	{
 	MsgBox, 8195, Active Prg on Quit, A Prg or Batched Prg is still running:`n `"%strTemp%`"`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do not Quit: `n
 	IfMsgBox, Yes
@@ -2337,8 +2337,8 @@ if (!TermPrgMsgOnce)
 	{
 	IfMsgBox, No
 	{
-	TermPrgMsgOnce := 1
-	IniWrite, %TermPrgMsgOnce%, %SelIniChoicePath%, General, TermPrgMsg
+	PrgTermExit := 1
+	IniWrite, %PrgTermExit%, %SelIniChoicePath%, Prgs, PrgTermExit
 	}
 	else
 	retVal := 1
@@ -2428,7 +2428,7 @@ if (PrgTermExit)
 }
 else
 {
-	if (presetNoTest)
+	if (presetNoTest) ; Quit Button clicked
 	{
 	strTemp2 := ""
 	temp := ""
@@ -2440,24 +2440,26 @@ else
 			Process, Exist, % foundpos
 			if (ErrorLevel)
 			{
-			strRetVal := PrgChoicePaths[A_Index]
+				
+				if (!(strRetVal := PrgChoicePaths[A_Index]))
+				Continue
 
-			if (strRetVal := GetProcFromPath(strRetVal))
-			{
-			if (temp)
-			strTemp2 .= temp . strRetVal
-			else
-			{
-			temp := ", "
-			strTemp2 := strRetVal
-			}
+				if (strRetVal := GetProcFromPath(strRetVal))
+				{
+				if (temp)
+				strTemp2 .= temp . strRetVal
+				else
+				{
+				temp := ", "
+				strTemp2 := strRetVal
+				}
 			}
 			}
 		}
 	}
 		if (strTemp2)
 		{
-			if (MsgOnceTerminate(SelIniChoicePath, strTemp2))
+			if (MsgOnceTerminate(SelIniChoicePath, strTemp2, PrgTermExit))
 			Return
 		}
 	}
@@ -2468,13 +2470,16 @@ else
 		if (ErrorLevel)
 			{
 			strRetVal := "`[Test Run`]"
+			if (PrgChoicePaths[selPrgChoice])
+			{
 			strRetVal .= PrgChoicePaths[selPrgChoice]
 
 				if (strRetVal := GetProcFromPath(strRetVal))
 				{
-				if (MsgOnceTerminate(SelIniChoicePath, strRetVal))
-				Return
+					if (MsgOnceTerminate(SelIniChoicePath, strRetVal, PrgTermExit))
+					Return
 				}
+			}
 			}
 	}
 
@@ -2482,6 +2487,8 @@ else
 
 SetTimer, NewThreadforDownload, Delete ;Cleanup
 ;Gui, PrgLnchOpt:Submit  ; Save each control's contents to its associated variable- but why here?
+
+critical
 
 strTemp2 := ""
 loop % PrgNo
@@ -3633,13 +3640,13 @@ if (txtPrgChoice = "")
 	PrgChoiceNames[selPrgChoice] := ""
 	PrgChoicePaths[selPrgChoice] := ""
 	PrgResolveShortcut[selPrgChoice] := 0
-	PrgCmdLine[selPrgChoice] := 0
+	PrgCmdLine[selPrgChoice] := ""
 	PrgMonToRn[selPrgChoice] := 0
 	PrgRnPriority[selPrgChoice] := -1
 	PrgBordless[selPrgChoice] := 0
 	PrgLnchHide[selPrgChoice] := 0
 	PrgRnMinMax[selPrgChoice] := 0
-	PrgLnkInf[selPrgChoice] := 0
+	PrgLnkInf[selPrgChoice] := ""
 	PrgUrl[selPrgChoice] := ""
 
 	GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
@@ -4002,12 +4009,16 @@ PrgURLEnable(ByRef PrgUrlTest, ByRef UrlPrgIsCompressed, selPrgChoice, PrgChoice
 currPrgUrl := PrgUrl[selPrgChoice]
 PrgverOld := PrgVer[selPrgChoice]
 IsaPrgLnk := 0
+if (!UrlDisableGui)
+{
 PrgPth := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
 	if (!FileExist(PrgPth))
 	{
 	GuiControl, PrgLnchOpt: Disable, UpdturlPrgLnch
 	Return
 	}
+}
+
 
 GuiControl, PrgLnchOpt: -ReadOnly, UpdturlPrgLnch
 
@@ -5547,7 +5558,7 @@ strRetVal := SubStr(strTemp, InStr(strTemp, "\",, -1) + 1)
 
 	if (!strRetVal)
 		{
-			MsgBox, 8192, ,Invalid path with %strTemp%! `nUnable to continue process check.
+			MsgBox, 8192, ,Invalid path with %strTemp%!`nUnable to continue process check.
 		}
 Return strRetVal
 }
@@ -6652,37 +6663,35 @@ NewThreadforDownload: ;Timer!
 
 		if (!UrlPrgIsCompressed)
 		{
-		IniRead, fTemp, %SelIniChoicePath%, General, PrgLaunchAfterDL
-
-			if (fTemp)
+		FileGetVersion, PrgverNew, % strTemp
+			if (ErrorLevel)
 			{
-			MsgBox, 8195, , Launch the newly downloaded Prg to test it? `nIf replying 'Yes', PrgLnch will require the launched Prg to be closed before continuing any further.`n`nReply:`nYes: Launch (Warn like this next time)`nNo: Do not launch (Warn like this next time) `nCancel: Do not launch (This will not show again): `n
-				IfMsgBox, Yes
-				{
-				Runwait, % strTemp, , UseErrorLevel ; might be a self extracting package
-				if (ErrorLevel)
-				MsgBox, 8192, , The file could not be launched with error %ErrorLevel%
-				else
-				FileGetVersion, PrgverNew, % strTemp
-				PrgVer[selPrgChoice] := PrgVerNew
-				IniWrite, %PrgVerNew%, %SelIniChoicePath%, Prg%selPrgChoice%, PrgVer
-				}
-				else
-				{
-					FileGetVersion, PrgverNew, % strTemp
-					PrgVer[selPrgChoice] := PrgVerNew
-					IniWrite, %PrgVerNew%, %SelIniChoicePath%, Prg%selPrgChoice%, PrgVer
-					IfMsgBox, Cancel
-					IniWrite, 1, %SelIniChoicePath%, General, PrgLaunchAfterDL
-				}
+			PrgVer[selPrgChoice] := 0
+			MsgBox, 8192, , % "Problem with retrieving local version info for file " strTemp
 			}
 			else
 			{
-			FileGetVersion, PrgverNew, % strTemp
 			PrgVer[selPrgChoice] := PrgVerNew
 			IniWrite, %PrgVerNew%, %SelIniChoicePath%, Prg%selPrgChoice%, PrgVer
 			}
 
+		IniRead, fTemp, %SelIniChoicePath%, General, PrgLaunchAfterDL
+
+			if (!fTemp)
+			{
+			MsgBox, 8195, , Launch the newly downloaded Prg to test it? `nIf replying 'Yes', PrgLnch Options won't be available until the launched Prg is closed.`n`nReply:`nYes: Launch (Warn like this next time)`nNo: Do not launch (Warn like this next time) `nCancel: Do not launch (This will not show again): `n
+				IfMsgBox, Yes
+				{
+				Runwait, % strTemp, , UseErrorLevel ; might be a self extracting package
+					if (ErrorLevel)
+					MsgBox, 8192, , The file could not be launched with error %ErrorLevel%
+				}
+				else
+				{
+					IfMsgBox, Cancel
+					IniWrite, 1, %SelIniChoicePath%, General, PrgLaunchAfterDL
+				}
+			}
 		strTemp2 := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
 		if (strTemp != strTemp2)
 		{
@@ -6706,7 +6715,7 @@ NewThreadforDownload: ;Timer!
 			IniWrite, %strTemp%, %SelIniChoicePath%, Prg%selPrgChoice%, PrgPath
 			}
 			else
-			MsgBox, 8208, % "The updated Prg is allocated this folder:`n" strTemp "`nThe original Prg is allocated this folder.`n" strTemp2 "`nGiven the location used for the download of Prg is preferred, for the purposes of housekeeping, consider the manual removal of the old location."
+			MsgBox, 8208, , % "The updated Prg is allocated this folder:`n" strTemp "`nThe original Prg is allocated this folder.`n" strTemp2 "`nGiven the location used for the download of Prg is preferred, for the purposes of housekeeping, consider the manual removal of the old location."
 		}
 		; else Prg is overwritten
 		}
@@ -6724,32 +6733,33 @@ Return
 ;http://www.codeproject.com/Article.aspx?tag=198374993737746150&_z=11114232
 DownloadFile(UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 {
-	X :=0, Y:=0, temp:=0, badFile := "text`/html", timedOut := False, prgWid := PrgLnchOpt.Width()/3, prgHght := PrgLnchOpt.Height()/2
-	;Check if the file already exists and if we must not overwrite it
+	X :=0, Y:=0, temp:=0, strTemp := "", badFile := "text`/html", timedOut := False, prgWid := PrgLnchOpt.Width()/3, prgHght := PrgLnchOpt.Height()/2
+	;Check if the file already exists + overwrite
 
 	If (updateStatus > 0)
 		{
+		Gui, PrgLnchOpt: +OwnDialogs
 		FileSelectFile, temp, S 19, % SaveFileAs, % "Save as " SaveFileAs
+			Gui, PrgLnchOpt: -OwnDialogs
 			if (temp)
 			updateStatus := 0
 			else
 			{
 			updateStatus := -2
-			Gui, PrgLnchOpt: -OwnDialogs
 			Return
 			}
 
-
+			SplitPath, temp, , strTemp
+			SplitPath, temp, temp
 			ChkCmdLineValidFName(temp)
-			SaveFileAs := temp
-			Gui, PrgLnchOpt: -OwnDialogs
+			SaveFileAs := strTemp . "\" . temp
 
 		}
 	WebRequest := ComObjCreate("WinHttp.WinHttpRequest.5.1")
 	WebRequest.Open( "GET", UrlToFile), WebRequest.Send()
     ;Bad file-  also check types :http://www.iana.org/assignments/media-types/media-types.xhtml
 	temp := % WebRequest.GetAllResponseHeaders()
-	if (Instr(temp, "text`/html"))
+	if (Instr(temp, badFile))
 	{
 	MsgBox, 8192, ,Wrong file header, or file not found!
 	updateStatus := -2
@@ -7341,9 +7351,6 @@ if (!FileExistSelIniChoicePath)
 	{
 	IniWrite, % (reWriteini)? 1: 0, %SelIniChoicePath%, General, Disclaimer
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, DefResmsg
-	IniWrite, %A_Space%, %SelIniChoicePath%, General, TermPrgMsg
-
-
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, PrgAlreadyMsg
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, ClosePrgWarn
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, ResClashMsg
@@ -7517,14 +7524,14 @@ if (!FileExistSelIniChoicePath)
 					sectCount := sectCount + 1
 					if (recCount < 0) ;General section
 					{
-						if (sectCount < 12)
+						if (sectCount < 11)
 						{
 						Continue ;don't care about the "Don't show me first" || (sectCount = 3)
 						}
 						else
 						{
 
-							if (sectCount = 12)
+							if (sectCount = 11)
 							{
 								if (selPrgChoice)
 								{
@@ -7561,7 +7568,7 @@ if (!FileExistSelIniChoicePath)
 							}
 							else
 							{
-							if (sectCount = 13)
+							if (sectCount = 12)
 							{
 								if (selPrgChoice)
 								{
@@ -7580,7 +7587,7 @@ if (!FileExistSelIniChoicePath)
 							}
 							else
 							{
-							if (sectCount = 14)
+							if (sectCount = 13)
 							{
 								if (selPrgChoice)
 								{
@@ -7820,11 +7827,18 @@ if (!FileExistSelIniChoicePath)
 								{
 								if (selPrgChoice = recCount)
 								{
-									if (PrgCmdLine[selPrgChoice])
-									IniWrite, % PrgCmdLine[selPrgChoice], %SelIniChoicePath%, Prg%recCount%, PrgCmdLine
-									else
+									if (removeRec)
+									{
 									IniWrite, %A_Space%, %SelIniChoicePath%, Prg%recCount%, PrgCmdLine
 									}
+									else
+									{
+										if (PrgCmdLine[selPrgChoice])
+										IniWrite, % PrgCmdLine[selPrgChoice], %SelIniChoicePath%, Prg%recCount%, PrgCmdLine
+										else
+										IniWrite, %A_Space%, %SelIniChoicePath%, Prg%recCount%, PrgCmdLine
+									}
+								}
 								}
 								else
 								{
