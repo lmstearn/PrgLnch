@@ -3701,6 +3701,17 @@ else
 
 	if (temp)
 	{
+	loop % PrgNo
+	{
+		if (A_Index != selPrgChoice)
+		{
+			if (txtPrgChoice = PrgChoiceNames[A_Index])
+			{
+			MsgBox, 8192, Duplicate Name, A Prg exists with this name already. Please use another.
+			Return
+			}
+		}
+	}
 	SetStartupname(SelIniChoicePath, defPrgStrng, PrgChoiceNames, selPrgChoice, txtPrgChoice)
 	PrgChoiceNames[selPrgChoice] := txtPrgChoice
 	IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
@@ -6633,9 +6644,9 @@ NewThreadforDownload: ;Timer!
 
 	strTemp := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
 	if (InStr(PrgUrl[selPrgChoice], "%"))
-	DownloadFile(LC_UrlDecode(PrgUrl[selPrgChoice]), strTemp, updateStatus)
+	DownloadFile(SelIniChoicePath, LC_UrlDecode(PrgUrl[selPrgChoice]), strTemp, updateStatus)
 	else
-	DownloadFile(LC_UrlEncode(PrgUrl[selPrgChoice]), strTemp, updateStatus)
+	DownloadFile(SelIniChoicePath, LC_UrlEncode(PrgUrl[selPrgChoice]), strTemp, updateStatus)
 
 
 		if (updateStatus < 0)
@@ -6731,9 +6742,9 @@ Return
 
 
 ;http://www.codeproject.com/Article.aspx?tag=198374993737746150&_z=11114232
-DownloadFile(UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
+DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 {
-	X :=0, Y:=0, temp:=0, strTemp := "", badFile := "text`/html", timedOut := False, prgWid := PrgLnchOpt.Width()/3, prgHght := PrgLnchOpt.Height()/2
+	X :=0, Y:=0, temp:=0, strTemp := "", fTemp := 0, badFile := "text`/html", timedOut := False, prgWid := PrgLnchOpt.Width()/3, prgHght := PrgLnchOpt.Height()/2
 	;Check if the file already exists + overwrite
 
 	If (updateStatus > 0)
@@ -6752,6 +6763,22 @@ DownloadFile(UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 			SplitPath, temp, , strTemp
 			SplitPath, temp, temp
 			ChkCmdLineValidFName(temp)
+			if Instr(strTemp, A_WinDir)
+			{
+			IniRead, fTemp, %SelIniChoicePath%, General, WinRtDirWrn
+				if (!fTemp)
+				{
+				MsgBox, 8195, Windows Directory, The file to be downloaded is to be copied to the Windows area.`nDirectories and subdirectories there contain protected system files,`nso downloading anything like those will not work,`nand downloading anything else there is not recommended.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Abort the download (Warn like this next time) `nCancel: Abort the download. (This will not show again)`n
+					IfMsgBox, Yes
+					fTemp := 0
+					else
+					{
+						IfMsgBox, Cancel
+						IniWrite, 1 , %SelIniChoicePath%, General, WinRtDirWrn
+					Return
+					}
+				}
+			}
 			SaveFileAs := strTemp . "\" . temp
 
 		}
@@ -7354,6 +7381,7 @@ if (!FileExistSelIniChoicePath)
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, PrgAlreadyMsg
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, ClosePrgWarn
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, ResClashMsg
+	IniWrite, %A_Space%, %SelIniChoicePath%, General, WinRtDirWrn
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, LnchPrgMonWarn
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, LoseGuiChangeResWrn
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, PrgAlreadyLaunchedMsg
@@ -7524,14 +7552,14 @@ if (!FileExistSelIniChoicePath)
 					sectCount := sectCount + 1
 					if (recCount < 0) ;General section
 					{
-						if (sectCount < 11)
+						if (sectCount < 12)
 						{
 						Continue ;don't care about the "Don't show me first" || (sectCount = 3)
 						}
 						else
 						{
 
-							if (sectCount = 11)
+							if (sectCount = 12)
 							{
 								if (selPrgChoice)
 								{
@@ -7568,7 +7596,7 @@ if (!FileExistSelIniChoicePath)
 							}
 							else
 							{
-							if (sectCount = 12)
+							if (sectCount = 13)
 							{
 								if (selPrgChoice)
 								{
@@ -7587,7 +7615,7 @@ if (!FileExistSelIniChoicePath)
 							}
 							else
 							{
-							if (sectCount = 13)
+							if (sectCount = 14)
 							{
 								if (selPrgChoice)
 								{
