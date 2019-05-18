@@ -2333,10 +2333,11 @@ MsgOnceTerminate(SelIniChoicePath, strTemp, ByRef PrgTermExit)
 retVal := 0, strTemp2 := "A Prg or Batched Prg is"
 
 (Instr(strTemp, ","))? strTemp2 := "Prgs or Batched Prgs are": strTemp2 := "A Prg or Batched Prg is"
+(Instr(strTemp, ","))? strTemp3 := "them": strTemp3 := "it"
 
 if (!PrgTermExit)
 	{
-	MsgBox, 8195, Active on Quit, %strTemp2% still running:`n `"%strTemp%`"`nDo you wish to close them?`n`nReply:`nYes: Close: (Brings up another dialog)`nNo: Do not close: (Recommended: This will not show again) `nCancel: Do not Quit: `n
+	MsgBox, 8195, Active on Quit, %strTemp2% still running:`n `"%strTemp%`"`nDo you wish to close %strTemp3%?`n`nReply:`nYes: Close: (Brings up another dialog)`nNo: Do not close: (Recommended: This will not show again) `nCancel: Do not Quit: `n
 	IfMsgBox, No
 	{
 	PrgTermExit := 1
@@ -2348,7 +2349,7 @@ if (!PrgTermExit)
 		retVal := 1
 		else
 		{
-		MsgBox, 8196, Terminate on Quit, Automatically terminate Prgs when quitting?`n`nYes: Continue (Not recommended: This will not show again) `nNo: Continue (The `"Active on Quit`" prompt will show again) `n
+		MsgBox, 8196, Terminate on Quit, Automatically terminate Prgs when quitting?`n`nYes: Terminate (Not recommended: This will not show again) `nNo: Terminate (The `"Active on Quit`" prompt will show again) `n
 			IfMsgBox, Yes
 			{
 			PrgTermExit := 2
@@ -2424,7 +2425,7 @@ if (PrgTermExit = 2)
 { ;cancel Prgs
 
 	loop % PrgNo
-		{ 
+		{
 		temp := PrgPIDMast[A_Index]
 		if (temp)
 		WinClose, ahk_pid%temp%
@@ -2471,11 +2472,6 @@ else
 			}
 		}
 	}
-		if (strTemp2)
-		{
-			if (MsgOnceTerminate(SelIniChoicePath, strTemp2, PrgTermExit))
-			Return
-		}
 	}
 
 	if (PrgPID)
@@ -2483,18 +2479,20 @@ else
 		Process, Exist, %PrgPID%
 		if (ErrorLevel)
 			{
-			strRetVal := "`[Test Run`]"
-			if (PrgChoicePaths[selPrgChoice])
-			{
-			strRetVal .= PrgChoicePaths[selPrgChoice]
-
-				if (strRetVal := GetProcFromPath(strRetVal))
+				if (PrgChoicePaths[selPrgChoice])
 				{
-					if (MsgOnceTerminate(SelIniChoicePath, strRetVal, PrgTermExit))
-					Return
+				strRetVal := PrgChoicePaths[selPrgChoice]
+				;strRetVal := "`[Test Run`]" ; consider as prefix in output
+					if (strRetVal := GetProcFromPath(strRetVal))
+					(strTemp2)? strTemp2 .= ", " . strRetVal: strTemp2 := strRetVal
 				}
 			}
-			}
+	}
+
+	if (strTemp2)
+	{
+		if (MsgOnceTerminate(SelIniChoicePath, strTemp2, PrgTermExit))
+		Return
 	}
 
 }
