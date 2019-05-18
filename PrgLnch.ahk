@@ -457,6 +457,7 @@ sleep, 120
 ; Restarted PrgLnch (see above): Must happen after inialising PrgPID, PrgListPID.
 if (strTemp)
 {
+
 	Loop, parse, strTemp, | ; Parse the string based on the pipe symbol.
 	{
 		if (A_Index = 1)
@@ -510,8 +511,11 @@ loop % PrgNo
 full_command_line := DllCall("GetCommandLine", "str")
 if (not RegExMatch(full_command_line, " /restart(?!\S)"))
 {
+	loop %maxBatchPrgs%
+	ChkBatchActivePrgs(maxBatchPrgs, PrgBatchIni%A_Index%, PrgPIDMast)
+
 batchActive := ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, PrgPIDMast)
-;Using fromRestart inappropriately- but convenient
+;Using fromRestart inappropriately- but "convenient"
 fromRestart := batchActive
 }
 
@@ -2324,24 +2328,33 @@ MonStr(PrgMonToRn, selPrgChoice)
 Return "*" . PrgMonToRn[selPrgChoice] . "*"
 }
 
-MsgOnceTerminate(SelIniChoicePath, strTemp, PrgTermExit)
+MsgOnceTerminate(SelIniChoicePath, strTemp, ByRef PrgTermExit)
 {
-retVal := 0
+retVal := 0, strTemp2 := "A Prg or Batched Prg is"
+
+(Instr(strTemp, ","))? strTemp2 := "Prgs or Batched Prgs are": strTemp2 := "A Prg or Batched Prg is"
 
 if (!PrgTermExit)
 	{
-	MsgBox, 8195, Active Prg on Quit, A Prg or Batched Prg is still running:`n `"%strTemp%`"`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do not Quit: `n
-	IfMsgBox, Yes
-	retVal := 0
-	else
-	{
+	MsgBox, 8195, Active on Quit, %strTemp2% still running:`n `"%strTemp%`"`nDo you wish to close them?`n`nReply:`nYes: Close: (Brings up another dialog)`nNo: Do not close: (Recommended: This will not show again) `nCancel: Do not Quit: `n
 	IfMsgBox, No
 	{
 	PrgTermExit := 1
 	IniWrite, %PrgTermExit%, %SelIniChoicePath%, Prgs, PrgTermExit
 	}
 	else
-	retVal := 1
+	{
+		IfMsgBox, Cancel
+		retVal := 1
+		else
+		{
+		MsgBox, 8196, Terminate on Quit, Automatically terminate Prgs when quitting?`n`nYes: Continue (Not recommended: This will not show again) `nNo: Continue (The `"Active on Quit`" prompt will show again) `n
+			IfMsgBox, Yes
+			{
+			PrgTermExit := 2
+			IniWrite, %PrgTermExit%, %SelIniChoicePath%, Prgs, PrgTermExit
+			}
+		}
 	}
 	}
 Return retVal
@@ -2405,8 +2418,9 @@ PrgLnchButtonQuit_PrgLnch:
 PrgLnchGuiClose:
 PrgLnchGuiEscape:
 
+critical
 
-if (PrgTermExit)
+if (PrgTermExit = 2)
 { ;cancel Prgs
 
 	loop % PrgNo
@@ -2486,9 +2500,8 @@ else
 }
 
 SetTimer, NewThreadforDownload, Delete ;Cleanup
-;Gui, PrgLnchOpt:Submit  ; Save each control's contents to its associated variable- but why here?
 
-critical
+
 
 strTemp2 := ""
 loop % PrgNo
@@ -2496,13 +2509,13 @@ loop % PrgNo
 	strTemp := PrgChoicePaths[A_Index]
 	if (strTemp)
 	{
-	if (!InStr(PrgLnkInf[A_Index], "*"))
-	strTemp := PrgLnkInf[A_Index]
+		if (!InStr(PrgLnkInf[A_Index], "*"))
+		strTemp := PrgLnkInf[A_Index]
 	strRetVal := WorkingDirectory(strTemp, 1)
-	If (strRetVal)
-	strTemp2 .= "`n" . strRetVal
-	else
-	KleenupPrgLnchFiles()
+		If (strRetVal)
+		strTemp2 .= "`n" . strRetVal
+		else
+		KleenupPrgLnchFiles()
 	}
 }
 
@@ -2520,6 +2533,7 @@ ExitApp
 
 KleenupPrgLnchFiles()
 {
+return
 ifexist, PrgLnchLoading.jpg ; Is cleaning up after each run such a big drama these days?
 FileDelete, PrgLnchLoading.jpg
 ifexist, PrgLaunching.jpg
@@ -5568,9 +5582,8 @@ else
 strRetVal := SubStr(strTemp, InStr(strTemp, "\",, -1) + 1)
 
 	if (!strRetVal)
-		{
-			MsgBox, 8192, ,Invalid path with %strTemp%!`nUnable to continue process check.
-		}
+	MsgBox, 8192, ,Invalid path with %strTemp%!`nUnable to continue process check.
+
 Return strRetVal
 }
 
@@ -5643,6 +5656,18 @@ else
 Return duplist
 }
 
+ChkBatchActivePrgs(maxBatchPrgs, PrgBatchIniA_Index, ByRef PrgListPID)
+{
+	loop % maxBatchPrgs
+	{
+	fTemp := PrgBatchIniA_Index[A_Index]
+
+		if (fTemp)
+		PrgListPID[fTemp] := 1
+		else
+		Break
+	}
+}
 
 ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, ByRef PrgPIDMast)
 {
@@ -5700,7 +5725,6 @@ MsgBox, 8195, Running Prgs, % "The Prgs in the list below have already started!`
 }
 
 
-
 Loop % PrgNo
 {
 foundpos := 0
@@ -5710,13 +5734,16 @@ foundpos := 0
 
 	foundpos := ErrorLevel
 
-		if (foundpos)
+		; PrgPIDMast[]A_Index] 1 if batch!
+		if (foundpos && PrgPIDMast[A_Index])
 		{
 		PrgPIDMast[A_Index] := foundpos
 		retVal := 1
 		}
 	}
 }
+
+
 
 Return retVal
 }
@@ -5868,7 +5895,7 @@ strRetVal := "", strTemp2 := ""
 }
 WorkingDirectory(strTemp, SetNow := 0)
 {
-retVal := 0, strTemp2 := ""
+retVal := 0
 	strTemp2 := strTemp
 	if (strTemp != A_ScriptDir && !InStr(strTemp, "\", false, StrLen(strTemp)))
 	{
@@ -6775,6 +6802,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 					{
 						IfMsgBox, Cancel
 						IniWrite, 1 , %SelIniChoicePath%, General, WinRtDirWrn
+					updateStatus := -2
 					Return
 					}
 				}
