@@ -361,7 +361,7 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 	if (fTemp > 2)
 	{
 	MsgBox, 8192, PrgLnch Running!, An instance of PrgLnch is already in memory!
-	GoSub PrgLnchGuiClose
+	GoSub PrgLnchButtonQuit_PrgLnch
 	}
 
 	} 
@@ -442,7 +442,7 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 	else
 	{
 	FileDelete %SelIniChoicePath%
-	GoSub PrgLnchGuiClose
+	GoSub PrgLnchButtonQuit_PrgLnch
 	}
 }
 else
@@ -955,7 +955,7 @@ else
 {
 MsgBox, 8196, , Problem with Finding the PrgLnch Window! Quit PrgLnch?
 IfMsgBox, Yes
-GoSub PrgLnchGuiClose
+GoSub PrgLnchButtonQuit_PrgLnch
 
 }
 
@@ -2330,14 +2330,23 @@ Return "*" . PrgMonToRn[selPrgChoice] . "*"
 
 MsgOnceTerminate(SelIniChoicePath, strTemp, ByRef PrgTermExit)
 {
-retVal := 0, strTemp2 := "A Prg or Batched Prg is"
+retVal := 0
 
-(Instr(strTemp, ","))? strTemp2 := "Prgs or Batched Prgs are": strTemp2 := "A Prg or Batched Prg is"
-(Instr(strTemp, ","))? strTemp3 := "them": strTemp3 := "it"
+	if ((Instr(strTemp, "`n")) || (Instr(strTemp, ",")))
+	{
+	strTemp2 := "Prgs are"
+	strTemp3 := "them"
+	}
+	else
+	{
+	strTemp2 := "A Prg is"
+	strTemp3 := "it"
+	}
+
 
 if (!PrgTermExit)
 	{
-	MsgBox, 8195, Active on Quit, %strTemp2% still running:`n `"%strTemp%`"`nDo you wish to close %strTemp3%?`n`nReply:`nYes: Close: (Brings up another dialog)`nNo: Do not close: (Recommended: This will not show again) `nCancel: Do not Quit: `n
+	MsgBox, 8195, Active on Quit, %strTemp2% still running!`n%strTemp%`nDo you wish to close %strTemp3%?`n`nReply:`nYes: Close: (Brings up another dialog)`nNo: Do not close: (Recommended: This will not show again)`nCancel: Do not close: (This will show again): `n
 	IfMsgBox, No
 	{
 	PrgTermExit := 1
@@ -2345,15 +2354,16 @@ if (!PrgTermExit)
 	}
 	else
 	{
-		IfMsgBox, Cancel
-		retVal := 1
-		else
+		IfMsgBox, Yes
 		{
-		MsgBox, 8196, Terminate on Quit, Automatically terminate Prgs when quitting?`n`nYes: Terminate (Not recommended: This will not show again) `nNo: Terminate (The `"Active on Quit`" prompt will show again) `n
-			IfMsgBox, Yes
+		MsgBox, 8195, Terminate on Quit, Automatically terminate Prgs when quitting?`n`nYes: Terminate (Not recommended: This will not show again) `nNo: Terminate (The `"Active on Quit`" prompt will show again)`nCancel: Do nothing (The `"Active on Quit`" prompt will show again)`n
+			IfMsgBox, Cancel
+			RetVal := 1
+			else
 			{
 			PrgTermExit := 2
-			IniWrite, %PrgTermExit%, %SelIniChoicePath%, Prgs, PrgTermExit
+				IfMsgBox, Yes
+				IniWrite, %PrgTermExit%, %SelIniChoicePath%, Prgs, PrgTermExit
 			}
 		}
 	}
@@ -2416,32 +2426,12 @@ PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByR
 
 
 PrgLnchButtonQuit_PrgLnch:
-PrgLnchGuiClose:
 PrgLnchGuiEscape:
-
+;PrgLnchGuiClose: ; not mandatory
+Gui PrgLnch: +OwnDialogs
 critical
 
-if (PrgTermExit = 2)
-{ ;cancel Prgs
-
-	loop % PrgNo
-		{
-		temp := PrgPIDMast[A_Index]
-		if (temp)
-		WinClose, ahk_pid%temp%
-		sleep, 200
-		if (temp)
-		KillPrg(temp)
-		}
-	if (PrgPID)
-	{
-	WinClose, ahk_pid%PrgPID%
-	sleep, 200
-	if (PrgPID)
-	KillPrg(PrgPID)
-	}
-}
-else
+if (PrgTermExit <> 2)
 {
 	if (presetNoTest) ; Quit Button clicked
 	{
@@ -2466,7 +2456,7 @@ else
 				else
 				{
 				temp := ", "
-				strTemp2 := strRetVal
+				strTemp2 := "`[Batched`]: " . strRetVal
 				}
 			}
 			}
@@ -2482,9 +2472,8 @@ else
 				if (PrgChoicePaths[selPrgChoice])
 				{
 				strRetVal := PrgChoicePaths[selPrgChoice]
-				;strRetVal := "`[Test Run`]" ; consider as prefix in output
 					if (strRetVal := GetProcFromPath(strRetVal))
-					(strTemp2)? strTemp2 .= ", " . strRetVal: strTemp2 := strRetVal
+					(strTemp2)? strTemp2 := "`[Test Run`]: " . strRetVal . "`n" . strTemp2: strTemp2 := "`[Test Run`]: " . strRetVal
 				}
 			}
 	}
@@ -2495,6 +2484,28 @@ else
 		Return
 	}
 
+}
+
+
+if (PrgTermExit = 2)
+{ ;cancel Prgs
+
+	loop % PrgNo
+		{
+		temp := PrgPIDMast[A_Index]
+		if (temp)
+		WinClose, ahk_pid%temp%
+		sleep, 200
+		if (temp)
+		KillPrg(temp)
+		}
+	if (PrgPID)
+	{
+	WinClose, ahk_pid%PrgPID%
+	sleep, 200
+	if (PrgPID)
+	KillPrg(PrgPID)
+	}
 }
 
 SetTimer, NewThreadforDownload, Delete ;Cleanup
@@ -6596,7 +6607,7 @@ GuiControlGet, temp, PrgLnchOpt: FocusV
 ;Critical
 
 if (temp != "UpdtPrgLnch")
-GoSub PrgLnchGuiClose
+GoSub PrgLnchButtonQuit_PrgLnch
 
 
 Tooltip
