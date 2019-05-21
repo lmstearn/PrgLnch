@@ -1113,39 +1113,39 @@ boundListBtchCtl := 1
 	if (temp = BtchPrgHwnd) ;actually clicked the Listbox
 	{
 	GuiControlGet, listPrgVar, PrgLnch:, listPrg
-	fTemp := PrgListIndex[listPrg]
-	if (PrgBdyBtchTog[listPrg] = MonStr(PrgMonToRn, fTemp))
+	fTemp := PrgListIndex[listPrgVar]
+	if (PrgBdyBtchTog[listPrgVar] = MonStr(PrgMonToRn, fTemp))
 	{
-		PrgBdyBtchTog[listPrg] := ""
+		PrgBdyBtchTog[listPrgVar] := ""
 		currBatchNo -= 1
-		if (currBatchNo < 0)
-		currBatchNo := 0
+			if (currBatchNo < 0)
+			currBatchNo := 0
 
-		if (!currBatchNo)
-		EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, 1)
+			if (!currBatchNo)
+			EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, 1)
 	}
 	else
 	{
 		if (currBatchNo < maxBatchPrgs)
 		{
-		if (!currBatchNo)
-		EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames)
+			if (!currBatchNo)
+			EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames)
 
-		if (!PrgBdyBtchTog[listPrg])
-		currBatchNo += 1
-		fTemp := PrgListIndex[listPrg]
-		PrgBdyBtchTog[listPrg] := MonStr(PrgMonToRn, fTemp)
+			if (!PrgBdyBtchTog[listPrgVar])
+			currBatchNo += 1
+		fTemp := PrgListIndex[listPrgVar]
+		PrgBdyBtchTog[listPrgVar] := MonStr(PrgMonToRn, fTemp)
 		}
 		else
 		{
-		PrgBdyBtchTog[listPrg] := "" ; In case set to "MonStr(PrgMonToRn, PrgListIndex[A_Index]) " in the updown
+		PrgBdyBtchTog[listPrgVar] := "" ; In case set to "MonStr(PrgMonToRn, PrgListIndex[A_Index]) " in the updown
 		;ToolTip , "Batch Prg Limit Reached."
 		}
 	}
 
 
 	GuiControl, PrgLnch:, ListPrg, % PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
-	GuiControl, PrgLnch: Choose, ListPrg, % ListPrg
+	GuiControl, PrgLnch: Choose, ListPrg, % listPrgVar
 	GuiControl, PrgLnch: Show, ListPrg
 	}
 ;commit preset to file each click
@@ -1210,6 +1210,7 @@ Return
 
 BtchPrgPresetSub:
 Gui, PrgLnch: Submit, Nohide
+Gui PrgLnch: +OwnDialogs
 SetTimer, WatchSwitchBack, Delete
 SetTimer, WatchSwitchOut, Delete
 Thread, NoTimers
@@ -1223,16 +1224,15 @@ GuiControlGet, temp, PrgLnch:, BtchPrgPreset ;sel another preset?
 else
 GuiControlGet, btchPrgPresetSel, PrgLnch:, BtchPrgPreset
 
-;Backup last good PID
-
-PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, PrgPIDMast, 1)
 
 
 if (btchPrgPresetSel = temp)
 {
-	; cannot disable if batch active
+	; Batch active?
 	if (IsCurrentBatchRunning(currBatchNo, PrgListPID%btchPrgPresetSel%))
 	{
+	
+		; Just returned from Config
 		if (presetNoTest = 2)
 		{
 		presetNoTest := 1
@@ -1261,12 +1261,48 @@ if (btchPrgPresetSel = temp)
 			SetTimer, WatchSwitchOut, 1000
 
 		}
+		else
+		{
+		MsgBox, 8196, Active Preset, This Preset contains active Prgs!`n`nReply:`nYes: Continue and remove the Preset `nNo: Do not remove the Preset. `n
+			IfMsgBox, No
+			{
+			DetectHiddenWindows, On
+			Return
+			}
+			else
+			{
+
+			Gui, PrgProperties: +LastFoundExist
+			IfWinExist
+			Gui, PrgProperties: Destroy
+
+
+			loop % currBatchNo
+			{
+			PrgListPID%btchPrgPresetSel%[A_Index] := 0
+			PrgBdyBtchTog[A_Index] = ""
+			}
+			currBatchNo := 0
+			;must remove ini entry
+			IniWrite, %A_Space%, %SelIniChoicePath%, Prgs, PrgBatchIni%btchPrgPresetSel%
+				if (PrgBatchIniStartup = btchPrgPresetSel)
+				IniWrite, 0, %SelIniChoicePath%, Prgs, PrgBatchIniStartup
+
+			PresetNames[btchPrgPresetSel] := ""
+			btchPrgPresetSel := 0
+			SendMessage, LB_SETCURSEL, -1, 0, , ahk_id %PresetHwnd% ; deselects
+			GuiControl, PrgLnch:, batchPrgStatus, |
+			EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, 1)
+			DetectHiddenWindows, On
+			Return
+		}
+
+		}
 	}
 	else
 	{
 		if (presetNoTest = 2)
 		{
-
 		presetNoTest := 1
 
 			GuiControl, PrgLnch:, batchPrgStatus, % ReorgBatch(batchPrgNo, maxBatchPrgs, btchPrgPresetSel, PrgMonToRn, PrgBatchIni%btchPrgPresetSel%, currBatchNo, PrgListIndex, PrgBdyBtchTog)
@@ -1287,7 +1323,6 @@ if (btchPrgPresetSel = temp)
 		else
 		{
 
-		;Nothing selected so not using presets
 		Gui, PrgProperties: +LastFoundExist
 		IfWinExist
 		Gui, PrgProperties: Destroy
@@ -1306,7 +1341,7 @@ if (btchPrgPresetSel = temp)
 		PresetNames[btchPrgPresetSel] := ""
 		btchPrgPresetSel := 0
 		SendMessage, LB_SETCURSEL, -1, 0, , ahk_id %PresetHwnd% ; deselects
-		GuiControl, PrgLnch:, batchPrgStatus
+		GuiControl, PrgLnch:, batchPrgStatus, |
 		EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, 1)
 		}
 	}
@@ -1338,7 +1373,7 @@ else
 		Goto IniReadStart
 	}
 	; No key and defaults to "ERROR"
-	if (temp && !(temp = "ERROR"))
+	if (temp)
 	{
 		currBatchNo := 0
 		loop, parse, temp, CSV
@@ -1388,26 +1423,23 @@ else
 	else ;nothing in ini to restore, so write to it!
 	{
 		;sanitize
-		Loop % maxBatchPrgs
-		{
-		PrgBatchIni%btchPrgPresetSel%[A_Index] := 0
-		}
+			Loop % maxBatchPrgs
+			PrgBatchIni%btchPrgPresetSel%[A_Index] := 0
+
 
 		currBatchNo := 0
 
-		Loop % batchPrgNo
-		{
-			temp := PrgListIndex[A_Index]
-			if (PrgBdyBtchTog[A_Index] = MonStr(PrgMonToRn, temp))
+			Loop % batchPrgNo
 			{
-			currBatchNo += 1
-			PrgBatchIni%btchPrgPresetSel%[currBatchNo] := PrgListIndex[A_Index]
+				temp := PrgListIndex[A_Index]
+				if (PrgBdyBtchTog[A_Index] = MonStr(PrgMonToRn, temp))
+				{
+				currBatchNo += 1
+				PrgBatchIni%btchPrgPresetSel%[currBatchNo] := PrgListIndex[A_Index]
+				}
 			}
-		}
-
 		if (currBatchNo)
 		{
-
 		temp := ""
 			Loop % maxBatchPrgs
 			{
@@ -1417,10 +1449,20 @@ else
 			}
 		IniWrite, %temp%, %SelIniChoicePath%, Prgs, PrgBatchIni%btchPrgPresetSel%
 		; copy active Prgs over
-			loop % currBatchNo
+
+			
+			if (btchPrgPresetSel = foundpos)
 			{
-			PrgListPID%btchPrgPresetSel%[A_Index] := PrgListPID%foundpos%[A_Index]
+			;Reselecting a just removed preset, so re-populate PID array with a slected Prg that is active in another preset
+			PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, PrgPIDMast)
+			GuiControl, PrgLnch:, batchPrgStatus, % ReorgBatch(batchPrgNo, maxBatchPrgs, btchPrgPresetSel, PrgMonToRn, PrgBatchIni%btchPrgPresetSel%, currBatchNo, PrgListIndex, PrgBdyBtchTog)
 			}
+			else
+			{
+				loop % currBatchNo
+				PrgListPID%btchPrgPresetSel%[A_Index] := PrgListPID%foundpos%[A_Index]
+			}
+
 		}
 		else
 		{
@@ -2452,11 +2494,11 @@ if (PrgTermExit <> 2)
 				if (strRetVal := GetProcFromPath(strRetVal))
 				{
 				if (temp)
-				strTemp2 .= temp . strRetVal
+				strTemp2 .= temp . """" . strRetVal . """"
 				else
 				{
 				temp := ", "
-				strTemp2 := "`[Batched`]: " . strRetVal
+				strTemp2 := "`[Batched`]: """ . strRetVal . """"
 				}
 			}
 			}
@@ -2473,7 +2515,7 @@ if (PrgTermExit <> 2)
 				{
 				strRetVal := PrgChoicePaths[selPrgChoice]
 					if (strRetVal := GetProcFromPath(strRetVal))
-					(strTemp2)? strTemp2 := "`[Test Run`]: " . strRetVal . "`n" . strTemp2: strTemp2 := "`[Test Run`]: " . strRetVal
+					(strTemp2)? strTemp2 := "`[Test Run`]: """ . strRetVal . """`n" . strTemp2: strTemp2 := "`[Test Run`]: """ . strRetVal . """"
 				}
 			}
 	}
@@ -2944,7 +2986,7 @@ Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 GuiControlGet, PrgMinMaxVar, PrgLnchOpt:, PrgMinMax
 PrgRnMinMax[selPrgChoice] := PrgMinMaxVar
-msgbox % PrgMinMaxVar " " selPrgChoice
+
 IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
 
 if (PrgPID) ;test only from config
