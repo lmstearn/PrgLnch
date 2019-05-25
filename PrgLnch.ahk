@@ -2584,7 +2584,6 @@ ExitApp
 
 KleenupPrgLnchFiles()
 {
-return
 ifexist, PrgLnchLoading.jpg ; Is cleaning up after each run such a big drama these days?
 FileDelete, PrgLnchLoading.jpg
 ifexist, PrgLaunching.jpg
@@ -4800,7 +4799,6 @@ if (lnchPrgIndex > 0) ;Running
 		Sleep 1200
 		}
 
-
 ;try
 ;{
 		Run, % PrgPaths,% (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "",% "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
@@ -4815,8 +4813,11 @@ if (lnchPrgIndex > 0) ;Running
 		if (A_LastError = ERROR_FILE_NOT_FOUND || A_LastError = ERROR_ACCESS_DENIED || A_LastError = ERROR_CANCELLED)
 		{
 			if (A_IsAdmin)
-			Return PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?"
-			else		
+			{
+			outStr := PrgNames[lnchPrgIndex] . " cannot launch with error " . A_LastError . ".`nIs it a system file, or does it have special permissions?"
+			Return outStr
+			}
+			else
 			msgbox, 8196 ,Run Elevated?, % PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nIt might be possible for PrgLnch to run it as Admin:`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
 
 			IfMsgBox, Yes
@@ -4841,7 +4842,8 @@ if (lnchPrgIndex > 0) ;Running
 					scrFreq := scrFreqDef
 					}
 				}
-			return PrgNames[lnchPrgIndex] " could not launch with error" %A_LastError%
+			outStr := PrgNames[lnchPrgIndex] . " could not launch with error " . A_LastError
+			return outStr
 		}
 	}
 
@@ -4880,7 +4882,7 @@ if (lnchPrgIndex > 0) ;Running
 				WinMove, ahk_pid%PrgPIDtmp%, , dx, dy, w, h
 
 				;move mouse
-				DllCall("SetCursorPos", int, dx + w/2, int, dy + h/2)
+				DllCall("SetCursorPos", int, round(dx + w/2), int, round(dy + h/2))
 			}
 			Break
 		}
@@ -4923,8 +4925,11 @@ Run, % PrgPaths,% (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "",% "UseErrorLevel" ((I
 		if (A_LastError = ERROR_FILE_NOT_FOUND || A_LastError = ERROR_ACCESS_DENIED || A_LastError = ERROR_CANCELLED)
 		{
 			if (A_IsAdmin)
-			Return PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?"
-			else		
+			{
+			outStr := PrgNames[lnchPrgIndex] . " cannot launch with error " . A_LastError . ".`nIs it a system file, or does it have special permissions?"
+			Return outStr 
+			}
+			else
 			msgbox, 8196 ,Run Elevated?, % PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nIt might be possible for PrgLnch to run it as Admin:`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
 
 			IfMsgBox, Yes
@@ -4949,7 +4954,8 @@ Run, % PrgPaths,% (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "",% "UseErrorLevel" ((I
 					scrFreq := scrFreqDef
 					}
 				}
-			return PrgNames[lnchPrgIndex] " could not launch with error" %A_LastError%
+			outStr := PrgNames[lnchPrgIndex] . " could not launch with error " . A_LastError
+			return outStr
 		}
 	}
 
@@ -4974,11 +4980,11 @@ Run, % PrgPaths,% (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "",% "UseErrorLevel" ((I
 			if (!(mdLeft - mdRight) && (mdTop - mdBottom))
 			{
 			outStr := "Incorrect destination co-ordinates.`nIf the monitor has just been configured, a reboot may resolve the issue."
-			return  outStr
+			return outStr
 			}
 
 		; Possible the default window co-ords are in the other monitor from a previous run here
-		if !(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom)
+			if !(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom)
 			{
 			SysGet, ms, MonitorWorkArea, % PrgLnchMon
 			msw := msRight - msLeft, msh := msBottom - msTop
@@ -4989,25 +4995,33 @@ Run, % PrgPaths,% (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "",% "UseErrorLevel" ((I
 			dx := mdLeft + (x-msLeft)*(mdw/msw)
 			dy := mdTop + (y-msTop)*(mdh/msh)
 
-			if (wp_IsResizable())
-			{
-			w := Round(w*(mdw/msw))
-			h := Round(h*(mdh/msh))
-			}
+				if (wp_IsResizable())
+				{
+				w := Round(w*(mdw/msw))
+				h := Round(h*(mdh/msh))
+				}
 
 			; Move window, using resolution difference to scale co-ordinates.
 
-			WinMove, ahk_pid%PrgPIDtmp%, , dx, dy, w, h
-
+				try
+				{
+				WinMove, ahk_pid%PrgPIDtmp%, , dx, dy, w, h
+				}
+				catch
+				{
+				sleep, 20
+					if (x = dx && y = dy)
+					MsgBox, 8192, , % " Move Window failed for " PrgNames[lnchPrgIndex]
+				}
 			;move mouse
-			DllCall("SetCursorPos", int, dx + w/2, int, dy + h/2)
-		}
+			DllCall("SetCursorPos", int, round(dx + w/2), int, round(dy + h/2))
+			}
 
 
 		; Restore min/max
 		(temp = 1)? (WinMaximize, ahk_pid %PrgPIDtmp%): ((temp = -1)? (WinMinimize, ahk_pid %PrgPIDtmp%): )
 
-		
+
 		if (PrgBordless[lnchPrgIndex])
 		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, dx, dy, scrWidth, scrHeight, PrgPIDtmp, WindowStyle)
 
@@ -5030,7 +5044,8 @@ else
 	{
 		PrgPIDtmp := "TERM"
 		FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
-		return "Unable to determine the location of `n" %PrgPaths%
+		outStr := "Unable to determine the location of `n" . PrgPaths
+		return outStr
 	}
 
 ;WinWaitClose What about suspended task?
@@ -6345,7 +6360,7 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 			else
 			{
 			if (retVal = DISP_CHANGE_BADMODE) ;-2
-			strRetVal := "The graphics mode is not supported."
+			strRetVal := "The graphics mode is not supported. This can be caused by an out of range resolution value."
 			else
 			{
 			if (retVal = DISP_CHANGE_FAILED) ;-1
@@ -6435,6 +6450,7 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 	}
 Return ResList
 }
+
 DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef)
 {
 defResmsg := 0
@@ -6812,6 +6828,7 @@ NewThreadforDownload: ;Timer!
 	;Critical, Off
 	HideShowCtrls()
 	GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Update Prg
+	GuiControl, PrgLnchOpt: Show, UpdtPrgLnch
 	updateStatus := 1
 	SetTimer, NewThreadforDownload, Off
 	Sleep, 60 ;Do events
@@ -6895,7 +6912,8 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
     timedOut := True
 	ComObjError(True)
 
-	GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Update Prg
+
+
 	If (!FinalSize || timedOut)
 	MsgBox, 8192, , Timed out
 
@@ -6925,7 +6943,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 	Return
 	}
 
-
+	GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Cancel (Esc)
 	;Download the file
 	try
 	{
@@ -6938,9 +6956,13 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 	updateStatus := -1
 	Progress, Off
 	SetTimer, __UpdateProgressBar, Delete
+	GuiControl, PrgLnchOpt: Hide, UpdtPrgLnch
+	GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Update Prg
 	Return
 	}
 	;Remove the timer and the progressbar because the download has finished
+	GuiControl, PrgLnchOpt: Hide, UpdtPrgLnch
+	GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Update Prg
 	Progress, Off
 	SetTimer, __UpdateProgressBar, Delete
 	Return
@@ -7293,6 +7315,8 @@ WinMover(Hwnd, position, Width := 0, Height := 0)
 	WinMove, ahk_id %Hwnd%,,x,y
 	CoordMode, Mouse, % strTemp
 	DetectHiddenWindows, %oldDHW%
+
+
 }
 
 TogglePrgOptCtrls(txtPrgChoice, selPrgChoice := 0, PrgChgResonSwitch := 0, PrgRnMinMax := 0, PrgRnPriority := 0, PrgBordless := 0, PrgLnchHide := 0, CtrlsOn := 0, lnkDisable := 0)
