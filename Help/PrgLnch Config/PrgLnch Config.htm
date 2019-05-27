@@ -67,12 +67,12 @@ When unchecked, the linked executable file or verb is then launched with the pro
   <dt href="#" id="TestMode">TestMode:
 </dt>
   <dd>
-System tests if the resolution works and PrgLnch notifies on success or fail.
+System tests if the resolution works and PrgLnch notifies on success or fail. This is recommended before using <a href="#ChangeAtEveryMode">Change at every mode</a> or <a href="#Dynamic">Dynamic</a> options.
 </dd>
   <dt href="#" id="ChangeAtEveryMode">Change at every mode:
 </dt>
   <dd>
-Resolution is changed as in <a href="#Dynamic">Dynamic</a> below even if the target resolution matches the current resolution. PrgLnch will advise, even if this option is not chosen.
+Resolution is changed as in <a href="#Dynamic">Dynamic</a> below even if the target resolution matches the current resolution. PrgLnch will, in any case advise on such changes on resolution matches regardless of the Res Option.
 </dd>
   <dt href="#" id="Dynamic">Dynamic: (All running Apps):
 </dt>
@@ -127,7 +127,7 @@ Advanced Users: If a Prg is run on the same monitor as PrgLnch at a resolution o
 Window Minimised, Normal, or Maximised:
 </td>
 <td>
-Provisional on certain window properties of Prg, the default value is Norm (Normal) for its expected window positions and dimensions, else the Prg can be run maximised or minimised. Disabled for <B>*.lnk</B> files which have their own window settings configurable through explorer.
+Provisional on certain window properties of Prg, the default value is Norm (Normal) for its expected window positions and dimensions, else the Prg can be run maximised or minimised. Disabled for <B>*.lnk</B> files which have their own window settings configurable through explorer. Can be applied while the Prg is active.
 </td>
  </tr>
 <tr href="#" id="Priority">
