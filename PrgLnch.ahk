@@ -1577,9 +1577,11 @@ if (A_GuiEvent = "DoubleClick")
 				}
 			}
 		}
-		IfNotExist PrgLaunching.jpg
+		if (!FileExist(A_ScriptDir . "\PrgLaunching.jpg"))
+		{
 		FileInstall PrgLaunching.jpg, %A_ScriptDir%\PrgLaunching.jpg
 		sleep 200
+		}
 
 
 	if (!temp) ; fresh start
@@ -2555,6 +2557,7 @@ SetTimer, NewThreadforDownload, Delete ;Cleanup
 
 
 strTemp2 := ""
+strTemp3 := ""
 loop % PrgNo
 {
 	strTemp := PrgChoicePaths[A_Index]
@@ -2566,7 +2569,17 @@ loop % PrgNo
 		If (strRetVal)
 		strTemp2 .= "`n" . strRetVal
 		else
-		KleenupPrgLnchFiles()
+		{
+			if (strTemp != A_ScriptDir)
+			{
+			fTemp := KleenupPrgLnchFiles(1)
+				if (fTemp)
+				{
+				SplitPath, strTemp, , strTemp
+				strTemp3 .= "`nFile(s): """ . fTemp . """ found in """ . strTemp . """ moved to the Recycle Bin."
+				}
+			}
+		}
 	}
 }
 
@@ -2577,25 +2590,40 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 	else
 	KleenupPrgLnchFiles()
 
-	if (strTemp2)
-	MsgBox, 8192, File Deletion, % "Clean up failed for the following!`n" strTemp2
+	if (strTemp3)
+	MsgBox, 8192, PrgLnch Remnants, % (strTemp2)? ("Clean up failed for the following!`n" strTemp2 "`n`nAlso, " strTemp3): strTemp3
+	else
+	{
+		if (strTemp2)
+		MsgBox, 8192, PrgLnch Remnants, % "Clean up failed for the following!`n" strTemp2
+	}
 
 ExitApp
 
-KleenupPrgLnchFiles()
+KleenupPrgLnchFiles(RecycleNow := 0)
 {
-ifexist, PrgLnchLoading.jpg ; Is cleaning up after each run such a big drama these days?
-FileDelete, PrgLnchLoading.jpg
-ifexist, PrgLaunching.jpg
-FileDelete, PrgLaunching.jpg
-ifexist, PrgLnchProperties.jpg
-FileDelete, PrgLnchProperties.jpg
-ifexist, PrgLnch.chm
-FileDelete, PrgLnch.chm
-ifexist, PrgLnch.chw
-FileDelete, PrgLnch.chw
-ifexist, taskkillPrg.bat
-FileDelete, taskkillPrg.bat
+namesToDel := ["PrgLnchLoading.jpg", "PrgLaunching.jpg", "PrgLnchProperties.jpg", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat"]
+
+temp := ""
+KleenupPrgLnchFiles := ""
+
+For eachNameToDel in namesToDel
+{
+	ifexist, % namesToDel[A_Index]
+	{
+		if (RecycleNow)
+		{
+		KleenupPrgLnchFiles .= temp . namesToDel[A_Index]
+		FileRecycle, % namesToDel[A_Index]
+			if (!temp)
+			temp := ", "
+		}
+		else
+		FileDelete, % namesToDel[A_Index]
+	}
+}
+return KleenupPrgLnchFiles
+
 }
 WM_HELP(wp_notused, lParam, _msg, _hwnd)
 {
@@ -4524,7 +4552,7 @@ if ((presetNoTest) && strTemp = "&Run Batch" || !(presetNoTest) && temp = "&Test
 	else
 	lnchStat := 1
 
-	IfNotExist PrgLaunching.jpg
+	if (!FileExist(A_ScriptDir . "\PrgLaunching.jpg"))
 	{
 	FileInstall PrgLaunching.jpg, %A_ScriptDir%\PrgLaunching.jpg
 	sleep 200
@@ -5979,7 +6007,7 @@ retVal := 0
 	}
 ; 0 success
 if (retVal)
-Return "An error of " retVal " occurred while reading path:`n" strTemp
+Return "An error of " retVal " occurred while reading the path for:`n""" strTemp . """"
 else
 Return ""
 }
