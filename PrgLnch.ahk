@@ -7,11 +7,6 @@ SendMode Input  ; Recommended for new scripts due to superior speed & reliabilit
 
 FileSetAttrib, -RH, % A_ScriptDir . "`\*.*", 1
 
-;Ensures a consistent starting directory.
-strRetVal := WorkingDirectory(A_ScriptDir, 1)
-If (strRetVal)
-MsgBox, 8192, Initialise, % strRetVal
-
 SetTitleMatchMode, 2
 #MaxThreads 5
 #Persistent
@@ -26,11 +21,6 @@ OnMessage(0x0053, "WM_Help")
 OnMessage(0x201, "WM_LBUTTONDOWN")
 
 
-
-
-IfNotExist, PrgLnchLoading.jpg
-FileInstall PrgLnchLoading.jpg, PrgLnchLoading.jpg
-sleep, 200
 
 
 ;Issues:
@@ -138,8 +128,6 @@ Class PrgLnch
 
 
 
-
-SplashImage, PrgLnchLoading.jpg, A B,,,LnchSplash
 
 
 (A_PtrSize = 8)? 64bit := 1 : 64bit := 0 ; ONLY checks .exe bitness
@@ -342,6 +330,7 @@ GetDisplayData( , , dispMonNamesNo, iDevNumArray, dispMonNames, scrDPI, scrWidth
 
 PrgLnch.Monitor := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, primaryMon, 1)
 
+WinMover(, , , , "PrgLnchLoading.jpg")
 
 temp := PrgLnch.Title
 DetectHiddenWindows, On
@@ -416,10 +405,9 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 		}
 	}
 
-IniProc(fTemp, fTemp, fTemp)
+IniProc()
 ; No screen parms yet
 sleep 90
-
 
 
 
@@ -525,6 +513,7 @@ if (fTemp)
 ChgShortcutVar := "Change Shortcut Name"
 
 Gui, PrgLnchOpt: -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP%
+
 Gui, PrgLnchOpt: Color, FFFFCC
 Gui, PrgLnchOpt: Add, ComboBox, vPrgChoice gPrgChoice HWNDPrgChoiceHwnd
 Gui, PrgLnchOpt: Add, Button, gMakeShortcut vMkShortcut HWNDMkShortcutHwnd wp, &Just Change Res.
@@ -593,8 +582,7 @@ PrgMonToRn[A_Index] := PrgLnch.Monitor
 }
 
 
-
-if (PrgMonToRn[selPrgChoice] && !(defPrgStrng = "None"))
+if (PrgMonToRn[selPrgChoice] && defPrgStrng != "None")
 {
 targMonitorNum := PrgMonToRn[selPrgChoice]
 GoSub iDevNo
@@ -681,7 +669,7 @@ else
 	{
 
 	GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
-	CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, scrWidth, scrHeight, scrFreq)
+	CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut)
 
 	PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, !InStr(PrgLnkInf[selPrgChoice], "*"), InStr(PrgLnkInf[selPrgChoice], "|"))
 
@@ -706,8 +694,8 @@ if (PrgPID)
 HideShowTestRunCtrls()
 SetTimer, WatchSwitchOut, -1000
 }
-IniProc(scrWidth, scrHeight, scrFreq, 100) ;initialises Prgmon in ini
 
+IniProc(100) ;initialises scrWidth, scrHeight, scrFreq & Prgmon in ini
 
 
 
@@ -1293,9 +1281,7 @@ if (btchPrgPresetSel = temp)
 			SendMessage, LB_SETCURSEL, -1, 0, , ahk_id %PresetHwnd% ; deselects
 			GuiControl, PrgLnch:, batchPrgStatus, |
 			EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, 1)
-			DetectHiddenWindows, On
-			Return
-		}
+			}
 
 		}
 	}
@@ -1305,15 +1291,15 @@ if (btchPrgPresetSel = temp)
 		{
 		presetNoTest := 1
 
-			GuiControl, PrgLnch:, batchPrgStatus, % ReorgBatch(batchPrgNo, maxBatchPrgs, btchPrgPresetSel, PrgMonToRn, PrgBatchIni%btchPrgPresetSel%, currBatchNo, PrgListIndex, PrgBdyBtchTog)
+		GuiControl, PrgLnch:, batchPrgStatus, % ReorgBatch(batchPrgNo, maxBatchPrgs, btchPrgPresetSel, PrgMonToRn, PrgBatchIni%btchPrgPresetSel%, currBatchNo, PrgListIndex, PrgBdyBtchTog)
 			if (btchPrgPresetSel = PrgBatchIniStartup)
 			GuiControl, PrgLnch:, DefPreset, 1
 			else
 			GuiControl, PrgLnch:, DefPreset, 0
 
-			strRetVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
-			sleep 100
-			GuiControl, PrgLnch:, ListPrg, % strRetVal
+		strRetVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
+		sleep 100
+		GuiControl, PrgLnch:, ListPrg, % strRetVal
 		EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames)
 
 		;GuiControl, PrgLnch:, ListPrg, % PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
@@ -1468,10 +1454,14 @@ else
 		{
 		; Nothing Nothing
 		Gui, PrgProperties: +LastFoundExist
-		IfWinExist
-		Gui, PrgProperties: Destroy
+			IfWinExist
+			Gui, PrgProperties: Destroy
 		DetectHiddenWindows, On
-		EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, 1)
+			if (!batchActive)
+			{
+			EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames, 1)
+			Return
+			}
 		}
 	}
 
@@ -1542,15 +1532,15 @@ if (A_GuiEvent = "DoubleClick")
 	SetTimer, WatchSwitchOut, Delete
 	sleep, 200
 	strTemp := "|"
-	if (!batchPrgStatus)
-	Return
+		if (!batchPrgStatus)
+		Return
 
 	; check before launching not cancelling
 	temp := PrgListPID%btchPrgPresetSel%[batchPrgStatus]
 	if (temp = "NS" || temp = "FAILED" || temp = "TERM" || temp = "ENDED" || !temp)
 	{
 
-		strRetVal := ChkExistingProcess(PrgLnkInf, presetNoTest, batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep)
+	strRetVal := ChkExistingProcess(PrgLnkInf, presetNoTest, batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep)
 
 		if (strRetVal)
 		{
@@ -1577,11 +1567,6 @@ if (A_GuiEvent = "DoubleClick")
 				}
 			}
 		}
-		if (!FileExist(A_ScriptDir . "\PrgLaunching.jpg"))
-		{
-		FileInstall PrgLaunching.jpg, %A_ScriptDir%\PrgLaunching.jpg
-		sleep 200
-		}
 
 
 	if (!temp) ; fresh start
@@ -1599,7 +1584,7 @@ if (A_GuiEvent = "DoubleClick")
 	lnchPrgIndex := PrgBatchIni%btchPrgPresetSel%[batchPrgStatus]
 	temp := PrgChoicePaths[lnchPrgIndex]
 
-	SplashImage, PrgLaunching.jpg, A B,,,LnchSplash
+	WinMover(, , , , "PrgLaunching.jpg")
 	sleep, % (!PrgIntervalLnch)? 2000: (PrgIntervalLnch = -1)? 4000: 6000
 
 	scrWidth := scrWidthArr[lnchPrgIndex]
@@ -1631,46 +1616,44 @@ if (A_GuiEvent = "DoubleClick")
 		SplashImage, PrgLaunching.jpg, Hide,,,LnchSplash
 		HideShowLnchControls(quitHwnd, GoConfigHwnd, 1)
 
-		if (strRetVal) ;Lnch fail
-		{
-			if (strRetVal = "|*")
+			if (strRetVal) ;Lnch fail
 			{
-			strTemp .= "Started" . "|"
+				if (strRetVal = "|*")
+				strTemp .= "Started" . "|"
+				else
+				{
+					if (lnchPrgIndex > 0)
+					{
+					strTemp .= "Failed" . "|"
+					MsgBox, 8192, , % strRetVal
+					}
+				}
 			}
 			else
 			{
 				if (lnchPrgIndex > 0)
 				{
-				strTemp .= "Failed" . "|"
-				MsgBox, 8192, , % strRetVal
+					Gui, PrgLnch: Show, Hide, PrgLnch
+						if (!PrgLnchHide[lnchPrgIndex])
+						{
+						WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 3/4, PrgLnchOpt.Height())
+						Gui, PrgLnch: Show
+						}
+					batchActive := 1
+					strTemp .= "Active" . "|"
+					SetResDefaults(targMonitorNum, currRes, Dynamic, FMode, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr)
+				}
+				else
+				{
+				; ASSUME it's cancelled
+					if (currBatchno = A_Index)
+					CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
+
+					if (lnchPrgIndex < 0)
+					strTemp .= "Not Active" . "|"
 				}
 			}
-		}
-		else
-		{
-			SetResDefaults(targMonitorNum, currRes, Dynamic, FMode, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr)
-			if (lnchPrgIndex > 0)
-			{
-				Gui, PrgLnch: Show, Hide, PrgLnch
-				if (!PrgLnchHide[lnchPrgIndex])
-					{
-					WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 3/4, PrgLnchOpt.Height())
-					Gui, PrgLnch: Show
-					}
-				batchActive := 1
-				strTemp .= "Active" . "|"
-			}
-			else
-			{
-			; ASSUME it's cancelled
-			if (currBatchno = A_Index)
-			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, iDevNumArray, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
-
-			if (lnchPrgIndex < 0)
-			strTemp .= "Not Active" . "|"
-			}
-		}
-		; Update Master
+			; Update Master
 			if (lnchPrgIndex > 0)
 			{
 				if (strRetVal)
@@ -1837,7 +1820,6 @@ else
 	}
 	else
 	{
-
 
 
 	presetNoTest := 0
@@ -2953,15 +2935,16 @@ else
 temp := PrgVer[selPrgChoice]
 	if (temp)
 	{
-	if (Util_VersionCompare(PrgVerNew, temp))
-	GuiControl, PrgLnchOpt:, newVerPrg, % "  Update Available"
-	else
-	GuiControl, PrgLnchOpt:, newVerPrg, % "  Prg is up to date"
+		if (Util_VersionCompare(PrgVerNew, temp))
+		GuiControl, PrgLnchOpt:, newVerPrg, % "  Update Available"
+		else
+		GuiControl, PrgLnchOpt:, newVerPrg, % "  Prg is up to date"
 
-	IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+	IniProc(selPrgChoice)
 	}
 	else
 	GuiControl, PrgLnchOpt:, newVerPrg, % "  No Version of Prg!"
+
 	SetTimer, CheckVerPrg, Delete
 }
 Return
@@ -2983,29 +2966,29 @@ Return
 TestMode:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 Return
 ChangeMode:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 Return
 DynamicMode:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 Return
 TmpMode:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 Return
 
 ChgResonSwitchChk:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 PrgChgResonSwitch[selPrgChoice] := ChgResonSwitch
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 Return
 
 PrgMinMaxChk:
@@ -3014,7 +2997,7 @@ Tooltip
 GuiControlGet, PrgMinMaxVar, PrgLnchOpt:, PrgMinMax
 PrgRnMinMax[selPrgChoice] := PrgMinMaxVar
 
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 
 if (PrgPID) ;test only from config
 {
@@ -3035,7 +3018,7 @@ PrgPriorityChk:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 PrgRnPriority[selPrgChoice] := PrgPriority
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 if (PrgPID) ;test only from config
 {
 (!PrgPriority)? temp := "B": (PrgPriority = 1)? temp := "H": temp := "N"
@@ -3047,7 +3030,7 @@ BordlessChk:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 PrgBordless[selPrgChoice] := Bordless
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 if (PrgPID) ;test only from config
 BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, dx, dy, scrWidth, scrHeight, PrgPID, WindowStyle)
 Return
@@ -3056,7 +3039,7 @@ PrgLnchHideChk:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 PrgLnchHide[selPrgChoice] := PrgLnchHd
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 Return
 
 resolveShortctChk:
@@ -3093,7 +3076,7 @@ strTemp := PrgChoicePaths[selPrgChoice]
 	{
 	SetTimer, CheckVerPrg, Delete
 		PrgLnkInf[selPrgChoice] := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
-		if (CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, scrWidth, scrHeight, scrFreq))
+		if (CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut))
 		{
 		PrgResolveShortcut[selPrgChoice] := 0
 		GuiControl, PrgLnchOpt: Disable, resolveShortct
@@ -3109,7 +3092,7 @@ PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, 1)
 }
 
 
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 
 Return
 
@@ -3148,7 +3131,7 @@ Gui, PrgLnchOpt: Submit, Nohide
 		else
 		{
 			PrgURLGui(PrgUrl, PrgUrlTest, SelPrgChoice, 1)
-			IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+			IniProc(selPrgChoice)
 		}
 	}
 Return
@@ -3172,7 +3155,7 @@ Return
 RegoCheck:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 Return
 
 CmdLinPrmSub:
@@ -3194,7 +3177,7 @@ if (strTemp)
 }
 
 PrgCmdLine[selPrgChoice] := strTemp
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+IniProc(selPrgChoice)
 Return
 
 
@@ -3286,10 +3269,10 @@ if (strTemp = "iDevNum")
 	if (PrgMonToRn[selPrgChoice]) ; save it if a Prg
 	{
 		; invalid monitor?
-		if (iDevNumArray[targMonitorNum] < 10)
-		targMonitorNum := PrgLnch.Monitor
+			if (iDevNumArray[targMonitorNum] < 10)
+			targMonitorNum := PrgLnch.Monitor
 		PrgMonToRn[selPrgChoice] := targMonitorNum
-		IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+		IniProc(selPrgChoice)
 		if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq))
 		GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
 
@@ -3303,17 +3286,24 @@ if (strTemp = "iDevNum")
 }
 else
 {
-
-	; If by misadventurer the values are zero
+	
 	if (txtPrgChoice != "None")
 	{
-
-		if (!(scrWidthArr[selPrgChoice] && scrHeightArr[selPrgChoice] && scrFreqArr[selPrgChoice]))
+		if ((scrWidthArr[selPrgChoice] && scrHeightArr[selPrgChoice] && scrFreqArr[selPrgChoice]))
+		{
+		scrWidth := scrWidthArr[selPrgChoice]
+		scrHeight := scrHeightArr[selPrgChoice]
+		scrFreq := scrFreqArr[selPrgChoice]
+		}
+		else
+		{
+		; If by misadventurer the values are zero
 		MsgBox, 8192, No Resolution Mode, Monitor parameters for the selected or startup Prg do not exist!`n`nDefaults assumed.`nIt's recommended to save the parameters by reselecting the target monitor from the Monitor List, and, if required, changing the resolution mode.
 		GetDisplayData(PrgLnch.Monitor, targMonitorNum, dispMonNamesNo, , , , scrWidth, scrHeight, , scrFreq , -1, 1)
 		scrWidthDef := scrWidth
 		scrHeightDef := scrHeight
 		scrFreqDef := scrFreq
+		}
 	}
 
 	SetResDefaults(fTemp, currRes, Dynamic, FMode, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
@@ -3378,7 +3368,7 @@ Tooltip
 		if (Fmode || Dynamic)
 		GuiControl, PrgLnchOpt:, currRes, % substr(ResIndexList, 1, StrLen(ResIndexList) - 1)
 	}
-	ResIndexList := % "|" . GetResList(PrgLnch.Monitor, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResArray, scrWidthDef, scrHeightDef, scrFreqDef, allModes)
+ResIndexList := % "|" . GetResList(PrgLnch.Monitor, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResArray, scrWidthDef, scrHeightDef, scrFreqDef, allModes)
 
 ;Not the g-label ResListBox!
 GuiControl, PrgLnchOpt:, ResIndex, %ResIndexList%
@@ -3388,26 +3378,40 @@ GuiControl, PrgLnchOpt: Show, ResIndex
 Return
 
 
+
+
 ResListBox:
 Tooltip
-if (!Allmodes)
+
+
+if (Allmodes)
+GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
+else
 {
+fTemp := 0
 GuiControlGet, strTemp, PrgLnchOpt:, ResIndex
 	Loop, Parse, ResIndexList, |
 	{
-	If (strTemp = A_Loopfield)
+		If (strTemp = A_Loopfield)
+		{
+		fTemp := A_Index
+		Break
+		}
+	}
+	if (fTemp)
 	{
-	fTemp := A_Index
-	Break
+	scrWidth := ResArray[fTemp - 1, 1]
+	scrHeight := ResArray[fTemp - 1, 2]
+	scrFreq := ResArray[fTemp - 1, 3]
+
+		if (PrgChoicePaths[selPrgChoice])
+		IniProc(selPrgChoice)
 	}
-	}
-scrWidth := ResArray[fTemp - 1, 1]
-scrHeight := ResArray[fTemp - 1, 2]
-scrFreq := ResArray[fTemp - 1, 3]
+	else
+	GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
 }
 
-if (PrgChoicePaths[selPrgChoice])
-IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+
 
 
 Return
@@ -3597,7 +3601,7 @@ else
 			GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 				if (PrgChoiceNames[selPrgChoice])
 				{
-				CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, scrWidth, scrHeight, scrFreq)
+				CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut)
 
 
 				PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, !InStr(PrgLnkInf[selPrgChoice], "*"), InStr(PrgLnkInf[selPrgChoice], "|"))
@@ -3727,7 +3731,7 @@ if (txtPrgChoice = "")
 	If (strRetVal)
 	MsgBox, 8192, Prg Path, % strRetVal
 
-	IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice, 1)
+	IniProc(selPrgChoice, 1)
 	strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 	PrgChoiceNames[selPrgChoice] := ""
 	PrgChoicePaths[selPrgChoice] := ""
@@ -3806,7 +3810,7 @@ else
 	}
 	SetStartupname(SelIniChoicePath, defPrgStrng, PrgChoiceNames, selPrgChoice, txtPrgChoice)
 	PrgChoiceNames[selPrgChoice] := txtPrgChoice
-	IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+	IniProc(selPrgChoice)
 	strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 	GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
 	GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
@@ -3913,7 +3917,7 @@ else
 
 
 		PrgLnchHide[selPrgChoice] := 0
-		IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+		IniProc(selPrgChoice)
 		strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 
 
@@ -4349,7 +4353,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 			GuiControl, PrgLnchOpt: Disable, UpdtPrgLnch
 			GuiControl, PrgLnchOpt:, newVerPrg
 			PrgUrl[selPrgChoice] := ""
-			IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+			IniProc(selPrgChoice)
 		}
 		else
 		{
@@ -4358,7 +4362,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 				ToolTip
 				GuiControl, PrgLnchOpt:, CmdLinPrm
 				PrgCmdLine[selPrgChoice] := ""
-				IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+				IniProc(selPrgChoice)
 			}
 			else
 			{
@@ -4552,13 +4556,6 @@ if ((presetNoTest) && strTemp = "&Run Batch" || !(presetNoTest) && temp = "&Test
 	else
 	lnchStat := 1
 
-	if (!FileExist(A_ScriptDir . "\PrgLaunching.jpg"))
-	{
-	FileInstall PrgLaunching.jpg, %A_ScriptDir%\PrgLaunching.jpg
-	sleep 200
-	}
-
-
 }
 else
 {
@@ -4603,9 +4600,9 @@ loop % ((presetNoTest)? currBatchno: 1)
 		HideShowLnchControls(quitHwnd, GoConfigHwnd)
 
 		lnchPrgIndex := PrgBatchIni%btchPrgPresetSel%[A_Index]
+
 		temp := PrgChoicePaths[lnchPrgIndex]
-		if (!PrgLnchHide[lnchPrgIndex])
-		SplashImage, PrgLaunching.jpg, A B,,,LnchSplash
+		WinMover(, , , , "PrgLaunching.jpg")
 		sleep, % (!PrgIntervalLnch)? 2000: (PrgIntervalLnch = -1)? 4000: 6000
 		}
 		else
@@ -4645,7 +4642,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 	else
 	{
 	SetResDefaults(targMonitorNum, currRes, Dynamic, FMode, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr)
-		if (lnchStat < 0)
+		if (lnchStat < 0) ;test run
 		{
 			if (lnchPrgIndex > 0)
 			{
@@ -4659,12 +4656,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 				}
 			}
 			else ;just cancelled- but not from a hidden form!
-			{
-			WinMover(PrgLnchOpt.Hwnd(), "d r")
-			if (lnchPrgIndex < 0)
-			HideShowTestRunCtrls(1)
-			}
-
+			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak)
 		}
 		else
 		{
@@ -4683,7 +4675,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 			if (lnchPrgIndex < 0)
 			strTemp .= "Not Active" . "|"
 			if (currBatchno = A_Index)
-			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, iDevNumArray, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
+			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
 			}
 			; Update Master
 			PrgPIDMast[lnchPrgIndex] := PrgListPID%btchPrgPresetSel%[A_Index]
@@ -4883,11 +4875,12 @@ if (lnchPrgIndex > 0) ;Running
 
 
 	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
+	fTemp := 0
 	; Possible the default window co-ords are in another monitor from a previous run here
 	loop % dispMonNamesNo
 	{
 	SysGet, ms, MonitorWorkArea, % A_Index
-	if (x >= msLeft && x <= msRight && y >= msTop && y <= msBottom)
+		if (x >= msLeft && x <= msRight && y >= msTop && y <= msBottom)
 		{
 			;we know targMonitorNum = PrgLnchMon
 			if (PrgLnchMon != A_Index)
@@ -4907,15 +4900,41 @@ if (lnchPrgIndex > 0) ;Running
 				}
 
 				; Move window, using resolution difference to scale co-ordinates.
+				try
+				{
+				fTemp := 1
 				WinMove, ahk_pid%PrgPIDtmp%, , dx, dy, w, h
+				}
+				catch
+				{
+				sleep, 20
+				WinGetPos, x, y, , , % "ahk_pid" PrgPIDtmp
+					if (x = dx && y = dy)
+					{
+					MsgBox, 8192, , % " Move Window failed for " PrgNames[lnchPrgIndex]
+					fTemp := 0
+					}
+				}
 
-				;move mouse
-				DllCall("SetCursorPos", int, round(dx + w/2), int, round(dy + h/2))
+				dx := Round(dx + w/2)
+				dy := Round(dy + h/2)
+				fTemp := 1
+					if (fTemp)
+					DllCall("SetCursorPos", UInt, dx, UInt, dy)
+					else
+					fTemp := 1
 			}
 			Break
 		}
 	}
 
+	; Prevents cursor from reverting to primary if PrgLnch not primary
+	if (!fTemp)
+	{
+	dx := Round(x + w/2)
+	dy := Round(y + y/2)
+	DllCall("SetCursorPos", UInt, dx, UInt, dy)
+	}
 
 		if (PrgBordless[lnchPrgIndex])
 		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, 0, 0, scrWidth, scrHeight, PrgPIDtmp, WindowStyle)
@@ -5038,11 +5057,13 @@ Run, % PrgPaths,% (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "",% "UseErrorLevel" ((I
 				catch
 				{
 				sleep, 20
+				WinGetPos, x, y, , , % "ahk_pid" PrgPIDtmp
 					if (x = dx && y = dy)
 					MsgBox, 8192, , % " Move Window failed for " PrgNames[lnchPrgIndex]
 				}
-			;move mouse
-			DllCall("SetCursorPos", int, round(dx + w/2), int, round(dy + h/2))
+				dx := Round(dx + w/2)
+				dy := Round(dy + h/2)
+				DllCall("SetCursorPos", UInt, dx, UInt, dy)
 			}
 
 
@@ -5293,7 +5314,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				if (!timerBtch)
 				{
 				batchActive := 0
-				CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, iDevNumArray, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
+				CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
 				if (!PrgPID)
 				Return
 				}
@@ -5304,7 +5325,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			if(!ErrorLevel)
 			{
 			PrgPID := 0
-			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, iDevNumArray, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak)
 			Return
 			}
 		}
@@ -5317,7 +5338,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			if(!ErrorLevel)
 			{
 			PrgPID := 0
-			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, iDevNumArray, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak)
 			if (!batchActive)
 			Return
 			}
@@ -5342,7 +5363,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				if(!timerBtch)
 				{
 				batchActive := 0
-				CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, iDevNumArray, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, 1)
+				CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
 				Return
 				}
 			}
@@ -5400,7 +5421,7 @@ global
 	return state
 }
 
-CleanupPID(SelIniChoicePath, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, iDevNumArray, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, batchActive := 0)
+CleanupPID(SelIniChoicePath, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, batchActive := 0)
 {
 temp := 0, strRetVal := "", PrgStyle := 0, dx := 0, dy:= 0
 
@@ -5419,8 +5440,8 @@ if (presetNoTest)
 			{
 			PrgListPIDbtchPrgPresetSel[A_Index] := 0
 			}
-		if (PrgLnchMon = lastMonitorUsedInBatch)
-		PrgAlreadyLaunched(SelIniChoicePath, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
+			if (PrgLnchMon = lastMonitorUsedInBatch)
+			PrgAlreadyLaunched(SelIniChoicePath, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 		}
 		WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 3/4, PrgLnchOpt.Height())
 		Gui, PrgLnch: Show
@@ -5441,12 +5462,13 @@ if (presetNoTest)
 		else
 		{
 		; Test run complete here
-		if (PrgLnchHide[selPrgChoice])
-		{
-		WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 3/4, PrgLnchOpt.Height())
-		Gui, PrgLnch: Show
+			if (PrgLnchHide[selPrgChoice])
+			{
+			WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 3/4, PrgLnchOpt.Height())
+			Gui, PrgLnch: Show
+			}
 		}
-		}
+
 	SetTimer, WatchSwitchBack, Delete
 	SetTimer, WatchSwitchOut, Delete
 	}
@@ -5477,14 +5499,22 @@ else
 		}
 	SetTimer, WatchSwitchBack, Delete
 	SetTimer, WatchSwitchOut, Delete
-	if (PrgLnchHide[selPrgChoice])
-	{
 	WinMover(PrgLnchOpt.Hwnd(), "d r")
-	Gui, PrgLnchOpt: Show
-	}
+		if (PrgLnchHide[selPrgChoice])
+		Gui, PrgLnchOpt: Show
 	}
 	; No problem if a batch preset completes at exactly the same time.
 }
+
+	if (!waitBreak)
+	{
+	SysGet, md, MonitorWorkArea, % PrgLnchMon
+	dx := Round(mdleft + (mdRight- mdleft)/2)
+	dy := Round(mdTop + (mdBottom - mdTop)/2)
+	DllCall("SetCursorPos", UInt, dx, UInt, dy)
+	}
+
+
 
 }
 PrgAlreadyLaunched(SelIniChoicePath, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
@@ -5574,7 +5604,7 @@ join(strArray)
     s .= "," . v
   return substr(s, 2)
 }
-CheckPrgPaths(selPrgChoice, IniFileShortctSep, ByRef PrgChoicePaths, ByRef PrgLnkInf, ByRef PrgResolveShortcut, scrWidth, scrHeight, scrFreq)
+CheckPrgPaths(selPrgChoice, IniFileShortctSep, ByRef PrgChoicePaths, ByRef PrgLnkInf, ByRef PrgResolveShortcut)
 {
 Local strRetVal := "", strTemp := PrgChoicePaths[selPrgChoice], strTemp2 := PrgLnkInf[selPrgChoice]
 ;gets, tests working directory of possible lnk, if any
@@ -5602,7 +5632,7 @@ Local strRetVal := "", strTemp := PrgChoicePaths[selPrgChoice], strTemp2 := PrgL
 				PrgChoicePaths[selPrgChoice] := strTemp
 				PrgResolveShortcut[selPrgChoice] := 0
 				PrgLnkInf[selPrgChoice] := "*"
-				IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+				IniProc(selPrgChoice)
 				strRetVal := WorkingDirectory(strTemp)
 				}
 				else
@@ -6761,7 +6791,7 @@ NewThreadforDownload: ;Timer!
 	;https://github.com/ahkscript/libcrypt.ahk/blob/master/src/URI.ahk
 	;https://tools.ietf.org/html/rfc3986
 	;We don't know if the URL works, but write it to ini anyway
-	IniProc(scrWidth, scrHeight, scrFreq, selPrgChoice)
+	IniProc(selPrgChoice)
 
 
 	strTemp := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
@@ -7315,12 +7345,13 @@ else
 }
 
 
-WinMover(Hwnd, position, Width := 0, Height := 0)
+WinMover(Hwnd := 0, position := "hc vc", Width := 0, Height := 0, splashInit := 0 ,wdRatio := 1, htRatio := 1)
 {
 	x:= 0, y := 0, w := 0, h:= 0
 
+; wdRatio, htRatio not used
 
-	if (Width)
+	if (Width && Hwnd)
 	WinMove, ahk_id %Hwnd%,,,, Width, Height
 	;by Learning one
 	; position: l=left, hc=horizontal center, r=right, u=up, vc= vertical center, d=down, b=bottom (same as down)
@@ -7332,15 +7363,38 @@ WinMover(Hwnd, position, Width := 0, Height := 0)
 	strTemp := A_CoordModeMouse
 	CoordMode, Mouse, Screen
 
+	if (splashInit)
+	{
+;Ensures a consistent starting directory.
+	strRetVal := WorkingDirectory(A_ScriptDir, 1)
+		if (strRetVal)
+		MsgBox, 8192, WinMover, % strRetVal
+		else
+		{
+			IfNotExist, %splashInit%
+			{
+				if (splashInit = "PrgLnchLoading.jpg")
+				FileInstall PrgLnchLoading.jpg, PrgLnchLoading.jpg
+				else
+				FileInstall PrgLaunching.jpg, PrgLaunching.jpg
+			sleep, 200
+			}
+		SplashImage, %splashInit%, A B,,,LnchSplash
+		WinGetPos,ix,iy,w,h, LnchSplash
+		}
+	}
+	else
 	WinGetPos,ix,iy,w,h, ahk_id %Hwnd%
 
-
 	StringReplace,position,position,b,d,all ;b=bottom (same as down)
-	x := InStr(position,"l") ? MonLeft : InStr(position,"hc") ?  (MonRight-w)/2 : InStr(position,"r") ? MonRight - w : ix
-	y := InStr(position,"u") ? MonTop : InStr(position,"vc") ?  (MonBottom-h)/2 : InStr(position,"d") ? MonBottom - h : iy
+	x := InStr(position,"l")? MonLeft: InStr(position,"hc")? (MonLeft + (MonRight-MonLeft-w)/2): InStr(position,"r") ? MonRight - w: ix
+	y := InStr(position,"u")? MonTop: InStr(position,"vc")? (MonTop + (MonBottom-MonTop-h)/2): InStr(position,"d") ? MonBottom - h: iy
 
 
-	WinMove, ahk_id %Hwnd%,,x,y
+	if (splashInit)
+	WinMove, LnchSplash,, wdRatio * x, htRatio * y
+	else
+	WinMove, ahk_id %Hwnd%,, wdRatio * x, htRatio * y
 	CoordMode, Mouse, % strTemp
 	DetectHiddenWindows, %oldDHW%
 
@@ -7496,7 +7550,7 @@ GuiControl, PrgLnchOpt: Show, PrgLAA
 
 
 
-IniProc(ByRef scrWidth := 1920, ByRef scrHeight := 1080, ByRef scrFreq := 60, selPrgChoice := 0, removeRec := 0)
+IniProc(selPrgChoice := 0, removeRec := 0)
 {
 
 Local foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, k := 0, spr := "", reWriteIni := 0, FileExistSelIniChoicePath:= FileExist(SelIniChoicePath)
@@ -7625,8 +7679,9 @@ if (!FileExistSelIniChoicePath)
 		spr := PrgMonToRn[A_Index] . "," . PrgChgResonSwitch[A_Index] . ",-1," . PrgRnPriority[A_Index] . "," . PrgBordless[A_Index] . "," . PrgLnchHide[A_Index] . ",0"
 
 		IniWrite, % spr, %SelIniChoicePath%, Prg%A_Index%, PrgMisc
-		
+
 		spr := % scrWidthArr[A_Index] . "," . scrHeightArr[A_Index] . "," . scrFreqArr[A_Index] . "," 0
+
 		IniWrite, %spr%, %SelIniChoicePath%, Prg%A_Index%, PrgRes
 
 
@@ -7644,77 +7699,68 @@ if (!FileExistSelIniChoicePath)
 	FileRead, s, %SelIniChoicePath%
 
 	Loop, Parse, s, `n`r, %A_Space%%A_Tab%
+	{
+
+	c := SubStr(A_LoopField, 1, 1)
+	if (c="[")
 		{
-
-		c := SubStr(A_LoopField, 1, 1)
-		if (c="[")
-			{
-				sectCount := 0
-
-				k := SubStr(A_LoopField, 1)
-
-				spr := SubStr(k, 2, 3)
+			sectCount := 0
+			k := SubStr(A_LoopField, 1)
+			spr := SubStr(k, 2, 3)
 				if (spr = "Prg")
-				{
 				recCount := recCount + 1
-				}
 				else	;Process  General section
-				{
 				Continue ;Just in case any new sub nodes
-				}
-
-			}
-			else 
+		}
+		else 
+		{
+			if (c=";" || c="*/") ;comments
+			Continue
+			if (c="/*")
 			{
-				if (c=";" || c="*/") ;comments
-				continue
-				if (c="/*")
+				MsgBox, 8192, , % "Can't handle " c " if not eof!"
+				Return -1
+			}
+
+
+			p := InStr(A_LoopField, "=")
+
+			if (p)
+			{
+			k := SubStr(A_LoopField, p + 1)
+			sectCount := sectCount + 1
+				if (recCount < 0) ;General section
 				{
-					MsgBox, 8192, , % "Can't handle " c " if not eof!"
-					Return -1
-				}
-
-
-				p := InStr(A_LoopField, "=")
-
-				if (p)
-				{
-					k := SubStr(A_LoopField, p + 1)
-					sectCount := sectCount + 1
-					if (recCount < 0) ;General section
+					if (sectCount < 12)
 					{
-						if (sectCount < 12)
-						{
-						Continue ;don't care about the "Don't show me first" || (sectCount = 3)
-						}
-						else
-						{
+					Continue ;don't care about the "Don't show me first" || (sectCount = 3)
+					}
+					else
+					{
 
-							if (sectCount = 12)
+						if (sectCount = 12)
+						{
+							if (selPrgChoice)
 							{
-								if (selPrgChoice)
+							spr := Test ? Test : Fmode? Fmode: Dynamic? Dynamic: Tmp
+								if (Test = 1)
+								spr := spr . ",0,0,0"
+								else
 								{
-								spr := Test ? Test : Fmode? Fmode: Dynamic? Dynamic: Tmp
-									if (Test = 1)
-									spr := spr . ",0,0,0"
-									else
-									{
 									if (FMode = 1)
 									spr := "0," . spr . ",0,0"
 									else
 									{
-									if (Dynamic = 1)
-									spr := "0,0," . spr . ",0"
-									else
-									{
-									spr := "0,0,0," . spr
+										if (Dynamic = 1)
+										spr := "0,0," . spr . ",0"
+										else
+										spr := "0,0,0," . spr
 									}
-									}
-									}
-								IniWrite, %spr%, %SelIniChoicePath%, General, ResMode
 								}
-								else
-								{
+							IniWrite, %spr%, %SelIniChoicePath%, General, ResMode
+							}
+							else
+							{
 								if (k)
 								{
 								Test := SubStr(k, 1, 1)
@@ -7722,113 +7768,108 @@ if (!FileExistSelIniChoicePath)
 								Dynamic := SubStr(k, 5, 1)
 								Tmp := SubStr(k, 7)
 								}
-								}
-
-							}
-							else
-							{
-							if (sectCount = 13)
-							{
-								if (selPrgChoice)
-								{
-								IniWrite, %RegoVar%, %SelIniChoicePath%, General, UseReg
-								}
-								else
-								{
-								;spr := SubStr(A_LoopField, 2, -1)
-								;if (spr = "UseReg")
-								;{
-								if (k)
-								RegoVar := k
-								;}
-								;else
-								}
-							}
-							else
-							{
-							if (sectCount = 14)
-							{
-								if (selPrgChoice)
-								{
-								IniWrite, %navShortcut%, %SelIniChoicePath%, General, NavShortcut
-								}
-								else
-								{
-								if (k)
-								navShortcut := k
-								}
-							}
-							; section 15+ : WarnAlreadyRunning: don't show me this again
-							}
-							}
-						}
-					}
-					else
-					{
-					if (recCount = 0) ;Prgs section
-					{
-						if (sectCount = 1)
-						{
-						;strPrgChoice := % "|None|" ;why was this in?
-							if (!selPrgChoice)
-							{
-								if (k)
-								IniRead, defPrgStrng , %SelIniChoicePath%, Prgs, StartupPrgName, %A_Space% ;Space just in case None is absent
 							}
 
 						}
 						else
 						{
-							if (sectCount = 2)
+						if (sectCount = 13)
+						{
+							if (selPrgChoice)
+							IniWrite, %RegoVar%, %SelIniChoicePath%, General, UseReg
+							else
 							{
-								if (selPrgChoice)
-								{
+							;spr := SubStr(A_LoopField, 2, -1)
+							;if (spr = "UseReg")
+							;{
+								if (k)
+								RegoVar := k
+							;}
+							;else
+							}
+						}
+						else
+						{
+						if (sectCount = 14)
+						{
+							if (selPrgChoice)
+							IniWrite, %navShortcut%, %SelIniChoicePath%, General, NavShortcut
+							else
+							{
+								if (k)
+								navShortcut := k
+							}
+						}
+						; section 15+ : WarnAlreadyRunning: don't show me this again
+						}
+						}
+					}
+				}
+				else
+				{
+				if (recCount = 0) ;Prgs section
+				{
+					if (sectCount = 1)
+					{
+					;strPrgChoice := % "|None|" ;why was this in?
+						if (!selPrgChoice)
+						{
+							if (k)
+							IniRead, defPrgStrng , %SelIniChoicePath%, Prgs, StartupPrgName, %A_Space% ;Space just in case None is absent
+						}
 
-									if (selPrgChoice = 100) ;write record at selPrgChoice
-									{
-									spr := ""
+					}
+					else
+					{
+						if (sectCount = 2)
+						{
+							if (selPrgChoice)
+							{
+								if (selPrgChoice = 100) ;write record at init
+								{
+								spr := ""
 									loop % dispMonNamesNo - 1
 									{
 									spr .= iDevNumArray[A_Index] . ","
 									}
-									spr .= iDevNumArray[dispMonNamesNo]
+								spr .= iDevNumArray[dispMonNamesNo]
 
-									IniWrite, %spr%, %SelIniChoicePath%, Prgs, PrgMon
-									}
-
+								IniWrite, %spr%, %SelIniChoicePath%, Prgs, PrgMon
 								}
-								else  ;reading entire file
-								{
+
+							}
+							else  ;reading entire file
+							{
 								if (k)
 								{
 								foundPos := 0
-								loop % dispMonNamesNo
-								{
-								foundPosOld := foundPos + 1
-								foundPos := InStr(k, ",", , , A_Index)
-								if (!foundPos)
-								Break
-								iDevNumArray[A_Index] := SubStr(k, foundPosOld, foundPos - foundPosOld)
-								}
-								if (!iDevNumArray[1]) ;  cannot handle old ini files
-								{
-									if (k < 111) ;case when driver is uninstalled and only one monitor!
+									loop % dispMonNamesNo
 									{
-									sectCount -= 1
-									reWriteIni := 1
-									Continue
+									foundPosOld := foundPos + 1
+									foundPos := InStr(k, ",", , , A_Index)
+										if (!foundPos)
+										Break
+									iDevNumArray[A_Index] := SubStr(k, foundPosOld, foundPos - foundPosOld)
 									}
-									else
+									if (!iDevNumArray[1]) ;  cannot handle old ini files
 									{
-									IniRead, foundpos, %SelIniChoicePath%, General, OnlyOneMonitor
-										if (!foundpos)
+										if (k < 111) ; 111 is case when driver is uninstalled and only one monitor!
 										{
-										MsgBox, 8196, , % "One Monitor, No more than one logical monitor!`nMost likely cause is driver removal.`nInformational only- if driver has just been updated.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
-											IfMsgBox, No
-											IniWrite, 1, %SelIniChoicePath%, General, OnlyOneMonitor
+										sectCount -= 1
+										reWriteIni := 1
+										Continue
+										}
+										else
+										{
+										IniRead, foundpos, %SelIniChoicePath%, General, OnlyOneMonitor
+											if (!foundpos)
+											{
+											MsgBox, 8196, , % "One Monitor, No more than one logical monitor!`nMost likely cause is driver removal.`nInformational only- if driver has just been updated.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
+												IfMsgBox, No
+												IniWrite, 1, %SelIniChoicePath%, General, OnlyOneMonitor
+											}
 										}
 									}
-								}
 								}
 								else
 								{
@@ -7836,86 +7877,83 @@ if (!FileExistSelIniChoicePath)
 								reWriteIni := 1
 								Continue
 								}
-								}
-							}
-							else ;Only reading the following sections- writing at control labels
-							{
-							if (sectCount = 3)
-							{
-								if (!inputOnceOnly)
-								{
-								if (k)
-								{
-								PrgBatchIniStartup := k
-								}
-								}
-							}
-							else
-							{
-							if (sectCount = 4)
-							{
-								if (!inputOnceOnly)
-								{
-								if (k)
-								PrgTermExit := k
-								}
-							}
-							else
-							{
-							if (sectCount = 5)
-							{
-								if (!inputOnceOnly)
-								{
-								if (k)
-								PrgIntervalLnch := k
-								}
-							}
-							else
-							{
-							if (sectCount = 6)
-							{
-								if (!inputOnceOnly)
-								{
-								temp := sectCount - 6
-									Loop, parse, k, CSV , %A_Space%%A_Tab%
-									{
-									PresetNames[A_Index] := A_Loopfield
-									}
-								}
-							}
-							else
-							{
-							if (!inputOnceOnly)
-							{
-
-							if (sectCount > 6)
-							{
-								if (k)
-								{
-								temp := sectCount - 6
-									Loop, parse, k, CSV, %A_Space%%A_Tab%
-									{
-									PrgBatchIni%temp%[A_Index] := A_Loopfield
-									}
-								}
-							if (sectCount = 6 + maxBatchPrgs)
-							inputOnceOnly := 1
-							}
-
-							}
-							}
-							}
-							}
-							}
 							}
 						}
-					}
-					else
-					{
-						if (sectCount = 1)
+						else ;Only reading the following sections- writing at control labels
 						{
-						if (selPrgChoice)
+						if (sectCount = 3)
+						{
+							if (!inputOnceOnly)
 							{
+								if (k)
+								PrgBatchIniStartup := k
+							}
+						}
+						else
+						{
+						if (sectCount = 4)
+						{
+							if (!inputOnceOnly)
+							{
+								if (k)
+								PrgTermExit := k
+							}
+						}
+						else
+						{
+						if (sectCount = 5)
+						{
+							if (!inputOnceOnly)
+							{
+								if (k)
+								PrgIntervalLnch := k
+							}
+						}
+						else
+						{
+						if (sectCount = 6)
+						{
+							if (!inputOnceOnly)
+							{
+							temp := sectCount - 6
+								Loop, parse, k, CSV , %A_Space%%A_Tab%
+								{
+								PresetNames[A_Index] := A_Loopfield
+								}
+							}
+						}
+						else
+						{
+						if (!inputOnceOnly)
+						{
+						if (sectCount > 6)
+						{
+							if (k)
+							{
+							temp := sectCount - 6
+								Loop, parse, k, CSV, %A_Space%%A_Tab%
+								{
+								PrgBatchIni%temp%[A_Index] := A_Loopfield
+								}
+							}
+							if (sectCount = 6 + maxBatchPrgs)
+							inputOnceOnly := 1
+						}
+
+						}
+						}
+						}
+						}
+						}
+						}
+					}
+				}
+				else
+				{
+					if (sectCount = 1)
+					{
+						if (selPrgChoice)
+						{
 							if (selPrgChoice = recCount) ;write record at selPrgChoice
 							{
 							spr := ""
@@ -7934,62 +7972,59 @@ if (!FileExistSelIniChoicePath)
 							foundPos := InStr(strPrgChoice, "|", false, foundPos + 1)
 							strPrgChoice := spr . SubStr(strPrgChoice, foundPos)
 							}
-							}
+						}
 						else ;reading entire file
+						{
+						If (k)
 							{
-							If (k)
-								{
-								strPrgChoice .= k . "|"
-								PrgChoiceNames[recCount] := k
-								}
-								else
-								{
-								strPrgChoice .= "Prg" . recCount . "|"
-								PrgChoiceNames[recCount] := ""
-								}
+							strPrgChoice .= k . "|"
+							PrgChoiceNames[recCount] := k
+							}
+							else
+							{
+							strPrgChoice .= "Prg" . recCount . "|"
+							PrgChoiceNames[recCount] := ""
 							}
 						}
-						else
+					}
+					else
+					{
+						if (sectCount = 2)
 						{
-							if (sectCount = 2)
+							if (selPrgChoice)
 							{
-								if (selPrgChoice)
+								if (selPrgChoice = recCount) ;write record at selPrgChoice
 								{
-									if (selPrgChoice = recCount) ;write record at selPrgChoice
-									{
 									if (removeRec)
-									{
 									IniWrite, %A_Space%, %SelIniChoicePath%, Prg%recCount%, PrgPath
-									}
 									else
 									{
 									spr := PrgChoicePaths[recCount]
 									IniWrite, %spr%, %SelIniChoicePath%, Prg%recCount%, PrgPath
 									}
-									}
-								}
-								else  ;reading entire file
-								{
-								if (k)
-								{
-								PrgChoicePaths[recCount] := k
-								If (!k && PrgChoiceNames[recCount])
-								MsgBox, 8192, , % "Error: " PrgChoiceNames[recCount] " has no paths!"
-								}
 								}
 							}
-							else
+							else  ;reading entire file
 							{
-							if (sectCount = 3)
-							{
-								if (selPrgChoice)
+								if (k)
+								PrgChoicePaths[recCount] := k
+								else
 								{
+									if (PrgChoiceNames[recCount])
+									MsgBox, 8192, Path to Prg, % "Error: " PrgChoiceNames[recCount] " has no paths!"
+								}
+							}
+						}
+						else
+						{
+						if (sectCount = 3)
+						{
+							if (selPrgChoice)
+							{
 								if (selPrgChoice = recCount)
 								{
 									if (removeRec)
-									{
 									IniWrite, %A_Space%, %SelIniChoicePath%, Prg%recCount%, PrgCmdLine
-									}
 									else
 									{
 										if (PrgCmdLine[selPrgChoice])
@@ -7998,23 +8033,21 @@ if (!FileExistSelIniChoicePath)
 										IniWrite, %A_Space%, %SelIniChoicePath%, Prg%recCount%, PrgCmdLine
 									}
 								}
-								}
-								else
-								{
-								if (k)
-								{
-								PrgCmdLine[reccount] := k
-								}
-								}
 							}
 							else
 							{
-							if (sectCount = 4)
+								if (k)
+								PrgCmdLine[reccount] := k
+							}
+						}
+						else
+						{
+						if (sectCount = 4)
+						{
+							if (selPrgChoice)
 							{
-								if (selPrgChoice)
+								if (selPrgChoice = recCount) ;write record at selPrgChoice
 								{
-									if (selPrgChoice = recCount) ;write record at selPrgChoice
-									{
 									if (removeRec)
 									{
 									scrWidthArr[selPrgChoice] := ""
@@ -8025,25 +8058,24 @@ if (!FileExistSelIniChoicePath)
 									}
 									else
 									{
-									if (PrgChoiceNames[recCount])
-									{
-									spr := % scrWidth . "," . scrHeight . "," . scrFreq . "," 0
-									;extra 0 for interlace which might implement later
-									IniWrite, %spr%, %SelIniChoicePath%, Prg%recCount%, PrgRes
-									scrWidthArr[selPrgChoice] := scrWidth
-									scrHeightArr[selPrgChoice] := scrHeight
-									scrFreqArr[selPrgChoice] := scrFreq
-									}
-									}
+										if (PrgChoiceNames[recCount])
+										{
+										spr := % scrWidth . "," . scrHeight . "," . scrFreq . "," 0
+										;extra 0 for interlace which might implement later
+										IniWrite, %spr%, %SelIniChoicePath%, Prg%recCount%, PrgRes
+										scrWidthArr[selPrgChoice] := scrWidth
+										scrHeightArr[selPrgChoice] := scrHeight
+										scrFreqArr[selPrgChoice] := scrFreq
+										}
 									}
 								}
-								else  ;reading entire file
-								{
+							}
+							else  ;reading entire file
+							{
 								if (k)
-								{
-									{
+								{ ; could have parsed (sigh)
 									foundPos := InStr(k, ",", 1)
-									scrWidth := SubStr(k, 1, foundPos-1)
+									scrWidth := SubStr(k, 1, foundPos - 1)
 									spr := InStr(k, ",",,,2)
 									scrHeight := SubStr(k, foundPos + 1, spr - foundPos - 1)
 									foundPos := InStr(k, ",",,,3)
@@ -8051,184 +8083,159 @@ if (!FileExistSelIniChoicePath)
 									scrWidthArr[recCount] := scrWidth
 									scrHeightArr[recCount] := scrHeight
 									scrFreqArr[recCount] := scrFreq
-
-									}
-								}
 								}
 							}
-							else
+						}
+						else
+						{
+						if (sectCount = 5)
+						{
+							if (selPrgChoice)
 							{
-							if (sectCount = 5)
-							{
-								if (selPrgChoice)
+								if (selPrgChoice = recCount) ;write record at selPrgChoice
 								{
-									if (selPrgChoice = recCount) ;write record at selPrgChoice
-									{
 									if (removeRec)
-									{
 									IniWrite, %A_Space%, %SelIniChoicePath%, Prg%recCount%, PrgUrl
-									}
 									else
 									{
-									if (PrgChoiceNames[recCount])
-									IniWrite, % PrgUrl[recCount], %SelIniChoicePath%, Prg%recCount%, PrgUrl
+										if (PrgChoiceNames[recCount])
+										IniWrite, % PrgUrl[recCount], %SelIniChoicePath%, Prg%recCount%, PrgUrl
 									}
-									}
-								}
-								else  ;reading entire file
-								{
-								if (k)
-								PrgUrl[recCount] := k
 								}
 							}
-							else
+							else  ;reading entire file
 							{
-							if (sectCount = 6)
+								if (k)
+								PrgUrl[recCount] := k
+							}
+						}
+						else
+						{
+						if (sectCount = 6)
+						{
+							if (selPrgChoice)
 							{
-								if (selPrgChoice)
+								if (selPrgChoice = recCount) ;write record at selPrgChoice
 								{
-									if (selPrgChoice = recCount) ;write record at selPrgChoice
-									{
 									if (removeRec)
-									{
 									IniWrite, %A_Space%, %SelIniChoicePath%, Prg%recCount%, PrgVer
-									}
 									else
 									{
 									if (PrgChoiceNames[recCount])
 									IniWrite, % PrgVer[recCount], %SelIniChoicePath%, Prg%recCount%, PrgVer
 									}
-									}
 								}
-								else  ;reading entire file
-								{
+							}
+							else  ;reading entire file
+							{
 								if (k)
 								PrgVer[recCount] := k
-								}
-							}
-
-
-
-							else
-							{
-							if (sectCount = 7) ;Various Prg settings
-							{
-								if (selPrgChoice)
-								{
-									if (selPrgChoice = recCount) ;write record at selPrgChoice
-									{
-									if (removeRec)
-									{
-									IniWrite, %A_Space%, %SelIniChoicePath%, Prg%recCount%, PrgMisc
-									}
-									else
-									{
-									if (PrgChoiceNames[recCount])
-									{
-									spr := PrgMonToRn[selPrgChoice]
-									spr .= "," . PrgChgResonSwitch[selPrgChoice]
-									spr .= "," . PrgRnMinMax[selPrgChoice]
-									spr .= "," . PrgRnPriority[selPrgChoice]
-									spr .= "," . PrgBordless[selPrgChoice]
-									spr .= "," . PrgLnchHide[selPrgChoice]
-									spr .= "," . PrgResolveShortcut[selPrgChoice]
-									}
-									IniWrite, %spr%, %SelIniChoicePath%, Prg%recCount%, PrgMisc
-									}
-									}
-								}
-								else  ;reading entire file
-								{
-								if (k)
-								{
-								Loop, Parse, k, CSV, %A_Space%%A_Tab%
-								{
-								if (1 = A_Index)
-								PrgMonToRn[recCount] := A_LoopField
-								else
-								{
-								if (2 = A_Index)
-								{
-								PrgChgResonSwitch[recCount] := A_LoopField
-								}
-								else
-								{
-								if (3 = A_Index)
-								{
-								PrgRnMinMax[recCount] := A_LoopField
-								}
-								else
-								{
-								if (4 = A_Index)
-								{
-								PrgRnPriority[recCount] := A_LoopField
-								}
-								else
-								{
-								if (5 = A_Index)
-								{
-								PrgBordless[recCount] := A_LoopField
-								}
-								else
-								{
-								if (6 = A_Index)
-								{
-								PrgLnchHide[recCount] := A_LoopField
-								}
-								else
-								{
-								if (7 = A_Index)
-								{
-								PrgResolveShortcut[recCount] := A_LoopField
-								}
-								}
-								}
-								}
-								}
-								}
-								}
-								}
-								}
-							}
-							}
-							}
-							}
-							}
-							}
 							}
 						}
 
+						else
+						{
+						if (sectCount = 7) ;Various Prg settings
+						{
+							if (selPrgChoice)
+							{
+								if (selPrgChoice = recCount) ;write record at selPrgChoice
+								{
+									if (removeRec)
+									IniWrite, %A_Space%, %SelIniChoicePath%, Prg%recCount%, PrgMisc
+									else
+									{
+										if (PrgChoiceNames[recCount])
+										{
+										spr := PrgMonToRn[selPrgChoice]
+										spr .= "," . PrgChgResonSwitch[selPrgChoice]
+										spr .= "," . PrgRnMinMax[selPrgChoice]
+										spr .= "," . PrgRnPriority[selPrgChoice]
+										spr .= "," . PrgBordless[selPrgChoice]
+										spr .= "," . PrgLnchHide[selPrgChoice]
+										spr .= "," . PrgResolveShortcut[selPrgChoice]
+										IniWrite, %spr%, %SelIniChoicePath%, Prg%recCount%, PrgMisc
+										}
+									}
+								}
+							}
+							else  ;reading entire file
+							{
+							if (k)
+							{
+								Loop, Parse, k, CSV, %A_Space%%A_Tab%
+								{
+									if (1 = A_Index)
+									PrgMonToRn[recCount] := A_LoopField
+									else
+									{
+									if (2 = A_Index)
+									PrgChgResonSwitch[recCount] := A_LoopField
+									else
+									{
+									if (3 = A_Index)
+									PrgRnMinMax[recCount] := A_LoopField
+									else
+									{
+									if (4 = A_Index)
+									PrgRnPriority[recCount] := A_LoopField
+									else
+									{
+									if (5 = A_Index)
+									PrgBordless[recCount] := A_LoopField
+									else
+									{
+									if (6 = A_Index)
+									PrgLnchHide[recCount] := A_LoopField
+									else
+									{
+									if (7 = A_Index)
+									PrgResolveShortcut[recCount] := A_LoopField
+									}
+									}
+									}
+									}
+									}
+									}
+								}
+							}
+						}
+						}
+						}
+						}
+						}
+						}
+						}
 					}
-					}
+
 				}
-
-				else
-
-				{
+				}
+			}
+			else
+			{
 				if (A_LoopField) ; No equals character!
 				{
 				reWriteIni := DeleteIniFile(SelIniChoicePath, 2)
-				if (reWriteIni)
-				{
-					if (reWriteIni = 1)
-					reWriteIni := 0
-					FileExistSelIniChoicePath := ""
-					strPrgChoice := "|None|"
-					defPrgStrng := "None"
-					PrgBatchIniStartup := ""
-					goto IniProcStart
+					if (reWriteIni)
+					{
+							if (reWriteIni = 1)
+							reWriteIni := 0
+						FileExistSelIniChoicePath := ""
+						strPrgChoice := "|None|"
+						defPrgStrng := "None"
+						PrgBatchIniStartup := ""
+						goto IniProcStart
+					}
+					else
+					{
+					KleenupPrgLnchFiles()
+					ExitApp
+					}
 				}
-				else
-				{
-				KleenupPrgLnchFiles()
-				ExitApp
-				}
-
-				}
-				}
-
 			}
+
 		}
+	}
 		if (reWriteIni)
 		{
 		if (DeleteIniFile(SelIniChoicePath, 2))
@@ -8252,7 +8259,7 @@ spr := 0
 reWriteIni := 1
 if (wrnPrompt = 1)
 {
-MsgBox, 8195, , Ini file appears to be corrupted.`nThe recommended course of action is to reset it, or .`nYes: Attempt reset to currently stored values. (Recommended) `nNo: Clear settings to their initial state. `nCancel: Continue with errors: `n
+MsgBox, 8195, , Ini file appears to be corrupted.`nThe recommended course of action is to reset it.`n`nYes: Attempt reset to currently stored values. (Recommended) `nNo: Clear settings to their initial state. `nCancel: Continue with errors: `n
 	IfMsgBox, Yes
 	reWriteIni := 2
 	else
@@ -8345,18 +8352,25 @@ static tabName := 0
 
 
 
-
-
-IfNotExist, PrgLnchProperties.jpg
-FileInstall PrgLnchProperties.jpg, PrgLnchProperties.jpg
-sleep, 200
-SplashImage, PrgLnchProperties.jpg, A B,,,LnchSplash
-WinGetPos,, propY, propW, propH, LnchSplash
-
-	if (y > propY)
-	WinMove, LnchSplash, , % x + (w - propW)/2, % y - propY
+strRetVal := WorkingDirectory(A_ScriptDir, 1)
+	if (strRetVal)
+	MsgBox, 8192, PrgProperties, % strRetVal
 	else
-	WinMove, LnchSplash, , % x + (w - propW)/2, % propY - Y
+	{
+		IfNotExist, PrgLnchProperties.jpg
+		FileInstall PrgLnchProperties.jpg, PrgLnchProperties.jpg
+
+	sleep, 200
+	SplashImage, PrgLnchProperties.jpg, A B,,,LnchSplash
+	WinGetPos,, propY, propW, propH, LnchSplash
+
+		if (y > propY)
+		WinMove, LnchSplash, , % x + (w - propW)/2, % y - propY
+		else
+		WinMove, LnchSplash, , % x + (w - propW)/2, % propY - Y
+
+	}
+
 
 
 
@@ -8584,14 +8598,16 @@ IfExist, % fileName
 Gui, PrgProperties: Font, CLEARTYPE_QUALITY
 Gui, PrgProperties: Show, Hide, PrgProperties
 
-WinGetPos,, propY,, propH, % "ahk_id" PrgPropertiesHwnd
-
-	if (y > propH)
-	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % y - propH, w
-	else
-	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % propH - y, w
 
 SysGet, temp, MonitorWorkArea, PrgLnch.Monitor
+WinGetPos,, propY,, propH, % "ahk_id" PrgPropertiesHwnd
+	if (tempBottom - y > tempBottom - propH)
+	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % propH - y, w
+	else
+	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % y - propH, w
+
+
+
 ;For low screen res 
 if (propH + h > (tempBottom - tempTop))
 	WinMove, % "ahk_id" PrgPropertiesHwnd, , , tempBottom, , % tempBottom - tempTop
