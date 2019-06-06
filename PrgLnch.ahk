@@ -343,10 +343,9 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 	temp := foundpos%A_Index%
 	WinGetClass, strRetVal, % "ahk_id" temp
 	; This "fails" when any non-PrgLnch ahk script is run from the PrgLnch folder
-	if (InStr(strRetVal, PrgLnch.Class()) || InStr(PrgLnch.Class(), strRetVal))
-	{
-	fTemp += 1
-}
+		if (InStr(strRetVal, PrgLnch.Class()) || InStr(PrgLnch.Class(), strRetVal))
+		fTemp += 1
+
 	if (fTemp > 2)
 	{
 	MsgBox, 8192, PrgLnch Running!, An instance of PrgLnch is already in memory!
@@ -497,8 +496,10 @@ loop % PrgNo
 }
 
 full_command_line := DllCall("GetCommandLine", "str")
+
 if (not RegExMatch(full_command_line, " /restart(?!\S)"))
 {
+
 	loop %maxBatchPrgs%
 	ChkBatchActivePrgs(maxBatchPrgs, PrgBatchIni%A_Index%, PrgPIDMast)
 
@@ -1139,7 +1140,7 @@ boundListBtchCtl := 1
 ;commit preset to file each click
 if (btchPrgPresetSel)
 {
-;For some  reason, variables and arrays do not  update without the sleep!
+;For some  reason, variables and arrays do not update without the sleep!
 sleep, 120
 	strTemp := "|"
 	Loop % currBatchNo
@@ -1298,7 +1299,7 @@ if (btchPrgPresetSel = temp)
 			GuiControl, PrgLnch:, DefPreset, 0
 
 		strRetVal := PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo)
-		sleep 100
+		sleep 30
 		GuiControl, PrgLnch:, ListPrg, % strRetVal
 		EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames)
 
@@ -1811,12 +1812,11 @@ else
 
 	if (GoConfigTxt = "Del Lnch Pad")
 	{
-		ControlSetText,,,ahk_id %IniChoiceHwnd%
-		GuiControl, PrgLnch:, IniChoice,
-		;  iniTxtPrgChoice should be null
-			if (!ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini"))
-			GoSub IniChoiceSel
-
+	ControlSetText,,,ahk_id %IniChoiceHwnd%
+	GuiControl, PrgLnch:, IniChoice,
+	; iniTxtPrgChoice should be null
+		if (!ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini"))
+		GoSub IniChoiceSel
 	}
 	else
 	{
@@ -1925,31 +1925,11 @@ else
 				GoConfigTxt := "Save Lnch Pad"
 				ToolTip, "Click `"Save Lnch Pad`" to save."
 				GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
-
 			}
 			else
 			{
 				if (GoConfigTxt = "Del Lnch Pad")
-				{
-				ToolTip
-				MsgBox, 8193, Del Lnch Pad, Really delete the Lnch Pad?`nThis will also remove the file.
-					IfMsgBox, Ok
-					{
-					IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
-					GuiControl, PrgLnch:, IniChoice, %strIniChoice%
-					GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
-					oldSelIniChoiceName := SelIniChoiceName
-					FileDelete, %SelIniChoicePath%
-						if (ErrorLevel)
-						MsgBox, 8192, File Delete , % SelIniChoicePath " Lnch Pad file could not be removed!"
-					}
-					else
-					{
-					iniTxtPrgChoice := SelIniChoiceName
-					GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
-					}
-					GoConfigTxt = Prg Config
-				}
+				DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPrgChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
 				else
 				{
 				GoConfigTxt = Del Lnch Pad
@@ -1959,11 +1939,30 @@ else
 			}
 		}
 		}
-		else ; Clicked here
+		else
 		{
-		GuiControlGet, iniTxtPrgChoice, PrgLnch:, IniChoice
-		if (iniTxtPrgChoice = oldSelIniChoiceName)
-		Return
+		
+		ControlGetText,iniTxtPrgChoice,,ahk_id %IniChoiceHwnd% ; "GuiControlGet, iniTxtPrgChoice, PrgLnch:, IniChoice" fails when empty
+
+			if (iniTxtPrgChoice)
+			{
+				if (iniTxtPrgChoice = oldSelIniChoiceName)
+				Return
+			}
+			else ; Del key hit
+			{
+				if (GoConfigTxt = "Del Lnch Pad")
+				DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPrgChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
+				else
+				{
+				GoConfigTxt = Del Lnch Pad
+				ToolTip, "Click `"Del Lnch Pad`" or hit Del to confirm."
+				}
+			GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+			Return
+			}
+
+		 ; Clicked here
 		iniSel := retVal + 1
 
 		strRetVal := WorkingDirectory(A_ScriptDir, 1)
@@ -1971,16 +1970,17 @@ else
 		MsgBox, 8192, Script Directory, % strRetVal "`nCannot load Lnch Pad file!"
 		else
 		{
+		
+		IniRead, fTemp, %PrgLnchIni%, General, DefPresetSettings
 		if (ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini"))
 		{
-			if (!ChkPrgNames(oldSelIniChoiceName, PrgNo, "Ini"))
-			{
-			IniRead, fTemp, %PrgLnchIni%, General, DefPresetSettings
-
-			if (!fTemp)
+			; ChkPrgNames negates "PrgLnch" so...
+			if (oldSelIniChoiceName = "PrgLnch")
+			Return
+			if (!ChkPrgNames(oldSelIniChoiceName, PrgNo, "Ini") && fTemp = "")
 			{
 			temp := 0
-			MsgBox, 8195, Current or default settings, A spare Lnch Pad slot has just been clicked.`nIt can be initialised with either the current or default Lnch Pad.`n`nReply:`nYes: Use current (Warn like this next time)`nNo: Do not use current (Recommended: This will not show again)`nCancel: Do not use current (Warn like this next time):`n
+			MsgBox, 8195, Current or default settings, A spare Lnch Pad slot has just been clicked.`nIt can be initialised with either the current or the default Lnch Pad.`n`nReply:`nYes: Use current (Warn like this next time)`nNo: Do not use current (Recommended: This will not show again)`nCancel: Do not use current (Warn like this next time):`n
 				IfMsgBox, Yes
 				{
 				strTemp := SelIniChoicePath
@@ -2007,12 +2007,10 @@ else
 				RestartPrgLnch(0, SelIniChoiceName, iniTxtPrgChoice)
 				}
 			}
-			}
-
 		}
 		else
 		{
-		UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, iniTxtPrgChoice, IniChoiceNames)
+		UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, iniTxtPrgChoice, IniChoiceNames, fTemp)
 		RestartPrgLnch(0, iniTxtPrgChoice)
 		}
 		
@@ -2022,7 +2020,29 @@ else
 	}
 Return
 
-UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames := 0, DefPresetSettings := 0) ; won't allow A_Space
+DelIniPresetProc(iniSel, ByRef GoConfigTxt, ByRef iniTxtPrgChoice, ByRef SelIniChoicePath, ByRef SelIniChoiceName, ByRef oldSelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, 1)
+{
+ToolTip
+MsgBox, 8193, Del Lnch Pad, Really delete the Lnch Pad?`nThis will also remove the file.
+	IfMsgBox, Ok
+	{
+	IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
+	GuiControl, PrgLnch:, IniChoice, %strIniChoice%
+	GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
+	oldSelIniChoiceName := SelIniChoiceName
+	FileDelete, %SelIniChoicePath%
+		if (ErrorLevel)
+		MsgBox, 8192, File Delete , % SelIniChoicePath " Lnch Pad file could not be removed!"
+	}
+	else
+	{
+	iniTxtPrgChoice := SelIniChoiceName
+	GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+	}
+	GoConfigTxt = Prg Config
+}
+
+UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames, DefPresetSettings := 0) ; won't allow A_Space
 {
 spr := "", strTemp := "", fTemp := 0
 IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
@@ -2058,7 +2078,6 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		IniWrite, %spr%, % IniChoicePaths[A_Index], General, IniChoiceNames
 	}
 	IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
-
 
 	Loop % PrgNo
 	{
@@ -2240,14 +2259,10 @@ currBatchNo := 0
 	}
 	}
 
-fTemp := 0
-temp := 0
 
 Loop % currBatchNo
 {
-	fTemp += 1 ;fTemp is saved index: Get swap index
-	temp += 1
-
+	temp := A_Index
 
 	Loop % BatchPrgno
 	{
@@ -2258,14 +2273,14 @@ Loop % currBatchNo
 		}
 	}
 
-	if (foundpos > fTemp)
+	if (foundpos > A_Index)
 	{
 	temp := PrgListIndex[foundpos]
-	PrgListIndex[foundpos] := PrgListIndex[fTemp]
-	PrgListIndex[fTemp] := temp
+	PrgListIndex[foundpos] := PrgListIndex[A_Index]
+	PrgListIndex[A_Index] := temp
 	temp := PrgBdyBtchTog[foundpos]
-	PrgBdyBtchTog[foundpos] := PrgBdyBtchTog[fTemp]
-	PrgBdyBtchTog[fTemp] := temp
+	PrgBdyBtchTog[foundpos] := PrgBdyBtchTog[A_Index]
+	PrgBdyBtchTog[A_Index] := temp
 	}
 
 	;init Status List
@@ -2325,7 +2340,9 @@ if (AtLoad)
 	if (strTemp2)
 		{
 		batchPrgNo += 1
+		; Following requ'd to init Listbox!??
 		strTemp := strTemp . strTemp2 . "|"
+
 		PrgListIndex[batchPrgNo] := A_Index
 		PrgBdyBtchTog[batchPrgNo] := "" ;sanitize as well!
 		}
@@ -3704,9 +3721,9 @@ txtPrgChoice := "Prg" . selPrgChoice
 if (txtPrgChoice = "")
 {
 
-	if (batchActive)
+	if (PrgPIDMast[selPrgChoice])
 	{
-	MsgBox, 8192, , % "Sorry, Prgs cannot be removed while any are active in Batch!"
+	MsgBox, 8192, , % "Sorry, a Prg cannot be removed if it is active in Batch!"
 	Return
 	}
 
@@ -3966,23 +3983,29 @@ Return % (!temp)? temp: fTemp
 }
 
 
-ChkPrgNames(testName, PrgNo, IniBox := "")
+ChkPrgNames(testName, PrgNo, IniBox := "", forDeletion := 0)
 {
-If (Inibox)
-spr := IniBox
-else
-spr = Prg
+; Returns 1 if testName is a spare, bad or default slot name
 
-Loop % PrgNo
-{
-if (testName = spr . A_Index)
-return 1
-}
 
-if (testName = "0" || testName = "Error" || testName = "PrgLnch" || testName = "BadPath")
-return 1
-else
-return 0
+	If (Inibox)
+	spr := IniBox
+	else
+	spr = Prg
+
+	Loop % PrgNo
+	{
+	if (testName = spr . A_Index)
+	return 1
+	}
+
+	if (forDeletion)
+	return 0
+
+	if (testName = "0" || testName = "Error" || testName = "PrgLnch" || testName = "BadPath")
+	return 1
+	else
+	return 0
 }
 ComboBugFix(strPrgChoice, PrgNo)
 {
@@ -4333,9 +4356,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 			if (temp = "Remove Shortcut")
 			{
 				if (ChkPrgNames(txtPrgChoice, PrgNo))
-				{
-				strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
-				}
+				strPrgChoice := ComboBugFix(strPrgChoice, PrgNo)
 				else
 				{
 				txtPrgChoice := ""
@@ -4369,9 +4390,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 			if (temp = "Remove Shortcut")
 			{
 				if (ChkPrgNames(txtPrgChoice, PrgNo))
-				{
 				strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
-				}
 				else
 				{
 				txtPrgChoice := ""
@@ -4402,9 +4421,8 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 		if (strTemp = "IniChoice")
 		{
 		ControlSetText,,,ahk_id %IniChoiceHwnd%
-		GuiControl, PrgLnch:, IniChoice,
-			if (!ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini"))
-			GoSub IniChoiceSel
+			if (!ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini", 1))
+			GoSub, IniChoiceSel
 		}
 	}
 Return
@@ -5801,13 +5819,14 @@ multipleInstance := 0
 foundpos := 0
 retVal := 0
 
+
 IniRead, WarnAlreadyRunning, %SelIniChoicePath%, General, WarnAlreadyRunning
 	if (WarnAlreadyRunning = 2)
 	Return retVal
 
 Loop % PrgNo
 {
-	if (PrgChoicePaths[A_Index])
+	if (PrgChoicePaths[A_Index] && PrgPIDMast[A_Index])
 	{
 	strRetVal := ChkExistingProcess(PrgLnkInf, 0, A_Index, 0, 0, PrgChoicePaths, IniFileShortctSep, 0, 1)
 
@@ -8309,12 +8328,13 @@ try
 	}
 	else
 	strRetVal := RegExReplace(strRetVal, "m) +$", " ") ;m multilineselect; " +" one or more spaces; $ only at EOL
+	; also means names & pathnames with more than one space are affected as well
 
 	DeleteIniFile(IniFile)
 	FileAppend, %strRetVal%, %IniFile%
 	sleep, 100
 }
-catch temo
+catch temp
 {
 if (temp)
 MsgBox, 8208, IniSpaceCleaner, Error with Ini file! `nSpecifically: %temp%
@@ -8695,13 +8715,18 @@ full_command_line := DllCall("GetCommandLine", "str")
 	; Is this condition absolutely necessary here?
 	if (!RegExMatch(full_command_line, " /restart(?!\S)") || chgPreset)
 	{
+		if (SprIniSlot)
+		SprIniSlot := """ """ . SprIniSlot . """"
+		else
+		SprIniSlot := """"
 		try
 		{
 		if (A_IsCompiled)
-		temp .= """" . A_ScriptFullPath . """" . " /restart """ . strTemp . """ """ . chgPreset . """ """ . SprIniSlot . """"
+		temp .= """" . A_ScriptFullPath . """" . " /restart """ . strTemp . """ """ . chgPreset . SprIniSlot
 		else
-		temp .= """" . A_AhkPath . """" . " /restart " . """" . A_ScriptFullPath . """ """ . strTemp . """ """ . chgPreset . """ """ . SprIniSlot . """"
+		temp .= """" . A_AhkPath . """" . " /restart " . """" . A_ScriptFullPath . """ """ . strTemp . """ """ . chgPreset . SprIniSlot
 		; restart may not work if LOAD phase is not completed- test it!!!
+msgbox % temp
 		Run, %temp%, %A_ScriptDir%
 		}
 		catch fTemp
