@@ -220,7 +220,7 @@ lnchPrgIndex := 0 ; (PrgIndex) Run, (0) Change Res or -(PrgIndex) Cancel
 lnchStat := 0 ; (-1) Test Run; (1) Batch Run; (0) BatchPrgStatus Select
 lastMonitorUsedInBatch := 0
 listPrgVar := 0 ; copy of BatchPrgs listbox id
-presetNoTest := 1 ; 0: config screen 2: batch screen: 1: Not click on preset 1: batch screen: preset clicked
+presetNoTest := 2 ; 0: config screen 2: return to or load of batch screen: 1: else e.g. Not click on preset 1: preset clicked
 prgSwitchIndex := 0 ; saves index of Prg switched to when active
 waitBreak := 0 ; Switch to break the Prg watch
 PrgPos := [0, 0, 0, 0]
@@ -280,6 +280,7 @@ navShortcut := 0
 ; General temp variables
 ;retVal above
 strRetval := ""
+verTemp := 0
 timerfTemp := 0
 timerTemp := 0
 timerBtch := 0
@@ -295,6 +296,7 @@ PrgLnchIni := A_ScriptDir . "`\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
 SelIniChoicePath := PrgLnchIni
 SelIniChoiceName = PrgLnch
 oldSelIniChoiceName := ""
+oldSelIniChoicePath := "" ; Previously loaded preset: not related to oldSelIniChoiceName above
 dispMonNames := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 ResArray := [[],[],[]]
 iDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -360,20 +362,29 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 	IniSpaceCleaner(PrgLnchIni, 1) ;  fix old version
 	sleep, 90
 
-	strTemp := 0
-	strTemp2 := 0
+	strTemp := ""
+	strTemp2 := ""
 	temp := 0
+
 	for temp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
 	{
-		if (InStr(strRetVal, "|"))
+		if (temp = 1)
 		strTemp := strRetVal ; dealt with after Iniproc
 		else
 		{
 			if (temp = 2)
 			{
-			SelIniChoiceName := strRetVal
-				if (strRetVal != "PrgLnch")
-				Break
+				if (InStr(strRetVal, "|"))
+				{
+				SelIniChoiceName := SubStr(strRetVal, InStr(strRetVal, "|",,0) + 1)
+				oldSelIniChoicePath := A_ScriptDir . "`\" . SubStr(strRetVal, 1, InStr(strRetVal, "|",,0) - 1) . ".ini"
+				}
+				else
+				{
+				SelIniChoiceName := strRetVal
+					if (strRetVal != "PrgLnch")
+					Break
+				}
 			}
 		strTemp2 := strRetVal ;Warning: Temp variable used long way down
 		}
@@ -434,16 +445,44 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 }
 else
 {
-	ifnotexist PrgLnch.chm
+	ifNotExist PrgLnch.chm
 	FileInstall PrgLnch.chm, PrgLnch.chm
 sleep, 120
 	if (A_Min < 22) ; Do this approx every 3 runs
 	IniSpaceCleaner(SelIniChoicePath)
 }
 
-; Restarted PrgLnch (see above): Must happen after inialising PrgPID, PrgListPID.
+
+
+
+; Restarted PrgLnch (see above): Must happen after initialising PrgPID, PrgListPID.
+temp := 0
 if (strTemp)
 {
+	if (oldSelIniChoicePath)
+	{
+		Loop, parse, strTemp, `,
+		{
+			if (A_Index = 1)
+			{
+				if (A_Loopfield)
+				{
+				PrgPid := A_Loopfield
+				fromRestart := 1
+				}
+			}
+			else
+			{
+				if (A_Loopfield)
+				{
+				temp += 1
+				PrgPIDMast[A_Index - 1] := A_Loopfield
+				}
+			}
+		}
+	}
+	else
+	{
 
 	Loop, parse, strTemp, | ; Parse the string based on the pipe symbol.
 	{
@@ -457,7 +496,6 @@ if (strTemp)
 		}
 		else
 		{
-		temp := 0
 		foundpos := A_Index - 1
 			Loop, parse, A_Loopfield, `,
 			{
@@ -465,14 +503,21 @@ if (strTemp)
 				{
 				temp += 1
 				PrgListPID%foundpos%[A_Index] := A_Loopfield
-				fromRestart := 1
-				batchActive := 1
 				}
 			}
 		PidMaster(PrgNo, temp, foundpos, PrgBatchIni%foundpos%, PrgListPID%foundpos%, PrgPIDMast, 1)
 		}
 	}
+	}
 }
+
+	if (temp)
+	{
+	fromRestart := 1
+	batchActive := 1
+	}
+
+
 
 
 ; Init the lnk info list
@@ -495,18 +540,42 @@ loop % PrgNo
 	}
 }
 
+
+
+
 full_command_line := DllCall("GetCommandLine", "str")
 
-if (not RegExMatch(full_command_line, " /restart(?!\S)"))
-{
+	if (RegExMatch(full_command_line, " /restart(?!\S)"))
+	{
+		if (oldSelIniChoicePath)
+		{
+		; PIDs again checked in InitBtchStat later
+		; Point of this is to save the _same_ PIDs when switching Lnch Pad Slots (in case of multiple instances)
 
-	loop %maxBatchPrgs%
-	ChkBatchActivePrgs(maxBatchPrgs, PrgBatchIni%A_Index%, PrgPIDMast)
+		batchActive := ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, PrgPIDMast, oldSelIniChoicePath)
+	
+		loop %maxBatchPrgs%
+		PidMaster(PrgNo, maxBatchPrgs, foundpos, PrgBatchIni%A_Index%, PrgListPID%A_Index%, PrgPIDMast)
+		}
+	}
+	else
+	{
+		; PrgPIDMast = Potential candidate list for PID
+		loop %maxBatchPrgs%
+		ChkBatchActivePrgs(maxBatchPrgs, PrgBatchIni%A_Index%, PrgPIDMast)
 
-batchActive := ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, PrgPIDMast)
-;Using fromRestart inappropriately- but "convenient"
+	batchActive := ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, PrgPIDMast)
+
+		loop %maxBatchPrgs%
+		PidMaster(PrgNo, maxBatchPrgs, foundpos, PrgBatchIni%A_Index%, PrgListPID%A_Index%, PrgPIDMast)
+
+	;Using fromRestart inappropriately- but "convenient"
+	}
 fromRestart := batchActive
-}
+
+
+
+
 
 
 IniRead, fTemp, %SelIniChoicePath%, General, ChangeShortcutMsg
@@ -663,7 +732,7 @@ if (txtPrgChoice = "None")
 	GuiControl, PrgLnchOpt: Disable, DefaultPrg
 	GuiControl, PrgLnchOpt:, MkShortcut, Just Change Res.
 	GuiControl, PrgLnchOpt: Disable, Just Change Res.
-	TogglePrgOptCtrls(txtPrgChoice)
+	TogglePrgOptCtrls(txtPrgChoice, navShortcut)
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 	}
 else
@@ -676,7 +745,7 @@ else
 
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
 	GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
-	TogglePrgOptCtrls(txtPrgChoice, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
+	TogglePrgOptCtrls(txtPrgChoice, navShortcut, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
 	GuiControl, PrgLnchOpt: , DefaultPrg, 1
 	}
 
@@ -2063,26 +2132,34 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 				IfMsgBox, No
 				Return
 			}
+		sleep, 20
 		}
 	}
 	
 	IniWrite, %strTemp%, %PrgLnchIni%, General, SelIniChoiceName
 		if (Errorlevel)
 		MsgBox, 8192, , % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTemp
-	
+	sleep, 20
 	; Trim last ","
 	spr := SubStr(spr, 1, StrLen(spr) - 1)
 	Loop % PrgNo
 	{
 		if (IniChoicePaths[A_Index])
+		{
 		IniWrite, %spr%, % IniChoicePaths[A_Index], General, IniChoiceNames
+		sleep, 20
+		}
 	}
 	IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
+	sleep, 20
 
 	Loop % PrgNo
 	{
 		if (IniChoicePaths[A_Index])
+		{
 		IniWrite, % (DefPresetSettings)? 1: A_Space, % IniChoicePaths[A_Index], General, DefPresetSettings
+		sleep, 20
+		}
 	}
 	IniWrite, % (DefPresetSettings)? 1: A_Space, %PrgLnchIni%, General, DefPresetSettings
 
@@ -2414,10 +2491,10 @@ if (!PrgTermExit)
 Return retVal
 }
 
-PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgPIDMast, ToPid := 0)
+PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgPIDMast, ToPidMast := 0)
 {
 	temp := 0
-	if (ToPid)
+	if (ToPidMast)
 	{
 		;Backup current last selected
 		loop % currBatchNo
@@ -2436,8 +2513,8 @@ PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByR
 		temp := PrgPIDMast[A_Index]
 		if (temp)
 		{
-		ifWinNotExist, ahk_pid%temp%
-		PrgPIDMast[A_Index] := 0
+			ifWinNotExist, ahk_pid%temp%
+			PrgPIDMast[A_Index] := 0
 		}
 	}
 
@@ -2445,15 +2522,15 @@ PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByR
 	}
 	else
 	{
-
-	 ; sanitize master first
+	; This section is called after ProcessActivePrgsAtStart so all PrgPIDMast values are either 0 or PID (not 1)
+	; sanitize master first
 	loop % PrgNo
 	{
 		temp := PrgPIDMast[A_Index]
 		if (temp)
 		{
-		ifWinNotExist, ahk_pid%temp%
-		PrgPIDMast[A_Index] := 0
+			ifWinNotExist, ahk_pid%temp%
+			PrgPIDMast[A_Index] := 0
 		}
 	}
 
@@ -2461,7 +2538,10 @@ PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByR
 	{
 	temp := PrgBatchInibtchPrgPresetSel[A_Index]
 		if (temp)
-		PrgListPIDbtchPrgPresetSel[A_Index] := PrgPIDMast[temp]
+		{
+			if (PrgPIDMast[temp])
+			PrgListPIDbtchPrgPresetSel[A_Index] := PrgPIDMast[temp]
+		}
 	}
 	}
 }
@@ -2888,12 +2968,16 @@ WinGetPos, , , w, h, LnchSplash
 WinMove, LnchSplash, , % PrgLnchOpt.X() + (PrgLnchOpt.Width() - w)/2, % PrgLnchOpt.Y() + (PrgLnchOpt.Height() - h)
 sleep, 120
 
+GuiControl, PrgLnch:, batchPrgStatus, % ReorgBatch(batchPrgNo, maxBatchPrgs, btchPrgPresetSel, PrgMonToRn, PrgBatchIni%btchPrgPresetSel%, currBatchNo, PrgListIndex, PrgBdyBtchTog)
+
 GuiControl, PrgLnch:, ListPrg, % PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToRn, PrgBdyBtchTog, PrgListIndex, batchPrgNo, 1)
 ;fix the updown
 temp := batchPrgNo-1
 fTemp := 0
 MakeLongVar := MakeLong(fTemp, temp)
 SendMessage, %UDM_SETRANGE%, , %MakeLongVar%, , ahk_id %MovePrgHwnd%
+
+
 
 Gosub FrontendInit
 presetNoTest := 2
@@ -2949,10 +3033,10 @@ if (selPrgChoiceTimer != selPrgChoice)
 SetTimer, CheckVerPrg, Delete
 else 
 {
-temp := PrgVer[selPrgChoice]
-	if (temp)
+verTemp := PrgVer[selPrgChoice]
+	if (verTemp)
 	{
-		if (Util_VersionCompare(PrgVerNew, temp))
+		if (Util_VersionCompare(PrgVerNew, verTemp))
 		GuiControl, PrgLnchOpt:, newVerPrg, % "  Update Available"
 		else
 		GuiControl, PrgLnchOpt:, newVerPrg, % "  Prg is up to date"
@@ -3626,7 +3710,7 @@ else
 				GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
 				GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
-				TogglePrgOptCtrls(txtPrgChoice, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
+				TogglePrgOptCtrls(txtPrgChoice, navShortcut, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
 
 				GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 
@@ -3668,7 +3752,7 @@ else
 				GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
 				GuiControl, PrgLnchOpt: Disable, RnPrgLnch
 				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
-				TogglePrgOptCtrls(txtPrgChoice)
+				TogglePrgOptCtrls(txtPrgChoice, navShortcut)
 				}
 
 			}
@@ -3681,7 +3765,7 @@ else
 				GuiControl, PrgLnchOpt: Disable, Just Change Res.
 				GuiControl, PrgLnchOpt: Text, resolveShortct, Shortcut Nav. (Dlg)
 				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
-				TogglePrgOptCtrls(txtPrgChoice)
+				TogglePrgOptCtrls(txtPrgChoice, navShortcut)
 
 				GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 				if (iDevNumArray[targMonitorNum] < 10)
@@ -3767,7 +3851,7 @@ if (txtPrgChoice = "")
 	GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
 	GuiControl, PrgLnchOpt: Disable, RnPrgLnch
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
-	TogglePrgOptCtrls(txtPrgChoice)
+	TogglePrgOptCtrls(txtPrgChoice, navShortcut)
 	iDevNum := 1
 	GuiControl, PrgLnchOpt:, Choose, iDevNum
 	GoSub FixMonColours
@@ -3945,7 +4029,7 @@ else
 		GuiControl, PrgLnchOpt: Enable, DefaultPrg
 		GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 
-		TogglePrgOptCtrls(txtPrgChoice, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
+		TogglePrgOptCtrls(txtPrgChoice, navShortcut, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
 
 		GoSub iDevNo
 		GoSub FixMonColours
@@ -4421,7 +4505,7 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 		if (strTemp = "IniChoice")
 		{
 		ControlSetText,,,ahk_id %IniChoiceHwnd%
-			if (!ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini", 1))
+			if (SelIniChoiceName != PrgLnch && !ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini", 1))
 			GoSub, IniChoiceSel
 		}
 	}
@@ -5524,7 +5608,7 @@ else
 	; No problem if a batch preset completes at exactly the same time.
 }
 
-	if (!waitBreak)
+	if (!waitBreak && presetNoTest < 2)
 	{
 	SysGet, md, MonitorWorkArea, % PrgLnchMon
 	dx := Round(mdleft + (mdRight- mdleft)/2)
@@ -5805,65 +5889,101 @@ ChkBatchActivePrgs(maxBatchPrgs, PrgBatchIniA_Index, ByRef PrgListPID)
 	fTemp := PrgBatchIniA_Index[A_Index]
 
 		if (fTemp)
-		PrgListPID[fTemp] := 1
+		PrgListPID[fTemp] := "A" ; Potential candidate for PID
 		else
 		Break
 	}
 }
 
-ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, ByRef PrgPIDMast)
+ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, ByRef PrgPIDMast, oldSelIniChoicePath := "")
 {
 ProcNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
+PrgPIDMastTmp := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 strTemp := ""
+strTemp2 := ""
 multipleInstance := 0
 foundpos := 0
 retVal := 0
 
 
-IniRead, WarnAlreadyRunning, %SelIniChoicePath%, General, WarnAlreadyRunning
-	if (WarnAlreadyRunning = 2)
-	Return retVal
 
-Loop % PrgNo
+
+if (oldSelIniChoicePath)
 {
-	if (PrgChoicePaths[A_Index] && PrgPIDMast[A_Index])
-	{
-	strRetVal := ChkExistingProcess(PrgLnkInf, 0, A_Index, 0, 0, PrgChoicePaths, IniFileShortctSep, 0, 1)
 
-		if (strRetVal)
-		{
-		MultInstPrg := 0
-		foundpos := 1
-			if (Instr(strRetVal, "|"))
+; No "WarnAlreadyRunning" as this is default when switching Lnch Pads
+	Loop % PrgNo
+	{
+		strTemp2 := PrgChoicePaths[A_Index]
+		temp := A_Index
+			if (strTemp2)
 			{
-				Loop, Parse, strRetVal, |
+				loop % PrgNo
 				{
-				foundpos += 1
-				multipleInstanceExist := 1
-				MultInstPrg := 1
+				IniRead, strTemp, %oldSelIniChoicePath%, Prg%A_Index%, PrgPath
+					if (PrgPIDMast[A_Index] && strTemp)
+					{
+					if (strTemp = strTemp2 && !PrgPIDMastTmp[A_Index])
+					PrgPIDMastTmp[temp] := PrgPIDMast[A_Index]
+					}
 				}
 			}
+	}
+	Loop % PrgNo
+	{
+	PrgPIDMast[A_Index] := PrgPIDMastTmp[A_Index]
+	}
+; Not using ChkExistingProcess so not absolutely water-tight
+retVal := 1
+Return retVal
+}
+else
+{
 
-		ProcNames[A_Index] := (MultInstPrg)? (SubStr(strRetVal, 1, Instr(strRetVal, "|") - 1)): strRetVal
+	IniRead, WarnAlreadyRunning, %SelIniChoicePath%, General, WarnAlreadyRunning
+		if (WarnAlreadyRunning = 2)
+		Return retVal
 
-		strTemp .= ((A_Index > 9)? "`nPrg ": "`nPrg  ") . A_Index . ": " . ((foundpos > 1)? (foundpos - 1 . " instances of "): ("One instance of ")) . ProcNames[A_Index] . "."
+	Loop % PrgNo
+	{
+		if (PrgChoicePaths[A_Index] && PrgPIDMast[A_Index])
+		{
+		strRetVal := ChkExistingProcess(PrgLnkInf, 0, A_Index, 0, 0, PrgChoicePaths, IniFileShortctSep, 0, 1)
+
+			if (strRetVal)
+			{
+			MultInstPrg := 0
+			foundpos := 1
+				if (Instr(strRetVal, "|"))
+				{
+					Loop, Parse, strRetVal, |
+					{
+					foundpos += 1
+					multipleInstanceExist := 1
+					MultInstPrg := 1
+					}
+				}
+
+			ProcNames[A_Index] := (MultInstPrg)? (SubStr(strRetVal, 1, Instr(strRetVal, "|") - 1)): strRetVal
+
+			strTemp .= ((A_Index > 9)? "`nPrg ": "`nPrg  ") . A_Index . ": " . ((foundpos > 1)? (foundpos - 1 . " instances of "): ("One instance of ")) . ProcNames[A_Index] . "."
+			}
 		}
 	}
-}
 
-
-if (!WarnAlreadyRunning && foundpos)
-{
-strRetVal := % (multipleInstance)? "`nNote, if Yes, PrgLnch will only choose one of the instances.": ""
-MsgBox, 8195, Running Prgs, % "The Prgs in the list below have already started!`n" strTemp "`n`nReply:`nYes: Update Prg Batch Status (Recommended: This will not show again)`nNo: Do not update Prg Batch Status (This will show again)`nCancel: Do not update Prg Batch Status (This will not show again)`n" strRetVal
-	ifMsgBox, Yes
-	IniWrite, 1, %SelIniChoicePath%, General, WarnAlreadyRunning
-	Else
+	if (!WarnAlreadyRunning && foundpos)
 	{
-	IfMsgBox, Cancel
-	IniWrite, 2, %SelIniChoicePath%, General, WarnAlreadyRunning
+	strRetVal := % (multipleInstance)? "`nNote, if Yes, PrgLnch will only choose one of the instances.": ""
+	MsgBox, 8195, Running Prgs, % "The Prgs in the list below have already started!`n" strTemp "`n`nReply:`nYes: Update Prg Batch Status (Recommended: This will not show again)`nNo: Do not update Prg Batch Status (This will show again)`nCancel: Do not update Prg Batch Status (This will not show again)`n" strRetVal
+		ifMsgBox, Yes
+		IniWrite, 1, %SelIniChoicePath%, General, WarnAlreadyRunning
+		Else
+		{
+		IfMsgBox, Cancel
+		IniWrite, 2, %SelIniChoicePath%, General, WarnAlreadyRunning
 
-	Return retVal
+		Return retVal
+		}
 	}
 }
 
@@ -5877,13 +5997,17 @@ foundpos := 0
 
 	foundpos := ErrorLevel
 
-		; PrgPIDMast[]A_Index] 1 if batch!
+		; PrgPIDMast[]A_Index] 1 if batch as initialised by ChkBatchActivePrgs
 		if (foundpos && PrgPIDMast[A_Index])
 		{
 		PrgPIDMast[A_Index] := foundpos
 		retVal := 1
 		}
+		else
+		PrgPIDMast[A_Index] := 0
 	}
+	else
+	PrgPIDMast[A_Index] := 0
 }
 
 
@@ -7420,7 +7544,7 @@ WinMover(Hwnd := 0, position := "hc vc", Width := 0, Height := 0, splashInit := 
 
 }
 
-TogglePrgOptCtrls(txtPrgChoice, selPrgChoice := 0, PrgChgResonSwitch := 0, PrgRnMinMax := 0, PrgRnPriority := 0, PrgBordless := 0, PrgLnchHide := 0, CtrlsOn := 0, lnkDisable := 0)
+TogglePrgOptCtrls(txtPrgChoice, navShortcut, selPrgChoice := 0, PrgChgResonSwitch := 0, PrgRnMinMax := 0, PrgRnPriority := 0, PrgBordless := 0, PrgLnchHide := 0, CtrlsOn := 0, lnkDisable := 0)
 {
 if (CtrlsOn)
 {
@@ -7463,6 +7587,8 @@ else
 		GuiControl, PrgLnchOpt: Disable, resolveShortct
 		else
 		GuiControl, PrgLnchOpt: Enable, resolveShortct
+	GuiControl, PrgLnchOpt: , resolveShortct, % navShortcut
+	GuiControl, PrgLnchOpt: Text, resolveShortct, Shortcut Nav. (Dlg)
 	GuiControl, PrgLnchOpt: Disable, PrgLAA
 }
 }
@@ -8696,10 +8822,31 @@ MCode(ByRef code, hex)
 RestartPrgLnch(AsAdmin := 0, chgPreset := "", SprIniSlot := "")
 {
 Global
-Local strTemp := "", temp := 0, strTemp2 := ""
+Thread, NoTimers
+Local temp := 0, strTemp2 := ""
+
+if (chgPreset)
+{
+strTemp := PrgPID . ","
+; Get Pidmaster values and current Preset name & separate "|" with target Preset
+	loop % PrgNo
+	{
+	strTemp .= PrgPIDMast[A_Index] . "`,"
+	}
+chgPreset := oldSelIniChoiceName . "|" . chgPreset
 
 
+	if (SprIniSlot)
+	strTemp := """ """ . strTemp . """ """ . chgPreset . """ """ . SprIniSlot . """"
+	else
+	strTemp := """ """ . strTemp . """ """ . chgPreset . """"
+
+
+}
+else
+{
 strTemp := PrgPID . "|"
+
 	loop % maxBatchPrgs
 	{
 	temp := A_Index
@@ -8709,24 +8856,22 @@ strTemp := PrgPID . "|"
 		}
 	strTemp .= "|"
 	}
+}
 temp := (AsAdmin)? "*RunAs ": ""
-full_command_line := DllCall("GetCommandLine", "str")
+full_command_line := DllCall("GetCommandLine", "str") ; no Parms: "str" is Cdecl ReturnType
 
 	; Is this condition absolutely necessary here?
 	if (!RegExMatch(full_command_line, " /restart(?!\S)") || chgPreset)
 	{
-		if (SprIniSlot)
-		SprIniSlot := """ """ . SprIniSlot . """"
-		else
-		SprIniSlot := """"
+
 		try
 		{
 		if (A_IsCompiled)
-		temp .= """" . A_ScriptFullPath . """" . " /restart """ . strTemp . """ """ . chgPreset . SprIniSlot
+		temp .= """" . A_ScriptFullPath . """" . " /restart """ . strTemp
 		else
-		temp .= """" . A_AhkPath . """" . " /restart " . """" . A_ScriptFullPath . """ """ . strTemp . """ """ . chgPreset . SprIniSlot
-		; restart may not work if LOAD phase is not completed- test it!!!
-msgbox % temp
+		temp .= """" . A_AhkPath . """" . " /restart " . """" . A_ScriptFullPath . strTemp
+		; restart may not work if LOAD phase of script is not completed- test it!!!
+
 		Run, %temp%, %A_ScriptDir%
 		}
 		catch fTemp
@@ -8735,9 +8880,11 @@ msgbox % temp
 		KleenupPrgLnchFiles()
 		}
 	SetTimer, NewThreadforDownload, Delete ;Cleanup
+	Thread, NoTimers, false
 	ExitApp
 	}
 	strTemp2 := % "PrgLnch could not relaunch, as it has already restarted with this command line:`n" full_command_line
+	Thread, NoTimers, false
 	if (AsAdmin)
 	Return %strTemp2%
 	else
