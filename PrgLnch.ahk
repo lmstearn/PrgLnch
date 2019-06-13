@@ -215,7 +215,7 @@ boundListBtchCtl := 0 ; PrgList sel or Updown toggle
 btchPrgPresetSel := 0 ;What preset is currently selected- 0 for none
 PrgBatchIniStartup := 0 ;Batch Preset read from Startup
 maxBatchPrgs := 6
-batchActive := 0 ; (1) Batch is Active for current Preset (-1) flagged for Not Active (0) Not active
+batchActive := 0 ; (1) Batch is Active for current Preset (-1) flagged for Not Active (0) Not active (2) Batch active at start
 lnchPrgIndex := 0 ; (PrgIndex) Run, (0) Change Res or -(PrgIndex) Cancel
 lnchStat := 0 ; (-1) Test Run; (1) Batch Run; (0) BatchPrgStatus Select
 lastMonitorUsedInBatch := 0
@@ -265,14 +265,13 @@ strPrgChoice := "|None|"
 defPrgStrng := "None"
 ChgShortcutVar := "Change Shortcut"
 txtPrgChoice := ""
-iniTxtPrgChoice := ""
+iniTxtPadChoice := ""
 GoConfigTxt = Prg Config
 iniSel := 0
 selPrgChoice := 1
 selPrgChoiceTimer := 0
 txtCmd := 0
 RegoVar := 0
-fromRestart := 0
 navShortcut := 0
 
 
@@ -296,7 +295,7 @@ PrgLnchIni := A_ScriptDir . "`\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
 SelIniChoicePath := PrgLnchIni
 SelIniChoiceName = PrgLnch
 oldSelIniChoiceName := ""
-oldSelIniChoicePath := "" ; Previously loaded preset: not related to oldSelIniChoiceName above
+oldSelIniChoicePath := "" ; Previously loaded preset: in many cases related to oldSelIniChoiceName above
 dispMonNames := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 ResArray := [[],[],[]]
 iDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -377,7 +376,9 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 				if (InStr(strRetVal, "|"))
 				{
 				SelIniChoiceName := SubStr(strRetVal, InStr(strRetVal, "|",,0) + 1)
-				oldSelIniChoicePath := A_ScriptDir . "`\" . SubStr(strRetVal, 1, InStr(strRetVal, "|",,0) - 1) . ".ini"
+				oldSelIniChoicePath := SubStr(strRetVal, 1, InStr(strRetVal, "|",,0) - 1)
+				if (oldSelIniChoicePath != "PrgLnch")
+				oldSelIniChoicePath := A_ScriptDir . "`\" . oldSelIniChoicePath . ".ini"
 				}
 				else
 				{
@@ -459,17 +460,14 @@ sleep, 120
 temp := 0
 if (strTemp)
 {
-	if (oldSelIniChoicePath)
+	if (oldSelIniChoicePath && oldSelIniChoicePath != "PrgLnch")
 	{
 		Loop, parse, strTemp, `,
 		{
 			if (A_Index = 1)
 			{
 				if (A_Loopfield)
-				{
 				PrgPid := A_Loopfield
-				fromRestart := 1
-				}
 			}
 			else
 			{
@@ -489,10 +487,7 @@ if (strTemp)
 		if (A_Index = 1)
 		{
 			if (A_Loopfield)
-			{
 			PrgPid := A_Loopfield
-			fromRestart := 1
-			}
 		}
 		else
 		{
@@ -511,11 +506,6 @@ if (strTemp)
 	}
 }
 
-	if (temp)
-	{
-	fromRestart := 1
-	batchActive := 1
-	}
 
 
 
@@ -545,10 +535,8 @@ loop % PrgNo
 
 full_command_line := DllCall("GetCommandLine", "str")
 
-	if (RegExMatch(full_command_line, " /restart(?!\S)"))
+	if (oldSelIniChoicePath && oldSelIniChoicePath != "PrgLnch" && RegExMatch(full_command_line, " /restart(?!\S)"))
 	{
-		if (oldSelIniChoicePath)
-		{
 		; PIDs again checked in InitBtchStat later
 		; Point of this is to save the _same_ PIDs when switching Lnch Pad Slots (in case of multiple instances)
 
@@ -556,7 +544,6 @@ full_command_line := DllCall("GetCommandLine", "str")
 	
 		loop %maxBatchPrgs%
 		PidMaster(PrgNo, maxBatchPrgs, foundpos, PrgBatchIni%A_Index%, PrgListPID%A_Index%, PrgPIDMast)
-		}
 	}
 	else
 	{
@@ -568,10 +555,9 @@ full_command_line := DllCall("GetCommandLine", "str")
 
 		loop %maxBatchPrgs%
 		PidMaster(PrgNo, maxBatchPrgs, foundpos, PrgBatchIni%A_Index%, PrgListPID%A_Index%, PrgPIDMast)
-
-	;Using fromRestart inappropriately- but "convenient"
 	}
-fromRestart := batchActive
+	if (batchActive)
+	batchActive := 2 ; for InitBtchStat at start
 
 
 
@@ -971,10 +957,10 @@ Gui, PrgLnch: Show, Hide, PrgLnch
 WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 3/4, PrgLnchOpt.Height())
 
 sleep, 20
-if (fromRestart)
+if (batchActive = 2)
 {
 GoSub InitBtchStat
-fromRestart := 0
+batchActive := 1
 }
 
 
@@ -1782,20 +1768,20 @@ GuiControlGet, strTemp, PrgLnch:, PresetName
 sleep, 60
 
 
-StringReplace, strTemp, strTemp, `, ,, All
+strTemp := StrReplace(strTemp, "`,")
 ;fTemp:=RegExReplace(fTemp, "[\W_]+") ; Bit heavy
 
-if (strTemp)
-{
-	if (StrLen(strTemp) > 3000) ;length: 6 X 30000 < 20000 being a reasonable limit
+	if (strTemp)
 	{
-	strTemp := SubStr(PresetName, 1, 3000)
-	GuiControl, PrgLnch:, PresetName, %strTemp%
+		if (StrLen(strTemp) > 3000) ;length: 6 X 3000 < 20000 being a reasonable limit
+		{
+		strTemp := SubStr(PresetName, 1, 3000)
+		GuiControl, PrgLnch:, PresetName, %strTemp%
+		}
+	PresetNames[btchPrgPresetSel] := strTemp
 	}
-PresetNames[btchPrgPresetSel] := strTemp
-}
-else
-PresetNames[btchPrgPresetSel] := ""
+	else
+	PresetNames[btchPrgPresetSel] := ""
 
 
 sleep, 60
@@ -1845,27 +1831,48 @@ ToolTip
 GoConfigTxt = Prg Config
 GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 
-
 Loop, % prgNo
 {
-	if (iniTxtPrgChoice = IniChoiceNames[A_Index])
+	if (iniTxtPadChoice = IniChoiceNames[A_Index])
 	{
-	iniTxtPrgChoice = IniName
-	GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+	iniTxtPadChoice = IniName
+	GuiControl, PrgLnch: Text, IniChoice, %iniTxtPadChoice%
+	GuiControl, PrgLnch: Choose, IniChoice, % iniTxtPadChoice
 	Return
 	}
 }
 
-SelIniChoiceName := iniTxtPrgChoice
+
+if (IniChoiceNames[iniSel] && IniChoiceNames[iniSel] != "ini" . iniSel)
+MsgBox, 8196, , % """" IniChoiceNames[iniSel] """" " is a Lnch Pad slot already, so replacing it will remove its data.`n`nYes: Overwrite the existing Lnch Pad with the one just configured.`nNo: Cancel the operation."
+	IfMsgBox, No
+	Return
+
+	if (SelIniChoiceName = "ini" . iniSel)
+	oldSelIniChoiceName = PrgLnch
+	else
+	oldSelIniChoiceName := SelIniChoiceName
+SelIniChoiceName := iniTxtPadChoice
 SelIniChoicePath := A_ScriptDir . "`\" . SelIniChoiceName . ".ini"
+oldSelIniChoicePath := A_ScriptDir . "`\" . oldSelIniChoiceName . ".ini"
 
 ;Not replacing if exists!
-FileCopy %PrgLnchini%, %SelIniChoicePath%
+if (!FileExist(oldSelIniChoicePath))
+{
+MsgBox, 8192, Lnch Pad File , % oldSelIniChoiceName " Lnch Pad file could not be found!`nCannot continue."
+Return
+}
+
+	if (oldSelIniChoiceName = "PrgLnch")
+	FileCopy %oldSelIniChoicePath%, %SelIniChoicePath%
+	else
+	FileMove %oldSelIniChoicePath%, %SelIniChoicePath%
 	if (ErrorLevel)
 	{
-	MsgBox, 8192, File Copy , % SelIniChoiceName " Lnch Pad could not be created!"
-	iniTxtPrgChoice = IniName
-	GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+	MsgBox, 8192, File Move , % SelIniChoiceName " Lnch Pad could not be created!"
+	iniTxtPadChoice = oldSelIniChoiceName
+	GuiControl, PrgLnch: Text, IniChoice, %oldSelIniChoiceName%
+	GuiControl, PrgLnch: Choose, IniChoice, % oldSelIniChoiceName
 	Return
 	}
 	; Type at start
@@ -1883,31 +1890,33 @@ else
 	{
 	ControlSetText,,,ahk_id %IniChoiceHwnd%
 	GuiControl, PrgLnch:, IniChoice,
-	; iniTxtPrgChoice should be null
-		if (!ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini"))
-		GoSub IniChoiceSel
+	; iniTxtPadChoice should be null
+		if (DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPadChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1))
+		RestartPrgLnch(0, oldSelIniChoiceName, SelIniChoiceName)
+		else
+		GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 	}
 	else
 	{
 
-
 	presetNoTest := 0
-	PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, PrgPIDMast, 1)
-	IfWinExist, % "ahk_id" PrgPropsHwnd
-	{
-	Gui, PrgProperties: Destroy
-	PrgPropsHwnd := 0
-	}
 
-	if (PrgPID)
-	{
-		Process, Exist, % PrgPID
-		if (!ErrorLevel)
+	PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, PrgPIDMast, 1)
+		IfWinExist, % "ahk_id" PrgPropsHwnd
 		{
-		PrgPID := 0
-		HideShowTestRunCtrls(1)
+		Gui, PrgProperties: Destroy
+		PrgPropsHwnd := 0
 		}
-	}
+
+		if (PrgPID)
+		{
+		Process, Exist, % PrgPID
+			if (!ErrorLevel)
+			{
+			PrgPID := 0
+			HideShowTestRunCtrls(1)
+			}
+		}
 	WinMover(PrgLnchOpt.Hwnd(), "d r")
 	Gui, PrgLnch: Show, Hide, PrgLnch
 	sleep, 10
@@ -1966,30 +1975,30 @@ else
 	retVal := ErrorLevel << 32 >> 32
 		if (retVal < 0) ;Did the user type?
 		{
-		sleep 200 ;slow down input?
-		GuiControlGet, iniTxtPrgChoice, PrgLnch:, IniChoice
+		sleep 120 ;slow down input?
+		GuiControlGet, iniTxtPadChoice, PrgLnch:, IniChoice
 
 		;Pre-validation
 
-		if (ChkCmdLineValidFName(iniTxtPrgChoice, 1))
-		GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+		if (ChkCmdLineValidFName(iniTxtPadChoice, 1))
+		GuiControl, PrgLnch: Text, IniChoice, %iniTxtPadChoice%
 
 
-		if (StrLen(iniTxtPrgChoice) > 20000) ;length?
+		if (StrLen(iniTxtPadChoice) > 20000) ;length?
 		{
-		iniTxtPrgChoice := SubStr(iniTxtPrgChoice, 1, 20000)
-		GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+		iniTxtPadChoice := SubStr(iniTxtPadChoice, 1, 20000)
+		GuiControl, PrgLnch: Text, IniChoice, %iniTxtPadChoice%
 		}
 
-		if (ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini"))
+		if (ChkPrgNames(iniTxtPadChoice, PrgNo, "Ini"))
 		{
 		;"0" happens rarely on "timing glitch??"
-		iniTxtPrgChoice := "IniName"
-		GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+		iniTxtPadChoice := "IniName"
+		GuiControl, PrgLnch: Text, IniChoice, %iniTxtPadChoice%
 		}
 		else
 		{
-			if (iniTxtPrgChoice)
+			if (iniTxtPadChoice)
 			{
 				GoConfigTxt := "Save Lnch Pad"
 				ToolTip, "Click `"Save Lnch Pad`" to save."
@@ -1997,37 +2006,37 @@ else
 			}
 			else
 			{
-				if (GoConfigTxt = "Del Lnch Pad")
-				DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPrgChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
-				else
-				{
 				GoConfigTxt = Del Lnch Pad
 				ToolTip, "Click `"Del Lnch Pad`" or hit Del to confirm."
-				}
-			GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+				GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
 			}
 		}
 		}
 		else
 		{
 		
-		ControlGetText,iniTxtPrgChoice,,ahk_id %IniChoiceHwnd% ; "GuiControlGet, iniTxtPrgChoice, PrgLnch:, IniChoice" fails when empty
+		ControlGetText,iniTxtPadChoice,,ahk_id %IniChoiceHwnd% ; "GuiControlGet, iniTxtPadChoice, PrgLnch:, IniChoice" fails when empty
 
-			if (iniTxtPrgChoice)
+			if (iniTxtPadChoice)
 			{
-				if (iniTxtPrgChoice = oldSelIniChoiceName)
+				if (iniTxtPadChoice = oldSelIniChoiceName)
 				Return
 			}
 			else ; Del key hit
 			{
 				if (GoConfigTxt = "Del Lnch Pad")
-				DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPrgChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
+				{
+					if (DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPadChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1))
+					RestartPrgLnch(0, oldSelIniChoiceName, SelIniChoiceName)
+					else
+					GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
+				}
 				else
 				{
 				GoConfigTxt = Del Lnch Pad
 				ToolTip, "Click `"Del Lnch Pad`" or hit Del to confirm."
+				GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
 				}
-			GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
 			Return
 			}
 
@@ -2041,7 +2050,7 @@ else
 		{
 		
 		IniRead, fTemp, %PrgLnchIni%, General, DefPresetSettings
-		if (ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini"))
+		if (ChkPrgNames(iniTxtPadChoice, PrgNo, "Ini"))
 		{
 			; ChkPrgNames negates "PrgLnch" so...
 			if (oldSelIniChoiceName = "PrgLnch")
@@ -2054,7 +2063,7 @@ else
 				{
 				strTemp := SelIniChoicePath
 				SelIniChoiceName .= iniSel
-				iniTxtPrgChoice := SelIniChoiceName
+				iniTxtPadChoice := SelIniChoiceName
 				SelIniChoicePath := A_ScriptDir . "`\" . SelIniChoiceName . ".ini"
 
 				FileCopy %strTemp%, %SelIniChoicePath%
@@ -2073,14 +2082,14 @@ else
 				SelIniChoiceName := "PrgLnch"
 				; Update all ini files
 				UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames, temp)
-				RestartPrgLnch(0, SelIniChoiceName, iniTxtPrgChoice)
+				RestartPrgLnch(0, SelIniChoiceName, iniTxtPadChoice)
 				}
 			}
 		}
 		else
 		{
-		UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, iniTxtPrgChoice, IniChoiceNames, fTemp)
-		RestartPrgLnch(0, iniTxtPrgChoice)
+		UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, iniTxtPadChoice, IniChoiceNames, fTemp)
+		RestartPrgLnch(0, iniTxtPadChoice)
 		}
 		
 		oldSelIniChoiceName := SelIniChoiceName
@@ -2089,26 +2098,37 @@ else
 	}
 Return
 
-DelIniPresetProc(iniSel, ByRef GoConfigTxt, ByRef iniTxtPrgChoice, ByRef SelIniChoicePath, ByRef SelIniChoiceName, ByRef oldSelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, 1)
+DelIniPresetProc(iniSel, ByRef GoConfigTxt, ByRef iniTxtPadChoice, ByRef SelIniChoicePath, ByRef SelIniChoiceName, ByRef oldSelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, 1)
 {
 ToolTip
+retVal := 0
 MsgBox, 8193, Del Lnch Pad, Really delete the Lnch Pad?`nThis will also remove the file.
 	IfMsgBox, Ok
 	{
+		IfWinExist, % "ahk_id" PrgPropsHwnd
+		{
+		Gui, PrgProperties: Destroy
+		PrgPropsHwnd := 0
+		}
 	IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
+	oldSelIniChoiceName := SelIniChoiceName
+	SelIniChoiceName := "Ini" . iniSel
 	GuiControl, PrgLnch:, IniChoice, %strIniChoice%
 	GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
-	oldSelIniChoiceName := SelIniChoiceName
+
 	FileDelete, %SelIniChoicePath%
 		if (ErrorLevel)
 		MsgBox, 8192, File Delete , % SelIniChoicePath " Lnch Pad file could not be removed!"
+	retVal := 1
+	sleep, 30
 	}
 	else
 	{
-	iniTxtPrgChoice := SelIniChoiceName
-	GuiControl, PrgLnch: Text, IniChoice, %iniTxtPrgChoice%
+	iniTxtPadChoice := SelIniChoiceName
+	GuiControl, PrgLnch: Text, IniChoice, %iniTxtPadChoice%
 	}
-	GoConfigTxt = Prg Config
+GoConfigTxt = Prg Config
+Return retVal
 }
 
 UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames, DefPresetSettings := 0) ; won't allow A_Space
@@ -2119,7 +2139,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	strTemp := % (SelIniChoiceName = "Ini" . iniSel)? A_Space: SelIniChoiceName
 	Loop % PrgNo
 	{
-		if (IniChoiceNames[A_Index] = "Ini" . A_Index)
+		if (IniChoiceNames[A_Index] = "Ini" . A_Index || IniChoiceNames[A_Index] = "PrgLnch")
 		spr .= ","
 		else
 		{
@@ -2174,15 +2194,19 @@ if (iniSel)
 {
 	if (removeIni)
 	{
-	SelIniChoiceName := "Ini" . iniSel
+	strTemp := "Ini" . iniSel
+	SelIniChoiceName = PrgLnch
 	IniChoiceNames[iniSel] := SelIniChoiceName
 	}
 	else
+	{
 	IniChoiceNames[iniSel] := SelIniChoiceName
+	strTemp := SelIniChoiceName
+	}
 
 	UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchPath, SelIniChoiceName, IniChoiceNames)
 	foundPos := InStr(strIniChoice, "|", false, 1, iniSel)
-	spr := SubStr(strIniChoice, 1, foundPos) . SelIniChoiceName ;Bar is  to replace, not append  the  gui control string
+	spr := SubStr(strIniChoice, 1, foundPos) . strTemp ;Bar is  to replace, not append  the  gui control string
 	foundPos := InStr(strIniChoice, "|", false, foundPos + 1)
 	strIniChoice := spr . SubStr(strIniChoice, foundPos)
 
@@ -2275,14 +2299,15 @@ HideShowLnchControls(quitHwnd, GoConfigHwnd, showCtl := 0)
 {
 if (showCtl)
 	{
-		GuiControl, PrgLnch: Show, PresetLabel
-		GuiControl, PrgLnch: Show, ListPrg
-		GuiControl, PrgLnch: Show, MovePrg
-		GuiControl, PrgLnch: Show, PresetName
-		GuiControl, PrgLnch: Show, BtchPrgPreset
-		GuiControl, PrgLnch: Show, RunBatchPrg
-		GuiControl, PrgLnch: Show, % quitHwnd
-		GuiControl, PrgLnch: Show, % GoConfigHwnd
+	GuiControl, PrgLnch: Show, PresetLabel
+	GuiControl, PrgLnch: Show, ListPrg
+	GuiControl, PrgLnch: Show, MovePrg
+	GuiControl, PrgLnch: Show, PresetName
+	GuiControl, PrgLnch: Show, BtchPrgPreset
+	GuiControl, PrgLnch: Show, RunBatchPrg
+	GuiControl, PrgLnch: Show, % GoConfigHwnd
+	GuiControl, PrgLnch: Show, IniChoice
+	GuiControl, PrgLnch: Show, % quitHwnd
 	}
 	else
 	{
@@ -2292,8 +2317,9 @@ if (showCtl)
 	GuiControl, PrgLnch: Hide, PresetName
 	GuiControl, PrgLnch: Hide, BtchPrgPreset
 	GuiControl, PrgLnch: Hide, RunBatchPrg
-	GuiControl, PrgLnch: Hide, % quitHwnd
 	GuiControl, PrgLnch: Hide, % GoConfigHwnd
+	GuiControl, PrgLnch: Hide, IniChoice
+	GuiControl, PrgLnch: Hide, % quitHwnd
 	}
 }
 
@@ -2377,7 +2403,6 @@ if (disableThem)
 	Gui, PrgLnch: Font, cA96915
 	GuiControl, PrgLnch: Font, PresetLabel
 	GuiControl, PrgLnch:, PresetLabel, Batch Presets
-	SetEditCueBanner(PresetNameHwnd, "Preset Name")
 	}
 else
 	{
@@ -3260,13 +3285,13 @@ IniProc(selPrgChoice)
 Return
 
 CmdLinPrmSub:
-GuiControlGet, temp, PrgLnchOpt: FocusV
-if (temp != "CmdLinPrm")
+GuiControlGet, strTemp, PrgLnchOpt: FocusV
+if (strTemp != "CmdLinPrm")
 Return
 
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
-sleep 150 ;slow input
+sleep 120 ;slow input
 GuiControlGet, strTemp, PrgLnchOpt:, CmdLinPrm
 if (strTemp)
 {
@@ -3629,15 +3654,17 @@ else
 	retVal := ErrorLevel << 32 >> 32
 	if (retVal < 0) ;Did the user type?
 		{
-		sleep 200 ;slow down input?
+		sleep 120 ;slow down input?
 		GuiControlGet, txtPrgChoice, PrgLnchOpt:, PrgChoice
 
 		;Pre-validation
 
 		if (txtPrgChoice != "None")
 		{
-		loop %maxbatchPrgs% ; also used for mon numbers
+		loop %maxbatchPrgs%
 			{
+
+			;ChkCmdLineValidFName(ByRef testStr, CmdLine := 0) also %
 			temp := "*" . A_Index . "* "  ; Required for Batch selection
 			if (InStr(txtPrgChoice, temp))
 			txtPrgChoice := StrReplace(txtPrgChoice, temp, "*" . A_Index . "*")
@@ -4058,12 +4085,13 @@ ChkCmdLineValidFName(ByRef testStr, CmdLine := 0)
 temp := 0, fTemp := 0
 ;No commas either
 testStr := RegExReplace(testStr, "[\\\/:*?""<>|,]", , temp)
-; "
+; temp is no of replacements
 
+; whitespaces
 if (CmdLine)
 testStr := RegExReplace(testStr, "\s+", , (!temp)? temp: fTemp)
 
-Return % (!temp)? temp: fTemp
+Return % (temp || fTemp)
 }
 
 
@@ -4093,12 +4121,11 @@ ChkPrgNames(testName, PrgNo, IniBox := "", forDeletion := 0)
 }
 ComboBugFix(strPrgChoice, PrgNo)
 {
-temp := 0, temp1 := 0, foundpos1 := 0, strRetVal:= "", foundpos := InStr(strPrgChoice, "||")
+strTemp := "", strTemp2 := "", foundpos1 := 0, strRetVal:= "", foundpos := InStr(strPrgChoice, "||")
 ;Addresses weird bug when partially matched names are removed and added to the combobox
-
-StringReplace, temp, strPrgChoice, |, |, UseErrorLevel ; finds all occurrences of needle in haystack
-
-	if (ErrorLevel != PrgNo + 2)
+; Update: Not required anymore as problem was bad variable/ function parameter
+strTemp := StrReplace(strPrgChoice, "|", "|", foundpos1)
+	if (foundpos1 != PrgNo + 2)
 	{
 	MsgBox, 8192, , PrgLnch has an encountered an unexpected error! Attempting Restart!
 	strRetVal := WorkingDirectory(A_ScriptDir, 1)
@@ -4115,52 +4142,57 @@ StringReplace, temp, strPrgChoice, |, |, UseErrorLevel ; finds all occurrences o
 		{
 		if (InStr(strPrgChoice, "|",,, A_Index + 1) = foundpos)
 		{
-		temp := Substr(strPrgChoice, 1, foundpos) . "Prg" . A_Index
+		strTemp := Substr(strPrgChoice, 1, foundpos) . "Prg" . A_Index
 
-		temp1 := Substr(strPrgChoice, foundpos + 1)
-		foundpos1 := InStr(temp1, "||") ;' yikes already checked! Null terminator removed?
+		strTemp2 := Substr(strPrgChoice, foundpos + 1)
+		foundpos1 := InStr(strTemp2, "||") ;' yikes already checked! Null terminator removed?
 		if (foundpos1)
-		temp1 := "|Prg" . A_Index + 1 . Substr(temp1, foundpos1 + 1)
+		strTemp2 := "|Prg" . A_Index + 1 . Substr(strTemp2, foundpos1 + 1)
 
-		Return temp . temp1
+		Return strTemp . strTemp2
 		}
 		}
 	}
 	else
 	return strPrgChoice
 }
-PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, noLnk := 0, noResolve := 0)
+PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, noLnk := 0, dirShortCut := 0)
 {
 
 temp := PrgResolveShortcut[selPrgChoice]
 strTemp := PrgCmdLine[selPrgChoice]
 
 
-if (noLnk || noResolve) ;only if link
+if (noLnk || dirShortCut) ;only if not a lnk file with separator. dirShortCut does not have separator, so is conditional -i.e. (!noLnk && dirShortCut) is impossible
 {
 	if (temp)
 	{
 	GuiControl, PrgLnchOpt: Enable, CmdLinPrm
 	GuiControl, PrgLnchOpt:, CmdLinPrm
-	SetEditCueBanner(cmdLinHwnd, "Cmd Line Extras")
 		if (strTemp)
-		{
 		GuiControl, PrgLnchOpt:, CmdLinPrm, % strTemp
-		}
+		else
+		SetEditCueBanner(cmdLinHwnd, "Cmd Line Extras")
 	}
 	else
 	{
-	GuiControl, PrgLnchOpt:, CmdLinPrm
-
-		if (strTemp)
-		SetEditCueBanner(cmdLinHwnd, strTemp)
+		if (dirShortCut)
+		{
+		GuiControl, PrgLnchOpt:, CmdLinPrm
+		GuiControl, PrgLnchOpt: Disable, CmdLinPrm
+		}
 		else
-		SetEditCueBanner(cmdLinHwnd, "Cmd Line Extras")
-
-	GuiControl, PrgLnchOpt: Disable, CmdLinPrm
+		{
+		GuiControl, PrgLnchOpt: Enable, CmdLinPrm
+		GuiControl, PrgLnchOpt:, CmdLinPrm
+			if (strTemp)
+			GuiControl, PrgLnchOpt:, CmdLinPrm, % strTemp
+			else
+			SetEditCueBanner(cmdLinHwnd, "Cmd Line Extras")
+		}
 	}
 
-	if (noResolve)
+	if (dirShortCut)
 	{
 	GuiControl, PrgLnchOpt:, resolveShortct, 0
 	GuiControl, PrgLnchOpt: Disable, resolveShortct
@@ -4176,7 +4208,7 @@ else
 GuiControl, PrgLnchOpt:, CmdLinPrm
 
 	if (strTemp)
-	SetEditCueBanner(cmdLinHwnd, strTemp)
+	GuiControl, PrgLnchOpt:, CmdLinPrm, % strTemp
 	else
 	SetEditCueBanner(cmdLinHwnd, "Cmd Line Extras")
 
@@ -4505,7 +4537,7 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 		if (strTemp = "IniChoice")
 		{
 		ControlSetText,,,ahk_id %IniChoiceHwnd%
-			if (SelIniChoiceName != PrgLnch && !ChkPrgNames(iniTxtPrgChoice, PrgNo, "Ini", 1))
+			if (SelIniChoiceName != PrgLnch && !ChkPrgNames(iniTxtPadChoice, PrgNo, "Ini", 1))
 			GoSub, IniChoiceSel
 		}
 	}
@@ -4617,7 +4649,7 @@ sleep, 60
 ; set lnchPrgIndex, lnchStat 
 GuiControlGet temp, PrgLnchOpt:, RnPrgLnch
 GuiControlGet strTemp, PrgLnch:, RunBatchPrg
-if ((presetNoTest) && strTemp = "&Run Batch" || !(presetNoTest) && temp = "&Test Run Prg")
+if ((presetNoTest && strTemp = "&Run Batch") || (!presetNoTest && temp = "&Test Run Prg"))
 {
 	lnchPrgIndex := selPrgChoice ; changes shortly
 	strRetVal := ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep, 1)
@@ -4653,7 +4685,7 @@ if ((presetNoTest) && strTemp = "&Run Batch" || !(presetNoTest) && temp = "&Test
 	if (!presetNoTest && temp = "&Test Run Prg")
 	{
 	lnchStat := -1
-	targMonitorNum := PrgMonToRn[selPrgChoice]
+	targMonitorNum := PrgMonToRn[lnchPrgIndex]
 	}
 	else
 	lnchStat := 1
@@ -4694,6 +4726,12 @@ loop % ((presetNoTest)? currBatchno: 1)
 ; Update Prg index
 	if (presetNoTest)
 	{
+		temp := PrgBatchIni%btchPrgPresetSel%[A_Index]
+		scrWidth := scrWidthArr[temp]
+		scrHeight := scrHeightArr[temp]
+		scrFreq := scrFreqArr[temp]
+		targMonitorNum := PrgMonToRn[temp]
+
 		if (lnchPrgIndex > 0)
 		{
 		;Init all to batch
@@ -4701,7 +4739,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 		;Hide the quit and config buttons!
 		HideShowLnchControls(quitHwnd, GoConfigHwnd)
 
-		lnchPrgIndex := PrgBatchIni%btchPrgPresetSel%[A_Index]
+		lnchPrgIndex := temp
 
 		temp := PrgChoicePaths[lnchPrgIndex]
 		WinMover(, , , , "PrgLaunching.jpg")
@@ -4709,13 +4747,9 @@ loop % ((presetNoTest)? currBatchno: 1)
 		}
 		else
 		{
-		lnchPrgIndex := -PrgBatchIni%btchPrgPresetSel%[A_Index]
+		lnchPrgIndex := -temp
 		temp := PrgChoicePaths[-lnchPrgIndex]
 		}
-	scrWidth := scrWidthArr[lnchPrgIndex]
-	scrHeight := scrHeightArr[lnchPrgIndex]
-	scrFreq := scrFreqArr[lnchPrgIndex]
-	MonitorNum := PrgMonToRn[lnchPrgIndex]
 	}
 
 	strRetVal := LnchPrgOff(SelIniChoicePath, A_Index, lnchStat, PrgChoiceNames, (presetNoTest)? temp: strTemp2, PrgLnkInf, IniFileShortctSep, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgRnMinMax, PrgBordless, PrgRnPriority, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode)
@@ -4884,7 +4918,7 @@ if (lnchPrgIndex > 0) ;Running
 	Return % strRetVal
 
 	If (!IsaPrgLnk && PrgCmdLine[lnchPrgIndex])
-	PrgPaths := PrgPaths . A_Space . PrgCmdLine[lnchPrgIndex]
+	PrgPaths := PrgPaths . A_Space . "" . PrgCmdLine[lnchPrgIndex] . ""
 
 
 	if (targMonitorNum = PrgLnchMon)
@@ -4923,7 +4957,7 @@ if (lnchPrgIndex > 0) ;Running
 
 ;try
 ;{
-		Run, % PrgPaths,% (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "",% "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
+		Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "", % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
 
 ;}
 ;catch temp
@@ -5031,7 +5065,7 @@ if (lnchPrgIndex > 0) ;Running
 	}
 
 	; Prevents cursor from reverting to primary if PrgLnch not primary
-	if (!fTemp)
+	if (!fTemp && PrgLnchMon != primaryMon)
 	{
 	dx := Round(x + w/2)
 	dy := Round(y + y/2)
@@ -5063,7 +5097,7 @@ if (lnchPrgIndex > 0) ;Running
 ;try
 ;{
 
-Run, % PrgPaths,% (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "",% "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
+Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "", % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
 
 ;}
 ;catch temp
@@ -7529,7 +7563,7 @@ WinMover(Hwnd := 0, position := "hc vc", Width := 0, Height := 0, splashInit := 
 	else
 	WinGetPos,ix,iy,w,h, ahk_id %Hwnd%
 
-	StringReplace,position,position,b,d,all ;b=bottom (same as down)
+	position := StrReplace(position, "b", "d") ;b=bottom (same as down)
 	x := InStr(position,"l")? MonLeft: InStr(position,"hc")? (MonLeft + (MonRight-MonLeft-w)/2): InStr(position,"r") ? MonRight - w: ix
 	y := InStr(position,"u")? MonTop: InStr(position,"vc")? (MonTop + (MonBottom-MonTop-h)/2): InStr(position,"d") ? MonBottom - h: iy
 
@@ -8448,9 +8482,7 @@ try
 		if (InStr(strRetVal, "LoseGuiChangeResWrn"))
 		Return
 		else
-		{
-		StringReplace, strRetVal, strRetVal, ResMode= , LoseGuiChangeResWrn= `nPrgAlreadyLaunchedMsg= `nChangeShortcutMsg= `nResMode= 
-		}
+		strRetVal := StrReplace(strRetVal, "ResMode=", "LoseGuiChangeResWrn= `nPrgAlreadyLaunchedMsg= `nChangeShortcutMsg= `nResMode= ")
 	}
 	else
 	strRetVal := RegExReplace(strRetVal, "m) +$", " ") ;m multilineselect; " +" one or more spaces; $ only at EOL
