@@ -5556,13 +5556,13 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			{
 			PrgPID := 0
 			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak)
-			if (!batchActive)
-			Return
+				if (!batchActive)
+				Return
 			}
 		}
 		else
 		{ 
-			if(batchActive)
+			if (batchActive)
 			{
 			;get lastMonitorUsedInBatch
 			timerBtch := 0
@@ -5660,8 +5660,6 @@ if (presetNoTest)
 			if (PrgLnchMon = lastMonitorUsedInBatch)
 			PrgAlreadyLaunched(SelIniChoicePath, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 		}
-		WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 3/4, PrgLnchOpt.Height())
-		Gui, PrgLnch: Show
 	}
 	else
 	{
@@ -5672,18 +5670,12 @@ if (presetNoTest)
 			ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
 			sleep, 1000
 			}
-		WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 3/4, PrgLnchOpt.Height())
+		}
+		; else the Prg Test run complete
+
+	WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 3/4, PrgLnchOpt.Height())
+		if (PrgLnchHide[selPrgChoice])
 		Gui, PrgLnch: Show
-		}
-		else
-		{
-		; Test run complete here
-			if (PrgLnchHide[selPrgChoice])
-			{
-			WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 3/4, PrgLnchOpt.Height())
-			Gui, PrgLnch: Show
-			}
-		}
 
 	GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 	SetTimer, WatchSwitchBack, Delete
@@ -5698,13 +5690,10 @@ else
 		PrgAlreadyLaunched(SelIniChoicePath, PrgLnchMon, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef)
 
 		;must zero array
-			Loop % currBatchNo
-			{
-			PrgListPIDbtchPrgPresetSel[A_Index] := 0
-			}
-		;Gui Must show else it's awkward obtaining completed batch Prg ID
-		WinMover(PrgLnchOpt.Hwnd(), "d r")
-		Gui, PrgLnchOpt: Show
+		Loop % currBatchNo
+		{
+		PrgListPIDbtchPrgPresetSel[A_Index] := 0
+		}
 	}
 	else
 	{
@@ -5716,11 +5705,11 @@ else
 		}
 	SetTimer, WatchSwitchBack, Delete
 	SetTimer, WatchSwitchOut, Delete
-	WinMover(PrgLnchOpt.Hwnd(), "d r")
-		if (PrgLnchHide[selPrgChoice])
-		Gui, PrgLnchOpt: Show
 	}
 	; No problem if a batch preset completes at exactly the same time.
+WinMover(PrgLnchOpt.Hwnd(), "d r")
+	if (PrgLnchHide[selPrgChoice])
+	Gui, PrgLnchOpt: Show
 }
 
 	if (!waitBreak && presetNoTest < 2)
@@ -8646,7 +8635,7 @@ try
 	}
 	else
 	strRetVal := RegExReplace(strRetVal, "m) +$", " ") ;m multilineselect; " +" one or more spaces; $ only at EOL
-	; also means names & pathnames with more than one space are affected as well
+	; Names & pathnames with more than one space are tested a not affected.
 
 	DeleteIniFile(IniFile)
 	FileAppend, %strRetVal%, %IniFile%
@@ -9015,18 +9004,18 @@ RestartPrgLnch(AsAdmin := 0, chgPreset := "", SprIniSlot := "")
 {
 Global
 Thread, NoTimers
-Local temp := 0, strTemp2 := ""
+Local temp := 0, strTemp := PrgPID . ",", strTemp2 := ""
 
 if (chgPreset)
 {
-strTemp := PrgPID . ","
+
 ; Get Pidmaster values and current Preset name & separate "|" with target Preset
 	loop % PrgNo
 	{
 	strTemp .= PrgPIDMast[A_Index] . "`,"
 	}
 	strTemp := SubStr(strTemp, 1, strLen(strTemp) - 1)
-chgPreset := oldSelIniChoiceName . "|" . chgPreset
+	chgPreset := oldSelIniChoiceName . "|" . chgPreset
 
 	if (SprIniSlot)
 	strTemp := % ((A_IsCompiled)? """": """ """) . strTemp . """ """ . chgPreset . """ """ . SprIniSlot . """"
@@ -9036,7 +9025,6 @@ chgPreset := oldSelIniChoiceName . "|" . chgPreset
 }
 else
 {
-strTemp := PrgPID . "|"
 
 	loop % maxBatchPrgs
 	{
@@ -9048,7 +9036,10 @@ strTemp := PrgPID . "|"
 	strTemp := SubStr(strTemp, 1, strLen(strTemp) - 1)
 	strTemp .= "|"
 	}
+
+strTemp := % ((A_IsCompiled)? """": """ """) . strTemp
 }
+
 strTemp2 := (AsAdmin)? "*RunAs ": ""
 full_command_line := DllCall("GetCommandLine", "str") ; no Parms: "str" is Cdecl ReturnType
 
