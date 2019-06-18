@@ -295,7 +295,7 @@ PrgLnchIni := A_ScriptDir . "\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
 SelIniChoicePath := PrgLnchIni
 SelIniChoiceName = PrgLnch
 oldSelIniChoiceName := ""
-oldSelIniChoicePath := "" ; Previously loaded preset: in many cases related to oldSelIniChoiceName above
+oldSelIniChoicePath := "" ; Previously loaded preset: in many cases the path of oldSelIniChoiceName above
 dispMonNames := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 ResArray := [[],[],[]]
 iDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -376,9 +376,9 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 				if (InStr(strRetVal, "|"))
 				{
 				SelIniChoiceName := SubStr(strRetVal, InStr(strRetVal, "|",,0) + 1)
-				oldSelIniChoicePath := SubStr(strRetVal, 1, InStr(strRetVal, "|",,0) - 1)
-				if (oldSelIniChoicePath != "PrgLnch")
-				oldSelIniChoicePath := A_ScriptDir . "\" . oldSelIniChoicePath . ".ini"
+				oldSelIniChoiceName := SubStr(strRetVal, 1, InStr(strRetVal, "|",,0) - 1)
+					if (oldSelIniChoiceName != "PrgLnch")
+					oldSelIniChoicePath := A_ScriptDir . "\" . oldSelIniChoiceName . ".ini"
 				}
 				else
 				{
@@ -387,7 +387,8 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 					Break
 				}
 			}
-		strTemp2 := strRetVal ;Warning: Temp variable used long way down
+			else
+			strTemp2 := strRetVal ;Warning: Temp variable used long way down
 		}
 	}
 
@@ -459,10 +460,11 @@ sleep, 120
 ; Restarted PrgLnch (see above): Must happen after initialising PrgPID, PrgListPID.
 temp := 0
 if (strTemp)
-{
-	if (oldSelIniChoicePath)
 	{
-		Loop, parse, strTemp, `,
+		; restart same ini
+		if (SelIniChoicePath = oldSelIniChoicePath)
+		{
+		Loop, parse, strTemp, | ; Parse the string based on the pipe symbol.
 		{
 			if (A_Index = 1)
 			{
@@ -471,40 +473,41 @@ if (strTemp)
 			}
 			else
 			{
-				if (A_Loopfield)
+			foundpos := A_Index - 1
+				Loop, parse, A_Loopfield, `,
 				{
-				temp += 1
-				PrgPIDMast[A_Index - 1] := A_Loopfield
+					if (A_Loopfield)
+					{
+					temp += 1
+					PrgListPID%foundpos%[A_Index] := A_Loopfield
+					}
 				}
+			PidMaster(PrgNo, temp, foundpos, PrgBatchIni%foundpos%, PrgListPID%foundpos%, PrgPIDMast, 1)
 			}
 		}
-	}
-	else
-	{
-
-	Loop, parse, strTemp, | ; Parse the string based on the pipe symbol.
-	{
-		if (A_Index = 1)
-		{
-			if (A_Loopfield)
-			PrgPid := A_Loopfield
 		}
 		else
 		{
-		foundpos := A_Index - 1
-			Loop, parse, A_Loopfield, `,
+
+			Loop, parse, strTemp, `,
 			{
-				if (A_Loopfield)
+				if (A_Index = 1)
 				{
-				temp += 1
-				PrgListPID%foundpos%[A_Index] := A_Loopfield
+					if (A_Loopfield)
+					PrgPid := A_Loopfield
+				}
+				else
+				{
+					if (A_Loopfield)
+					{
+					temp += 1
+					PrgPIDMast[A_Index - 1] := A_Loopfield
+					}
 				}
 			}
-		PidMaster(PrgNo, temp, foundpos, PrgBatchIni%foundpos%, PrgListPID%foundpos%, PrgPIDMast, 1)
 		}
+
 	}
-	}
-}
 
 
 
@@ -532,20 +535,7 @@ loop % PrgNo
 
 
 
-
-full_command_line := DllCall("GetCommandLine", "str")
-
-	if (oldSelIniChoicePath && oldSelIniChoicePath != "PrgLnch" && RegExMatch(full_command_line, " /restart(?!\S)"))
-	{
-		; PIDs again checked in InitBtchStat later
-		; Point of this is to save the _same_ PIDs when switching Lnch Pad Slots (in case of multiple instances)
-
-		batchActive := ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, PrgPIDMast, oldSelIniChoicePath)
-	
-		loop %maxBatchPrgs%
-		PidMaster(PrgNo, maxBatchPrgs, foundpos, PrgBatchIni%A_Index%, PrgListPID%A_Index%, PrgPIDMast)
-	}
-	else
+	if (!oldSelIniChoicePath || (SelIniChoicePath = oldSelIniChoicePath))
 	{
 		; PrgPIDMast = Potential candidate list for PID
 		loop %maxBatchPrgs%
@@ -556,6 +546,19 @@ full_command_line := DllCall("GetCommandLine", "str")
 		loop %maxBatchPrgs%
 		PidMaster(PrgNo, maxBatchPrgs, foundpos, PrgBatchIni%A_Index%, PrgListPID%A_Index%, PrgPIDMast)
 	}
+	else
+	{
+		; PIDs again checked in InitBtchStat later
+		; Point of this is to save the _same_ PIDs when switching Lnch Pad Slots (in case of multiple instances)
+
+		batchActive := ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, PrgPIDMast, oldSelIniChoicePath)
+	
+		loop %maxBatchPrgs%
+		PidMaster(PrgNo, maxBatchPrgs, foundpos, PrgBatchIni%A_Index%, PrgListPID%A_Index%, PrgPIDMast)
+	}
+
+
+
 	if (batchActive)
 	batchActive := 2 ; for InitBtchStat at start
 
@@ -870,8 +873,11 @@ if (SelIniChoiceName = "PrgLnch")
 	if (strTemp2)
 	GuiControl, PrgLnch: Choose, IniChoice, %strTemp2%
 	else
+	{
+	GuiControl, PrgLnch: Text, IniChoice,
 	SetEditCueBanner(IniChoiceHwnd, "Lnch Pad Slot", 1)
 	}
+}
 else
 GuiControl, PrgLnch: Choose, IniChoice, %SelIniChoiceName%
 
@@ -9014,8 +9020,9 @@ if (chgPreset)
 	{
 	strTemp .= PrgPIDMast[A_Index] . "`,"
 	}
-	strTemp := SubStr(strTemp, 1, strLen(strTemp) - 1)
-	chgPreset := oldSelIniChoiceName . "|" . chgPreset
+
+strTemp := SubStr(strTemp, 1, strLen(strTemp) - 1)
+chgPreset := oldSelIniChoiceName . "|" . chgPreset
 
 	if (SprIniSlot)
 	strTemp := % ((A_IsCompiled)? """": """ """) . strTemp . """ """ . chgPreset . """ """ . SprIniSlot . """"
@@ -9037,7 +9044,8 @@ else
 	strTemp .= "|"
 	}
 
-strTemp := % ((A_IsCompiled)? """": """ """) . strTemp
+chgPreset := SelIniChoiceName . "|" . SelIniChoiceName
+strTemp := % ((A_IsCompiled)? """": """ """) . strTemp . """ """ . chgPreset . """"
 }
 
 strTemp2 := (AsAdmin)? "*RunAs ": ""
