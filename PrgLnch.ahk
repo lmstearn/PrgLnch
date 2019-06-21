@@ -137,10 +137,7 @@ CDS_TEST := 0x00000002
 CDS_RESET := 0x40000000
 CDS_UPDATEREGISTRY := 0x00000001
 CDS_FULLSCREEN := 0x00000004
-WS_CAPTION := 0x00C00000
-WS_SIZEBOX := 0x00040000
 WM_HELPMSG := 0x0053
-WindowStyle := WS_CAPTION|WS_SIZEBOX
 WS_EX_CONTEXTHELP := 0x00000400
 ;listBox
 LB_GETITEMHEIGHT := 0x01A1
@@ -208,6 +205,7 @@ PrgStyle := 0 ;Storage for styles
 PrgMinMaxVar := 0 ; -1 Min, 0 in Between, 1 Max
 PrgIntervalLnch := -1
 PrgUrlTest := "" ;temp URL to be verified in "Save URL"
+borderToggle := 0 ; Borderless styles applied or no
 UrlPrgIsCompressed := 0
 batchPrgNo := 0 ;actually no of Prgs configured
 currBatchNo := 0 ;no of Prgs in selected preset limited by maxBatchPrgs
@@ -689,7 +687,7 @@ Gui, PrgLnchOpt: Add, Checkbox, vPrgPriority gPrgPriorityChk HWNDPrgPriorityHwnd
 ;check3 enables 3 values in checkbox
 GuiControl, PrgLnchOpt: Enable, PrgPriority
 GuiControl, PrgLnchOpt:, PrgPriority, -1
-Gui, PrgLnchOpt: Add, Checkbox, vBordless gBordlessChk HWNDBordlessHwnd wp, Borderless
+Gui, PrgLnchOpt: Add, Checkbox, vBordless gBordlessChk HWNDBordlessHwnd wp, Borderless Ex
 GuiControl, PrgLnchOpt: Disable, Bordless
 Gui, PrgLnchOpt: Add, Checkbox, vPrgLnchHd gPrgLnchHideChk HWNDPrgLnchHdHwnd, Hide PrgLnch On Run
 GuiControl, PrgLnchOpt: Disable, PrgLnchHd
@@ -735,7 +733,8 @@ else
 
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
 	GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
-	TogglePrgOptCtrls(txtPrgChoice, navShortcut, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
+	borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, 1)
+	TogglePrgOptCtrls(txtPrgChoice, navShortcut, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
 	GuiControl, PrgLnchOpt: , DefaultPrg, 1
 	}
 
@@ -1667,7 +1666,7 @@ if (A_GuiEvent = "DoubleClick")
 	lnchStat := 0
 
 
-	strRetVal := LnchPrgOff(SelIniChoicePath, batchPrgStatus, lnchStat, PrgChoiceNames, temp, PrgLnkInf, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgRnMinMax, PrgBordless, PrgRnPriority, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode)
+	strRetVal := LnchPrgOff(SelIniChoicePath, batchPrgStatus, lnchStat, PrgChoiceNames, temp, PrgLnkInf, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgBordless, PrgRnPriority, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode)
 
 
 	loop % currBatchNo
@@ -3203,12 +3202,15 @@ Process, priority, %PrgPID%, % temp
 Return
 
 BordlessChk:
+GuiControlGet, temp, PrgLnchOpt: FocusV
+	if (temp != Bordless)
+	Return
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 PrgBordless[selPrgChoice] := Bordless
 IniProc(selPrgChoice)
 if (PrgPID) ;test only from config
-BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, dx, dy, scrWidth, scrHeight, PrgPID, WindowStyle)
+BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, selPrgChoice, dx, dy, scrWidth, scrHeight, PrgPID)
 Return
 
 PrgLnchHideChk:
@@ -3275,7 +3277,7 @@ Return
 
 PrgLAARn:
 Tooltip
-DoLAAPatch(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep)
+DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep)
 Return
 
 UpdturlPrgLnchText:
@@ -3426,6 +3428,7 @@ return (HiWord << 16) | (LoWord & 0xffff)
 ;Monitor functions
 iDevNo:
 Gui, PrgLnchOpt: Submit, Nohide
+Gui PrgLnchOpt: +OwnDialogs
 Tooltip
 GuiControlGet, fTemp, PrgLnchOpt:, iDevNum
 GuiControlGet, strTemp, PrgLnchOpt: FocusV
@@ -3689,6 +3692,7 @@ SetResDefaults(targMonitorNum, currRes, Dynamic, FMode, ByRef scrWidth, ByRef sc
 ;Navigational
 PrgChoice:
 Gui, PrgLnchOpt: Submit, Nohide
+Gui PrgLnchOpt: +OwnDialogs
 Tooltip
 SendMessage 0x147, 0, 0, , ahk_id %PrgChoiceHwnd%  ; CB_GETCURSEL
 
@@ -3797,7 +3801,8 @@ else
 				GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
 				GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
-				TogglePrgOptCtrls(txtPrgChoice, navShortcut, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
+				borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, 1)
+				TogglePrgOptCtrls(txtPrgChoice, navShortcut, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
 
 				GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 
@@ -4143,7 +4148,10 @@ else
 		GuiControl, PrgLnchOpt: Enable, DefaultPrg
 		GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 
-		TogglePrgOptCtrls(txtPrgChoice, navShortcut, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
+
+		borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, 1)
+
+		TogglePrgOptCtrls(txtPrgChoice, navShortcut, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
 
 		GoSub iDevNo
 		GoSub FixMonColours
@@ -4219,7 +4227,7 @@ strTemp := StrReplace(strPrgChoice, "|", "|", foundpos1)
 	If (strRetVal)
 	MsgBox, 8192, ComboBugFix, % strRetVal
 	if (FileExist("PrgLnch.exe"))
-	Return RestartPrgLnch()
+	Return RestartPrgLnch(0)
 	}
 
 
@@ -4839,7 +4847,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 		}
 	}
 
-	strRetVal := LnchPrgOff(SelIniChoicePath, A_Index, lnchStat, PrgChoiceNames, (presetNoTest)? temp: strTemp2, PrgLnkInf, IniFileShortctSep, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgRnMinMax, PrgBordless, PrgRnPriority, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode)
+	strRetVal := LnchPrgOff(SelIniChoicePath, A_Index, lnchStat, PrgChoiceNames, (presetNoTest)? temp: strTemp2, PrgLnkInf, IniFileShortctSep, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgBordless, PrgRnPriority, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode)
 
 	if (strRetVal)
 	{  ;Lnch failed for current Prg
@@ -4960,7 +4968,7 @@ if (lnchStat < 0)
 	}
 Return
 
-LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, WindowStyle, PrgRnMinMax, PrgBordless, PrgRnPriority, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, Fmode)
+LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgBordless, PrgRnPriority, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, Fmode)
 {
 
 
@@ -5061,7 +5069,7 @@ if (lnchPrgIndex > 0) ;Running
 			Return outStr
 			}
 			else
-			msgbox, 8196 ,Run Elevated?, % PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nIt might be possible for PrgLnch to run it as Admin:`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
+			msgbox, 8196 ,Run Elevated?, % PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nIt might be possible for PrgLnch to run it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
 
 			IfMsgBox, Yes
 			Return RestartPrgLnch(1)
@@ -5160,7 +5168,7 @@ if (lnchPrgIndex > 0) ;Running
 	}
 
 		if (PrgBordless[lnchPrgIndex])
-		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, 0, 0, scrWidth, scrHeight, PrgPIDtmp, WindowStyle)
+		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, 0, 0, scrWidth, scrHeight, PrgPIDtmp, 1) ; query
 
 
 	;WinShow ahk_class Shell_TrayWnd
@@ -5200,7 +5208,7 @@ Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "", % "UseErrorLevel" (
 			Return outStr 
 			}
 			else
-			msgbox, 8196 ,Run Elevated?, % PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nIt might be possible for PrgLnch to run it as Admin:`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
+			msgbox, 8196 ,Run Elevated?, % PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nIt might be possible for PrgLnch to run it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
 
 			IfMsgBox, Yes
 			Return RestartPrgLnch(1)
@@ -5295,7 +5303,7 @@ Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "", % "UseErrorLevel" (
 
 
 		if (PrgBordless[lnchPrgIndex])
-		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, dx, dy, scrWidth, scrHeight, PrgPIDtmp, WindowStyle)
+		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, dx, dy, scrWidth, scrHeight, PrgPIDtmp, 1) ; query
 
 		;Then we can Move window
 		;WinGetPos,,, W, H, A
@@ -5933,7 +5941,7 @@ loop % currBatchNo
 	{
 	temp := PrgBatchIni[A_Index]
 	strTemp := ExtractPrgPath(temp, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
-	temp := InStr(PrgPaths, ".lnk", false, -4)
+	temp := InStr(PrgPaths, ".lnk", false, strLen(PrgPaths) - 4)
 	if (InStr(strTemp, "PrgLnch.exe") || InStr(strTemp, "BadPath"))
 	Return "PrgLnch"
     if !(strTemp := GetProcFromPath(strTemp, temp))
@@ -6387,56 +6395,169 @@ Author(s):
 */
 wp_IsResizable()
 {
+WS_SIZEBOX := 0x00040000
 WinGetClass, Class
 	if (Class in Chrome_XPFrame,MozillaUIWindowClass,IEFrame,OpWindow)
 	return true
 	WinGet, CurrStyle, Style
-	return (CurrStyle & 0x40000) ; WS_SIZEBOX
+	return (CurrStyle & WS_SIZEBOX)
 }
-BordlessProc(ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, dx, dy, scrWidth, scrHeight, PrgPID, WindowStyle)
+BordlessProc(ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, PrgBordless, selPrgChoice, dx, dy, scrWidth, scrHeight, PrgPID, queryOnly := 0)
 {
+WS_BORDER := 0x00800000 ;Window has a thin-line border.
+WS_CAPTION := 0x00C00000 ; Window has a title bar (includes the WS_BORDER style: i.e. anding Hex C = 1100 8 = 1000 ): 
+WS_THICKFRAME := 0x00040000 ; Window has a sizing border. aka WS_SIZEBOX
+
+; Extended Borders
+WS_EX_WINDOWEDGE := 0x00000100 ; Window has a border with a raised edge.
+WS_EX_CLIENTEDGE := 0x00000200 ; Window has a border with a sunken edge
+WS_EX_STATICEDGE := 0x00020000 ; Window has a 3D border style for use with items that do not accept user input.
+WS_EX_DLGMODALFRAME := 0x00000001 ; Window has a double border
+
 ; https://autohotkey.com/boards/viewtopic.php?p=123166#p123166
-s:=0, PrgStyleTmp := 0, x:= 0, y:= 0, w := 0, h := 0
+S:=0, PrgStyleTmp := 0, x:= 0, y:= 0, w := 0, h := 0
 WinGet, S, Style, ahk_pid%PrgPID%
 
-if (PrgStyle)
-{
-PrgStyleTmp := S & WindowStyle
-}
-else
-{
-PrgStyle := S & WindowStyle
-PrgStyleTmp := PrgStyle
-}
+	if (PrgStyle)
+	PrgStyleTmp := S & PrgStyle
+	else
+	{
+	WindowStyle := WS_CAPTION
+		if (S & WindowStyle)
+		{
+			if (S & WS_THICKFRAME)
+			WindowStyle := WS_CAPTION|WS_THICKFRAME
+		}
+		else
+		{
+		WindowStyle := WS_BORDER
+			if (S & WindowStyle)
+			{
+				if (S & WS_THICKFRAME)
+				WindowStyle := WindowStyle|WS_THICKFRAME
+			}
+			else
+			{
+				if (S & WS_THICKFRAME)
+				WindowStyle := WindowStyle|WS_THICKFRAME
+				else
+				WindowStyle := 0
+			}
+		}
+	
+	PrgStyle := S & WindowStyle
+	PrgStyleTmp := PrgStyle
+	}
+
+if (PrgBordless[selPrgChoice])
+	{
+	; Extended Borders
+	
+	WindowStyle := WS_EX_WINDOWEDGE
+		if (S & WindowStyle)
+		{
+		WindowStyle := WindowStyle | WS_EX_STATICEDGE
+			if (S & WindowStyle)
+			{
+				if (S & WS_EX_DLGMODALFRAME)
+				WindowStyle := WindowStyle | WS_EX_DLGMODALFRAME
+			}
+			else
+			{
+			WindowStyle := WS_EX_WINDOWEDGE
+				if (S & WS_EX_DLGMODALFRAME)
+				WindowStyle := WindowStyle | WS_EX_DLGMODALFRAME
+			}
 
 
-if (PrgStyleTmp) ;check flags not Borderless
-{
-; Store existing style
-WinGet, IsMaxed, MinMax, ahk_pid%PrgPID%
-; Get/store whether the window is maximized
-if (PrgMinMaxVar := IsMaxed = 1 ? true : false)
-WinRestore, ahk_pid%PrgPID%
-;move window to max perims
-WinGetPos, x, y, w, h, ahk_pid%PrgPID%
 
-PrgPos[1] := x, PrgPos[2] := y, PrgPos[3] := w, PrgPos[4] := h
-; Remove borders
-winSet, Style, % -windowStyle, ahk_pid%PrgPID%
+		}
+		else
+		{
+		WindowStyle := WS_EX_CLIENTEDGE
 
-WinMove, ahk_pid%PrgPID%, , dx, dy, scrWidth, scrHeight
-}
-else
-{
-; If borderless, reapply borders
-WinSet, Style, % "+" PrgStyle, ahk_pid%PrgPID%
-WinGetPos, x, y, w, h, ahk_pid%PrgPID%
-PrgPos[1] := x, PrgPos[2] := y, PrgPos[3] := w, PrgPos[4] := h
-WinMove, ahk_pid%PrgPID%,, PrgPos[1], PrgPos[2], PrgPos[3], PrgPos[4]
-; Return to original position & maximize if required
-if (PrgMinMaxVar)
-WinMaximize, ahk_pid%PrgPID%
-}
+			if (S & WindowStyle)
+			{
+			WindowStyle := WindowStyle | WS_EX_STATICEDGE
+				if (S & WindowStyle)
+				{
+					if (S & WS_EX_DLGMODALFRAME)
+					WindowStyle := WindowStyle | WS_EX_DLGMODALFRAME
+				}
+				else
+				{
+				WindowStyle := WS_EX_CLIENTEDGE
+					if (S & WS_EX_DLGMODALFRAME)
+					WindowStyle := WindowStyle | WS_EX_DLGMODALFRAME
+				}
+			}
+			else
+			{
+			WindowStyle := WS_EX_STATICEDGE
+				if (S & WindowStyle)
+				{
+					if (S & WS_EX_DLGMODALFRAME)
+					WindowStyle := WindowStyle | WS_EX_DLGMODALFRAME
+				}
+				else
+				{
+					if (S & WS_EX_DLGMODALFRAME)
+					WindowStyle := WS_EX_DLGMODALFRAME
+					else
+					WindowStyle := 0
+				}
+			
+			}
+
+		}
+
+	PrgStyle := PrgStyle & WindowStyle
+	PrgStyleTmp := PrgStyle
+	}
+
+
+	if (queryOnly)
+	{
+	;Initialises PrgStyle
+	GuiControl, PrgLnchOpt:, Bordless, 0
+		if (PrgStyleTmp)
+		Return 1
+		else
+		GuiControl, PrgLnchOpt: Disable, Bordless
+	Return 0
+	}
+
+
+
+	if (PrgStyleTmp) ;check flags not Borderless
+	{
+	; Store existing style
+	WinGet, IsMaxed, MinMax, ahk_pid%PrgPID%
+	; Get/store whether the window is maximized
+		if (PrgMinMaxVar := IsMaxed = 1 ? true : false)
+		WinRestore, ahk_pid%PrgPID%
+	;move window to max perims
+	WinGetPos, x, y, w, h, ahk_pid%PrgPID%
+
+	PrgPos[1] := x, PrgPos[2] := y, PrgPos[3] := w, PrgPos[4] := h
+	; Remove borders
+	winSet, Style, % -windowStyle, ahk_pid%PrgPID%
+	sleep 30
+	WinMove, ahk_pid%PrgPID%, , dx, dy, scrWidth, scrHeight
+	}
+	else
+	{
+	; If borderless, reapply borders
+	WinSet, Style, % "+" PrgStyle, ahk_pid%PrgPID%
+	WinGetPos, x, y, w, h, ahk_pid%PrgPID%
+		if (!PrgPos[3])
+		PrgPos[1] := x, PrgPos[2] := y, PrgPos[3] := w, PrgPos[4] := h
+	WinMove, ahk_pid%PrgPID%,, PrgPos[1], PrgPos[2], PrgPos[3], PrgPos[4]
+	; Return to original position & maximize if required
+		if (PrgMinMaxVar)
+		WinMaximize, ahk_pid%PrgPID%
+	}
+Return 0
 }
 
 
@@ -7488,17 +7609,18 @@ Local strTemp2 := ""
 	}
 }
 
-DoLAAPatch(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep)
+DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, checkSubSys := 0)
 {
-e_lfanew := 0, e_magic := 0, ntHeaders32 := 0, temp := 0
+sizeOfOptionalHeader := 0, e_lfanew := 0, e_magic := 0, ntHeaders32 := 0, temp := 0
 
 IMAGE_DOS_SIGNATURE_BIG_ENDIAN := 0x4D5A
 IMAGE_DOS_SIGNATURE := 0x5A4D ; first 2 bytes 23117
 IMAGE_NT_HEADERS32 := 0x4550 ;17744: Not interested in IMAGE_NT_HEADERS64
 IMAGE_SIZEOF_FILE_HEADER := 20
 PE_HEADER_OFFSET_ADDRESS := 0X3C ; 60
+SIZEOFOPTIONALHEADER_OFFSET := 0X10 ;16 
 CHARACTERISTICS_OFFSET := 0X12 ;18 
-
+IMAGE_SUBSYSTEM_WINDOWS_GUI := 0x0002
 
 IMAGE_FILE_RELOCS_STRIPPED := 0x0001 ;basing
 IMAGE_FILE_EXECUTABLE_IMAGE := 0x0002
@@ -7518,7 +7640,15 @@ IMAGE_FILE_UP_SYSTEM_ONLY := 0x4000 ; What's an UP machine?
 IMAGE_FILE_BYTES_REVERSED_HI := 0x8000 ;obsolete
 
 exeStr := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, temp, IniFileShortctSep)
-exeStr := AssocQueryApp(exeStr)
+
+	if (!fileExist(exeStr) || InStr(exeStr, ".lnk", false, strLen(exeStr) - 4))
+	Return
+	else
+	exeStr := AssocQueryApp(exeStr)
+
+exeStrOld := exeStr
+SplitPath, exeStrOld, exeStrOld
+
 
 exeStr := FileOpen(exeStr , "rw" "-rwd")
 
@@ -7538,7 +7668,27 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 	ntHeaders32 := SeekProc(exeStr, e_lfanew, "uint", 0)
 		if (ntHeaders32 = IMAGE_NT_HEADERS32)
 		{
-		; LAA offset is e_lfanew + 0x12 or 18
+		if (checkSubSys)
+		{
+		sizeOfOptionalHeader := SeekProc(exeStr, e_lfanew + SIZEOFOPTIONALHEADER_OFFSET + 4, "ushort", "check")
+		if (sizeOfOptionalHeader = 0x10b)
+		optHeader_Magic := "PE32"
+		else
+		{
+			if (sizeOfOptionalHeader = 0x20B)
+			optHeader_Magic := "PE32+"
+			else
+			optHeader_Magic := "ROMIMAGE"
+		}
+			if (SeekProc(exeStr, e_lfanew + SIZEOFOPTIONALHEADER_OFFSET + 68, "ushort", "check") = IMAGE_SUBSYSTEM_WINDOWS_GUI) 
+			temp := 0
+			else
+			temp := -1
+		exeStr.Close()
+		Return temp
+		}
+
+		; LAA offset is e_lfanew + 0x12 or 18		
 		lAA := SeekProc(exeStr, e_lfanew + CHARACTERISTICS_OFFSET + 4, "ushort", "check")
 
 
@@ -7556,7 +7706,7 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 				GuiControl, PrgLnchOpt:, PrgLAA, Apply LAA Flag
 				}
 			else
-				MsgBox, 8192, , % "Unable to remove LAA Flag. Is Prg opened in an editor?"
+				MsgBox, 8192, , % "Unable to remove LAA Flag. Is " exeStrOld " opened in an editor?"
 			}
 			else
 			{
@@ -7564,7 +7714,7 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 			;lAA := lAA | IMAGE_FILE_LARGE_ADDRESS_AWARE
 
 			if (lAA & IMAGE_FILE_LARGE_ADDRESS_AWARE)
-			MsgBox, 8192, , %  "Prg already has the LAA patch!"
+			MsgBox, 8192, , %  exeStrOld " already has the LAA patch!"
 			else
 			{
 			; check at least one of the flags exist
@@ -7581,7 +7731,7 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 				GuiControl, PrgLnchOpt:, PrgLAA, Remove LAA Flag
 				}
 			else
-				MsgBox, 8192, , % "Unable to write LAA Flag. Is Prg opened in an editor?"
+				MsgBox, 8192, , % "Unable to write LAA Flag. Is " exeStrOld " opened in an editor?"
 			}
 			else
 			MsgBox, 8192, , %  "Unexpected data in Characteristics field. LAA flag cannot not be written!"
@@ -7602,20 +7752,26 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 		else
 		{
 		MsgBox, 8192, , %  "Bad exe file: no DOS sig."
-		;creates empty file if non-existent
+		;creates empty file if non-existent: Already checked above!
 		exeStr.Close()
-		FileGetSize temp, %targExe%
+		FileGetSize temp, %exeStr%
 		if (!temp)
-		FileDelete, %targExe%
-		Return
+		FileDelete, %exeStr%
+		Return -1
 		}
 	}
 	exeStr.Close()
 }
 else
 {
-MsgBox, 8192, , %  "Could not open the Prg executable! Error: " A_LastError
+	if (!A_IsAdmin & !Instr(PrgChoicePaths[selPrgChoice], A_WinDir))
+	{
+	msgbox, 8196 ,File Open, % exeStrOld " could not be accessed with error " A_LastError ".`nIs it opened by another process, or does it have special permissions?`nIt might be possible for PrgLnch to open it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
+		IfMsgBox, Yes
+		RestartPrgLnch(1)
+	}
 }
+Return -1
 }
 ; SeekProc: Seek to absolute offset and read a number of the specified type.
 SeekProc(stream, offset, type, action)
@@ -7733,7 +7889,7 @@ WinMover(Hwnd := 0, position := "hc vc", Width := 0, Height := 0, splashInit := 
 
 }
 
-TogglePrgOptCtrls(txtPrgChoice, navShortcut, selPrgChoice := 0, PrgChgResonSwitch := 0, PrgRnMinMax := 0, PrgRnPriority := 0, PrgBordless := 0, PrgLnchHide := 0, CtrlsOn := 0, lnkDisable := 0)
+TogglePrgOptCtrls(txtPrgChoice, navShortcut, borderToggle := 0, selPrgChoice := 0, PrgChgResonSwitch := 0, PrgRnMinMax := 0, PrgRnPriority := 0, PrgBordless := 0, PrgLnchHide := 0, CtrlsOn := 0, lnkDisable := 0)
 {
 if (CtrlsOn)
 {
@@ -7742,8 +7898,11 @@ if (CtrlsOn)
 	GuiControl, PrgLnchOpt:, PrgMinMax, % PrgRnMinMax[selPrgChoice]
 	GuiControl, PrgLnchOpt: Enable, PrgPriority
 	GuiControl, PrgLnchOpt:, PrgPriority, % PrgRnPriority[selPrgChoice]
-	GuiControl, PrgLnchOpt: Enable, Bordless
-	GuiControl, PrgLnchOpt:, Bordless, % PrgBordless[selPrgChoice]
+		if (borderToggle)
+		{
+		GuiControl, PrgLnchOpt: Enable, Bordless
+		GuiControl, PrgLnchOpt:, Bordless, % PrgBordless[selPrgChoice]
+		}
 	GuiControl, PrgLnchOpt: Enable, PrgLnchHd
 	GuiControl, PrgLnchOpt:, PrgLnchHd, % PrgLnchHide[selPrgChoice]
 		if (lnkDisable)
