@@ -687,7 +687,7 @@ Gui, PrgLnchOpt: Add, Checkbox, vPrgPriority gPrgPriorityChk HWNDPrgPriorityHwnd
 ;check3 enables 3 values in checkbox
 GuiControl, PrgLnchOpt: Enable, PrgPriority
 GuiControl, PrgLnchOpt:, PrgPriority, -1
-Gui, PrgLnchOpt: Add, Checkbox, vBordless gBordlessChk HWNDBordlessHwnd wp, Borderless Ex
+Gui, PrgLnchOpt: Add, Checkbox, vBordless gBordlessChk HWNDBordlessHwnd wp, Ext Borderless
 GuiControl, PrgLnchOpt: Disable, Bordless
 Gui, PrgLnchOpt: Add, Checkbox, vPrgLnchHd gPrgLnchHideChk HWNDPrgLnchHdHwnd, Hide PrgLnch On Run
 GuiControl, PrgLnchOpt: Disable, PrgLnchHd
@@ -1666,7 +1666,7 @@ if (A_GuiEvent = "DoubleClick")
 	lnchStat := 0
 
 
-	strRetVal := LnchPrgOff(SelIniChoicePath, batchPrgStatus, lnchStat, PrgChoiceNames, temp, PrgLnkInf, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgBordless, PrgRnPriority, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode)
+	strRetVal := LnchPrgOff(SelIniChoicePath, batchPrgStatus, lnchStat, PrgChoiceNames, temp, PrgLnkInf, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode)
 
 
 	loop % currBatchNo
@@ -3203,14 +3203,19 @@ Return
 
 BordlessChk:
 GuiControlGet, temp, PrgLnchOpt: FocusV
-	if (temp != Bordless)
+	if (!Instr(temp, "Bordless"))
 	Return
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
-PrgBordless[selPrgChoice] := Bordless
-IniProc(selPrgChoice)
-if (PrgPID) ;test only from config
-BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, selPrgChoice, dx, dy, scrWidth, scrHeight, PrgPID)
+
+	if (PrgPID) ;test only from config
+	BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, selPrgChoice, dx, dy, scrWidth, scrHeight, PrgPID)
+	else
+	{
+	PrgBordless[selPrgChoice] := Bordless
+	IniProc(selPrgChoice)
+	}
+
 Return
 
 PrgLnchHideChk:
@@ -4847,7 +4852,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 		}
 	}
 
-	strRetVal := LnchPrgOff(SelIniChoicePath, A_Index, lnchStat, PrgChoiceNames, (presetNoTest)? temp: strTemp2, PrgLnkInf, IniFileShortctSep, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgBordless, PrgRnPriority, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode)
+	strRetVal := LnchPrgOff(SelIniChoicePath, A_Index, lnchStat, PrgChoiceNames, (presetNoTest)? temp: strTemp2, PrgLnkInf, IniFileShortctSep, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode)
 
 	if (strRetVal)
 	{  ;Lnch failed for current Prg
@@ -4968,7 +4973,7 @@ if (lnchStat < 0)
 	}
 Return
 
-LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgBordless, PrgRnPriority, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, Fmode)
+LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, Fmode)
 {
 
 
@@ -5166,8 +5171,7 @@ if (lnchPrgIndex > 0) ;Running
 	dy := Round(y + y/2)
 	DllCall("SetCursorPos", UInt, dx, UInt, dy)
 	}
-
-		if (PrgBordless[lnchPrgIndex])
+		if (borderToggle)
 		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, 0, 0, scrWidth, scrHeight, PrgPIDtmp, 1) ; query
 
 
@@ -5301,8 +5305,7 @@ Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "", % "UseErrorLevel" (
 		; Restore min/max
 		(temp = 1)? (WinMaximize, ahk_pid %PrgPIDtmp%): ((temp = -1)? (WinMinimize, ahk_pid %PrgPIDtmp%): )
 
-
-		if (PrgBordless[lnchPrgIndex])
+		if (borderToggle)
 		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, dx, dy, scrWidth, scrHeight, PrgPIDtmp, 1) ; query
 
 		;Then we can Move window
@@ -6417,6 +6420,8 @@ WS_EX_DLGMODALFRAME := 0x00000001 ; Window has a double border
 ; https://autohotkey.com/boards/viewtopic.php?p=123166#p123166
 S:=0, PrgStyleTmp := 0, x:= 0, y:= 0, w := 0, h := 0
 WinGet, S, Style, ahk_pid%PrgPID%
+
+msgbox % PrgStyle
 
 	if (PrgStyle)
 	PrgStyleTmp := S & PrgStyle
@@ -7615,12 +7620,12 @@ sizeOfOptionalHeader := 0, e_lfanew := 0, e_magic := 0, ntHeaders32 := 0, temp :
 
 IMAGE_DOS_SIGNATURE_BIG_ENDIAN := 0x4D5A
 IMAGE_DOS_SIGNATURE := 0x5A4D ; first 2 bytes 23117
-IMAGE_NT_HEADERS32 := 0x4550 ;17744: Not interested in IMAGE_NT_HEADERS64
-IMAGE_SIZEOF_FILE_HEADER := 20
+IMAGE_NT_HEADERS32 := 0x4550 ;17744: Not interested in IMAGE_NT_HEADERS64 (aka IMAGE_FILE_HEADER)
 PE_HEADER_OFFSET_ADDRESS := 0X3C ; 60
-SIZEOFOPTIONALHEADER_OFFSET := 0X10 ;16 
+IMAGE_FILE_HEADER_SIZE := 0X18 ;24
 CHARACTERISTICS_OFFSET := 0X12 ;18 
 IMAGE_SUBSYSTEM_WINDOWS_GUI := 0x0002
+IMAGE_SUBSYSTEM_WINDOWS_CUI := 0x0003
 
 IMAGE_FILE_RELOCS_STRIPPED := 0x0001 ;basing
 IMAGE_FILE_EXECUTABLE_IMAGE := 0x0002
@@ -7666,78 +7671,85 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 	e_lfanew := SeekProc(exeStr, PE_HEADER_OFFSET_ADDRESS, "int", 0)
 	; Verify NT header:
 	ntHeaders32 := SeekProc(exeStr, e_lfanew, "uint", 0)
+
 		if (ntHeaders32 = IMAGE_NT_HEADERS32)
 		{
-		if (checkSubSys)
-		{
-		sizeOfOptionalHeader := SeekProc(exeStr, e_lfanew + SIZEOFOPTIONALHEADER_OFFSET + 4, "ushort", "check")
-		if (sizeOfOptionalHeader = 0x10b)
-		optHeader_Magic := "PE32"
-		else
-		{
-			if (sizeOfOptionalHeader = 0x20B)
-			optHeader_Magic := "PE32+"
+			if (checkSubSys)
+			{
+			; sizeOfOptionalHeader is in IMAGE_FILE_HEADER
+			sizeOfOptionalHeader := SeekProc(exeStr, e_lfanew + 20, "ushort", "check")
+			OptHeaderMagicNo := SeekProc(exeStr, e_lfanew + IMAGE_FILE_HEADER_SIZE, "Ushort", "check")
+			
+				if (OptHeaderMagicNo = 0x10b)
+				optHeader_Magic := "PE32"
+				else
+				{
+					if (OptHeaderMagicNo = 0x20B)
+					optHeader_Magic := "PE32+"
+					else
+					optHeader_Magic := "ROMIMAGE"
+				}
+			temp := SeekProc(exeStr, e_lfanew + IMAGE_FILE_HEADER_SIZE + 68, "ushort", "check")
+
+				if (temp = IMAGE_SUBSYSTEM_WINDOWS_GUI || temp = IMAGE_SUBSYSTEM_WINDOWS_CUI)
+				temp := 1
+				else
+				temp := 0
+			exeStr.Close()
+			Return temp
+			}
+
 			else
-			optHeader_Magic := "ROMIMAGE"
-		}
-			if (SeekProc(exeStr, e_lfanew + SIZEOFOPTIONALHEADER_OFFSET + 68, "ushort", "check") = IMAGE_SUBSYSTEM_WINDOWS_GUI) 
-			temp := 0
-			else
-			temp := -1
-		exeStr.Close()
-		Return temp
-		}
-
-		; LAA offset is e_lfanew + 0x12 or 18		
-		lAA := SeekProc(exeStr, e_lfanew + CHARACTERISTICS_OFFSET + 4, "ushort", "check")
-
-
+			{
+			; LAA offset is e_lfanew + 0x12 or 18		
+			lAA := SeekProc(exeStr, e_lfanew + CHARACTERISTICS_OFFSET + 4, "ushort", "check")
 
 			GuiControlGet, labPrgLAA, PrgLnchOpt:, PrgLAA
 
-			if (labPrgLAA = "Remove LAA Flag")
-			{
-			;Toggle flag off
-			lAA := lAA & ~IMAGE_FILE_LARGE_ADDRESS_AWARE
-
-			if (SeekProc(exeStr, e_lfanew + CHARACTERISTICS_OFFSET + 4, "ushort", lAA))
+				if (labPrgLAA = "Remove LAA Flag")
 				{
-				MsgBox, 8192, , % "LAA Flag Removed"
-				GuiControl, PrgLnchOpt:, PrgLAA, Apply LAA Flag
+				;Toggle flag off
+				lAA := lAA & ~IMAGE_FILE_LARGE_ADDRESS_AWARE
+
+				if (SeekProc(exeStr, e_lfanew + CHARACTERISTICS_OFFSET + 4, "ushort", lAA))
+					{
+					MsgBox, 8192, , % "LAA Flag Removed"
+					GuiControl, PrgLnchOpt:, PrgLAA, Apply LAA Flag
+					}
+				else
+					MsgBox, 8192, , % "Unable to remove LAA Flag. Is " exeStrOld " opened in an editor?"
 				}
-			else
-				MsgBox, 8192, , % "Unable to remove LAA Flag. Is " exeStrOld " opened in an editor?"
-			}
-			else
-			{
-
-			;lAA := lAA | IMAGE_FILE_LARGE_ADDRESS_AWARE
-
-			if (lAA & IMAGE_FILE_LARGE_ADDRESS_AWARE)
-			MsgBox, 8192, , %  exeStrOld " already has the LAA patch!"
-			else
-			{
-			; check at least one of the flags exist
-			if (lAA & IMAGE_FILE_RELOCS_STRIPPED || lAA & IMAGE_FILE_EXECUTABLE_IMAGE || lAA & IMAGE_FILE_LINE_NUMS_STRIPPED || lAA & IMAGE_FILE_LOCAL_SYMS_STRIPPED || lAA & IMAGE_FILE_AGGRESIVE_WS_TRIM || lAA & IMAGE_FILE_16BIT_MACHINE || lAA & IMAGE_FILE_BYTES_REVERSED_LO || lAA & MAGE_FILE_32BIT_MACHINE || lAA & IMAGE_FILE_DEBUG_STRIPPED || lAA & IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP || lAA & IMAGE_FILE_NET_RUN_FROM_SWAP || lAA & IMAGE_FILE_SYSTEM || lAA & IMAGE_FILE_DLL || lAA & IMAGE_FILE_UP_SYSTEM_ONLY || lAA & IMAGE_FILE_BYTES_REVERSED_HI)
-			{
-			lAA := lAA ^ IMAGE_FILE_LARGE_ADDRESS_AWARE
-
-			;Toggle flag off
-			;lAA := lAA & ~IMAGE_FILE_LARGE_ADDRESS_AWARE
-
-			if (SeekProc(exeStr, e_lfanew + CHARACTERISTICS_OFFSET + 4, "ushort", lAA))
+				else
 				{
-				MsgBox, 8192, , % "LAA Flag Written"
-				GuiControl, PrgLnchOpt:, PrgLAA, Remove LAA Flag
-				}
-			else
-				MsgBox, 8192, , % "Unable to write LAA Flag. Is " exeStrOld " opened in an editor?"
-			}
-			else
-			MsgBox, 8192, , %  "Unexpected data in Characteristics field. LAA flag cannot not be written!"
-			}
-			}
 
+				;lAA := lAA | IMAGE_FILE_LARGE_ADDRESS_AWARE
+
+				if (lAA & IMAGE_FILE_LARGE_ADDRESS_AWARE)
+				MsgBox, 8192, , %  exeStrOld " already has the LAA patch!"
+				else
+				{
+				; check at least one of the flags exist
+				if (lAA & IMAGE_FILE_RELOCS_STRIPPED || lAA & IMAGE_FILE_EXECUTABLE_IMAGE || lAA & IMAGE_FILE_LINE_NUMS_STRIPPED || lAA & IMAGE_FILE_LOCAL_SYMS_STRIPPED || lAA & IMAGE_FILE_AGGRESIVE_WS_TRIM || lAA & IMAGE_FILE_16BIT_MACHINE || lAA & IMAGE_FILE_BYTES_REVERSED_LO || lAA & MAGE_FILE_32BIT_MACHINE || lAA & IMAGE_FILE_DEBUG_STRIPPED || lAA & IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP || lAA & IMAGE_FILE_NET_RUN_FROM_SWAP || lAA & IMAGE_FILE_SYSTEM || lAA & IMAGE_FILE_DLL || lAA & IMAGE_FILE_UP_SYSTEM_ONLY || lAA & IMAGE_FILE_BYTES_REVERSED_HI)
+				{
+				lAA := lAA ^ IMAGE_FILE_LARGE_ADDRESS_AWARE
+
+				;Toggle flag off
+				;lAA := lAA & ~IMAGE_FILE_LARGE_ADDRESS_AWARE
+
+				if (SeekProc(exeStr, e_lfanew + CHARACTERISTICS_OFFSET + 4, "ushort", lAA))
+					{
+					MsgBox, 8192, , % "LAA Flag Written"
+					GuiControl, PrgLnchOpt:, PrgLAA, Remove LAA Flag
+					}
+				else
+					MsgBox, 8192, , % "Unable to write LAA Flag. Is " exeStrOld " opened in an editor?"
+				}
+				else
+				MsgBox, 8192, , %  "Unexpected data in Characteristics field. LAA flag cannot not be written!"
+				}
+				}
+
+			}
 		}
 		else
 		{
@@ -7757,21 +7769,28 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 		FileGetSize temp, %exeStr%
 		if (!temp)
 		FileDelete, %exeStr%
-		Return -1
+		Return 0
 		}
 	}
 	exeStr.Close()
 }
 else
 {
-	if (!A_IsAdmin & !Instr(PrgChoicePaths[selPrgChoice], A_WinDir))
+	if (!checkSubSys || (checkSubSys && !Instr(PrgChoicePaths[selPrgChoice], A_WinDir)))
 	{
-	msgbox, 8196 ,File Open, % exeStrOld " could not be accessed with error " A_LastError ".`nIs it opened by another process, or does it have special permissions?`nIt might be possible for PrgLnch to open it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
-		IfMsgBox, Yes
-		RestartPrgLnch(1)
+		if (A_IsAdmin)
+		msgbox, 8196 ,File Open, % exeStrOld " could not be accessed with error " A_LastError "."
+		else
+		{
+		msgbox, 8196 ,File Open, % exeStrOld " could not be accessed with error " A_LastError ".`nIs it opened by another process, or does it have special permissions?`nIt might be possible for PrgLnch to open it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
+			IfMsgBox, Yes
+			RestartPrgLnch(1)
+		}
 	}
+	else
+	Return 1 ;Optimistically
 }
-Return -1
+Return 0
 }
 ; SeekProc: Seek to absolute offset and read a number of the specified type.
 SeekProc(stream, offset, type, action)
