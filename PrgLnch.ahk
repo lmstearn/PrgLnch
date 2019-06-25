@@ -687,7 +687,7 @@ Gui, PrgLnchOpt: Add, Checkbox, vPrgPriority gPrgPriorityChk HWNDPrgPriorityHwnd
 ;check3 enables 3 values in checkbox
 GuiControl, PrgLnchOpt: Enable, PrgPriority
 GuiControl, PrgLnchOpt:, PrgPriority, -1
-Gui, PrgLnchOpt: Add, Checkbox, vBordless gBordlessChk HWNDBordlessHwnd wp, Ext Borderless
+Gui, PrgLnchOpt: Add, Checkbox, vBordless gBordlessChk HWNDBordlessHwnd wp, Ext. Borderless
 GuiControl, PrgLnchOpt: Disable, Bordless
 Gui, PrgLnchOpt: Add, Checkbox, vPrgLnchHd gPrgLnchHideChk HWNDPrgLnchHdHwnd, Hide PrgLnch On Run
 GuiControl, PrgLnchOpt: Disable, PrgLnchHd
@@ -1708,7 +1708,7 @@ if (A_GuiEvent = "DoubleClick")
 				{
 				; ASSUME it's cancelled
 					if (currBatchno = A_Index)
-					CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
+					CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
 
 					if (lnchPrgIndex < 0)
 					strTemp .= "Not Active" . "|"
@@ -4892,7 +4892,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 				}
 			}
 			else ;just cancelled- but not from a hidden form!
-			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak)
+			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak)
 		}
 		else
 		{
@@ -4911,7 +4911,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 			if (lnchPrgIndex < 0)
 			strTemp .= "Not Active" . "|"
 			if (currBatchno = A_Index)
-			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
+			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
 			}
 			; Update Master
 			PrgPIDMast[lnchPrgIndex] := PrgListPID%btchPrgPresetSel%[A_Index]
@@ -5306,8 +5306,11 @@ Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "", % "UseErrorLevel" (
 		(temp = 1)? (WinMaximize, ahk_pid %PrgPIDtmp%): ((temp = -1)? (WinMinimize, ahk_pid %PrgPIDtmp%): )
 
 		if (borderToggle)
+		{
+		dx := mdLeft
+		dy := mdTop
 		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, dx, dy, scrWidth, scrHeight, PrgPIDtmp, 1) ; query
-
+		}
 		;Then we can Move window
 		;WinGetPos,,, W, H, A
 		;WinMove, A ,, mswLeft + (mswRight - mswLeft) // 2 - W // 2, mswTop + (mswBottom - mswTop) // 2 - H // 2
@@ -5548,7 +5551,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				if (!timerBtch)
 				{
 				batchActive := 0
-				CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
+				CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
 				if (!PrgPID)
 				Return
 				}
@@ -5559,7 +5562,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			if(!ErrorLevel)
 			{
 			PrgPID := 0
-			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak)
+			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak)
 			Return
 			}
 		}
@@ -5572,7 +5575,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			if(!ErrorLevel)
 			{
 			PrgPID := 0
-			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak)
+			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak)
 				if (!batchActive)
 				Return
 			}
@@ -5597,7 +5600,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				if(!timerBtch)
 				{
 				batchActive := 0
-				CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
+				CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, 1)
 				Return
 				}
 			}
@@ -5655,7 +5658,7 @@ global
 	return state
 }
 
-CleanupPID(SelIniChoicePath, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, batchWasActive := 0)
+CleanupPID(SelIniChoicePath, currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgBordless, PrgLnchHide, ByRef PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak, batchWasActive := 0)
 {
 temp := 0, strRetVal := "", PrgStyle := 0, dx := 0, dy:= 0
 
@@ -5715,6 +5718,7 @@ else
 	else
 	{
 	HideShowTestRunCtrls(1)
+	GuiControl, PrgLnchOpt:, Bordless, % PrgBordless[selPrgChoice]
 		if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) && (PrgMonToRn[selPrgChoice] = PrgLnchMon))
 		{
 		ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, PrgLnchMon)
@@ -6421,7 +6425,6 @@ WS_EX_DLGMODALFRAME := 0x00000001 ; Window has a double border
 S:=0, PrgStyleTmp := 0, x:= 0, y:= 0, w := 0, h := 0
 WinGet, S, Style, ahk_pid%PrgPID%
 
-msgbox % PrgStyle
 
 	if (PrgStyle)
 	PrgStyleTmp := S & PrgStyle
@@ -6449,12 +6452,10 @@ msgbox % PrgStyle
 				WindowStyle := 0
 			}
 		}
-	
 	PrgStyle := S & WindowStyle
 	PrgStyleTmp := PrgStyle
-	}
 
-if (PrgBordless[selPrgChoice])
+	if (PrgBordless[selPrgChoice])
 	{
 	; Extended Borders
 	
@@ -6473,8 +6474,6 @@ if (PrgBordless[selPrgChoice])
 				if (S & WS_EX_DLGMODALFRAME)
 				WindowStyle := WindowStyle | WS_EX_DLGMODALFRAME
 			}
-
-
 
 		}
 		else
@@ -6516,15 +6515,18 @@ if (PrgBordless[selPrgChoice])
 
 		}
 
-	PrgStyle := PrgStyle & WindowStyle
+	PrgStyle := PrgStyle | (S & WindowStyle)
 	PrgStyleTmp := PrgStyle
 	}
+	}
+
 
 
 	if (queryOnly)
 	{
 	;Initialises PrgStyle
 	GuiControl, PrgLnchOpt:, Bordless, 0
+	GuiControl, PrgLnchOpt: Text, Bordless, Apply Borderless
 		if (PrgStyleTmp)
 		Return 1
 		else
@@ -6546,7 +6548,7 @@ if (PrgBordless[selPrgChoice])
 
 	PrgPos[1] := x, PrgPos[2] := y, PrgPos[3] := w, PrgPos[4] := h
 	; Remove borders
-	winSet, Style, % -windowStyle, ahk_pid%PrgPID%
+	winSet, Style, % -PrgStyleTmp, ahk_pid%PrgPID%
 	sleep 30
 	WinMove, ahk_pid%PrgPID%, , dx, dy, scrWidth, scrHeight
 	}
@@ -7917,6 +7919,7 @@ if (CtrlsOn)
 	GuiControl, PrgLnchOpt:, PrgMinMax, % PrgRnMinMax[selPrgChoice]
 	GuiControl, PrgLnchOpt: Enable, PrgPriority
 	GuiControl, PrgLnchOpt:, PrgPriority, % PrgRnPriority[selPrgChoice]
+	GuiControl, PrgLnchOpt: Text, Bordless, Ext. Borderless
 		if (borderToggle)
 		{
 		GuiControl, PrgLnchOpt: Enable, Bordless
@@ -7948,7 +7951,7 @@ else
 	GuiControl, PrgLnchOpt:, Bordless, 0
 	GuiControl, PrgLnchOpt: Disable, Bordless
 	GuiControl, PrgLnchOpt:, PrgLnchHd, 0
-	GuiControl, PrgLnchOpt: Disable ,PrgLnchHd
+	GuiControl, PrgLnchOpt: Disable, PrgLnchHd
 	GuiControl, PrgLnchOpt:, resolveShortct, 0
 		if (txtPrgChoice = "None")
 		GuiControl, PrgLnchOpt: Disable, resolveShortct
@@ -7971,6 +7974,7 @@ if (showCtrl)
 	GuiControl, PrgLnchOpt: Show, PrgChoice
 	GuiControl, PrgLnchOpt: Show, UpdtPrgLnch
 	GuiControl, PrgLnchOpt: Show, UpdturlPrgLnch
+	GuiControl, PrgLnchOpt: Text, Bordless, Ext. Borderless
 	GuiControl, PrgLnchOpt: Show, PrgLnchHd
 	GuiControl, PrgLnchOpt: Show, resolveShortct
 	GuiControl, PrgLnchOpt: Show, PrgLAA 
