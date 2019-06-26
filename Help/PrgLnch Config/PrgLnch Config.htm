@@ -22,7 +22,7 @@
 Change, or modify Shortcut:
 </td>
 <td>
-Depending on the contents of <a href="#ShortcutSlots">Shortcut Slot</a> above, the current Prg name and/or path associated with the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a> can be added, modified, or removed with this button.
+Depending on the contents of <a href="#ShortcutSlots">Shortcut Slot</a> above, the current Prg name and/or path associated with the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a> can be added, modified, or removed with this button. Associations &amp; UNC paths supported.
 </td>
 </tr>
 <tr href="#" id="CmdLineExtras">
@@ -101,7 +101,7 @@ Currently used (or default) resolution for the selected monitor.
 <dt href="#" id="ListAllCompatible">List All Compatible:
 </dt>
 <dd>
-Checking this box expands the <a href="#ResolutionModes">list below</a> to all available resolution modes for the selected monitor.
+Checking this box expands the <a href="#ResolutionModes">list below</a> to all available resolution modes for the selected monitor. However, as drivers handle the extra modes differently, selections from the list are disabled.
 </dd>
  </dl>
 <dt href="#" id="ResolutionModes">
@@ -143,7 +143,12 @@ Default value is N (Normal). Check the box for H (High) priority or clear it for
 Borderless:
 </td>
 <td>
-Applies the Borderless Attribute to the Prgs Window. Can be toggled while the Prg is active.
+The <a href="PrgLnch FAQ.htm#BorderlessPoint">Borderless</a> check (available for typical Windows subsystems) refers to two settings:<br>
+<STRONG>Ext. Borderless</STRONG>:
+When checked, <a href="https://docs.microsoft.com/en-us/windows/desktop/winmsg/extended-window-styles">extended</a> borderless styles are detected in addition to the commonly used size and caption styles.<br>
+<STRONG>Apply Borderless</STRONG>:
+The (optionally extended) borderless styles are available only on <a href="PrgLnch Config/PrgLnch Config.htm#TestRunPrg">Test Runs</a>. Borderless windows are resized to match the dimensions of the target monitor, with a notable exception in the resizing of  console (or command) windows.<br>
+<STRONG>Note:</STRONG> Resizing after border adjustments isn't optional, thus there is a possibility of conflict with it and a few legacy 3D engines which may rely on the input of screen co-ordinates and related attributes.
 </td>
  </tr>
 <tr href="#" id="HidePrgLnchonRun">
@@ -175,7 +180,7 @@ Writes an <B>L</B>arge <B>A</B>ddress <B>A</B>ware flag to the executable. Most 
 Test Run Prg:
 </td>
 <td>
-Either runs the Prg or <a href="PrgLnch FAQ.htm#PrgCancellation">cancels</a> one that is running already. A notification is generated if the Prg is already active in a Batch Preset. When <a href="#ShortcutSlots">Shortcut Slots</a> is "None", the button changes the resolution for the selected <a href="#MonitorList">monitor</a>. If a Prg on a <a href="PrgLnch Config/PrgLnch Config.htm#TestRunPrg">Test Run</a> is running after PrgLnch closes, it will not be detected as running in PrgLnch Config when PrgLnch restarts.</td>
+Either runs the Prg or <a href="PrgLnch FAQ.htm#PrgCancellation">cancels</a> one that is running already. A notification is generated if the Prg is already active in a Batch Preset. When <a href="#ShortcutSlots">Shortcut Slots</a> is "None", the button changes the resolution for the selected <a href="#MonitorList">monitor</a>. If a Prg on a Test Run is active after PrgLnch closes, it will not be detected as running in PrgLnch Config when PrgLnch restarts.</td>
  </tr>
 <tr href="#" id="UpdatePrg">
 <td>
