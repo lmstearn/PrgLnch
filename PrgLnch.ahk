@@ -284,9 +284,9 @@ timerBtch := 0
 foundPos := 0
 temp := 0
 fTemp := 0
+ffTemp := 0
 strTemp := ""
 strTemp2 := ""
-MakeLongVar := 0
 ;Prevents unecessary extra reads when this counter exceeds 4
 inputOnceOnly := 0
 PrgLnchIni := A_ScriptDir . "\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
@@ -909,7 +909,7 @@ loop %maxBatchPrgs% ;Preset limit is also Prgs_in_preset limit!
 }
 GuiControl, PrgLnch:, BtchPrgPreset, %strRetVal%
 
-if (btchPrgPresetSel)
+if (btchPrgPresetSel && PrgBatchIni%btchPrgPresetSel%[1])
 {
 
 EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PresetNames)
@@ -1763,14 +1763,18 @@ Thread, NoTimers, false
 Return
 
 PresetNameSub:
+	if (ffTemp = 1)
+	Return
+
 GuiControlGet, temp, PrgLnch: FocusV
 if (temp = "PresetName")
 {
+ffTemp := 1
 Gui, PrgLnch: Submit, Nohide
 
-
 GuiControlGet, strTemp, PrgLnch:, PresetName
-sleep, 60
+
+sleep, 30
 
 
 strTemp := StrReplace(strTemp, "`,")
@@ -1792,7 +1796,7 @@ strTemp := StrReplace(strTemp, "|", "1")
 	PresetNames[btchPrgPresetSel] := ""
 
 
-sleep, 60
+sleep, 30
 PresetNamesBak[btchPrgPresetSel] := PresetNames[btchPrgPresetSel]
 strTemp := ""
 Loop % maxbatchPrgs
@@ -1801,10 +1805,10 @@ Loop % maxbatchPrgs
 	{
 	strTemp .= PresetNames[1]
 	strRetVal := strTemp
-	if (temp)
-	strRetVal := "|" . strTemp . "|"
-	else
-	strRetVal := "|Preset1|"
+		if (temp)
+		strRetVal := "|" . strTemp . "|"
+		else
+		strRetVal := "|Preset1|"
 	}
 	else
 	{
@@ -1817,8 +1821,8 @@ Loop % maxbatchPrgs
 }
 IniWrite, %strTemp%, %SelIniChoicePath%, Prgs, PresetNames
 GuiControl, PrgLnch:, BtchPrgPreset, %strRetVal%
-Gui, PrgLnch: Submit, Nohide
-
+GuiControl, PrgLnch: Enable, PresetName
+ffTemp := 0
 }
 Return
 
@@ -3050,8 +3054,9 @@ GuiControl, PrgLnch:, ListPrg, % PopBtchListBox(PrgChoiceNames, PrgNo, PrgMonToR
 ;fix the updown
 temp := batchPrgNo-1
 fTemp := 0
-MakeLongVar := MakeLong(fTemp, temp)
-SendMessage, %UDM_SETRANGE%, , %MakeLongVar%, , ahk_id %MovePrgHwnd%
+ffTemp := MakeLong(fTemp, temp)
+SendMessage, %UDM_SETRANGE%, , %ffTemp%, , ahk_id %MovePrgHwnd%
+ffTemp := 0
 
 
 Gosub FrontendInit
