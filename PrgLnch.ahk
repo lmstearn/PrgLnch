@@ -4634,6 +4634,8 @@ Del::
 GuiControlGet, strTemp, PrgLnch: FocusV
 	if (strTemp = "PresetName")
 	{
+		if (ffTemp = 1)
+		Return
 	GuiControl, PrgLnch:, PresetName,
 	;PresetNameSub automatically invoked
 	}
