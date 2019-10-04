@@ -3,6 +3,7 @@
 #SingleInstance, force
 #NoEnv  ; Performance and compatibility with future AHK releases.
 ;#Warn, All , MsgBox ; Enable warnings to assist with detecting common errors.
+ListLines Off ;A_ListLines is on
 SendMode Input  ; Recommended for new scripts due to superior speed & reliability.
 
 FileSetAttrib, -RH, % A_ScriptDir . "`\*.*", 1
@@ -137,7 +138,6 @@ CDS_TEST := 0x00000002
 CDS_RESET := 0x40000000
 CDS_UPDATEREGISTRY := 0x00000001
 CDS_FULLSCREEN := 0x00000004
-WM_HELPMSG := 0x0053
 WS_EX_CONTEXTHELP := 0x00000400
 ;listBox
 LB_GETITEMHEIGHT := 0x01A1
@@ -284,7 +284,7 @@ timerBtch := 0
 foundPos := 0
 temp := 0
 fTemp := 0
-ffTemp := 0
+ffTemp := 0 ; tmp for Makelong- also speed check for PresetName
 strTemp := ""
 strTemp2 := ""
 ;Prevents unecessary extra reads when this counter exceeds 4
@@ -980,8 +980,10 @@ Return
 
 
 ^!p::
+strTemp := A_CoordModeMouse
 CoordMode, Mouse, Screen
 MouseGetPos, x, y
+CoordMode, Mouse, % strTemp
 
 if (WinExist("PrgLnch.ahk") or WinExist("ahk_class" . PrgLnch) or WinExist ("ahk_class AutoHotkeyGUI"))
 {
@@ -2788,23 +2790,23 @@ WM_HELP(wp_notused, lParam, _msg, _hwnd)
 local retVal := 0 ;using local this is now a global function
 
 
-Size         := NumGet(lParam +  0, "uint")
-ContextType  := NumGet(lParam +  4, "int")
-CtrlId       := Numget(lParam +  8, "int")
-ItemHandle   := Numget(lParam + 12 + 64bit * 4, "ptr")
-ContextId    := NumGet(lParam + 16 + 64bit * 8, "uint")
-MousePosX    := NumGet(lParam + 20 + 64bit * 8, "int")
-MousePosY    := NumGet(lParam + 24 + 64bit * 8, "int")
+local Size         := NumGet(lParam +  0, "uint")
+local ContextType  := NumGet(lParam +  4, "int")
+local CtrlId       := Numget(lParam +  8, "int")
+local ItemHandle   := Numget(lParam + 12 + 64bit * 4, "ptr")
+local ContextId    := NumGet(lParam + 16 + 64bit * 8, "uint")
+local MousePosX    := NumGet(lParam + 20 + 64bit * 8, "int")
+local MousePosY    := NumGet(lParam + 24 + 64bit * 8, "int")
 
 ;This key must be set to 1!
 ;HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced >> EnableBalloonTips
 
 if (ItemHandle = PresetLabelHwnd)
 {
-if (btchPrgPresetSel && currBatchNo)
-PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
-else
-retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "BatchPresetsLabel")
+	if (btchPrgPresetSel && currBatchNo)
+	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
+	else
+	retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "BatchPresetsLabel")
 }
 else
 if (ItemHandle = MonitorsHwnd)
@@ -2989,8 +2991,144 @@ RunChm("Welcome")
 SetTimer, RnChmWelcome, Delete
 }
 Return
+DopowerPlan(planToChangeTo := "")
+{
+
+Static oldSchemeGUID, oldDesc, arrPowerPlanNames := []
+tmp := 0
+
+if (planToChangeTo)
+{
+	if (!oldDesc)
+	defPowerPlanNames := ["Balanced", "Power saver", "High performance"]
+
+	loop, 3
+	{
+	if (planToChangeTo = defPowerPlanNames[A_Index])
+	tmp := 1
+	} 
+/*
+; If a default plan is only to be set
+	if (!tmp)
+	{
+	Msgbox % planToChangeTo " is not a default power plan!"
+	Return
+	}
+*/
+}
+else
+{
+	if (oldDesc)
+	{
+	tmp := Dllcall("powrprof.dll\PowerSetActiveScheme", "Ptr", 0, "Ptr", oldSchemeGUID, "Uint")
+		if (tmp)
+		Msgbox % "PowerSetActiveScheme error: " tmp
+
+	VarSetCapacity(oldDesc, 0)
+	VarSetCapacity(oldSchemeGUID, 0)
+	arrPowerPlanNames := ""
+	Return
+	}
+
+}
 
 
+
+ACCESS_SCHEME := 16 ; For PowerEnumerate
+VarSetCapacity(desc, szdesc := 1024)
+VarSetCapacity(schemeGUID, szguid := 16)
+	if (!oldDesc)
+	{
+	VarSetCapacity(oldDesc, szdesc)
+	VarSetCapacity(oldSchemeGUID, szguid)
+	}
+
+
+if (!oldDesc)
+{
+	; GetActivePwrScheme the older flavour
+	if (DllCall("powrprof\PowerGetActiveScheme", "Ptr", 0, "Ptr*", oldSchemeGUID, "Uint"))
+	Msgbox GetActivePwrScheme fail error!
+	tmp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", oldSchemeGUID, "Ptr", 0, "Ptr", 0, "Ptr", 0, "Ptr*", szdesc) ;sdesc :LPDWORD
+	if (tmp != 0)
+	{
+	Msgbox % "First call of PowerReadFriendlyName failed with " tmp "."
+	}
+	
+	tmp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", oldSchemeGUID, "Ptr", 0, "Ptr", 0, "str", oldDesc, "Ptr*", szdesc) ;use the updated szdesc from first call of fn
+	if (tmp != 0)
+	{
+	Msgbox % "Second call of PowerReadFriendlyName failed with " tmp "."
+	}
+
+}
+
+
+Loop
+{
+	r := Dllcall("powrprof.dll\PowerEnumerate", "Ptr", 0, "Ptr", 0, "Ptr", 0, "Uint", ACCESS_SCHEME, "Uint", A_Index-1, "Ptr", &schemeGUID, "Uint*", szguid) ;DWORD
+		if (r != 0)
+		break
+
+	tmp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", &schemeGUID, "Ptr", 0, "Ptr", 0, "Ptr", 0, "Ptr*", szdesc) ;sdesc :LPDWORD
+	if (tmp != 0)
+	{
+	Msgbox % "Third call of PowerReadFriendlyName failed with " tmp "."
+	}
+	
+	tmp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", &schemeGUID, "Ptr", 0, "Ptr", 0, "str", desc, "ptr*", szdesc) ;use the updated szdesc from first call of fn
+	if (tmp != 0)
+	{
+	Msgbox % "Fourth call of PowerReadFriendlyName failed with " tmp "."
+	}
+
+
+
+	plan .= A_Index-1 " - " desc "`n"
+	if (planToChangeTo)
+	{
+		if (desc = planToChangeTo)
+		{
+		tmp := Dllcall("powrprof.dll\PowerSetActiveScheme", "Ptr", 0, "Ptr", &schemeGUID, "Uint")
+			if (tmp)
+			Msgbox % "PowerSetActiveScheme error: " tmp
+		r := 259
+		Break
+		}
+	}
+	else ; just enumerate and fill on first call
+	arrPowerPlanNames[A_Index] := desc
+
+}
+
+	if (r != 259)  ;ERROR_NO_MORE_ITEMS- (should never get here)
+	Msgbox % "PowerEnumerate error: " r
+
+
+
+
+Msgbox Available power schemes:`n%plan%`nCurrent GUID: %oldSchemeGUID%
+
+
+
+
+VarSetCapacity(schemeGUID, 0)
+VarSetCapacity(desc, 0)
+
+	; If only one entry (Balanced) then it's a Modern Standby or "S0 Low Power Idle" install, not the usual S3 Sleep state!. Other power schemes may not be created.
+	if (arrPowerPlanNames.Length() = 1) ; Final call to function
+	{
+	VarSetCapacity(oldDesc, szdesc)
+	VarSetCapacity(oldSchemeGUID, szguid)
+	}
+
+
+if (planToChangeTo)
+return
+else
+return arrPowerPlanNames
+
+}
 
 
 
@@ -3131,16 +3269,12 @@ Return
 
 MonitorsSub:
 Tooltip
-if (A_OSVersion in WIN_2003,WIN_XP,WIN_2000)
-; Above expression : No spaces and doesn't like brackets!
-{
-ToolTip, % "Unable to display VSync for this OS!"
-;Probably bombs the script anyway
-}
-else
-{
-MDMF_GetMonHandle(targMonitorNum) ; only works for Vista+
-}
+	if A_OSVersion in WIN_2003,WIN_XP,WIN_2000
+	; Above expression : No spaces and doesn't like brackets!
+	ToolTip, % "Unable to display VSync for this OS!"
+	;Probably bombs the script anyway
+	else
+	MDMF_GetMonHandle(targMonitorNum) ; only works for Vista+
 Return
 
 TestMode:
@@ -4699,6 +4833,7 @@ SetStartupname(SelIniChoicePath, ByRef defPrgStrng, PrgChoiceNames, selPrgChoice
 ;https://autohotkey.com/boards/viewtopic.php?f=5&t=17712&p=196504#p196504
 WM_LBUTTONDOWN(wParam, lParam, Msg, hWnd)
 {
+WM_HELPMSG := 0x0053
 	if (Msg = WM_HELPMSG)
 	WM_HELP(0, lParam, WM_HELPMSG, hWnd)
 	else
@@ -4706,10 +4841,8 @@ WM_LBUTTONDOWN(wParam, lParam, Msg, hWnd)
     MouseGetPos,,,winID
 	; Bizarro results with OutputVarControl so get class instead
 	WinGetClass, class, ahk_id %winID%
-    if (class="tooltips_class32")
-	{
-	ToolTip
-	}
+		if (class="tooltips_class32")
+		ToolTip
 	}
 }
 
@@ -5947,7 +6080,7 @@ Return strRetVal
 
 ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgChoicePaths, IniFileShortctSep, btchRun := 0, multiInst := 0)
 {
-dupList := "", temp := 0, strTemp := "", strTemp2 := "", IsaPrgLnk := 0
+strComputer := ".", dupList := "", temp := 0, strTemp := "", strTemp2 := "", IsaPrgLnk := 0
 
 if (presetNoTest && btchRun)
 {
@@ -5962,7 +6095,7 @@ loop % currBatchNo
 	Return "BadPath"
 	strTemp2 := ""
 	; Does not work for lnk files. "Select *" means full paths and names and commandlines!
-		for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2").ExecQuery("Select Name from Win32_Process")
+		for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" . strComputer . "\root\cimv2").ExecQuery("Select Name from Win32_Process")
 		{
 			if (strTemp = process.Name) ; process.ExecutablePath was also possible (Select Name, ExecutablePath from Win32_Process)
 			{
@@ -5998,7 +6131,7 @@ else
     if !(strTemp := GetProcFromPath(strTemp, strTemp2))
 	Return "BadPath"
 	strTemp2 := ""
-	for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2").ExecQuery("Select Name from Win32_Process")
+	for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" . strComputer . "\root\cimv2").ExecQuery("Select Name from Win32_Process")
 	{
 		if (strTemp = process.Name)
 		{
@@ -7407,12 +7540,13 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 	WebRequest.Open( "GET", UrlToFile), WebRequest.Send()
     ;Bad file-  also check types :http://www.iana.org/assignments/media-types/media-types.xhtml
 	temp := % WebRequest.GetAllResponseHeaders()
-	if (Instr(temp, badFile))
-	{
-	MsgBox, 8192, ,Wrong file header, or file not found!
-	updateStatus := -2
-	Return
-	}
+		if (Instr(temp, badFile))
+		{
+		MsgBox, 8192, ,Wrong file header, or file not found!
+		updateStatus := -2
+		WebRequest := ""
+		Return
+		}
 
 	;Check if the user wants a progressbar
 	;Initialize the WinHttpRequest Object
@@ -7425,71 +7559,74 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 	WebRequest.Send()
 	WebRequest.WaitForResponse()
 	;Store the header which holds the file size in a variable:
-	try
-	{
-	FinalSize := WebRequest.GetResponseHeader("Content-Length")
-	;Create the progressbar and the timer
-	GuiControl, PrgLnchOpt: , UpdtPrgLnch, Preparing...
-	Sleep, 2200 ;timeout: 2 seconds (should not time out)
-	ComObjError(False)
-	WinHttpReq.Status
-	If (A_LastError) ;if WinHttpReq.Status was not set (no response received yet)
-    timedOut := True
-	ComObjError(True)
+		try
+		{
+		FinalSize := WebRequest.GetResponseHeader("Content-Length")
+		;Create the progressbar and the timer
+		GuiControl, PrgLnchOpt: , UpdtPrgLnch, Preparing...
+		Sleep, 2200 ;timeout: 2 seconds (should not time out)
+		ComObjError(False)
+		WinHttpReq.Status
+			If (A_LastError) ;if WinHttpReq.Status was not set (no response received yet)
+			timedOut := True
+		ComObjError(True)
 
 
 
-	If (!FinalSize || timedOut)
-	MsgBox, 8192, , Timed out
+		If (!FinalSize || timedOut)
+		MsgBox, 8192, , Timed out
 
-	Progress, Hide ,, Downloading...
-	WinGet, Hwnd, ID,,, Downloading...
-	SysGet, X, 45 ;Progress bar border B1 corresponds with SM_CXEDGE?
-	SysGet, Y, 4 ;Height of a caption area?
+		Progress, Hide ,, Downloading...
+		WinGet, Hwnd, ID,,, Downloading...
+		SysGet, X, 45 ;Progress bar border B1 corresponds with SM_CXEDGE?
+		SysGet, Y, 4 ;Height of a caption area?
 
-	X := PrgLnchOpt.X() - prgWid - (2 * X)
-	Y := PrgLnchOpt.Y() + PrgLnchOpt.Height() - prgHght - (2 * Y)
+		X := PrgLnchOpt.X() - prgWid - (2 * X)
+		Y := PrgLnchOpt.Y() + PrgLnchOpt.Height() - prgHght - (2 * Y)
 
-	if (X < 0) ;form was moved to the left
-	X := PrgLnchOpt.X() + PrgLnchOpt.Width()
-	Progress, X%X% Y%Y% W%prgWid% H%prgHght% M,, Downloading..., %UrlToFile%
-	Progress Show
+			if (X < 0) ;form was moved to the left
+			X := PrgLnchOpt.X() + PrgLnchOpt.Width()
+		Progress, X%X% Y%Y% W%prgWid% H%prgHght% M,, Downloading..., %UrlToFile%
+		Progress Show
 
 
-	SetTimer, __UpdateProgressBar, 200
+		SetTimer, __UpdateProgressBar, 200
 
-	}
-	catch temp
-	{
-	msgbox, 8208, FileDownload, Problem with the URL!`nSpecifically: %temp%
-	Progress, Off
-	updateStatus := -3
-	SetTimer, __UpdateProgressBar, Delete
-	Return
-	}
+		}
+		catch temp
+		{
+		msgbox, 8208, FileDownload, Problem with the URL!`nSpecifically: %temp%
+		Progress, Off
+		updateStatus := -3
+		SetTimer, __UpdateProgressBar, Delete
+		WebRequest := ""
+		Return
+		}
 
 	GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Cancel (Esc)
 	;Download the file
-	try
-	{
-	UrlDownloadToFile, %UrlToFile%, %SaveFileAs%
-	}
-	catch temp
-	{
-	msgbox, 8208, FileDownload, Error with the download!`nSpecifically: %temp%
-	PercentDone := 100
-	updateStatus := -1
-	Progress, Off
-	SetTimer, __UpdateProgressBar, Delete
-	GuiControl, PrgLnchOpt: Hide, UpdtPrgLnch
-	GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Update Prg
-	Return
-	}
+		try
+		{
+		UrlDownloadToFile, %UrlToFile%, %SaveFileAs%
+		}
+		catch temp
+		{
+		msgbox, 8208, FileDownload, Error with the download!`nSpecifically: %temp%
+		PercentDone := 100
+		updateStatus := -1
+		Progress, Off
+		SetTimer, __UpdateProgressBar, Delete
+		GuiControl, PrgLnchOpt: Hide, UpdtPrgLnch
+		GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Update Prg
+		WebRequest := ""
+		Return
+		}
 	;Remove the timer and the progressbar because the download has finished
 	GuiControl, PrgLnchOpt: Hide, UpdtPrgLnch
 	GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Update Prg
 	Progress, Off
 	SetTimer, __UpdateProgressBar, Delete
+	WebRequest := ""
 	Return
 
 
