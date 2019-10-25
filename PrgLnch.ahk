@@ -15,7 +15,7 @@ SetTitleMatchMode, 2
 SetWinDelay, 100 ; Default
 ; ListVars for debugging
 ;A_BatchLines is 10ms
-SetBatchLines, 8ms
+SetBatchLines, 3ms
 ;https://autohotkey.com/boards/viewtopic.php?p=114554#p114554
 OnMessage(0x112, "WM_SYSCOMMAND")
 OnMessage(0x0053, "WM_Help")
@@ -2725,18 +2725,19 @@ loop % PrgNo
 	{
 		if (!InStr(PrgLnkInf[A_Index], "*"))
 		strTemp := PrgLnkInf[A_Index]
+
 	strRetVal := WorkingDirectory(strTemp, 1)
 		If (strRetVal)
 		strTemp2 .= "`n" . strRetVal
 		else
 		{
-			if (strTemp != A_ScriptDir)
+			if (InStr(!strTemp, A_ScriptDir))
 			{
-			fTemp := KleenupPrgLnchFiles(1)
+			fTemp := KleenupPrgLnchFiles(1) ; An old (fixed?) bug where these ended up in wrong directory
 				if (fTemp)
 				{
 				SplitPath, strTemp, , strTemp
-				strTemp3 .= "`nFile(s): """ . fTemp . """ found in """ . strTemp . """ moved to the Recycle Bin."
+				strTemp3 .= "`nFile(s): """ . fTemp . """ found in """ . strTemp . """ marked for the Recycle Bin."
 				}
 			}
 		}
@@ -2766,6 +2767,10 @@ namesToDel := ["PrgLnchLoading.jpg", "PrgLaunching.jpg", "PrgLnchProperties.jpg"
 
 temp := ""
 KleenupPrgLnchFiles := ""
+
+; Keep files if debugging
+if (!A_IsCompiled)
+Return
 
 For eachNameToDel in namesToDel
 {
@@ -5966,10 +5971,10 @@ sleep, 120
 ;More General file & process routines
 join(strArray)
 {
-  s := ""
-  for i,v in strArray
-    s .= "," . v
-  return substr(s, 2)
+s := ""
+	for i,v in strArray
+	s .= "," . v
+return substr(s, 2)
 }
 CheckPrgPaths(selPrgChoice, IniFileShortctSep, ByRef PrgChoicePaths, ByRef PrgLnkInf, ByRef PrgResolveShortcut)
 {
@@ -6503,22 +6508,24 @@ Return strTemp
 WorkingDirectory(strTemp, SetNow := 0)
 {
 retVal := 0
-strTemp2 := strTemp
 
 
-	if (strTemp != A_ScriptDir && !InStr(strTemp, "\", false,  StrLen(strTemp)))
+	;if (strTemp != A_ScriptDir && !InStr(strTemp, "\", false,  StrLen(strTemp)))
+	if (InStr(strTemp, "\", false,  StrLen(strTemp)))
 	{
 	retVal := InStr(strTemp, "\", false, -1)
 	strTemp2 := SubStr(strTemp, 1, retVal)
 	}
+	else
+	SplitPath strTemp, , strTemp2
 
 
-	SetWorkingDir %strTemp2%
-	retVal := ErrorLevel
+SetWorkingDir %strTemp2%
+retVal := ErrorLevel
 
 	if (!SetNow) ; just testing: never called with A_ScriptDir
 	{
-		sleep 50
+	sleep 50
 		if (retval)
 		SetWorkingDir %A_ScriptDir% ; Caution: Working Dir can be altered by other processes
 	}
