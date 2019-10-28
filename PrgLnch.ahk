@@ -5,9 +5,9 @@
 ;#Warn, All , MsgBox ; Enable warnings to assist with detecting common errors.
 ListLines Off ;A_ListLines is on
 SendMode Input  ; Recommended for new scripts due to superior speed & reliability.
-
+#MaxMem 256
 FileSetAttrib, -RH, % A_ScriptDir . "`\*.*", 1
-
+AutoTrim, Off
 SetTitleMatchMode, 2
 #MaxThreads 5
 #Persistent
@@ -445,7 +445,7 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 }
 else
 {
-	ifNotExist PrgLnch.chm
+	if (!FileExist("PrgLnch.chm"))
 	FileInstall PrgLnch.chm, PrgLnch.chm
 sleep, 120
 	if (A_Min < 22) ; Do this approx every 3 runs
@@ -1982,6 +1982,9 @@ Return
 
 
 
+
+
+
 ;IniChoice section
 IniChoiceSel:
 Gui, PrgLnch: Submit, Nohide
@@ -2006,68 +2009,66 @@ else
 
 		;Pre-validation
 
-		if (StrLen(iniTxtPadChoice) > 20000) ;length?
-		{
-		iniTxtPadChoice := SubStr(iniTxtPadChoice, 1, 20000)
-		GuiControl, PrgLnch: Text, IniChoice, %iniTxtPadChoice%
-		}
+			if (StrLen(iniTxtPadChoice) > 20000) ;length?
+			{
+			iniTxtPadChoice := SubStr(iniTxtPadChoice, 1, 20000)
+			GuiControl, PrgLnch: Text, IniChoice, %iniTxtPadChoice%
+			}
 
 		; This isn't good...
 		iniTxtPadChoice := StrReplace(iniTxtPadChoice, "|", "1")
 		iniTxtPadChoice := StrReplace(iniTxtPadChoice, "`,")
 
-		if (ChkPrgNames(iniTxtPadChoice, PrgNo, "Ini"))
-		{
-		;"0" happens rarely on "timing glitch??"
-		GuiControl, PrgLnch: Text, IniChoice,
-		SetEditCueBanner(IniChoiceHwnd, "Name Reserved", 1)
-		GoConfigTxt = Prg Config
-		GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
-		ControlFocus, , ahk_id %GoConfigHwnd%
-		}
-		else
-		{
-			if (iniTxtPadChoice)
+			if (ChkPrgNames(iniTxtPadChoice, PrgNo, "Ini"))
 			{
-				if (strLen(iniTxtPadChoice) > 1)
-				{
-					if (ChkCmdLineValidFName(iniTxtPadChoice, 1))
-					{
-						if (!iniTxtPadChoice)
-						{
-							GuiControl, PrgLnch: Text, IniChoice,
-							SetEditCueBanner(IniChoiceHwnd, "Alphanumeric Name", 1)
-							GoConfigTxt = Prg Config
-							GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
-							ControlFocus, , ahk_id %GoConfigHwnd%
-							Return
-						}
-
-					}
-
-				strTemp := RegExReplace(iniTxtPadChoice, "\w", "", temp)
-					if (!temp)
-					{
-					GuiControl, PrgLnch: Text, IniChoice,
-					SetEditCueBanner(IniChoiceHwnd, "Alphanumeric Name", 1)
-					GoConfigTxt = Prg Config
-					GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
-					ControlFocus, , ahk_id %GoConfigHwnd%
-					return
-					}
-				}
-
-			GoConfigTxt := "Save Lnch Pad"
-			ToolTip, "Click `"Save Lnch Pad`" to save."
-			GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+			;"0" happens rarely on "timing glitch??"
+			GuiControl, PrgLnch: Text, IniChoice,
+			SetEditCueBanner(IniChoiceHwnd, "Name Reserved", 1)
+			GoConfigTxt = Prg Config
+			GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
+			ControlFocus, , ahk_id %GoConfigHwnd%
 			}
 			else
 			{
-			GoConfigTxt = Del Lnch Pad
-			ToolTip, "Click `"Del Lnch Pad`" or hit Del to confirm."
-			GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+				if (iniTxtPadChoice)
+				{
+					if (strLen(iniTxtPadChoice) > 1)
+					{
+						if (ChkCmdLineValidFName(iniTxtPadChoice, 1))
+						{
+							if (!iniTxtPadChoice)
+							{
+								GuiControl, PrgLnch: Text, IniChoice,
+								SetEditCueBanner(IniChoiceHwnd, "Alphanumeric Name", 1)
+								GoConfigTxt = Prg Config
+								GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
+								ControlFocus, , ahk_id %GoConfigHwnd%
+								Return
+							}
+
+						}
+
+					strTemp := RegExReplace(iniTxtPadChoice, "\w", "", temp)
+						if (!temp)
+						{
+						GuiControl, PrgLnch: Text, IniChoice,
+						SetEditCueBanner(IniChoiceHwnd, "Alphanumeric Name", 1)
+						GoConfigTxt = Prg Config
+						GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
+						ControlFocus, , ahk_id %GoConfigHwnd%
+						return
+						}
+					}
+
+				GoConfigTxt := "Save Lnch Pad"
+				ToolTip, "Click `"Save Lnch Pad`" to save."
+				GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+				}
+				else
+				{
+				GoSub PrepDelIni
+				}
 			}
-		}
 		}
 		else
 		{
@@ -2081,19 +2082,7 @@ else
 			}
 			else ; Del key hit
 			{
-				if (GoConfigTxt = "Del Lnch Pad")
-				{
-					if (DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPadChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1))
-					RestartPrgLnch(0, oldSelIniChoiceName, SelIniChoiceName)
-					else
-					GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
-				}
-				else
-				{
-				GoConfigTxt = Del Lnch Pad
-				ToolTip, "Click `"Del Lnch Pad`" or hit Del to confirm."
-				GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
-				}
+			GoSub PrepDelIni
 			Return
 			}
 
@@ -2156,6 +2145,28 @@ else
 		}
 	}
 Return
+
+PrepDelIni:
+ControlSetText,,,ahk_id %IniChoiceHwnd%
+	if (GoConfigTxt = "Del Lnch Pad")
+	{
+		if (DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPadChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1))
+		RestartPrgLnch(0, oldSelIniChoiceName, SelIniChoiceName)
+		else
+		GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
+	}
+	else
+	{
+		if ((SelIniChoiceName != "PrgLnch") && !ChkPrgNames(SelIniChoiceName, PrgNo, "Ini", 1))
+		{
+		GoConfigTxt = Del Lnch Pad
+		ToolTip, "Click `"Del Lnch Pad`" or hit Del to confirm."
+		GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+		}
+	}
+Return
+
+
 
 DelIniPresetProc(iniSel, ByRef GoConfigTxt, ByRef iniTxtPadChoice, ByRef SelIniChoicePath, ByRef SelIniChoiceName, ByRef oldSelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, 1)
 {
@@ -2955,7 +2966,7 @@ RunChm(chmTopic := 0, Anchor := "")
 {
 x := 0, y := 0, w := 0, temp := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
 
-ifnotexist, %A_ScriptDir%\PrgLnch.chm
+if (!FileExist(A_ScriptDir . "\PrgLnch.chm"))
 return -1
 
 WinGetPos, x, y, w, , A
@@ -3981,8 +3992,8 @@ else
 					GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 					}
 
-				if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq))
-				GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
+					if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq))
+					GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
 
 
 				}
@@ -4705,11 +4716,11 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 		txtPrgChoice := ""
 		ControlSetText,,,ahk_id %PrgChoiceHwnd%
 		GuiControl, PrgLnchOpt:, MkShortcut, Remove Shortcut
-		if (PrgChoicePaths[selPrgChoice])
-		ToolTip, "Click `"Remove Shortcut`" or hit Del to confirm."
-		else
-		ToolTip, "Click `"Remove Shortcut`" or hit Del to remove unexpected data from reference."
-		Return
+			if (PrgChoicePaths[selPrgChoice])
+			ToolTip, "Click `"Remove Shortcut`" or hit Del to confirm."
+			else
+			ToolTip, "Click `"Remove Shortcut`" or hit Del to remove unexpected data from reference."
+			Return
 		}
 		else
 		{
@@ -4781,16 +4792,10 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 	else
 	{
 		if (strTemp = "IniChoice")
-		{
-		ControlSetText,,,ahk_id %IniChoiceHwnd%
-			if (SelIniChoiceName != PrgLnch && !ChkPrgNames(iniTxtPadChoice, PrgNo, "Ini", 1))
-			GoSub, IniChoiceSel
-		}
+		GoSub PrepDelIni
 	}
 Return
 }
-
-
 
 SetStartupname(SelIniChoicePath, ByRef defPrgStrng, PrgChoiceNames, selPrgChoice, newName := 0)
 {
@@ -4843,11 +4848,13 @@ WM_HELPMSG := 0x0053
 	WM_HELP(0, lParam, WM_HELPMSG, hWnd)
 	else
 	{
-    MouseGetPos,,,winID
+    MouseGetPos, , , mWin, mControl ; mX relative to FORM
 	; Bizarro results with OutputVarControl so get class instead
-	WinGetClass, class, ahk_id %winID%
+	WinGetClass, class, ahk_id %mWin%
 		if (class="tooltips_class32")
 		ToolTip
+		else
+		GuiControlGet, tmp, Name, % mControl
 	}
 }
 
@@ -5992,12 +5999,14 @@ Local strRetVal := "", strTemp := PrgChoicePaths[selPrgChoice], strTemp2 := PrgL
 	}
 	else
 	{
-	lnkPrg := Substr(strTemp, 1, InStr(strTemp, IniFileShortctSep,, 0) -1)
-		IfNotExist, % lnkPrg
+	; The ini may be corrupted when IniFileShortctSep is removed
+	(InStr(strTemp, IniFileShortctSep))? lnkPrg := Substr(strTemp, 1, InStr(strTemp, IniFileShortctSep) - 1): lnkPrg := strTemp
+
+		If (!FileExist(lnkPrg))
 		{
 			if (InStr(strTemp2, "\", false, StrLen(strTemp2)))
 			{
-			MsgBox, 8196, , The link %lnkPrg% is invalid.`nGiven that its target stil exists, the Prg can still be used.`n`nReply:`nYes: Attempt to use the target`nNo: Do nothing, in case the lnk file can be recovered.`n
+			MsgBox, 8196, , The link %lnkPrg% is invalid.`nGiven that its target still exists, the Prg can still be used.`n`nReply:`nYes: Attempt to use the target`nNo: Do nothing, in case the lnk file can be recovered.`n
 				IfMsgBox, Yes
 				{
 				strTemp := SubStr(strTemp, InStr(strTemp, IniFileShortctSep,,0) + 1)
@@ -8031,7 +8040,7 @@ WinMover(Hwnd := 0, position := "hc vc", Width := 0, Height := 0, splashInit := 
 		MsgBox, 8192, WinMover, % strRetVal
 		else
 		{
-			IfNotExist, %splashInit%
+			If (!FileExist(splashInit))
 			{
 				if (splashInit = "PrgLnchLoading.jpg")
 				FileInstall PrgLnchLoading.jpg, PrgLnchLoading.jpg
@@ -9023,7 +9032,7 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 	MsgBox, 8192, PrgProperties, % strRetVal
 	else
 	{
-		IfNotExist, PrgLnchProperties.jpg
+		If (!FileExist("PrgLnchProperties.jpg"))
 		FileInstall PrgLnchProperties.jpg, PrgLnchProperties.jpg
 
 	sleep, 200
