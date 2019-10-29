@@ -446,7 +446,7 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 else
 {
 	if (!FileExist("PrgLnch.chm"))
-	FileInstall PrgLnch.chm, PrgLnch.chm
+	FileInstall PrgLnch.chm, PrgLnch.chm, 1
 sleep, 120
 	if (A_Min < 22) ; Do this approx every 3 runs
 	IniSpaceCleaner(SelIniChoicePath)
@@ -2785,7 +2785,7 @@ Return
 
 For eachNameToDel in namesToDel
 {
-	ifexist, % namesToDel[A_Index]
+	if (FileExist(namesToDel[A_Index]))
 	{
 		if (RecycleNow)
 		{
@@ -5162,7 +5162,7 @@ if (lnchPrgIndex > 0) ;Running
 
 	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
 
-	IfExist, % PrgPaths
+	if (FileExist(PrgPaths))
 	;If Notepad, copy Notepad exe to  %A_ScriptDir% and it will not run! (Windows 10 1607)
 	{
 	strRetVal := WorkingDirectory(PrgPaths, 1)
@@ -6521,30 +6521,35 @@ retVal := 0
 
 	;if (strTemp != A_ScriptDir && !InStr(strTemp, "\", false,  StrLen(strTemp)))
 	if (InStr(strTemp, "\", false,  StrLen(strTemp)))
-	{
-	retVal := InStr(strTemp, "\", false, -1)
-	strTemp2 := SubStr(strTemp, 1, retVal)
-	}
+	strTemp2 := SubStr(strTemp, 1, InStr(strTemp, "\", false, -1))
 	else
-	SplitPath strTemp, , strTemp2
-
+	{
+	FileGetAttrib, strTemp2, %strTemp%
+		if (InStr(strTemp2, "D"))
+		strTemp2 := strTemp
+		else
+		SplitPath strTemp, , strTemp2
+	}
 
 SetWorkingDir %strTemp2%
 retVal := ErrorLevel
+if (retVal)
 
 	if (!SetNow) ; just testing: never called with A_ScriptDir
 	{
 	sleep 50
 		if (retval)
+		{
 		SetWorkingDir %A_ScriptDir% ; Caution: Working Dir can be altered by other processes
+		retVal := ErrorLevel
+		}
 	}
 ; 0 success
 if (retVal)
-Return "An error of " retVal " occurred while reading the path for:`n""" strTemp . """"
+Return "An error of " retVal " occurred while reading the path for:`n""" strTemp2 . """"
 else
 Return ""
 }
-
 /*
 ===============================================================================
 Function:   wp_IsResizable
@@ -9066,7 +9071,7 @@ loop % currBatchNo
 	fileName := ExtractPrgPath(batchPos, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
 	strTemp := PrgChoiceNames[batchPos]
 
-	IfExist, % fileName
+	if (FileExist(fileName))
 	{
 		if (StrLen(strTemp) > 12)
 		{
@@ -9091,7 +9096,7 @@ Gui, PrgProperties: Tab, %A_Index%
 batchPos := PrgBatchInibtchPrgPresetSel[A_Index]
 fileName := ExtractPrgPath(batchPos, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
 
-IfExist, % fileName
+if (FileExist(fileName))
 {
 
 	errorText := ""
