@@ -3,7 +3,7 @@
 #SingleInstance, force
 #NoEnv  ; Performance and compatibility with future AHK releases.
 ;#Warn, All , MsgBox ; Enable warnings to assist with detecting common errors.
-ListLines Off ;A_ListLines is on
+ListLines Off ;A_ListLines default is on
 SendMode Input  ; Recommended for new scripts due to superior speed & reliability.
 #MaxMem 256
 FileSetAttrib, -RH, % A_ScriptDir . "`\*.*", 1
@@ -24,6 +24,21 @@ OnMessage(0x201, "WM_LBUTTONDOWN")
 #Include %A_ScriptDir%
 
 
+PrgLnchPID := DllCall("GetCurrentProcessId")
+
+
+WinGetActiveTitle, strTemp
+
+if (!(InStr(strTemp, PrgLnch.Title . ".ahk") || InStr(strTemp, PrgLnch.Title . ".exe")))
+{
+MsgBox, 8192, , PrgLnch cannot be run from a copy!
+;ExitApp
+}
+
+
+
+
+Process, priority, %PrgLnchPID%, A
 ;Issues:
 
 ; Virtual screen: https://msdn.microsoft.com/en-us/library/vs/alm/dd145136(v=vs.85).aspx
@@ -33,29 +48,39 @@ Class PrgLnchOpt
 	temp := 0
 	Hwnd()
 	{
+	DetectHiddenWindows, On
 	Gui, PrgLnchOpt: +Hwndtemp
 	This.PrgHwnd := temp
+	DetectHiddenWindows, Off
 	Return This.PrgHwnd
 	}
 	X()
 	{
+	DetectHiddenWindows, On
 	WinGetPos, X, , , , % "ahk_id" This.PrgHwnd
+	DetectHiddenWindows, Off
 	Return X
 	}
 	Y()
 	{
+	DetectHiddenWindows, On
 	WinGetPos, ,Y , , , % "ahk_id" This.PrgHwnd
+	DetectHiddenWindows, Off
 	Return Y
-	}
-	Height()
-	{
-	WinGetPos, , , ,Height , % "ahk_id" This.PrgHwnd
-	Return Height
 	}
 	Width()
 	{
+	DetectHiddenWindows, On
 	WinGetPos, , ,Width , , % "ahk_id" This.PrgHwnd
+	DetectHiddenWindows, Off
 	Return Width
+	}
+	Height()
+	{
+	DetectHiddenWindows, On
+	WinGetPos, , , ,Height , % "ahk_id" This.PrgHwnd
+	DetectHiddenWindows, Off
+	Return Height
 	}
 	}
 
@@ -64,55 +89,63 @@ Class PrgLnch
 	temp := 0
 	static Title := "PrgLnch" ;
 	static Title1 := "Notepad++"
-	static NplusplusClass := "ahk_exe Notepad++.exe"
+	;static NplusplusClass := "ahk_exe Notepad++.exe"
+	;static NplusplusClass := "ahk_class Notepad++"
 	static ProcScpt := "ahk_exe PrgLnch.exe"
-	static ProcAHK := "ahk_exe AutoHotkey.exe"
+	;static ProcAHK := "ahk_exe AutoHotkey.exe"
+	static ProcAHK := "ahk_class AutoHotkeyGUI"
 	static PrgHwnd := ""
 	static PrgLnchMonitor := 0
 
 	Hwnd()
 	{
+	DetectHiddenWindows, On
 	Gui, PrgLnch: +Hwndtemp
 	This.PrgHwnd := temp
+	DetectHiddenWindows, Off
 	Return This.PrgHwnd
 	}
-	Monitor()
+
+	Monitor
 	{
-	PrgLnchMonitor := value
+		set
+		{
+		this.PrgLnchMonitor := value
+		}
+		get
+		{
+		return this.PrgLnchMonitor
+		}
 	}
+
 	Class()
 	{
-	temp := This.ProcAHK
-	;temp := This.ProcScpt
+	(A_IsCompiled)? temp := This.ProcScpt: temp := This.ProcAHK
 	;temp := This.NplusplusClass
-	text := ""
-	WinGetClass, temp, % temp
-	if (!temp)
-	{
-	Gui, PrgLnch: +LastFound
-	WinGetClass, temp, % temp
-	}
+
 	;WinGetText, text, ahk_class %temp%
-	;For N++ t& ProcScpt his is the entire script!
 	Return temp
 	}
 	PID()
 	{
 	Process, Exist
-	If (!ErrorLevel)
-	MsgBox, 8192, , Cannot retrieve the PID of PrgLnch!
+		If (!ErrorLevel)
+		MsgBox, 8192, , Cannot retrieve the PID of PrgLnch!
 	
 	Return ErrorLevel
 	}
 	Activate() ;Activates window with Title - This.Title
 	{
+	DetectHiddenWindows, On
 		If (WinExist(This.Title))
-		WinActivate
+		WinActivate, % "ahk_id" . This.Hwnd()
+		;This replaced +LastFound as "WinActivate" would not work for some reason.
 		else
 		{
 			If (WinExist(This.Title1))
 			WinActivate
 		}
+	DetectHiddenWindows, Off
 	}
 	__New()
 	{
@@ -274,7 +307,6 @@ GoConfigTxt = Prg Config
 iniSel := 0
 selPrgChoice := 1
 selPrgChoiceTimer := 0
-txtCmd := 0
 RegoVar := 0
 navShortcut := 0
 
@@ -338,6 +370,8 @@ PrgLnch.Monitor := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, primaryMon, 1)
 WinMover(, , , , "PrgLnchLoading.jpg")
 
 temp := PrgLnch.Title
+fTemp := 0
+ffTemp := 0
 DetectHiddenWindows, On
 WinGet, foundpos, List, % temp
 
@@ -347,19 +381,26 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 	{
 	temp := foundpos%A_Index%
 	WinGetClass, strRetVal, % "ahk_id" temp
-	; This "fails" when any non-PrgLnch ahk script is run from the PrgLnch folder
-		if (InStr(strRetVal, PrgLnch.Class()) || InStr(PrgLnch.Class(), strRetVal))
-		fTemp += 1
 
-	if (fTemp > 2)
+	if (strRetVal && !InStr(strRetVal, "CabinetWClass"))
 	{
-	MsgBox, 8192, PrgLnch Running!, An instance of PrgLnch is already in memory!
-	GoSub PrgLnchButtonQuit_PrgLnch
+	; The following "fails" when any non-PrgLnch ahk script (compiled or not) is run from the PrgLnch folder: Proper way is with mutex
+	if (InStr(strRetVal, "AutoHotkey"))
+	ffTemp++
+	if (InStr(strRetVal, "Notepad"))
+	fTemp++
+
+		if (fTemp > 2 || ffTemp > 2)
+		{
+		MsgBox, 8192, PrgLnch Running!, An instance of PrgLnch is already in memory!
+		GoSub PrgLnchButtonQuit_PrgLnch
+	}
 	}
 
 	} 
 }
 
+DetectHiddenWindows, Off
 	if (FileExist(PrgLnchIni))
 	{
 	IniSpaceCleaner(PrgLnchIni, 1) ;  fix old version
@@ -561,7 +602,7 @@ loop % PrgNo
 		PidMaster(PrgNo, maxBatchPrgs, foundpos, PrgBatchIni%A_Index%, PrgListPID%A_Index%, PrgPIDMast)
 	}
 
-
+	SplashImage, PrgLnchLoading.jpg, A B,,, LnchSplash
 
 	if (batchActive)
 	batchActive := 2 ; for InitBtchStat at start
@@ -751,7 +792,7 @@ else
 Gui, PrgLnchOpt: Show, Hide, PrgLnchOpt
 WinMover(PrgLnchOpt.Hwnd(), "d r")   ; "dr" means "down, right"
 
-if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq))
+if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq, ResIndexHwnd))
 GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
 ;ChooseString may fail if frequencies differ. Meh!
 if (PrgPID)
@@ -835,10 +876,13 @@ IniProc(100) ;initialises scrWidth, scrHeight, scrFreq & Prgmon in ini
 
 
 
+
+
+
 ;Frontend form
 Gui, PrgLnch: New
-Gui PrgLnch:Default  	;A_DefaultGui is name of default gui
-Gui PrgLnch: -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP%
+Gui, PrgLnch:Default  	;A_DefaultGui is name of default gui
+Gui, PrgLnch: -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP%
 Gui, PrgLnch: Color, FFFFCC
 Gui, PrgLnch: Add, Button, cdefault vPresetProp gPresetProp HWNDPresetPropHwnd, Preset Properties
 GuiControlGet, temp, PrgLnch: Pos, %PresetPropHwnd%
@@ -967,8 +1011,9 @@ temp := % ErrorLevel
 SendMessage, % LB_GETCOUNT, 0, 0, , % "ahk_id " . BtchPrgHwnd
 temp :=  (temp * (ErrorLevel + 1)) ; + 8 for the margins
 
-if (temp > PrgLnchOpt.Height())
-temp := PrgLnchOpt.Height()
+fTemp := PrgLnchOpt.Height()
+	if (temp > fTemp)
+	temp := fTemp
 
 GuiControl, PrgLnch: Move, ListPrg, h%temp%
 
@@ -976,7 +1021,7 @@ temp := temp/2
 
 GuiControl, PrgLnch: Move, MovePrg, y%temp%
 
-temp:= 1/2 * PrgLnchOpt.Height() 
+temp:= 1/2 * fTemp 
 ;GuiControl, PrgLnch: Move, BtchPrgPreset, h%temp%
 
 
@@ -990,18 +1035,21 @@ sleep, 20
 	batchActive := 1
 	}
 
-
 Gui, PrgLnch: Show
 
 
 
-;"WS_EX_CONTEXTHELP"
+
 SplashImage, PrgLnchLoading.jpg, Hide,,,LnchSplash
+
+Process, priority, %PrgLnchPID%, B
+
 
 Return
 
 
 ^!p::
+; This repositions the top left of the GUI to mouse cursor
 strTemp := A_CoordModeMouse
 CoordMode, Mouse, Screen
 MouseGetPos, x, y
@@ -1034,6 +1082,33 @@ WinActivate
 }
 Return
 
+
+;LnchPad invocation
+LnchPadConfig:
+FileInstall LnchPadCfg.jpg, LnchPadCfg.jpg
+SplashImage, LnchPadCfg.jpg, B,,, LnchPadCfg
+SetTimer, LnchPadSplashTimer, 100
+LnchLnchPad()
+temp := 0
+Return
+
+LnchPadSplashTimer:
+	If (WinActive("LnchPad Setup"))
+	{
+	SetTimer, LnchPadSplashTimer, Delete
+	SplashImage, LnchPadCfg.jpg, Hide,,, LnchPadCfg
+	}
+	else
+	{
+	temp++
+		if (temp > 100)
+		{
+		MsgBox, 8192, , There is a problem with Lnch Pad Config!
+		SetTimer, LnchPadSplashTimer, Delete
+		SplashImage, LnchPadCfg.jpg, Hide,,, LnchPadCfg
+		}
+	}
+Return
 
 PwrChoiceSel:
 Gui, PrgLnch: Submit, Nohide
@@ -1288,11 +1363,9 @@ sleep, 120
 	 ; Nothing to write!
 
 	;If PrgProperties window is showing, update it
-	DetectHiddenWindows, Off
 	Gui, PrgProperties: +LastFoundExist
 	If (WinExist())
 	{
-	DetectHiddenWindows, On
 	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
 	}
 }
@@ -1310,7 +1383,6 @@ SetTimer, WatchSwitchBack, Delete
 SetTimer, WatchSwitchOut, Delete
 Thread, NoTimers
 temp := 0
-DetectHiddenWindows, Off
 
 waitBreak := 1 ; breaks the timer loop
 
@@ -1362,7 +1434,6 @@ if (btchPrgPresetSel = temp)
 		MsgBox, 8196, Active Preset, This Preset contains active Prgs!`n`nReply:`nYes: Continue and remove the Preset (Prgs will not be cancelled).`nNo: Do not remove the Preset.`n
 			IfMsgBox, No
 			{
-			DetectHiddenWindows, On
 			Return
 			}
 			else
@@ -1513,7 +1584,6 @@ else
 		Gui, PrgProperties: +LastFoundExist
 			If (WinExist())
 			{
-			DetectHiddenWindows, On
 			PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
 			}
 
@@ -1572,7 +1642,7 @@ else
 			Gui, PrgProperties: +LastFoundExist
 				If (WinExist())
 				Gui, PrgProperties: Destroy
-			DetectHiddenWindows, On
+
 				if (!batchActive)
 				{
 				EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PwrChoiceHwnd, btchSelPowerIndex, PresetNames, 1)
@@ -1618,7 +1688,6 @@ else
 
 }
 
-DetectHiddenWindows, On
 Return
 
 
@@ -2041,6 +2110,8 @@ Return
 
 
 
+
+
 ;IniChoice section
 IniChoiceSel:
 Gui, PrgLnch: Submit, Nohide
@@ -2422,6 +2493,44 @@ Return 0
 
 
 ;More Frontend functions
+LnchLnchPad()
+{
+ERROR_FILE_NOT_FOUND := 0x2
+ERROR_ACCESS_DENIED := 0x5
+ERROR_CANCELLED := 0x4C7
+strTemp := ""
+Gui, PrgLnch: +Disabled
+
+
+FileInstall LnchPadInit.exe, LnchPadInit.exe
+
+Sleep, 750
+RunWait, LnchPadInit.exe, , UseErrorLevel:
+
+	if (A_LastError)
+	{
+		Switch, A_LastError
+		{
+		Case 0x2:
+		strTemp := ERROR_FILE_NOT_FOUND
+		Case 0x2:
+		strTemp := ERROR_ACCESS_DENIED
+		Case 0x4C7:
+		strTemp := ERROR_CANCELLED		
+		}
+	MsgBox, 8192, , % "LnchPadInit will not run. Code: " strTemp? strTemp: A_LastError
+	}
+
+Gui, PrgLnch: -Disabled
+DetectHiddenWindows, On
+
+PrgLnch.Activate()
+oldDHW := A_DetectHiddenWindows
+
+
+DetectHiddenWindows, %oldDHW%
+}
+
 HideShowLnchControls(quitHwnd, GoConfigHwnd, showCtl := 0)
 {
 if (showCtl)
@@ -2560,8 +2669,7 @@ else
 			SetEditCueBanner(PresetNameHwnd, "Preset Name")
 			}
 		}
-		else
-		msgbox, 8208, Error: Enabling what batch preset? Should never get here!
+		;else: No batch preset- so do little
 	}
 Gui, PrgLnch: Font
 }
@@ -2802,18 +2910,21 @@ strTemp2 := ""
 strTemp3 := ""
 loop % PrgNo
 {
-	strTemp := PrgChoicePaths[A_Index]
-	if (strTemp)
+	temp := 0
+	strTemp := ExtractPrgPath(A_Index, 0, PrgChoicePaths[A_Index], PrgLnkInf, temp, IniFileShortctSep)
+
+	if (strTemp && PrgLnkInf[A_Index] != "\") ; Don't care about invalid links- (but we should)
 	{
 		if (!InStr(PrgLnkInf[A_Index], "*"))
 		strTemp := PrgLnkInf[A_Index]
 
 	strRetVal := WorkingDirectory(strTemp, 1)
+
 		If (strRetVal)
 		strTemp2 .= "`n" . strRetVal
 		else
 		{
-			if (InStr(!strTemp, A_ScriptDir))
+			if (!InStr(strTemp, A_ScriptDir))
 			{
 			fTemp := KleenupPrgLnchFiles(1) ; An old (fixed?) bug where these ended up in wrong directory
 				if (fTemp)
@@ -2827,7 +2938,8 @@ loop % PrgNo
 }
 
 strRetVal := WorkingDirectory(A_ScriptDir, 1)
-
+if (strRetVal)
+msgbox % " WorkingDirectory(A_ScriptDir " A_ScriptDir
 	If (strRetVal)
 	strTemp2 .= "`n" . strRetVal
 	else
@@ -2846,7 +2958,7 @@ ExitApp
 
 KleenupPrgLnchFiles(RecycleNow := 0)
 {
-namesToDel := ["PrgLnchLoading.jpg", "PrgLaunching.jpg", "PrgLnchProperties.jpg", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat"]
+namesToDel := ["PrgLnchLoading.jpg", "PrgLaunching.jpg", "PrgLnchProperties.jpg", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat", "LnchPadInit.exe"]
 
 temp := ""
 KleenupPrgLnchFiles := ""
@@ -3028,7 +3140,7 @@ WM_SYSCOMMAND(wParam)
 temp := 0
     if (A_Gui && wParam = 0xF060) ; SC_CLOSE Thanks Lex
     {
-		WinGet, temp, , A
+		WinGet, temp, , A ;or WinGetActive
 		if (temp = PrgLnchOpt.Hwnd() || temp = PrgLnch.Hwnd())
 		return 0
 		else
@@ -3298,6 +3410,14 @@ else
 {
 	if (arrPowerPlanNames.Length() > 2)
 	{
+	
+		if (!btchPrgPresetSel)
+		{
+		;Initial values
+		btchSelPowerIndex := 1
+		temp := 1
+		}
+
 		Loop, % arrPowerPlanNames.Length()
 		{
 			if (btchPowerNames[btchPrgPresetSel] = arrPowerPlanNames[A_Index])
@@ -3803,7 +3923,7 @@ if (strTemp = "iDevNum")
 			targMonitorNum := PrgLnch.Monitor
 		PrgMonToRn[selPrgChoice] := targMonitorNum
 		IniProc(selPrgChoice)
-		if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq))
+		if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq, ResIndexHwnd))
 		GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
 
 	}
@@ -3946,34 +4066,37 @@ GuiControlGet, strTemp, PrgLnchOpt:, ResIndex
 
 Return
 
-FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq)
+FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq, ResIndexHwnd)
 {
-	Stat := 0, strTemp2 := "", strTemp := ""
+Stat := 0, strTemp2 := "", strTemp := ""
 
-	ControlGet, strTemp, List,, ListBox1, % "ahk_id" PrgLnchOpt.Hwnd()
+ControlGet, strTemp, List,,, % "ahk_id" ResIndexHwnd
+
 	Loop, Parse, strTemp, `n
 	{
 	strTemp2 := ""
 	strTemp2 .= scrWidth . " `, " . scrHeight . " @ " . scrFreq . "Hz "
-	if (strTemp2 = A_LoopField)
+
+		if (strTemp2 = A_LoopField)
+		{
+		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % strTemp2
+		Stat := 1
+		Break
+		}
+	}
+
+	if (!stat)
 	{
-	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % strTemp2
-	Stat := 1
-	Break
+		IniRead, strTemp, %SelIniChoicePath%, General, ResClashMsg
+		if (!strTemp)
+		{
+		MsgBox, 8196, , % "Mismatch detected in desired resolution data for this monitor! This usually involves differing frequency values appertaining to the same resolution preset.`nExcerpt from MSDN: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
+			IfMsgBox, Yes
+			strTemp := "" ; dummy condition
+			else
+			IniWrite, 1, %SelIniChoicePath%, General, ResClashMsg
+		}
 	}
-	}
-if (!stat)
-{
-	IniRead, strTemp, %SelIniChoicePath%, General, ResClashMsg
-	if (!strTemp)
-	{
-	MsgBox, 8196, , % "Mismatch detected in desired resolution data for this monitor! This usually involves differing frequency values appertaining to the same resolution preset.`nExcerpt from MSDN: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
-		IfMsgBox, Yes
-		strTemp := "" ; dummy condition
-		else
-		IniWrite, 1, %SelIniChoicePath%, General, ResClashMsg
-	}
-}
 Return stat
 }
 SetResDefaults(targMonitorNum, currRes, Dynamic, FMode, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef scrWidthDefArr, ByRef scrHeightDefArr, ByRef scrFreqDefArr, SaveVars := 0)
@@ -4146,7 +4269,6 @@ else
 				{
 				CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut)
 
-
 				PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, !InStr(PrgLnkInf[selPrgChoice], "*"), InStr(PrgLnkInf[selPrgChoice], "|"))
 				GuiControl, PrgLnchOpt: Enable, MkShortcut
 				GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
@@ -4183,7 +4305,7 @@ else
 					GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 					}
 
-					if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq))
+					if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq, ResIndexHwnd))
 					GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
 
 
@@ -4509,7 +4631,7 @@ else
 
 		GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 
-		if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq))
+		if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq, ResIndexHwnd))
 		GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
 
 		PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
@@ -5039,13 +5161,11 @@ WM_HELPMSG := 0x0053
 	WM_HELP(0, lParam, WM_HELPMSG, hWnd)
 	else
 	{
-    MouseGetPos, , , mWin, mControl ; mX relative to FORM
+    MouseGetPos, , , , mControl ; mX relative to FORM
 	; Bizarro results with OutputVarControl so get class instead
-	WinGetClass, class, ahk_id %mWin%
+	WinGetClass, class, ahk_id %hWnd%
 		if (class="tooltips_class32")
 		ToolTip
-		else
-		GuiControlGet, tmp, Name, % mControl
 	}
 }
 
@@ -5268,7 +5388,7 @@ SplashImage, PrgLaunching.jpg, Hide,,,LnchSplash
 Thread, NoTimers, false
 
 
-if (lnchStat < 0)
+	if (lnchStat < 0)
 	{
 		if (PrgPID)
 		{
@@ -5368,7 +5488,7 @@ if (lnchPrgIndex > 0) ;Running
 
 	;WinHide ahk_class Shell_TrayWnd ;Necessary?
 
-	if (scrWidth < scrWidthDef)
+	if (scrWidth + 120 < scrWidthDef) ; 120 pixels might be enough
 		{
 		IniRead, fTemp, %SelIniChoicePath%, General, LoseGuiChangeResWrn
 			if (!fTemp)
@@ -5451,7 +5571,7 @@ if (lnchPrgIndex > 0) ;Running
 	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
 	Sleep 500
 
-
+	DetectHiddenWindows, On
 	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
 	fTemp := 0
 	; Possible the default window co-ords are in another monitor from a previous run here
@@ -5590,6 +5710,7 @@ Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "", % "UseErrorLevel" (
 		FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
 		Sleep 500
 
+		DetectHiddenWindows, On
 		WinGet, temp, MinMax, ahk_pid%PrgPIDtmp%
 		if (temp)
 		WinRestore, ahk_pid%PrgPIDtmp%
@@ -5658,6 +5779,7 @@ Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "", % "UseErrorLevel" (
 		;WinMove, A ,, mswLeft + (mswRight - mswLeft) // 2 - W // 2, mswTop + (mswBottom - mswTop) // 2 - H // 2
 
 	}
+	DetectHiddenWindows, Off
 	; Set power here rather than at the beginning
 	if (currBatchno = 1 & lnchStat = 1)
 	{
@@ -6608,7 +6730,7 @@ strRetVal := "", strTemp2 := ""
 		}
 		else
 		{
-		FileGetShortcut, % strTemp2, , strRetVal
+		FileGetShortcut, % strTemp2, ,strRetVal
 		strRetVal .= "\"
 		}
 	}
@@ -6719,7 +6841,7 @@ retVal := 0
 
 	;if (strTemp != A_ScriptDir && !InStr(strTemp, "\", false,  StrLen(strTemp)))
 	if (InStr(strTemp, "\", false,  StrLen(strTemp)))
-	strTemp2 := SubStr(strTemp, 1, InStr(strTemp, "\", false, -1))
+	strTemp2 := SubStr(strTemp, 1, InStr(strTemp, "\", false, 0) -1)
 	else
 	{
 	FileGetAttrib, strTemp2, %strTemp%
@@ -6731,7 +6853,7 @@ retVal := 0
 
 SetWorkingDir %strTemp2%
 retVal := ErrorLevel
-if (retVal)
+
 
 	if (!SetNow) ; just testing: never called with A_ScriptDir
 	{
@@ -6742,11 +6864,11 @@ if (retVal)
 		retVal := ErrorLevel
 		}
 	}
-; 0 success
-if (retVal)
-Return "An error of " retVal " occurred while reading the path for:`n""" strTemp2 . """"
-else
-Return ""
+	; 0 success
+	if (retVal)
+	Return "An error of " retVal " occurred while reading the path for:`n""" strTemp2 . """"
+	else
+	Return ""
 }
 /*
 ===============================================================================
@@ -6978,15 +7100,6 @@ Return 0
 
 
 
-
-
-
-
-
-
-;LnchPad routines
-LnchPadConfig:
-Return
 
 
 
@@ -7687,8 +7800,8 @@ NewThreadforDownload: ;Timer!
 	;We don't know if the URL works, but write it to ini anyway
 	IniProc(selPrgChoice)
 
-
-	strTemp := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
+	temp := 0
+	strTemp := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, temp, IniFileShortctSep)
 	if (InStr(PrgUrl[selPrgChoice], "%"))
 	DownloadFile(SelIniChoicePath, LC_UrlDecode(PrgUrl[selPrgChoice]), strTemp, updateStatus)
 	else
@@ -7749,7 +7862,8 @@ NewThreadforDownload: ;Timer!
 					IniWrite, 1, %SelIniChoicePath%, General, PrgLaunchAfterDL
 				}
 			}
-		strTemp2 := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
+		temp := 0
+		strTemp2 := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, temp, IniFileShortctSep)
 		if (strTemp != strTemp2)
 		{
 		SplitPath, strTemp2,, strTemp2
@@ -7871,7 +7985,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 		MsgBox, 8192, , Timed out
 
 		Progress, Hide ,, Downloading...
-		WinGet, Hwnd, ID,,, Downloading...
+
 		SysGet, X, 45 ;Progress bar border B1 corresponds with SM_CXEDGE?
 		SysGet, Y, 4 ;Height of a caption area?
 
@@ -8343,6 +8457,7 @@ WinMover(Hwnd := 0, position := "hc vc", Width := 0, Height := 0, splashInit := 
 	WinMove, LnchSplash,, wdRatio * x, htRatio * y
 	else
 	WinMove, ahk_id %Hwnd%,, wdRatio * x, htRatio * y
+
 	CoordMode, Mouse, % strTemp
 	DetectHiddenWindows, %oldDHW%
 
@@ -9598,7 +9713,10 @@ Gui, PrgProperties: Show, Hide, PrgProperties
 
 
 SysGet, temp, MonitorWorkArea, PrgLnch.Monitor
-WinGetPos,, propY,, propH, % "ahk_id" PrgPropertiesHwnd
+DetectHiddenWindows, On
+WinGetPos, propx, propY,, propH, % "ahk_id" PrgPropertiesHwnd
+DetectHiddenWindows, Off
+
 	if (tempBottom - y > tempBottom - propH)
 	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % propH - y, w
 	else
@@ -9671,6 +9789,7 @@ MCode(ByRef code, hex)
 	Loop % StrLen(hex)//2
 	NumPut("0x" . SubStr(hex,2*A_Index-1,2), code, A_Index-1, "Char")
 }
+
 RestartPrgLnch(AsAdmin := 0, chgPreset := "", SprIniSlot := "")
 {
 Global
