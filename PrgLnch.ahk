@@ -24,20 +24,16 @@ OnMessage(0x201, "WM_LBUTTONDOWN")
 #Include %A_ScriptDir%
 
 
-PrgLnchPID := DllCall("GetCurrentProcessId")
 
-
-WinGetActiveTitle, strTemp
-
-if (!(InStr(strTemp, PrgLnch.Title . ".ahk") || InStr(strTemp, PrgLnch.Title . ".exe")))
+if (!(InStr(PrgLnch.Title . ".ahk", A_ScriptName) || InStr(PrgLnch.Title . ".exe", A_ScriptName)))
 {
-MsgBox, 8192, , PrgLnch cannot be run from a copy!
-;ExitApp
+MsgBox, 8192, , % "PrgLnch cannot be run from a copy like " """" A_ScriptName """" "!"
+ExitApp
 }
 
 
 
-
+PrgLnchPID := DllCall("GetCurrentProcessId")
 Process, priority, %PrgLnchPID%, A
 ;Issues:
 
@@ -776,7 +772,7 @@ else
 	GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
 	CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut)
 
-	PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, !InStr(PrgLnkInf[selPrgChoice], "*"), InStr(PrgLnkInf[selPrgChoice], "|"))
+	PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
 
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
 	GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
@@ -792,14 +788,17 @@ else
 Gui, PrgLnchOpt: Show, Hide, PrgLnchOpt
 WinMover(PrgLnchOpt.Hwnd(), "d r")   ; "dr" means "down, right"
 
-if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq, ResIndexHwnd))
-GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
-;ChooseString may fail if frequencies differ. Meh!
-if (PrgPID)
-{
-HideShowTestRunCtrls()
-SetTimer, WatchSwitchOut, -1000
-}
+	if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq, ResIndexHwnd))
+	{
+	GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
+	SplashImage, PrgLnchLoading.jpg, A B,,, LnchSplash
+	}
+	;ChooseString may fail if frequencies differ. Meh!
+	if (PrgPID)
+	{
+	HideShowTestRunCtrls()
+	SetTimer, WatchSwitchOut, -1000
+	}
 
 IniProc(100) ;initialises scrWidth, scrHeight, scrFreq & Prgmon in ini
 
@@ -2913,9 +2912,9 @@ loop % PrgNo
 	temp := 0
 	strTemp := ExtractPrgPath(A_Index, 0, PrgChoicePaths[A_Index], PrgLnkInf, temp, IniFileShortctSep)
 
-	if (strTemp && PrgLnkInf[A_Index] != "\") ; Don't care about invalid links- (but we should)
+	if (strTemp && PrgLnkInf[A_Index] != "\" && PrgLnkInf[A_Index] != IniFileShortctSep) ; Don't care about invalid links- (but we do really!)
 	{
-		if (!InStr(PrgLnkInf[A_Index], "*"))
+		if (LNKFlag(PrgLnkInf[A_Index]))
 		strTemp := PrgLnkInf[A_Index]
 
 	strRetVal := WorkingDirectory(strTemp, 1)
@@ -2938,8 +2937,7 @@ loop % PrgNo
 }
 
 strRetVal := WorkingDirectory(A_ScriptDir, 1)
-if (strRetVal)
-msgbox % " WorkingDirectory(A_ScriptDir " A_ScriptDir
+
 	If (strRetVal)
 	strTemp2 .= "`n" . strRetVal
 	else
@@ -2958,7 +2956,7 @@ ExitApp
 
 KleenupPrgLnchFiles(RecycleNow := 0)
 {
-namesToDel := ["PrgLnchLoading.jpg", "PrgLaunching.jpg", "PrgLnchProperties.jpg", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat", "LnchPadInit.exe"]
+namesToDel := ["PrgLnchLoading.jpg", "PrgLaunching.jpg", "PrgLnchProperties.jpg", "LnchPadCfg.jpg", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat", "LnchPadInit.exe"]
 
 temp := ""
 KleenupPrgLnchFiles := ""
@@ -3737,7 +3735,7 @@ strTemp := PrgChoicePaths[selPrgChoice]
 		}
 		PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 	}
-PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, 1)
+PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
 }
 
 
@@ -4269,7 +4267,7 @@ else
 				{
 				CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut)
 
-				PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, !InStr(PrgLnkInf[selPrgChoice], "*"), InStr(PrgLnkInf[selPrgChoice], "|"))
+				PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
 				GuiControl, PrgLnchOpt: Enable, MkShortcut
 				GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
 				GuiControl, PrgLnchOpt: Enable, RnPrgLnch
@@ -4502,7 +4500,7 @@ else
 	strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 	GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
 	GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
-	PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, !InStr(PrgLnkInf[selPrgChoice], "*"), InStr(PrgLnkInf[selPrgChoice], "|"))
+	PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
 
 	}
 	else
@@ -4547,19 +4545,19 @@ else
 		;check dup names
 		Loop % PrgNo
 		{
-		if (selPrgChoice != A_Index)
-		{
-		if (PrgChoiceNames[selPrgChoice] = PrgChoiceNames[A_Index])
-		PrgChoiceNames[selPrgChoice] := PrgChoiceNames[selPrgChoice] . selPrgChoice
-		}
+			if (selPrgChoice != A_Index)
+			{
+				if (PrgChoiceNames[selPrgChoice] = PrgChoiceNames[A_Index])
+				PrgChoiceNames[selPrgChoice] := PrgChoiceNames[selPrgChoice] . selPrgChoice
+			}
 		}
 
 		;valid monitor?
 		GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
-		if (iDevNumArray[targMonitorNum] < 10)
-		targMonitorNum := PrgLnch.Monitor
-		PrgMonToRn[selPrgChoice] := targMonitorNum
+			if (iDevNumArray[targMonitorNum] < 10)
+			targMonitorNum := PrgLnch.Monitor
 
+		PrgMonToRn[selPrgChoice] := targMonitorNum
 
 
 		strTemp := PrgChoicePaths[selPrgChoice]
@@ -4578,8 +4576,9 @@ else
 				else
 				{
 				PrgResolveShortcut[selPrgChoice] := 0
-				; strip the last "\":  gets working directory of lnk, if any
-				strTemp2 := WorkingDirectory(strRetVal)
+					; strip the last "\":  gets working directory of lnk, if any
+					if (!InStr(strRetVal, ".lnk", false, strLen(strRetVal) - 4)) ; Could be a correct link with unresolved targer- e.g. recycle bin
+					strTemp2 := WorkingDirectory(strRetVal)
 				}
 			}
 
@@ -4594,18 +4593,27 @@ else
 			}
 			else
 			{
-			PrgLnkInf[selPrgChoice] := strRetVal
-			GuiControl, PrgLnchOpt: Text, resolveShortct, Resolve shortcut
-				if (!InStr(strRetVal, "*"))
+				if (strRetVal)
 				{
-				;Append resolved path
-				strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1, 1)
-				PrgChoicePaths[selPrgChoice] .= IniFileShortctSep . strRetVal
+					if (LNKFlag(strRetVal))
+					{
+					;Append resolved path
+					strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1, 1)
+					PrgChoicePaths[selPrgChoice] .= IniFileShortctSep . strRetVal
+					}
+				GuiControl, PrgLnchOpt: Text, resolveShortct, Resolve shortcut
 				}
+				else
+				{
+				; for unresolved targets e.g. recycle bin shortcuts
+				strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1, 1)
+				PrgChoicePaths[selPrgChoice] .= strRetVal
+				}
+			PrgLnkInf[selPrgChoice] := strRetVal
 			}
 
 		txtPrgChoice := PrgChoiceNames[selPrgChoice]
-		PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, !InStr(strRetVal, "*"), InStr(strRetVal, "|"))
+		PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
 
 
 
@@ -4724,14 +4732,16 @@ strTemp := StrReplace(strPrgChoice, "|", "|", foundpos1)
 	else
 	return strPrgChoice
 }
-PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, noLnk := 0, dirShortCut := 0)
+PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
 {
 
-temp := PrgResolveShortcut[selPrgChoice]
-strTemp := PrgCmdLine[selPrgChoice]
 
+IsaLnk := LNKFlag(PrgLnkInf[selPrgChoice]), dirShortCut := InStr(PrgLnkInf[selPrgChoice], "|"), specialLnk := InStr(PrgLnkInf[selPrgChoice], "?")
+temp := PrgResolveShortcut[selPrgChoice], strTemp := PrgCmdLine[selPrgChoice]
 
-if (noLnk || dirShortCut) ;only if not a lnk file with separator. dirShortCut does not have separator, so is conditional -i.e. (!noLnk && dirShortCut) is impossible
+;msgbox % " temp " temp " strTemp " strTemp " IsaLnk " IsaLnk " selPrgChoice " selPrgChoice " specialLnk " specialLnk
+
+if (!IsaLnk || dirShortCut) ;only if not a lnk file with separator. dirShortCut does not have separator, so is conditional -i.e. (!IsaLnk && dirShortCut) is impossible
 {
 	if (temp)
 	{
@@ -4775,23 +4785,46 @@ else
 {
 GuiControl, PrgLnchOpt:, CmdLinPrm
 
-	if (strTemp)
-	GuiControl, PrgLnchOpt:, CmdLinPrm, % strTemp
-	else
-	SetEditCueBanner(cmdLinHwnd, "Cmd Line Extras")
+	if (temp)
+	{
 
-GuiControl, PrgLnchOpt: Enable, CmdLinPrm
-GuiControl, PrgLnchOpt: Disable, resolveShortct
+		if (strTemp)
+		GuiControl, PrgLnchOpt:, CmdLinPrm, % strTemp
+		else
+		SetEditCueBanner(cmdLinHwnd, "Cmd Line Extras")
+
+	GuiControl, PrgLnchOpt: Enable, CmdLinPrm
+	GuiControl, PrgLnchOpt: Enable, resolveShortct
+	}
+	else
+	{
+	GuiControl, PrgLnchOpt:, CmdLinPrm
+	GuiControl, PrgLnchOpt: Disable, CmdLinPrm
+	GuiControl, % (specialLnk)? "PrgLnchOpt: Disable": "PrgLnchOpt: Enable", resolveShortct
+	}
 }
 GuiControl, PrgLnchOpt: Text, resolveShortct, Resolve Shortcut
 }
 
+LNKFlag(PrgLnkInfArg)
+{
+	if (PrgLnkInfArg)
+	{
+		if (InStr(PrgLnkInfArg, "*"))
+		Return 0
+		else
+		Return 1
+	}
+	else
+	Return 0
+}
+
 ExtractPrgPath(selPrgChoice, PrgChoicePaths, PrgPth, PrgLnkInf, ByRef IsaPrgLnk, IniFileShortctSep)
 {
-IsaPrgLnk := 0
+IsaPrgLnk := 0, strTemp := PrgLnkInf[selPrgChoice]
 prgPath := (PrgPth)? PrgPth: PrgChoicePaths[selPrgChoice]
 
-if (InStr(PrgLnkInf[selPrgChoice], "*")) ; Lnk has invalid working directory OR regular Prg
+if (!LNKFlag(strTemp)) ; Lnk has invalid working directory OR regular Prg
 {
 	;case where prgPath is a directory link
 	if (InStr(prgPath, IniFileShortctSep,, 0))
@@ -4804,14 +4837,14 @@ else
 {
 	if (InStr(prgPath, IniFileShortctSep,, 0))
 	{
-		; shortcut not resolved
-		if (InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])))
+		;special lnk or shortcut not resolved
+		if (InStr(strTemp, IniFileShortctSep) || InStr(strTemp, "\", false, StrLen(strTemp)))
 		{
 		prgPath := SubStr(prgPath, 1, InStr(prgPath, IniFileShortctSep,, 0) -1)
 		IsaPrgLnk := 1
 		}
 		else ;shortcut resolved
-		prgPath := PrgLnkInf[selPrgChoice]
+		prgPath := strTemp
 	}
 
 }
@@ -5454,8 +5487,10 @@ if (PrgLnch.Monitor != PrgLnchMon)
 	if (!fTemp)
 	{
 	MsgBox, 8196, PrgLnch Moved, PrgLnch has been moved to another monitor %PrgLnchMon%.`nAll messages will be directed there.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `n
-	IfMsgBox, No
-	IniWrite, 1, %SelIniChoicePath%, General, LnchPrgMonWarn
+		IfMsgBox, No
+		IniWrite, 1, %SelIniChoicePath%, General, LnchPrgMonWarn
+
+	WinMover(, , , , "PrgLaunching.jpg")
 	}
 PrgLnch.Monitor := PrgLnchMon
 }
@@ -5494,28 +5529,33 @@ if (lnchPrgIndex > 0) ;Running
 			if (!fTemp)
 			{
 			MsgBox, 8195, , In the unlikely situation of the PrgLnch Gui relocating `noff the screen after switching to lower resolutions, `nuse <CTRL-Alt-P> to return the Gui to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do nothing: `n
-			IfMsgBox, No
-			IniWrite, 1, %SelIniChoicePath%, General, LoseGuiChangeResWrn
-			else
-			{
-				IfMsgBox, Cancel
-				Return "Cancelled by user!"
-			}
+				IfMsgBox, No
+				IniWrite, 1, %SelIniChoicePath%, General, LoseGuiChangeResWrn
+				else
+				{
+					IfMsgBox, Cancel
+					Return "Cancelled by user!"
+				}
+			WinMover(, , , , "PrgLaunching.jpg")
 			}
 		}
 	if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
-		{
-
-		strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
+	{
+	strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 		if (strRetVal)
 		{
 		MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n" strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
-		IfMsgBox, No
-		Return "Cancelled by user!"
+			IfMsgBox, No
+			Return "Cancelled by user!"
+			else
+			{
+			WinMover(, , , , "PrgLaunching.jpg")
+			Sleep 200
+			}
 		}
 		else
 		Sleep 1200
-		}
+	}
 
 ;try
 ;{
@@ -5646,14 +5686,19 @@ if (lnchPrgIndex > 0) ;Running
 			if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 			{
 			strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
-			if (strRetVal)
-			{
-			MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n " strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
-			IfMsgBox, No
-			Return "Cancelled by user!"
-			}
-			else
-			Sleep 1200
+				if (strRetVal)
+				{
+				MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n " strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
+					IfMsgBox, No
+					Return "Cancelled by user!"
+					else
+					{
+					WinMover(, , , , "PrgLaunching.jpg")
+					Sleep 200
+					}
+				}
+				else
+				Sleep 1200
 			}
 ;try
 ;{
@@ -6307,17 +6352,7 @@ CheckPrgPaths(selPrgChoice, IniFileShortctSep, ByRef PrgChoicePaths, ByRef PrgLn
 {
 Local strRetVal := "", strTemp := PrgChoicePaths[selPrgChoice], strTemp2 := PrgLnkInf[selPrgChoice]
 ;gets, tests working directory of possible lnk, if any
-	if (InStr(strTemp2, "*"))
-	{
-	strRetVal := WorkingDirectory(strTemp)
-		if (!strRetVal && InStr(strTemp, ".lnk", False, StrLen(strTemp) - 4))
-		{
-			if ("*" = GetPrgLnkVal(strTemp, IniFileShortctSep))
-			MsgBox, 8192, , The link %strTemp% is invalid, or it links to a special location!
-			;else it''s a directory lnk
-		}
-	}
-	else
+	if (LNKFlag(strTemp2))
 	{
 	; The ini may be corrupted when IniFileShortctSep is removed
 	(InStr(strTemp, IniFileShortctSep))? lnkPrg := Substr(strTemp, 1, InStr(strTemp, IniFileShortctSep) - 1): lnkPrg := strTemp
@@ -6340,9 +6375,20 @@ Local strRetVal := "", strTemp := PrgChoicePaths[selPrgChoice], strTemp2 := PrgL
 				strRetVal := ""
 			}
 			else
-			strRetVal := % strTemp "`nwas supposed to have a backslash terminator!"
+			strRetVal := % strTemp2 "`nwas supposed to have a backslash terminator!"
 		}
 	}
+	else
+	{
+	(strTemp != IniFileShortctSep)? strRetVal := WorkingDirectory(strTemp):
+		if (!strRetVal && InStr(strTemp, ".lnk", False, StrLen(strTemp) - 4))
+		{
+			if ("*" = GetPrgLnkVal(strTemp, IniFileShortctSep))
+			MsgBox, 8192, , The link %strTemp% is invalid, or it links to a special location!
+			;else it''s a directory lnk
+		}
+	}
+
 if (strRetVal)
 MsgBox, 8192, Checking Prg Paths, % strRetVal
 
@@ -6422,6 +6468,7 @@ loop % currBatchNo
 	{
 	temp := PrgBatchIni[A_Index]
 	strTemp := ExtractPrgPath(temp, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
+
 	temp := InStr(PrgPaths, ".lnk", false, strLen(PrgPaths) - 4)
 	if (InStr(strTemp, "PrgLnch.exe") || InStr(strTemp, "BadPath"))
 	Return "PrgLnch"
@@ -6462,6 +6509,7 @@ else
 
 	if (InStr(strTemp, "PrgLnch.exe") || InStr(strTemp, "BadPath"))
 	Return "PrgLnch"
+
     if !(strTemp := GetProcFromPath(strTemp, strTemp2))
 	Return "BadPath"
 	strTemp2 := ""
@@ -6723,45 +6771,56 @@ strRetVal := "", strTemp2 := ""
 
 		if (resolveNow)
 		{
-		FileGetShortcut, % strTemp2, strRetVal
-		strTemp2 := SubStr(strTemp, InStr(strTemp, IniFileShortctSep,,0) + 1)
-		if (strTemp2 != strRetVal && !strTemp2)
-		MsgBox, 8192, , % "Shortcut target`n" strRetVal "`nhas been updated"
+		FileGetShortcut, %strTemp2%, strRetVal
+			if (ErrorLevel)
+			MsgBox, 8208, Shortcut, % "Invalid shortcut for " strTemp2 "!"
+			else
+			{
+			strTemp2 := SubStr(strTemp, InStr(strTemp, IniFileShortctSep,,0) + 1)
+				if (strTemp2 != strRetVal && !strTemp2)
+				MsgBox, 8192, , % "Shortcut target`n" strRetVal "`nhas been updated"
+			}
 		}
 		else
 		{
-		FileGetShortcut, % strTemp2, ,strRetVal
-		strRetVal .= "\"
+		FileGetShortcut, %strTemp2%, ,strRetVal
+
+			if (!strRetVal) ; This is better than Errorlevel because special location lnks get through
+			{
+				if (InStr(strTemp2, ".lnk", false, strLen(strTemp2) - 4))
+				strRetVal .= IniFileShortctSep
+			}
+			else
+			strRetVal := ParseEnvVars(strRetVal) . "\"
+
 		}
 	}
 	else
 	{
-	strTemp:= ParseEnvVars(strTemp)
-	; get workdir: This blanks all if not lnk file so expect return of "*"
-	FileGetShortcut, % strTemp, , strRetVal
-		if (strRetVal)
+
+	; get workdir: This blanks all if not lnk file  (or a shortcut  to an "unresolved" target tlke recycle bin, so expect return of ""
+	FileGetShortcut, %strTemp%, , strRetVal
+		if (!ErrorLevel)
 		{
-		strRetVal := ParseEnvVars(strRetVal)
-		strRetVal .= "\"
-		}
-		else ; lnk might be a directory shortcut
-		{
-		FileGetShortcut, % strTemp, strRetVal
 			if (strRetVal)
-			{	
+			{
+			strRetVal := ParseEnvVars(strRetVal)
+			strRetVal .= "\"
+			}
+			else ; lnk might be a directory shortcut
+			{
 				if (InStr(strTemp, IniFileShortctSep))
 				strTemp := SubStr(strTemp, 1, InStr(strTemp, IniFileShortctSep,,0) - 1)
-
-			strRetVal := "|"
+			FileGetShortcut, %strTemp%, strRetVal
+				if (strRetVal)
+				strRetVal := "|"
+				else
+				strRetVal := "*"
+				; "*" indicates an nvalid working directory for the valid target (unusual)
 			}
-			else
-			strRetVal := "*"
-			; dummy character- definitely not a valid path
 		}
-
 	}
-
-	return strRetVal
+return strRetVal
 }
 
 ParseEnvVars(strTemp)
@@ -8333,7 +8392,7 @@ else
 	if (!checkSubSys || (checkSubSys && !Instr(PrgChoicePaths[selPrgChoice], A_WinDir)))
 	{
 		if (A_IsAdmin)
-		msgbox, 8196 ,File Open, % exeStrOld " could not be accessed with error " A_LastError "."
+		msgbox, 8192 ,File Open, % exeStrOld " could not be accessed with error " A_LastError "."
 		else
 		{
 		msgbox, 8196 ,File Open, % exeStrOld " could not be accessed with error " A_LastError ".`nIs it opened by another process, or does it have special permissions?`nIt might be possible for PrgLnch to open it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
@@ -8479,6 +8538,12 @@ if (CtrlsOn)
 		GuiControl, PrgLnchOpt: Enable, Bordless
 		GuiControl, PrgLnchOpt:, Bordless, % PrgBordless[selPrgChoice]
 		}
+		else
+		{
+		GuiControl, PrgLnchOpt:, Bordless, 0
+		GuiControl, PrgLnchOpt: Disable, Bordless
+		}
+		
 	GuiControl, PrgLnchOpt: Enable, PrgLnchHd
 	GuiControl, PrgLnchOpt:, PrgLnchHd, % PrgLnchHide[selPrgChoice]
 		if (lnkDisable)
@@ -8734,8 +8799,8 @@ if (!FileExistSelIniChoicePath)
 				{
 				;Append resolved path
 				strRetVal := GetPrgLnkVal(spr, IniFileShortctSep)
-				if (!InStr(strRetVal, "*") || InStr(strRetVal, "|"))
-				PrgChoicePaths[A_Index] .= IniFileShortctSep . strRetVal
+					if (LNKFlag(strRetVal) && InStr(strRetVal, "|"))
+					PrgChoicePaths[A_Index] .= (!InStr(PrgChoicePaths[A_Index], IniFileShortctSep))? IniFileShortctSep: . strRetVal
 				}
 		}
 		}
