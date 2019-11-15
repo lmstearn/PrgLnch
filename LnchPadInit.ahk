@@ -124,6 +124,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 gameList := ["Morrowind", "Oblivion", "Skyrim", "", "", "", "", "", "", "", "", ""]
 
 PrgLnchIniPath := A_ScriptDir . "\PrgLnch.ini"
+gameIniPath := ""
 gameListStr := ""
 tooltipDriveStr := ""
 maxGames := 3
@@ -529,6 +530,8 @@ currDrive := DriveLetter[A_Index]
 			if (FolderList[A_Index])
 			{
 				Progress, % 10 + (90 * A_Index//FolderList.Length())
+					if (searchStat = -2)
+					Break
 				Loop, Files, % FolderList[A_Index] . "\*.exe", R
 				FileList .= A_LoopFileFullPath "`n"
 			}
@@ -615,6 +618,8 @@ currDrive := DriveLetter[A_Index]
 		tooltipDriveStr .= currDrive . ","
 	}
 	Progress, Off
+		if (searchStat = -2)
+		Break
 	}
 }
 
@@ -653,7 +658,8 @@ UpdateIni:
 Return
 
 addToLnchPad:
-
+Gui, Submit, Nohide
+Tooltip
 GuiControlGet, strTmp, , addToLnchPad
 	if (InStr(strTmp, "Locate"))
 	{
@@ -699,10 +705,9 @@ GuiControlGet, strTmp, , addToLnchPad
 
 			if (tmp && FileExist(PrgLnchIniPath))
 			{
-				GuiControl, Show, overWriteIni
-				GuiControl, Show, UpdateIni
-				GuiControl,, UpdateIni, 1
-
+			GuiControl, Show, overWriteIni
+			GuiControl, Show, UpdateIni
+			GuiControl,, UpdateIni, 1
 			}
 			else
 			{
@@ -726,7 +731,6 @@ GuiControlGet, strTmp, , addToLnchPad
 				GuiControl,, overWriteIni, 1	
 				overWriteIniFile := 1
 				}
-				
 			}
 		}
 		else
@@ -739,58 +743,39 @@ GuiControlGet, strTmp, , addToLnchPad
 	else
 	{
 	retVal := 0
-	iniNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
+	gameIniPath := gameList[tabStat] . ".ini"
+
 
 		if (overWriteIniFile)
 		{
-		FileCopy, %PrgLnchIniPath%, % A_ScriptDir . "\" . gameList[tabStat]
+		if (FileExist(gameIniPath))
+		FileRecycle, % gameIniPath
+		FileCopy, %PrgLnchIniPath%, % A_ScriptDir . "\" . gameIniPath
 			if (ErrorLevel)
 			{
-			Tooltip, Problem with %PrgLnchIniPath% . Cannot continue!
+			Tooltip, Problem with %gameIniPath% . Cannot continue!
 			retVal := 1
 			}
 		}
-
-		if (!retVal)
+		else
 		{
-		loop % prgNo
-		{
-		IniRead, strTmp, %PrgLnchIniPath%, Prg%A_Index%, PrgPath
-		; Also consider name check:
-		; IniRead, SelIniChoiceName, %PrgLnchIniPath%, Prg%A_Index%, PrgName ,,, if (InStr(SelIniChoiceName, gameList[tabStat]))
-
-			if (strTmp)
+			if (!FileExist(gameIniPath))
 			{
-			; retrieve possible link 
-			tmp := InStr(strTmp, IniFileShortctSep)
-				if (tmp)
+			FileCopy, %PrgLnchIniPath%, % A_ScriptDir . "\" . gameIniPath
+				if (ErrorLevel)
 				{
-				strTmp2 := SubStr(strTmp, InStr(strTemp, IniFileShortctSep) + 1)
-				strTmp := Substr(strTmp, 1, InStr(strTemp, IniFileShortctSep))
-				SplitPath, strTmp2 ,,,, SelIniChoiceName
-				}
-				else
-				{
-				SplitPath, strTmp ,,,, SelIniChoiceName
-				strTmp := ""
-				}
-
-				loop % prgNo
-				{
-					if (prgPath%tabStat%[A_Index])
-					{
-					;  Not handling associations here
-					
-					SplitPath, prgPath%tabStat%[A_Index] ,,,, strTmp2
-						if (InStr(SelIniChoiceName, strTmp2) || InStr(strTmp2, SelIniChoiceName))
-						IniWrite, % strTmp . prgPath%tabStat%[A_Index], %PrgLnchIniPath%, General, IniChoiceNames
-					}
+				Tooltip, Problem with %gameIniPath% . Cannot continue!
+				retVal := 1
 				}
 			}
 		}
-		}
-	
-	;	 Write updated slots to PrgLnch.ini
+
+
+		if (!retVal)
+		{
+		AddToIniProc(tabStat, gameIniPath, prgPath%tabStat%)
+
+		; Write updated slots to PrgLnch.ini
 		tmp := 0
 		strTmp := ""
 			Loop, % PrgNo
@@ -802,9 +787,8 @@ GuiControlGet, strTmp, , addToLnchPad
 				}
 			strTmp .= iniNames[A_Index] . ","
 			}
-		IniWrite, % SubStr(strTmp, 1, StrLen(strTemp) -1), %PrgLnchIniPath%, General, IniChoiceNames
-
-
+		IniWrite, % SubStr(strTmp, 1, StrLen(strTmp) -1), %PrgLnchIniPath%, General, IniChoiceNames
+		}
 	GuiControl,, UpdateIni, 0
 	GuiControl,, overWriteIni, 0
 	GuiControl, Hide, overWriteIni
@@ -812,10 +796,88 @@ GuiControlGet, strTmp, , addToLnchPad
 	guiControl, , addToLnchPad, % "&Locate " gameList[tabStat] " Lnch Pad Slot"
 	}
 
-
-
-
 Return
+
+AddToIniProc(tabStat, gameIniPath, prgPathtabStat)
+{
+WrittentoSlotArrayCt := 0
+PrgPathWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
+PrgPathNotWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
+freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+	loop % prgNo
+	{
+	IniRead, strTmp, %gameIniPath%, Prg%A_Index%, PrgPath
+	; Also consider name check:
+	; IniRead, SelIniChoiceName, %PrgLnchIniPath%, Prg%A_Index%, PrgName ,,, if (InStr(SelIniChoiceName, gameList[tabStat]))
+
+		if (strTmp)
+		{
+		freeSlotArray[A_Index] := 1
+		; retrieve possible link 
+		tmp := InStr(strTmp, IniFileShortctSep)
+			if (tmp)
+			{
+			strTmp2 := SubStr(strTmp, InStr(strTmp, IniFileShortctSep) + 1)
+			strTmp := Substr(strTmp, 1, InStr(strTmp, IniFileShortctSep))
+			SplitPath, strTmp2 ,,,, SelIniChoiceName
+			}
+			else
+			{
+			SplitPath, strTmp ,,,, SelIniChoiceName
+			strTmp := ""
+			}
+msgbox % " strTmp2 " strTmp2 " strTmp " strTmp " SelIniChoiceName " SelIniChoiceName " gameIniPath " gameIniPath
+		tmp := 0				
+
+			loop % prgNo
+			{
+			prgPathStr := prgPathtabStat[A_Index]
+				if (prgPathStr)
+				{
+				;  Not handling associations here
+				SplitPath, % prgPathStr ,,,, strTmp2
+					if (InStr(SelIniChoiceName, strTmp2) || InStr(strTmp2, SelIniChoiceName))
+					{
+					WrittentoSlotArrayCt++
+					PrgPathWrittentoSlotArray[WrittentoSlotArrayCt] := prgPathStr
+					IniWrite, % strTmp . prgPathStr, %gameIniPath%, Prg[A_Index], PrgPath
+					}
+				}
+			}
+			
+		}
+	}
+
+	WrittentoSlotArrayCt := 0
+	loop, % PrgNo
+	{
+	strTmp := prgPathtabStat[A_Index]
+		if (strTmp && !PrgPathWrittentoSlotArray[A_Index])
+		{
+		WrittentoSlotArrayCt++
+		PrgPathNotWrittentoSlotArray[WrittentoSlotArrayCt] := strTmp
+		}
+	}
+	; ALSO NAMES URLS
+	; write the path to a new Prg
+	loop, % prgNo
+	{
+	strTmp := PrgPathNotWrittentoSlotArray[A_Index]
+		if (strTmp)
+		{
+			Loop, % PrgNo
+			{
+				if (!freeSlotArray[A_Index])
+				IniWrite, % strTmp, %gameIniPath%, Prg[A_Index], PrgPath
+				SplitPath, strTmp ,,,, SelIniChoiceName
+				IniWrite, %SelIniChoiceName%, %gameIniPath%, Prg[A_Index], PrgName
+			freeSlotArray[A_Index] := 1
+			}
+		}
+	}
+}
+
 
 LnchPadTab:
 
@@ -1948,7 +2010,7 @@ if (retVal) ; error
 }
 RunChm(chmTopic := 0, Anchor := "")
 {
-x := 0, y := 0, w := 0, temp := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
+x := 0, y := 0, w := 0, tmp := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
 
 if (!FileExist(A_ScriptDir . "\PrgLnch.chm"))
 return -1
@@ -1967,19 +2029,19 @@ if (!A_LastError) ; uses last found window
 if (WinExist("PrgLnch_Help"))
 	{
 	;if  not maximised
-	WinGet, temp, MinMax
+	WinGet, tmp, MinMax
 	;Tablet mode perhaps? https://autohotkey.com/boards/viewtopic.php?f=6&t=15619
 	;We are launching as "normal" but just in case this is overidden by user modifying shortcut properties. (probably not)
-	if (!temp)
+	if (!tmp)
 	{
 	WinRestore
 	sleep, 120
 	}
-	WinGetPos, , , , temp
-		if (y > temp)
-		WinMove, , , x, % y - temp, w
+	WinGetPos, , , , tmp
+		if (y > tmp)
+		WinMove, , , x, % y - tmp, w
 		else
-		WinMove, , , x, % temp - y, w
+		WinMove, , , x, % tmp - y, w
 	}
 }
 return A_LastError 

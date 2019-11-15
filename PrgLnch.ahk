@@ -289,7 +289,7 @@ Dynamic := 0
 Tmp := 1
 PrgChoiceNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
-PrgLnkInf := ["", "", "", "", "", "", "", "", "", "", "", ""]
+PrgLnkInf := ["", "", "", "", "", "", "", "", "", "", "", ""] ; Can contain either working directory and resolved lnk path for same Prg as well as other meta
 PrgVer := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgUrl := ["", "", "", "", "", "", "", "", "", "", "", ""]
 IniFileShortctSep := "?"
@@ -380,17 +380,25 @@ if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
 
 	if (strRetVal && !InStr(strRetVal, "CabinetWClass"))
 	{
-	; The following "fails" when any non-PrgLnch ahk script (compiled or not) is run from the PrgLnch folder: Proper way is with mutex
+	; The following "fails" when any non-PrgLnch ahk script (compiled or not) is run from the PrgLnch folder: Proper way is with mutex. Also fails  on 2 or more classic Notepad windows
 	if (InStr(strRetVal, "AutoHotkey"))
 	ffTemp++
-	if (InStr(strRetVal, "Notepad"))
+	if (InStr(strRetVal, "Notepad++"))
 	fTemp++
 
-		if (fTemp > 2 || ffTemp > 2)
+		if (ffTemp > 2)
 		{
 		MsgBox, 8192, PrgLnch Running!, An instance of PrgLnch is already in memory!
 		GoSub PrgLnchButtonQuit_PrgLnch
-	}
+		}
+		else
+		{
+			if (ffTemp > 2)
+			{
+			MsgBox, 8192, PrgLnch in Notepad++!, Too msny PrgLnch windows open. Is PrgLnch already active!
+			GoSub PrgLnchButtonQuit_PrgLnch
+			}
+		}
 	}
 
 	} 
@@ -473,6 +481,9 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 	IfMsgBox, Yes
 	{
 	IniWrite, 1, %SelIniChoicePath%, General, Disclaimer
+	
+	FileInstall PrgLnch.ico, PrgLnch.ico
+	Menu, Tray, Icon , PrgLnch.ico
 	FileInstall PrgLnch.chm, PrgLnch.chm
 	sleep, 300
 	SetTimer, RnChmWelcome, 3500
@@ -495,6 +506,9 @@ sleep, 120
 	IniSpaceCleaner(SelIniChoicePath)
 }
 
+
+FileInstall PrgLnch.ico, PrgLnch.ico
+Menu, Tray, Icon , PrgLnch.ico
 
 
 
@@ -764,7 +778,7 @@ if (txtPrgChoice = "None")
 	GuiControl, PrgLnchOpt:, MkShortcut, Just Change Res.
 	GuiControl, PrgLnchOpt: Disable, Just Change Res.
 	TogglePrgOptCtrls(txtPrgChoice, navShortcut)
-	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
+	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 	}
 else
 	{
@@ -774,7 +788,7 @@ else
 
 	PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
 
-	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
+	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
 	GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 	borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, 1)
 	TogglePrgOptCtrls(txtPrgChoice, navShortcut, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
@@ -1365,7 +1379,7 @@ sleep, 120
 	Gui, PrgProperties: +LastFoundExist
 	If (WinExist())
 	{
-	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
+	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
 	}
 }
 
@@ -1583,7 +1597,7 @@ else
 		Gui, PrgProperties: +LastFoundExist
 			If (WinExist())
 			{
-			PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
+			PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
 			}
 
 		}
@@ -1723,7 +1737,7 @@ if (A_GuiEvent = "DoubleClick")
 	if (temp = "NS" || temp = "FAILED" || temp = "TERM" || temp = "ENDED" || !temp)
 	{
 
-	strRetVal := ChkExistingProcess(PrgLnkInf, presetNoTest, batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep)
+	strRetVal := ChkExistingProcess(PrgLnkInf, PrgResolveShortcut, presetNoTest, batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep)
 
 		if (strRetVal)
 		{
@@ -1788,7 +1802,7 @@ if (A_GuiEvent = "DoubleClick")
 	lnchStat := 0
 
 
-	strRetVal := LnchPrgOff(SelIniChoicePath, batchPrgStatus, lnchStat, PrgChoiceNames, temp, PrgLnkInf, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode, btchPowerNames[btchPrgPresetSel])
+	strRetVal := LnchPrgOff(SelIniChoicePath, batchPrgStatus, lnchStat, PrgChoiceNames, temp, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode, btchPowerNames[btchPrgPresetSel])
 
 
 	loop % currBatchNo
@@ -2086,7 +2100,7 @@ Return
 
 PresetProp:
 	if (btchPrgPresetSel && currBatchNo)
-	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
+	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
 Return
 
 
@@ -2909,12 +2923,11 @@ strTemp2 := ""
 strTemp3 := ""
 loop % PrgNo
 {
-	temp := 0
-	strTemp := ExtractPrgPath(A_Index, 0, PrgChoicePaths[A_Index], PrgLnkInf, temp, IniFileShortctSep)
+	strTemp := ExtractPrgPath(A_Index, 0, PrgChoicePaths[A_Index], PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, temp)
 
-	if (strTemp && PrgLnkInf[A_Index] != "\" && PrgLnkInf[A_Index] != IniFileShortctSep) ; Don't care about invalid links- (but we do really!)
+	if (strTemp && (PrgLnkInf[A_Index] != "\") && (PrgLnkInf[A_Index] != IniFileShortctSep)) ; Don't care about invalid links- (but we do really!)
 	{
-		if (LNKFlag(PrgLnkInf[A_Index]))
+		if (temp) ;IsaPrgLnk
 		strTemp := PrgLnkInf[A_Index]
 
 	strRetVal := WorkingDirectory(strTemp, 1)
@@ -2956,7 +2969,7 @@ ExitApp
 
 KleenupPrgLnchFiles(RecycleNow := 0)
 {
-namesToDel := ["PrgLnchLoading.jpg", "PrgLaunching.jpg", "PrgLnchProperties.jpg", "LnchPadCfg.jpg", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat", "LnchPadInit.exe"]
+namesToDel := ["PrgLnch.ico", "PrgLnchLoading.jpg", "PrgLaunching.jpg", "PrgLnchProperties.jpg", "LnchPadCfg.jpg", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat", "LnchPadInit.exe"]
 
 temp := ""
 KleenupPrgLnchFiles := ""
@@ -3704,16 +3717,16 @@ else
 {
 PrgResolveShortcut[selPrgChoice] := resolveShortct
 strTemp := PrgChoicePaths[selPrgChoice]
-	if (resolveShortct)
+	if (PrgResolveShortcut[selPrgChoice])
 	{
 	PrgLnkInf[selPrgChoice] := GetPrgLnkVal(strTemp, IniFileShortctSep, 1 , 1)
 
 	;update paths if requ'd
-	strTemp := PrgChoicePaths[selPrgChoice]
-	strTemp := SubStr(strTemp, 1, InStr(strTemp, IniFileShortctSep,,0) - 1)
+	temp := 0
+	strTemp := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, temp)
 	PrgChoicePaths[selPrgChoice] := strTemp . IniFileShortctSep . PrgLnkInf[selPrgChoice]
 
-	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
+	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
 
 	GuiControl, PrgLnchOpt: Enable, PrgMinMax
 	GuiControl, PrgLnchOpt: Enable, PrgLAA
@@ -3722,18 +3735,15 @@ strTemp := PrgChoicePaths[selPrgChoice]
 	else
 	{
 	SetTimer, CheckVerPrg, Delete
-		PrgLnkInf[selPrgChoice] := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
+	PrgLnkInf[selPrgChoice] := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
 		if (CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut))
-		{
-		PrgResolveShortcut[selPrgChoice] := 0
 		GuiControl, PrgLnchOpt: Disable, resolveShortct
-		}
 		else
 		{
 		GuiControl, PrgLnchOpt: Disable, PrgMinMax
 		GuiControl, PrgLnchOpt: Disable, PrgLAA
 		}
-		PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
+		PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 	}
 PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
 }
@@ -4265,13 +4275,14 @@ else
 			GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 				if (PrgChoiceNames[selPrgChoice])
 				{
+				msgbox % " temp " temp " strTemp " strTemp " PrgLnkInf[selPrgChoice] " PrgLnkInf[selPrgChoice] " IsaLnk " IsaLnk " selPrgChoice " selPrgChoice " specialLnk " specialLnk
 				CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut)
 
 				PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
 				GuiControl, PrgLnchOpt: Enable, MkShortcut
 				GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
 				GuiControl, PrgLnchOpt: Enable, RnPrgLnch
-				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
+				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
 				borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, 1)
 				TogglePrgOptCtrls(txtPrgChoice, navShortcut, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
 
@@ -4314,7 +4325,7 @@ else
 				GuiControl, PrgLnchOpt: Enable, MkShortcut
 				GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
 				GuiControl, PrgLnchOpt: Disable, RnPrgLnch
-				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
+				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 				TogglePrgOptCtrls(txtPrgChoice, navShortcut)
 				}
 
@@ -4327,7 +4338,7 @@ else
 				GuiControl, PrgLnchOpt:, MkShortcut, Just Change Res.
 				GuiControl, PrgLnchOpt: Disable, Just Change Res.
 				GuiControl, PrgLnchOpt: Text, resolveShortct, Shortcut Nav. (Dlg)
-				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
+				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 				TogglePrgOptCtrls(txtPrgChoice, navShortcut)
 
 				GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
@@ -4417,7 +4428,7 @@ if (txtPrgChoice = "")
 	GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
 	GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
 	GuiControl, PrgLnchOpt: Disable, RnPrgLnch
-	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
+	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 	TogglePrgOptCtrls(txtPrgChoice, navShortcut)
 	iDevNum := 1
 	GuiControl, PrgLnchOpt:, Choose, iDevNum
@@ -4642,7 +4653,7 @@ else
 		if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq, ResIndexHwnd))
 		GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
 
-		PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
+		PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
 
 		GuiControlGet, temp, PrgLnchOpt:, DefaultPrg
 		if (temp) ;if enabled reset string
@@ -4736,10 +4747,9 @@ PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLn
 {
 
 
-IsaLnk := LNKFlag(PrgLnkInf[selPrgChoice]), dirShortCut := InStr(PrgLnkInf[selPrgChoice], "|"), specialLnk := InStr(PrgLnkInf[selPrgChoice], "?")
-temp := PrgResolveShortcut[selPrgChoice], strTemp := PrgCmdLine[selPrgChoice]
+temp := PrgResolveShortcut[selPrgChoice], strTemp := PrgCmdLine[selPrgChoice], strTemp2 := PrgLnkInf[selPrgChoice]
+IsaLnk := LNKFlag(strTemp2), dirShortCut := InStr(strTemp2, "|"), specialLnk := InStr(strTemp2, "?")
 
-;msgbox % " temp " temp " strTemp " strTemp " IsaLnk " IsaLnk " selPrgChoice " selPrgChoice " specialLnk " specialLnk
 
 if (!IsaLnk || dirShortCut) ;only if not a lnk file with separator. dirShortCut does not have separator, so is conditional -i.e. (!IsaLnk && dirShortCut) is impossible
 {
@@ -4769,17 +4779,8 @@ if (!IsaLnk || dirShortCut) ;only if not a lnk file with separator. dirShortCut 
 			SetEditCueBanner(cmdLinHwnd, "Cmd Line Extras")
 		}
 	}
-
-	if (dirShortCut)
-	{
 	GuiControl, PrgLnchOpt:, resolveShortct, 0
 	GuiControl, PrgLnchOpt: Disable, resolveShortct
-	}
-	else
-	{
-	GuiControl, PrgLnchOpt: Enable, resolveShortct
-	GuiControl, PrgLnchOpt:, resolveShortct, % temp
-	}
 }
 else
 {
@@ -4787,7 +4788,6 @@ GuiControl, PrgLnchOpt:, CmdLinPrm
 
 	if (temp)
 	{
-
 		if (strTemp)
 		GuiControl, PrgLnchOpt:, CmdLinPrm, % strTemp
 		else
@@ -4800,7 +4800,10 @@ GuiControl, PrgLnchOpt:, CmdLinPrm
 	{
 	GuiControl, PrgLnchOpt:, CmdLinPrm
 	GuiControl, PrgLnchOpt: Disable, CmdLinPrm
-	GuiControl, % (specialLnk)? "PrgLnchOpt: Disable": "PrgLnchOpt: Enable", resolveShortct
+		if (specialLnk)
+		GuiControl, PrgLnchOpt: Disable, resolveShortct
+		else
+		GuiControl, PrgLnchOpt: Enable, resolveShortct
 	}
 }
 GuiControl, PrgLnchOpt: Text, resolveShortct, Resolve Shortcut
@@ -4819,46 +4822,39 @@ LNKFlag(PrgLnkInfArg)
 	Return 0
 }
 
-ExtractPrgPath(selPrgChoice, PrgChoicePaths, PrgPth, PrgLnkInf, ByRef IsaPrgLnk, IniFileShortctSep)
+ExtractPrgPath(selPrgChoice, PrgChoicePaths, PrgPth, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, ByRef IsaPrgLnk)
 {
-IsaPrgLnk := 0, strTemp := PrgLnkInf[selPrgChoice]
+strTemp := PrgLnkInf[selPrgChoice]
 prgPath := (PrgPth)? PrgPth: PrgChoicePaths[selPrgChoice]
+IsaPrgLnk := LNKFlag(strTemp)
 
-if (!LNKFlag(strTemp)) ; Lnk has invalid working directory OR regular Prg
+if (IsaPrgLnk)
+{
+	if (PrgResolveShortcut[selPrgChoice])
+	prgPath := SubStr(prgPath, InStr(prgPath, IniFileShortctSep,,0) + 1)
+	else
+	;regular lnk or special lnk or shortcut not resolved ... ;not worried about InStr(strTemp, IniFileShortctSep) or a working directory in PrgLnkInf (InStr(strTemp, "\", false, StrLen(strTemp)))
+	prgPath := SubStr(prgPath, 1, InStr(prgPath, IniFileShortctSep,, 0) -1)
+}
+else  ; Lnk has invalid working directory OR regular Prg
 {
 	;case where prgPath is a directory link
 	if (InStr(prgPath, IniFileShortctSep,, 0))
-	{
-	IsaPrgLnk := 1
 	PrgPath := Substr(prgPath, 1, InStr(prgPath, IniFileShortctSep,, 0) -1)
-	}
 }
-else
-{
-	if (InStr(prgPath, IniFileShortctSep,, 0))
-	{
-		;special lnk or shortcut not resolved
-		if (InStr(strTemp, IniFileShortctSep) || InStr(strTemp, "\", false, StrLen(strTemp)))
-		{
-		prgPath := SubStr(prgPath, 1, InStr(prgPath, IniFileShortctSep,, 0) -1)
-		IsaPrgLnk := 1
-		}
-		else ;shortcut resolved
-		prgPath := strTemp
-	}
-
-}
+	if (!PrgPath)
+	PrgPath := "BadPath"
 Return %prgPath%
 }
 
-PrgURLEnable(ByRef PrgUrlTest, ByRef UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, ByRef selPrgChoiceTimer, PrgLnkInf, PrgUrl, ByRef PrgVer, ByRef PrgVerNew, UpdturlHwnd, IniFileShortctSep, UrlDisableGui := 0)
+PrgURLEnable(ByRef PrgUrlTest, ByRef UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, ByRef selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, ByRef PrgVer, ByRef PrgVerNew, UpdturlHwnd, IniFileShortctSep, UrlDisableGui := 0)
 {
 currPrgUrl := PrgUrl[selPrgChoice]
 PrgverOld := PrgVer[selPrgChoice]
 IsaPrgLnk := 0
 if (!UrlDisableGui)
 {
-PrgPth := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
+PrgPth := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 	if (!FileExist(PrgPth))
 	{
 	GuiControl, PrgLnchOpt: Disable, UpdturlPrgLnch
@@ -5248,7 +5244,7 @@ GuiControlGet strTemp, PrgLnch:, RunBatchPrg
 if ((presetNoTest && strTemp = "&Run Batch") || (!presetNoTest && temp = "&Test Run Prg"))
 {
 	lnchPrgIndex := selPrgChoice ; changes shortly
-	strRetVal := ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep, 1)
+	strRetVal := ChkExistingProcess(PrgLnkInf, PrgResolveShortcut, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep, 1)
 
 
 	if (strRetVal)
@@ -5348,7 +5344,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 		}
 	}
 
-	strRetVal := LnchPrgOff(SelIniChoicePath, A_Index, lnchStat, PrgChoiceNames, (presetNoTest)? temp: strTemp2, PrgLnkInf, IniFileShortctSep, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode, btchPowerNames[btchPrgPresetSel])
+	strRetVal := LnchPrgOff(SelIniChoicePath, A_Index, lnchStat, PrgChoiceNames, (presetNoTest)? temp: strTemp2, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, Fmode, btchPowerNames[btchPrgPresetSel])
 
 	if (strRetVal)
 	{  ;Lnch failed for current Prg
@@ -5469,7 +5465,7 @@ Thread, NoTimers, false
 	}
 Return
 
-LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, Fmode, btchPowerName)
+LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, Fmode, btchPowerName)
 {
 
 
@@ -5506,7 +5502,7 @@ if (lnchPrgIndex > 0) ;Running
 	temp := (PrgRnPriority[lnchPrgIndex])
 	(!temp)? PrgPrty := "B": (temp = 1)? PrgPrty := "H": PrgPrty := "N"
 
-	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
+	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
 	if (FileExist(PrgPaths))
 	;If Notepad, copy Notepad exe to  %A_ScriptDir% and it will not run! (Windows 10 1607)
@@ -6458,7 +6454,7 @@ strRetVal := SubStr(strTemp, InStr(strTemp, "\",, -1) + 1)
 Return strRetVal
 }
 
-ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgChoicePaths, IniFileShortctSep, btchRun := 0, multiInst := 0)
+ChkExistingProcess(PrgLnkInf, PrgResolveShortcut, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgChoicePaths, IniFileShortctSep, btchRun := 0, multiInst := 0)
 {
 strComputer := ".", dupList := "", temp := 0, strTemp := "", strTemp2 := "", IsaPrgLnk := 0
 
@@ -6467,12 +6463,12 @@ if (presetNoTest && btchRun)
 loop % currBatchNo
 	{
 	temp := PrgBatchIni[A_Index]
-	strTemp := ExtractPrgPath(temp, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
+	strTemp := ExtractPrgPath(temp, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)
 
 	temp := InStr(PrgPaths, ".lnk", false, strLen(PrgPaths) - 4)
 	if (InStr(strTemp, "PrgLnch.exe") || InStr(strTemp, "BadPath"))
 	Return "PrgLnch"
-    if !(strTemp := GetProcFromPath(strTemp, temp))
+    if (!(strTemp := GetProcFromPath(strTemp, temp)))
 	Return "BadPath"
 	strTemp2 := ""
 	; Does not work for lnk files. "Select *" means full paths and names and commandlines!
@@ -6503,14 +6499,12 @@ else
 	strTemp2 := PrgLnkInf[temp]
 	}
 
-	strTemp := ExtractPrgPath(temp, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
-	;ExtractPrgPath(selPrgChoice, PrgChoicePaths, PrgPth, PrgLnkInf, ByRef IsaPrgLnk, IniFileShortctSep)
-;if InStr(strTemp, "Notepad")
+	strTemp := ExtractPrgPath(temp, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)
 
 	if (InStr(strTemp, "PrgLnch.exe") || InStr(strTemp, "BadPath"))
 	Return "PrgLnch"
 
-    if !(strTemp := GetProcFromPath(strTemp, strTemp2))
+    if (!(strTemp := GetProcFromPath(strTemp, strTemp2)))
 	Return "BadPath"
 	strTemp2 := ""
 	for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" . strComputer . "\root\cimv2").ExecQuery("Select Name from Win32_Process")
@@ -6595,7 +6589,7 @@ else
 	{
 		if (PrgChoicePaths[A_Index] && PrgPIDMast[A_Index])
 		{
-		strRetVal := ChkExistingProcess(PrgLnkInf, 0, A_Index, 0, 0, PrgChoicePaths, IniFileShortctSep, 0, 1)
+		strRetVal := ChkExistingProcess(PrgLnkInf, PrgResolveShortcut, 0, A_Index, 0, 0, PrgChoicePaths, IniFileShortctSep, 0, 1)
 
 			if (strRetVal)
 			{
@@ -6756,7 +6750,7 @@ return 1 ;hopefully this monitor is the one!
 }
 GetPrgLnkVal(strTemp, IniFileShortctSep, ProcessLnk := 0, resolveNow := 0)
 {
-;Gets either working directory or resolved shortcut path
+;Gets either working directory or resolved/unresolved shortcut path
 strRetVal := "", strTemp2 := ""
 	; ATM PrgLnch does not modify the fields of the Wscript shortcut component in anyway.
 	;http://superuser.com/questions/392061/how-to-make-a-shortcut-from-cmd
@@ -6784,15 +6778,13 @@ strRetVal := "", strTemp2 := ""
 		else
 		{
 		FileGetShortcut, %strTemp2%, ,strRetVal
-
-			if (!strRetVal) ; This is better than Errorlevel because special location lnks get through
+			if (strRetVal) ; PrgLnkInf receives the working dir of resolved lnk
+			strRetVal := ParseEnvVars(strRetVal) . "\"
+			else ; Regular Prgs get here. This is better than Errorlevel because special location lnks get through
 			{
 				if (InStr(strTemp2, ".lnk", false, strLen(strTemp2) - 4))
-				strRetVal .= IniFileShortctSep
+				strRetVal := IniFileShortctSep
 			}
-			else
-			strRetVal := ParseEnvVars(strRetVal) . "\"
-
 		}
 	}
 	else
@@ -7859,8 +7851,7 @@ NewThreadforDownload: ;Timer!
 	;We don't know if the URL works, but write it to ini anyway
 	IniProc(selPrgChoice)
 
-	temp := 0
-	strTemp := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, temp, IniFileShortctSep)
+	strTemp := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)
 	if (InStr(PrgUrl[selPrgChoice], "%"))
 	DownloadFile(SelIniChoicePath, LC_UrlDecode(PrgUrl[selPrgChoice]), strTemp, updateStatus)
 	else
@@ -7921,8 +7912,7 @@ NewThreadforDownload: ;Timer!
 					IniWrite, 1, %SelIniChoicePath%, General, PrgLaunchAfterDL
 				}
 			}
-		temp := 0
-		strTemp2 := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, temp, IniFileShortctSep)
+		strTemp2 := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)
 		if (strTemp != strTemp2)
 		{
 		SplitPath, strTemp2,, strTemp2
@@ -8257,9 +8247,9 @@ IMAGE_FILE_DLL := 0x2000
 IMAGE_FILE_UP_SYSTEM_ONLY := 0x4000 ; What's an UP machine?
 IMAGE_FILE_BYTES_REVERSED_HI := 0x8000 ;obsolete
 
-exeStr := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, temp, IniFileShortctSep)
+exeStr := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)
 
-	if (!fileExist(exeStr) || InStr(exeStr, ".lnk", false, strLen(exeStr) - 4))
+	if (!fileExist(exeStr) || InStr(exeStr, ".lnk", false, strLen(exeStr) - 4) || InStr(exeStr, "BadPath", True, 1, 7))
 	Return
 	else
 	exeStr := AssocQueryApp(exeStr)
@@ -9496,7 +9486,7 @@ Thread, NoTimers, false
 
 
 ;Properties routines
-PopPrgProperties(ByRef PrgPropertiesHwnd, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, x, y, w, h)
+PopPrgProperties(ByRef PrgPropertiesHwnd, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, x, y, w, h)
 {
 IsaPrgLnk := 0, strTemp := "", fTemp := 0, temp := 0, foundpos := 0, batchPos := 0, pathCol := 0, pathColH := 0, pathColHOld := 0, defCol := 0, defColW := 0, defColH := 0, propX := 0, propY := 0, propW := 0, propH := 0, truncFileName := "", errorText := "", strRetVal := "", fileName := ""
 static tabName := 0
@@ -9539,7 +9529,7 @@ CLEARTYPE_QUALITY := 5
 loop % currBatchNo
 {
 	batchPos := PrgBatchInibtchPrgPresetSel[A_Index]
-	fileName := ExtractPrgPath(batchPos, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
+	fileName := ExtractPrgPath(batchPos, PrgChoicePaths, 0, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 	strTemp := PrgChoiceNames[batchPos]
 
 	if (FileExist(fileName))
@@ -9565,7 +9555,7 @@ Gui, PrgProperties: Tab, %A_Index%
 
 
 batchPos := PrgBatchInibtchPrgPresetSel[A_Index]
-fileName := ExtractPrgPath(batchPos, PrgChoicePaths, 0, PrgLnkInf, IsaPrgLnk, IniFileShortctSep)
+fileName := ExtractPrgPath(batchPos, PrgChoicePaths, 0, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
 if (FileExist(fileName))
 {
