@@ -143,6 +143,20 @@ Class PrgLnch
 		}
 	DetectHiddenWindows, Off
 	}
+	Y()
+	{
+	DetectHiddenWindows, On
+	WinGetPos, ,Y , , , % "ahk_id" This.PrgHwnd
+	DetectHiddenWindows, Off
+	Return Y
+	}
+	Height()
+	{
+	DetectHiddenWindows, On
+	WinGetPos, , , ,Height , % "ahk_id" This.PrgHwnd
+	DetectHiddenWindows, Off
+	Return Height
+	}
 	__New()
 	{
 		ObjInsert(this,"",[])
@@ -299,6 +313,7 @@ defPrgStrng := "None"
 ChgShortcutVar := "Change Shortcut"
 txtPrgChoice := ""
 iniTxtPadChoice := ""
+UndoTxt := ""
 GoConfigTxt = Prg Config
 iniSel := 0
 selPrgChoice := 1
@@ -483,7 +498,8 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 	IniWrite, 1, %SelIniChoicePath%, General, Disclaimer
 	
 	FileInstall PrgLnch.ico, PrgLnch.ico
-	Menu, Tray, Icon , PrgLnch.ico
+		if FileExist("PrgLnch.ico")
+		Menu, Tray, Icon, PrgLnch.ico
 	FileInstall PrgLnch.chm, PrgLnch.chm
 	sleep, 300
 	SetTimer, RnChmWelcome, 3500
@@ -508,7 +524,8 @@ sleep, 120
 
 
 FileInstall PrgLnch.ico, PrgLnch.ico
-Menu, Tray, Icon , PrgLnch.ico
+	if FileExist("PrgLnch.ico")
+	Menu, Tray, Icon , PrgLnch.ico
 
 
 
@@ -1379,7 +1396,7 @@ sleep, 120
 	Gui, PrgProperties: +LastFoundExist
 	If (WinExist())
 	{
-	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
+	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
 	}
 }
 
@@ -1597,7 +1614,7 @@ else
 		Gui, PrgProperties: +LastFoundExist
 			If (WinExist())
 			{
-			PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
+			PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
 			}
 
 		}
@@ -2100,7 +2117,7 @@ Return
 
 PresetProp:
 	if (btchPrgPresetSel && currBatchNo)
-	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, PrgLnchOpt.X(), PrgLnchOpt.Y(), PrgLnchOpt.Width(), PrgLnchOpt.Height())
+	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
 Return
 
 
@@ -2287,7 +2304,6 @@ else
 Return
 
 PrepDelIni:
-ControlSetText,,,ahk_id %IniChoiceHwnd%
 	if (GoConfigTxt = "Del Lnch Pad")
 	{
 		if (DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPadChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1))
@@ -2297,11 +2313,22 @@ ControlSetText,,,ahk_id %IniChoiceHwnd%
 	}
 	else
 	{
-		if ((SelIniChoiceName != "PrgLnch") && !ChkPrgNames(SelIniChoiceName, PrgNo, "Ini", 1))
+		ControlGetText, UndoTxt,,ahk_id %IniChoiceHwnd%
+		ControlSetText,,,ahk_id %IniChoiceHwnd%
+		if (UndoTxt && (SelIniChoiceName = "PrgLnch") && (UndoTxt != "PrgLnch"))
 		{
-		GoConfigTxt = Del Lnch Pad
-		ToolTip, "Click `"Del Lnch Pad`" or hit Del to confirm."
+		Tooltip
+		GoConfigTxt = Prg Config
 		GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+		}
+		else
+		{
+			if (!ChkPrgNames(SelIniChoiceName, PrgNo, "Ini", 1))
+			{
+			GoConfigTxt = Del Lnch Pad
+			ToolTip, "Click `"Del Lnch Pad`" or hit Del to confirm."
+			GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+			}
 		}
 	}
 Return
@@ -4275,7 +4302,6 @@ else
 			GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 				if (PrgChoiceNames[selPrgChoice])
 				{
-				msgbox % " temp " temp " strTemp " strTemp " PrgLnkInf[selPrgChoice] " PrgLnkInf[selPrgChoice] " IsaLnk " IsaLnk " selPrgChoice " selPrgChoice " specialLnk " specialLnk
 				CheckPrgPaths(selPrgChoice, IniFileShortctSep, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut)
 
 				PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
@@ -4586,7 +4612,6 @@ else
 				}
 				else
 				{
-				PrgResolveShortcut[selPrgChoice] := 0
 					; strip the last "\":  gets working directory of lnk, if any
 					if (!InStr(strRetVal, ".lnk", false, strLen(strRetVal) - 4)) ; Could be a correct link with unresolved targer- e.g. recycle bin
 					strTemp2 := WorkingDirectory(strRetVal)
@@ -5055,6 +5080,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 	{
 		if (InStr(temp, "Change Shortcut"))
 		{
+		UndoTxt := txtPrgChoice
 		txtPrgChoice := ""
 		ControlSetText,,,ahk_id %PrgChoiceHwnd%
 		GuiControl, PrgLnchOpt:, MkShortcut, Remove Shortcut
@@ -5086,6 +5112,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 			GuiControl, PrgLnchOpt:, UpdturlPrgLnch
 			GuiControl, PrgLnchOpt: Disable, UpdtPrgLnch
 			GuiControl, PrgLnchOpt:, newVerPrg
+			UndoTxt := PrgUrl[selPrgChoice]
 			PrgUrl[selPrgChoice] := ""
 			IniProc(selPrgChoice)
 		}
@@ -5095,6 +5122,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 			{
 				ToolTip
 				GuiControl, PrgLnchOpt:, CmdLinPrm
+				UndoTxt := PrgCmdLine[selPrgChoice]
 				PrgCmdLine[selPrgChoice] := ""
 				IniProc(selPrgChoice)
 			}
@@ -6355,6 +6383,7 @@ Local strRetVal := "", strTemp := PrgChoicePaths[selPrgChoice], strTemp2 := PrgL
 
 		If (!FileExist(lnkPrg))
 		{
+			msgbox % " strTemp " strTemp " strTemp2 " strTemp2 " lnkPrg " lnkPrg
 			if (InStr(strTemp2, "\", false, StrLen(strTemp2)))
 			{
 			MsgBox, 8196, , The link %lnkPrg% is reported as invalid.`nGiven that its target still exists, the Prg can still be used.`n`nReply:`nYes: Attempt to use the target`nNo: Do nothing, in case the lnk file can be recovered.`n
@@ -6751,15 +6780,15 @@ return 1 ;hopefully this monitor is the one!
 GetPrgLnkVal(strTemp, IniFileShortctSep, ProcessLnk := 0, resolveNow := 0)
 {
 ;Gets either working directory or resolved/unresolved shortcut path
-strRetVal := "", strTemp2 := ""
+strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
 	; ATM PrgLnch does not modify the fields of the Wscript shortcut component in anyway.
 	;http://superuser.com/questions/392061/how-to-make-a-shortcut-from-cmd
 
 
 	if (ProcessLnk)
 	{
-		if (InStr(strTemp, IniFileShortctSep))
-		strTemp2 := SubStr(strTemp, 1, InStr(strTemp, IniFileShortctSep,,0) - 1)
+		if (IsALnk)
+		strTemp2 := SubStr(strTemp, 1, IsALnk - 1)
 		else
 		strTemp2 := strTemp
 
@@ -6767,10 +6796,13 @@ strRetVal := "", strTemp2 := ""
 		{
 		FileGetShortcut, %strTemp2%, strRetVal
 			if (ErrorLevel)
-			MsgBox, 8208, Shortcut, % "Invalid shortcut for " strTemp2 "!"
+			{
+				if (IsALnk)
+				MsgBox, 8208, Shortcut, % "Possible invalid shortcut for " strTemp2 "!"
+			}
 			else
 			{
-			strTemp2 := SubStr(strTemp, InStr(strTemp, IniFileShortctSep,,0) + 1)
+			strTemp2 := SubStr(strTemp, IsALnk + 1)
 				if (strTemp2 != strRetVal && !strTemp2)
 				MsgBox, 8192, , % "Shortcut target`n" strRetVal "`nhas been updated"
 			}
@@ -6782,7 +6814,7 @@ strRetVal := "", strTemp2 := ""
 			strRetVal := ParseEnvVars(strRetVal) . "\"
 			else ; Regular Prgs get here. This is better than Errorlevel because special location lnks get through
 			{
-				if (InStr(strTemp2, ".lnk", false, strLen(strTemp2) - 4))
+				if (!ErrorLevel && InStr(strTemp2, ".lnk", false, strLen(strTemp2) - 4))
 				strRetVal := IniFileShortctSep
 			}
 		}
@@ -6801,8 +6833,8 @@ strRetVal := "", strTemp2 := ""
 			}
 			else ; lnk might be a directory shortcut
 			{
-				if (InStr(strTemp, IniFileShortctSep))
-				strTemp := SubStr(strTemp, 1, InStr(strTemp, IniFileShortctSep,,0) - 1)
+				if (IsALnk)
+				strTemp := SubStr(strTemp, 1, IsALnk - 1)
 			FileGetShortcut, %strTemp%, strRetVal
 				if (strRetVal)
 				strRetVal := "|"
@@ -9486,11 +9518,11 @@ Thread, NoTimers, false
 
 
 ;Properties routines
-PopPrgProperties(ByRef PrgPropertiesHwnd, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, x, y, w, h)
+PopPrgProperties(ByRef PrgPropertiesHwnd, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
 {
-IsaPrgLnk := 0, strTemp := "", fTemp := 0, temp := 0, foundpos := 0, batchPos := 0, pathCol := 0, pathColH := 0, pathColHOld := 0, defCol := 0, defColW := 0, defColH := 0, propX := 0, propY := 0, propW := 0, propH := 0, truncFileName := "", errorText := "", strRetVal := "", fileName := ""
+IsaPrgLnk := 0, strTemp := "", fTemp := 0, temp := 0, foundpos := 0, batchPos := 0, pathCol := 0, pathColH := 0, pathColHOld := 0, defCol := 0, defColW := 0, defColH := 0, propY := 0, propW := 0, propH := 0, truncFileName := "", errorText := "", strRetVal := "", fileName := ""
 static tabName := 0
-
+x := PrgLnchOpt.X(), y := PrgLnch.Y(), w:= PrgLnchOpt.Width(), h := PrgLnch.Height()
 
 
 strRetVal := WorkingDirectory(A_ScriptDir, 1)
@@ -9546,8 +9578,8 @@ loop % currBatchNo
 
 strRetVal := SubStr(strRetVal, 2)
 ;remove first pipe
-Gui, PrgProperties: Add, Tab3, w%w% vtabName -Theme -wrap AltSubmit, % strRetVal
-
+Gui, PrgProperties: Add, Tab3, vtabName -Theme -wrap AltSubmit, % strRetVal
+;GuiControl, PrgProperties:, Move, tabName, w%w%
 
 loop % currBatchNo
 {
@@ -9612,11 +9644,11 @@ if (FileExist(fileName))
 			}
 			}
 		}
-		GuiControl, PrgProperties:, %sprHwnd%, `"%strTemp%`" attributes and %foundpos% kB filesize for the following Prg...
-		GuiControl, PrgProperties: Move, %sprHwnd%, % "w" PrgLnchOpt.Width()/2
+	GuiControl, PrgProperties:, %sprHwnd%, `"%strTemp%`" attributes and %foundpos% kB filesize for the following Prg...
+	GuiControl, PrgProperties: Move, %sprHwnd%, % "w" w/2
 
 
-	temp := PrgLnchOpt.Width()
+	temp := w
 	Gui, PrgProperties: Add, Text, w%temp% +wrap HWNDpathHwnd, % fileName
 	GuiControlGet, pathCol, PrgProperties: Pos, % pathHwnd
 	pathColHOld := pathColH
@@ -9638,7 +9670,7 @@ if (FileExist(fileName))
 
 
 
-	temp := 2*defColW, fTemp := 16*defColH
+	temp := w/2 - defColW, fTemp := 16*defColH
 	pathColHOld := pathColHOld - pathColH
 	Gui, PrgProperties: Add, GroupBox, Section y+-%pathColHOld% w%temp% h%fTemp%
 
@@ -9694,32 +9726,35 @@ if (FileExist(fileName))
 
 	if (!IsaPrgLnk)
 	{
-		FileGetVersion, foundpos, % fileName
-			if (ErrorLevel)
-			fileName := AssocQueryApp(fileName)
+	FileGetVersion, foundpos, % fileName
+		if (ErrorLevel)
+		fileName := AssocQueryApp(fileName)
 
-		; Try again if association
-		FileGetVersion, foundpos, % fileName
-			if (ErrorLevel)
-			errorText .= "Problem with file version.`n"
-			else
-			{
-			fTemp := 13*defColH
-			Gui, PrgProperties: Add, Text, xs ys+%fTemp% HWNDsprHwnd, File Version Number
-			PrgPropFont(sprHwnd)
+	; Try again if association
+	FileGetVersion, foundpos, % fileName
+		if (ErrorLevel)
+		errorText .= "Problem with file version.`n"
+		else
+		{
+		fTemp := 13*defColH
+		Gui, PrgProperties: Add, Text, xs ys+%fTemp% HWNDsprHwnd, File Version Number
+		PrgPropFont(sprHwnd)
 
-			fTemp := 15*defColH
-			Gui, PrgProperties: Add, Text, xs ys+%fTemp%, % foundpos
-			}
+		fTemp := 15*defColH
+		Gui, PrgProperties: Add, Text, xs ys+%fTemp%, % foundpos
+		}
 
 
-		strRetVal := FileGetInfo(Filename).ProductName
+	strRetVal := FileGetInfo(Filename).ProductName
 		if (strRetVal = "GetFileVersionInfoSizeFail")
 		errorText .= "Unable to retrieve extended information from the file.`n"
 		else
 		{
 
-		temp := PrgLnchOpt.Width()/2
+		temp := w/2 - defColW, fTemp := 16*defColH
+		Gui, PrgProperties: Add, GroupBox, ys w%temp% h%fTemp%
+
+		temp := w/2
 		Gui, PrgProperties: Add, Text, xs+%temp% ys+%defColH% HWNDsprHwnd, Product Name
 		PrgPropFont(sprHwnd)
 
@@ -9754,12 +9789,15 @@ if (FileExist(fileName))
 
 	;CRC
 
-	if (errorText)
-	{
+		if (errorText)
+		{
 		temp := strRetVal? (2*defColW): 0
-		Gui, PrgProperties: Add, Text, xs+-%temp% Section, Errors
-		Gui, PrgProperties: Add, Text,, % errorText
-	}
+		; `n req'd else text is clipped e.g. if (SubStr(errorText, StrLen(errorText) - 2) = "`n") errorText := SubStr(errorText, 1, StrLen(errorText) - 2)
+		Gui, PrgProperties: Add, Text, w%w% xs+-%temp% HWNDsprHwnd, % errorText
+		Gui, PrgProperties: Font, -Wrap q2 Italic cRed, Impact
+		GuiControl, PrgProperties: Font, % sprHwnd
+		Gui, PrgProperties: Font,
+		}
 }
 }
 
@@ -9768,9 +9806,10 @@ Gui, PrgProperties: Show, Hide, PrgProperties
 
 
 SysGet, temp, MonitorWorkArea, PrgLnch.Monitor
+
 DetectHiddenWindows, On
-WinGetPos, propx, propY,, propH, % "ahk_id" PrgPropertiesHwnd
-DetectHiddenWindows, Off
+WinGetPos,, propY,, propH, % "ahk_id" PrgPropertiesHwnd
+
 
 	if (tempBottom - y > tempBottom - propH)
 	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % propH - y, w
@@ -9783,6 +9822,7 @@ DetectHiddenWindows, Off
 if (propH + h > (tempBottom - tempTop))
 	WinMove, % "ahk_id" PrgPropertiesHwnd, , , tempBottom, , % tempBottom - tempTop
 
+DetectHiddenWindows, Off
 
 SplashImage, PrgLnchProperties.jpg, Hide,,,LnchSplash
 Gui, PrgProperties: Show, , Prg Properties (Version 2.x)
