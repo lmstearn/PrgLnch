@@ -459,16 +459,25 @@ DetectHiddenWindows, Off
 
 
 
-
 	strRetVal := IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 		if (strRetVal)
 		{
 		msgbox, 8192 , Ini File, % strRetVal
+		oldSelIniChoiceName := selIniChoiceName
 		SelIniChoicePath := PrgLnchIni
+		IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, , 1)
+
+			Loop, % PrgNo
+			{
+				if (IniChoiceNames[A_Index] = oldSelIniChoiceName)
+				{
+				IniChoiceNames[A_Index] := "Ini" . A_Index
+				inisel := A_Index
+				Break
+				}
+			}
+		WriteIniChoiceNames(IniChoiceNames, PrgNo, strIniChoice, PrgLnchIni)
 		IniWrite, %A_Space%, %SelIniChoicePath%, General, SelIniChoiceName
-		IniWrite, %IniChoiceNames%, %SelIniChoicePath%, General, IniChoiceNames
-		IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
-		; If file missing go to Disclaimer
 		}
 	oldSelIniChoiceName := selIniChoiceName
 		Loop % PrgNo
@@ -961,7 +970,10 @@ GuiControl, PrgLnch:, IniChoice, %strIniChoice%
 if (SelIniChoiceName = "PrgLnch")
 {
 	if (strTemp2)
+	{
 	GuiControl, PrgLnch: Choose, IniChoice, %strTemp2%
+	iniSel := SubStr(strTemp2, 4, Strlen(strTemp2))
+	}
 	else
 	{
 	GuiControl, PrgLnch: Text, IniChoice,
@@ -2039,18 +2051,34 @@ oldSelIniChoicePath := A_ScriptDir . "\" . oldSelIniChoiceName . ".ini"
 	MsgBox, 8192, Lnch Pad File , % oldSelIniChoiceName " Lnch Pad file could not be found!`nCannot continue."
 	Return
 	}
-
+	
 	if (oldSelIniChoiceName = "PrgLnch")
 	FileCopy %oldSelIniChoicePath%, %SelIniChoicePath%
 	else
 	FileMove %oldSelIniChoicePath%, %SelIniChoicePath%
 	if (ErrorLevel)
 	{
-	MsgBox, 8192, File Move , % SelIniChoiceName " Lnch Pad could not be created!"
-	iniTxtPadChoice = oldSelIniChoiceName
-	GuiControl, PrgLnch: Text, IniChoice, %oldSelIniChoiceName%
-	GuiControl, PrgLnch: Choose, IniChoice, % oldSelIniChoiceName
-	Return
+		if (FileExist(SelIniChoicePath))
+		{
+		MsgBox, 8196, File Move , % """" . SelIniChoiceName . """" . " already exists. Replace it?"
+			IfMsgBox, Yes
+				{
+				if (oldSelIniChoiceName = "PrgLnch")
+				FileCopy %oldSelIniChoicePath%, %SelIniChoicePath%, 1
+				else
+				FileMove %oldSelIniChoicePath%, %SelIniChoicePath%, 1
+				}
+			else
+			ErrorLevel := 1
+		}
+		if (ErrorLevel)
+		{
+		MsgBox, 8192, File Move , % SelIniChoiceName " Lnch Pad could not be created!"
+		iniTxtPadChoice = oldSelIniChoiceName
+		GuiControl, PrgLnch: Text, IniChoice, %oldSelIniChoiceName%
+		GuiControl, PrgLnch: Choose, IniChoice, % oldSelIniChoiceName
+		Return
+		}
 	}
 
 	; Type at start
@@ -2227,9 +2255,10 @@ else
 				}
 			}
 		}
-		else
+		else ; Clicked here
 		{
 		
+		iniSel := retVal + 1
 		ControlGetText,iniTxtPadChoice,,ahk_id %IniChoiceHwnd% ; "GuiControlGet, iniTxtPadChoice, PrgLnch:, IniChoice" fails when empty
 
 			if (iniTxtPadChoice)
@@ -2243,59 +2272,65 @@ else
 			Return
 			}
 
-		 ; Clicked here
-		iniSel := retVal + 1
 		GoConfigTxt = Prg Config
 		GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 
 		strRetVal := WorkingDirectory(A_ScriptDir, 1)
 		If (strRetVal)
-		DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPadChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, strRetVal)
+		MsgBox, 8192, Script Directory, % strRetVal "`nCannot load Lnch Pad file!"
 		else
 		{
-		
+
 		IniRead, fTemp, %PrgLnchIni%, General, DefPresetSettings
-		if (ChkPrgNames(iniTxtPadChoice, PrgNo, "Ini"))
-		{
-			; ChkPrgNames negates "PrgLnch" so...
-			if (oldSelIniChoiceName = "PrgLnch")
-			Return
-			if (!ChkPrgNames(oldSelIniChoiceName, PrgNo, "Ini") && fTemp = "")
+			if (ChkPrgNames(iniTxtPadChoice, PrgNo, "Ini"))
 			{
-			temp := 0
-			MsgBox, 8195, Current or default settings, A spare Lnch Pad slot has just been clicked.`nIt can be initialised with either the current or the default Lnch Pad.`n`nReply:`nYes: Use current (Warn like this next time)`nNo: Do not use current (Recommended: This will not show again)`nCancel: Do not use current (Warn like this next time):`n
-				IfMsgBox, Yes
+				; ChkPrgNames negates "PrgLnch" so...
+				if (oldSelIniChoiceName = "PrgLnch")
+				Return
+				if (!ChkPrgNames(oldSelIniChoiceName, PrgNo, "Ini") && fTemp = "")
 				{
-				strTemp := SelIniChoicePath
-				SelIniChoiceName .= iniSel
-				iniTxtPadChoice := SelIniChoiceName
-				SelIniChoicePath := A_ScriptDir . "\" . SelIniChoiceName . ".ini"
+				temp := 0
+				MsgBox, 8195, Current or default settings, A spare Lnch Pad slot has just been clicked.`nIt can be initialised with either the current or the default Lnch Pad.`n`nReply:`nYes: Use current (Warn like this next time)`nNo: Do not use current (Recommended: This will not show again)`nCancel: Do not use current (Warn like this next time):`n
+					IfMsgBox, Yes
+					{
+					strTemp := SelIniChoicePath
+					SelIniChoiceName .= iniSel
+					iniTxtPadChoice := SelIniChoiceName
+					SelIniChoicePath := A_ScriptDir . "\" . SelIniChoiceName . ".ini"
 
-				FileCopy %strTemp%, %SelIniChoicePath%
+					FileCopy %strTemp%, %SelIniChoicePath%
 
-					if (ErrorLevel)
-					MsgBox, 8192, File Copy , % SelIniChoiceName " Lnch Pad could not be created!"
-				IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
-				GuiControl, PrgLnch:, IniChoice, %strIniChoice%
-				GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
+						if (ErrorLevel)
+						MsgBox, 8192, File Copy , % SelIniChoiceName " Lnch Pad could not be created!"
+					IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+					GuiControl, PrgLnch:, IniChoice, %strIniChoice%
+					GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
+					}
+					else
+					{
+						IfMsgBox, No
+						temp := 1
+
+					SelIniChoiceName = PrgLnch
+					; Update all ini files
+					UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames, temp)
+					RestartPrgLnch(0, SelIniChoiceName, iniTxtPadChoice)
+					}
+				}
+			}
+			else
+			{
+				if (FileExist(iniTxtPadChoice . ".ini"))
+				{
+				UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, iniTxtPadChoice, IniChoiceNames, fTemp)
+				RestartPrgLnch(0, iniTxtPadChoice)
 				}
 				else
 				{
-					IfMsgBox, No
-					temp := 1
-
-				SelIniChoiceName = PrgLnch
-				; Update all ini files
-				UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames, temp)
-				RestartPrgLnch(0, SelIniChoiceName, iniTxtPadChoice)
-				}
+				DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPadChoice, SelIniChoicePath, iniTxtPadChoice, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
+				Return
+				}			
 			}
-		}
-		else
-		{
-		UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, iniTxtPadChoice, IniChoiceNames, fTemp)
-		RestartPrgLnch(0, iniTxtPadChoice)
-		}
 		
 		oldSelIniChoiceName := SelIniChoiceName
 		}
@@ -2340,7 +2375,7 @@ DelIniPresetProc(iniSel, ByRef GoConfigTxt, ByRef iniTxtPadChoice, ByRef SelIniC
 ToolTip
 retVal := 0
 if (DelEntryonly)
-MsgBox, 8196, Script Directory: Ini file not found.`n%DelEntryonly%`nDelete its entry?n`nYes: Remove %SelIniChoiceName% from the list `nNo: Retain the entry.
+MsgBox, 8196, Ini File Missing, Lnch Pad Ini file not found in script directory.`nDelete its entry?`n`nYes: Remove "" %SelIniChoiceName% "" from the list `nNo: Retain the entry.
 else
 MsgBox, 8196, Del Lnch Pad, Really delete the Lnch Pad?`nThis will also remove the file.
 	IfMsgBox, Yes
@@ -2383,7 +2418,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	strTemp := % (SelIniChoiceName = "Ini" . iniSel)? A_Space: SelIniChoiceName
 	Loop % PrgNo
 	{
-		if (IniChoiceNames[A_Index] = "Ini" . A_Index || IniChoiceNames[A_Index] = "PrgLnch")
+		if (IniChoiceNames[A_Index] = "Ini" . A_Index)
 		spr .= ","
 		else
 		{
@@ -2430,9 +2465,9 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 }
 
 
-IniProcIniFile(iniSel, ByRef SelIniChoicePath, ByRef SelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, removeIni := 0)
+IniProcIniFile(iniSel, ByRef SelIniChoicePath, ByRef SelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, removeIni := 0, forcePrgLnchRead := 0)
 {
-strTemp := "", spr := "", foundPos := 0
+strTemp := "", spr := "", strRetVal := "", foundPos := 0
 PrgLnchPath := A_ScriptDir . "\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
 if (iniSel)
 {
@@ -2440,7 +2475,7 @@ if (iniSel)
 	{
 	strTemp := "Ini" . iniSel
 	SelIniChoiceName = PrgLnch
-	IniChoiceNames[iniSel] := SelIniChoiceName
+	IniChoiceNames[iniSel] := strTemp
 	}
 	else
 	{
@@ -2463,20 +2498,26 @@ SelIniChoicePath := A_ScriptDir . "\" . SelIniChoiceName . ".ini"
 IniRead, strTemp, %SelIniChoicePath%, General, SelIniChoiceName
 IniRead, spr, %SelIniChoicePath%, General, IniChoiceNames
 
+If (!strTemp || forcePrgLnchRead)
+strTemp = PrgLnch
+
+if (!FileExist(A_ScriptDir . "\" . strTemp . ".ini"))
+strRetVal := "Ini file for " . """" . strTemp . """" . " not found!"
 
 if (strTemp = "Error" && spr = "Error")
 ; *Assume*  old version of PrgLnch
-Return 0
-Else
+strRetVal .= "Ini file for " . """" . strTemp . """" . "cannot be read!"
+
+if (!strRetVal)
 {
-	if (spr != "Error" || SelIniChoicePath != "Error")
+	if (spr != "Error")
 	{
 	; Reset all
-	if (strTemp != "PrgLnch")
-	{
-	SelIniChoiceName := strTemp
-	SelIniChoicePath := A_ScriptDir . "\" . SelIniChoiceName . ".ini"
-	}
+		if (strTemp != "PrgLnch" && strTemp != "Error")
+		{
+		SelIniChoiceName := strTemp
+		SelIniChoicePath := A_ScriptDir . "\" . SelIniChoiceName . ".ini"
+		}
 
 
 	strIniChoice := "|"
@@ -2496,17 +2537,37 @@ Else
 			}
 		}
 
-	if (!foundPos)
-	SplitPath, SelIniChoicePath, , , , SelIniChoiceName
+		if (!foundPos)
+		SplitPath, SelIniChoicePath, , , , SelIniChoiceName
 	}
 	else
-	Return "Lnch Pad file is in error- Reverting to PrgLnch.ini."
+	strRetVal := "Lnch Pad file for " . """" . strTemp . """" . "is in error- Reverting to PrgLnch.ini."
 }
 
 }
-Return 0
+Return strRetVal
 }
+WriteIniChoiceNames(IniChoiceNames, PrgNo, ByRef strIniChoice, PrgLnchIni)
+{
+spr := ""
+strIniChoice := "" ; Global variable
 
+	loop % PrgNo
+	{
+		if (IniChoiceNames[A_Index] = "Ini" . A_Index)
+		{
+		spr .= ","
+		strIniChoice .= "Ini" . A_Index . "|"
+		}
+		else
+		{
+		spr .= IniChoiceNames[A_Index] . ","
+		strIniChoice .= IniChoiceNames[A_Index] . "|"
+		}
+	}
+spr := Substr(spr, 1, InStr(spr, ",",, 0) -1)
+IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
+}
 
 
 
@@ -3293,7 +3354,7 @@ DopowerPlan(planToChangeTo := "")
 {
 
 Static oldSchemeGUID, oldDesc, arrPowerPlanNames := []
-tmp := 0, strTemp := "", strTemp2 := " call of PowerReadFriendlyName failed with "
+temp := 0, strTemp := "", strTemp2 := " call of PowerReadFriendlyName failed with "
 
 
 if (!planToChangeTo)
@@ -3301,9 +3362,9 @@ if (!planToChangeTo)
 	; Restore old scheme on close
 	if (oldDesc)
 	{
-	tmp := Dllcall("powrprof.dll\PowerSetActiveScheme", "Ptr", 0, "Ptr", oldSchemeGUID, "Uint")
-		if (tmp)
-		MsgBox, 8240, Power Error, % "Error with PowerSetActiveScheme on default plan: " tmp
+	temp := Dllcall("powrprof.dll\PowerSetActiveScheme", "Ptr", 0, "Ptr", oldSchemeGUID, "Uint")
+		if (temp)
+		MsgBox, 8240, Power Error, % "Error with PowerSetActiveScheme on default plan: " temp
 
 	VarSetCapacity(oldDesc, 0)
 	VarSetCapacity(oldSchemeGUID, 0)
@@ -3329,20 +3390,20 @@ VarSetCapacity(schemeGUID, szguid := 16)
 if (!oldDesc) ; assume oldDesc memset 0
 {
 	; GetActivePwrScheme the older flavour
-	tmp := DllCall("powrprof\PowerGetActiveScheme", "Ptr", 0, "Ptr*", oldSchemeGUID, "Uint")
-		if (tmp)
-		strTemp := "Error with GetActivePwrScheme on default plan: " . tmp
+	temp := DllCall("powrprof\PowerGetActiveScheme", "Ptr", 0, "Ptr*", oldSchemeGUID, "Uint")
+		if (temp)
+		strTemp := "Error with GetActivePwrScheme on default plan: " . temp
 
-	tmp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", oldSchemeGUID, "Ptr", 0, "Ptr", 0, "Ptr", 0, "Ptr*", szdesc) ;sdesc :LPDWORD
-		if (tmp != 0)
+	temp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", oldSchemeGUID, "Ptr", 0, "Ptr", 0, "Ptr", 0, "Ptr*", szdesc) ;sdesc :LPDWORD
+		if (temp != 0)
 		{
-		strTemp .= "`nFirst" . strTemp2 . tmp . "."
+		strTemp .= "`nFirst" . strTemp2 . temp . "."
 		}
 	
-	tmp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", oldSchemeGUID, "Ptr", 0, "Ptr", 0, "str", oldDesc, "Ptr*", szdesc) ;use the updated szdesc from first call of fn
-		if (tmp != 0)
+	temp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", oldSchemeGUID, "Ptr", 0, "Ptr", 0, "str", oldDesc, "Ptr*", szdesc) ;use the updated szdesc from first call of fn
+		if (temp != 0)
 		{
-		strTemp .= "`nSecond" . strTemp2 . tmp . "."
+		strTemp .= "`nSecond" . strTemp2 . temp . "."
 		}
 
 }
@@ -3354,16 +3415,16 @@ Loop
 		if (r != 0)
 		break
 
-	tmp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", &schemeGUID, "Ptr", 0, "Ptr", 0, "Ptr", 0, "Ptr*", szdesc) ;sdesc :LPDWORD
-		if (tmp != 0)
+	temp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", &schemeGUID, "Ptr", 0, "Ptr", 0, "Ptr", 0, "Ptr*", szdesc) ;sdesc :LPDWORD
+		if (temp != 0)
 		{
-		strTemp .= "`nThird" . strTemp2 . tmp . "."
+		strTemp .= "`nThird" . strTemp2 . temp . "."
 		}
 	
-	tmp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", &schemeGUID, "Ptr", 0, "Ptr", 0, "str", desc, "ptr*", szdesc) ;use the updated szdesc from first call of fn
-		if (tmp != 0)
+	temp := Dllcall("powrprof.dll\PowerReadFriendlyName", "Ptr", 0, "Ptr", &schemeGUID, "Ptr", 0, "Ptr", 0, "str", desc, "ptr*", szdesc) ;use the updated szdesc from first call of fn
+		if (temp != 0)
 		{
-		strTemp .= "`nFourth" . strTemp2 . tmp . "."
+		strTemp .= "`nFourth" . strTemp2 . temp . "."
 		}
 
 
@@ -3372,9 +3433,9 @@ Loop
 	{
 		if (desc = planToChangeTo || planToChangeTo = "Default")
 		{
-		tmp := Dllcall("powrprof.dll\PowerSetActiveScheme", "Ptr", 0, "Ptr", (planToChangeTo = "Default")? oldSchemeGUID: &schemeGUID, "Uint")
-			if (tmp)
-			strTemp .= "`nError with PowerSetActiveScheme on new plan: " . tmp
+		temp := Dllcall("powrprof.dll\PowerSetActiveScheme", "Ptr", 0, "Ptr", (planToChangeTo = "Default")? oldSchemeGUID: &schemeGUID, "Uint")
+			if (temp)
+			strTemp .= "`nError with PowerSetActiveScheme on new plan: " . temp
 		r := 259
 		Break
 		}
@@ -3491,7 +3552,7 @@ GuiControl, PrgLnch: Choose, PwrChoice, % btchSelPowerIndex
 NoPowerPlan(ByRef btchPowerNames, ByRef btchSelPowerIndex, btchPrgPresetSel)
 {
 msgbox, 8212, No Power Plan, Error: Power Plan has been removed!`n`nReply:`nYes: Restart PrgLnch to refresh it. `nNo: Use Default Plan
-	IfMsgBox Yes
+	IfMsgBox, Yes
 	RestartPrgLnch(0)
 	else
 	{
@@ -8784,6 +8845,7 @@ IniProc(selPrgChoice := 0, removeRec := 0)
 {
 
 Local foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, k := 0, spr := "", reWriteIni := 0, FileExistSelIniChoicePath:= FileExist(SelIniChoicePath)
+Local foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, k := 0, spr := "", reWriteIni := 0, FileExistSelIniChoicePath:= FileExist(SelIniChoicePath)
 ; Local implies  or assumes global function
 
 IniProcStart:
@@ -8815,37 +8877,8 @@ if (!FileExistSelIniChoicePath)
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, PrgVersionError
 
 	IniWrite, %SelIniChoiceName%, %PrgLnchIni%, General, SelIniChoiceName
-	
-	spr := ""
-	strIniChoice := "" ; Global variable
-		if (reWriteini)
-		{
-			loop % PrgNo
-			{
-			if (IniChoiceNames[A_Index] = "Ini" . A_Index)
-			{
-			spr .= ","
-			strIniChoice .= "Ini" . A_Index . "|"
-			}
-			else
-			{
-			spr .= IniChoiceNames[A_Index] . ","
-			strIniChoice .= IniChoiceNames[A_Index] . "|"
-			}
-			}
-		}
-		else
-		{
-			loop % PrgNo
-			{
-			spr .= ","
-			strIniChoice .= "Ini" . A_Index . "|"
-			}
-		}
 
-	spr := Substr(spr, 1, InStr(spr, ",",, 0) -1)
-	IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
-
+	WriteIniChoiceNames(IniChoiceNames, PrgNo, strIniChoice, PrgLnchIni)
 
 	IniWrite, % (defPrgStrng)? defPrgStrng: None, %SelIniChoicePath%, Prgs, StartupPrgName
 
