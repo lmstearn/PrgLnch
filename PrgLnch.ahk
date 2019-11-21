@@ -462,11 +462,10 @@ DetectHiddenWindows, Off
 	strRetVal := IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 		if (strRetVal)
 		{
-		msgbox, 8192 , Ini File, % strRetVal
+		msgbox, 8192 , Lnch Pad Ini File, % strRetVal
 		oldSelIniChoiceName := selIniChoiceName
 		SelIniChoicePath := PrgLnchIni
-		IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, , 1)
-
+		IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, , (SelIniChoicePath = PrgLnchIni))
 			Loop, % PrgNo
 			{
 				if (IniChoiceNames[A_Index] = oldSelIniChoiceName)
@@ -479,6 +478,8 @@ DetectHiddenWindows, Off
 		WriteIniChoiceNames(IniChoiceNames, PrgNo, strIniChoice, PrgLnchIni)
 		IniWrite, %A_Space%, %SelIniChoicePath%, General, SelIniChoiceName
 		}
+
+
 	oldSelIniChoiceName := selIniChoiceName
 		Loop % PrgNo
 		{
@@ -983,6 +984,19 @@ if (SelIniChoiceName = "PrgLnch")
 else
 GuiControl, PrgLnch: Choose, IniChoice, %SelIniChoiceName%
 
+
+	; User types at start before selecting from list
+	if (!iniSel)
+	{
+	iniSel := 1
+	SelIniChoiceName := "ini1"
+	GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
+	}
+
+
+
+
+
 Gui, PrgLnch: Add, Button, cdefault vLnchPadConfig gLnchPadConfig HWNDLnchPadConfigHwnd wp, LnchPad Setup
 Gui, PrgLnch: Add, Text, wp
 
@@ -1306,7 +1320,7 @@ Return
 ListPrgProc:
 Gui, PrgLnch: Submit, Nohide
 ;ToolTip
-;Disable if any active
+;Do not use if any active
 if (btchPrgPresetSel)
 {
 if (IsCurrentBatchRunning(currBatchNo, PrgListPID%btchPrgPresetSel%))
@@ -2001,6 +2015,7 @@ Return
 GoConfig:
 Gui PrgLnch: +OwnDialogs
 
+
 if (GoConfigTxt = "Save Lnch Pad")
 {
 ToolTip
@@ -2029,6 +2044,7 @@ GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 		SetEditCueBanner(IniChoiceHwnd, "Lnch Pad Slot", 1)
 	}
 
+
 	if (IniChoiceNames[iniSel] && IniChoiceNames[iniSel] != "ini" . iniSel)
 	{
 	MsgBox, 8196, , % """" IniChoiceNames[iniSel] """" " is a Lnch Pad slot already, so replacing it will remove its data.`n`nYes: Overwrite the existing Lnch Pad with the one just configured.`nNo: Cancel the operation."
@@ -2052,38 +2068,15 @@ oldSelIniChoicePath := A_ScriptDir . "\" . oldSelIniChoiceName . ".ini"
 	Return
 	}
 	
-	if (oldSelIniChoiceName = "PrgLnch")
-	FileCopy %oldSelIniChoicePath%, %SelIniChoicePath%
-	else
-	FileMove %oldSelIniChoicePath%, %SelIniChoicePath%
-	if (ErrorLevel)
+	if (strRetVal := MoveFileUtil(oldSelIniChoicePath, SelIniChoicePath, (oldSelIniChoiceName = "PrgLnch")))
 	{
-		if (FileExist(SelIniChoicePath))
-		{
-		MsgBox, 8196, File Move , % """" . SelIniChoiceName . """" . " already exists. Replace it?"
-			IfMsgBox, Yes
-				{
-				if (oldSelIniChoiceName = "PrgLnch")
-				FileCopy %oldSelIniChoicePath%, %SelIniChoicePath%, 1
-				else
-				FileMove %oldSelIniChoicePath%, %SelIniChoicePath%, 1
-				}
-			else
-			ErrorLevel := 1
-		}
-		if (ErrorLevel)
-		{
-		MsgBox, 8192, File Move , % SelIniChoiceName " Lnch Pad could not be created!"
-		iniTxtPadChoice = oldSelIniChoiceName
-		GuiControl, PrgLnch: Text, IniChoice, %oldSelIniChoiceName%
-		GuiControl, PrgLnch: Choose, IniChoice, % oldSelIniChoiceName
-		Return
-		}
+	MsgBox, 8192, File Operation, % strRetVal
+	iniTxtPadChoice = oldSelIniChoiceName
+	GuiControl, PrgLnch: Text, IniChoice, %oldSelIniChoiceName%
+	GuiControl, PrgLnch: Choose, IniChoice, % oldSelIniChoiceName
+	Return
 	}
 
-	; Type at start
-	if (!iniSel)
-	iniSel := 1
 
 IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 oldSelIniChoiceName := selIniChoiceName
@@ -2246,7 +2239,7 @@ else
 					}
 
 				GoConfigTxt := "Save Lnch Pad"
-				ToolTip, "Click `"Save Lnch Pad`" to save."
+				CreateToolTip("Click `" . GoConfigTxt . """" . " to save.")
 				GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
 				}
 				else
@@ -2361,7 +2354,7 @@ PrepDelIni:
 			if (!ChkPrgNames(SelIniChoiceName, PrgNo, "Ini", 1))
 			{
 			GoConfigTxt = Del Lnch Pad
-			ToolTip, "Click `"Del Lnch Pad`" or hit Del to confirm."
+			CreateToolTip("Click `" . GoConfigTxt . """" . " or hit Del to confirm.")
 			GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
 			}
 		}
@@ -2483,12 +2476,14 @@ if (iniSel)
 	strTemp := SelIniChoiceName
 	}
 
-	UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchPath, SelIniChoiceName, IniChoiceNames)
 	foundPos := InStr(strIniChoice, "|", false, 1, iniSel)
-	spr := SubStr(strIniChoice, 1, foundPos) . strTemp ;Bar is  to replace, not append  the  gui control string
+
+	spr := SubStr(strIniChoice, 1, foundPos) . strTemp
+	;Bar is  to replace, not append  the  gui control string
 	foundPos := InStr(strIniChoice, "|", false, foundPos + 1)
 	strIniChoice := spr . SubStr(strIniChoice, foundPos)
 
+	UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchPath, SelIniChoiceName, IniChoiceNames)
 }
 else ; Read in names
 {
@@ -2550,7 +2545,7 @@ Return strRetVal
 WriteIniChoiceNames(IniChoiceNames, PrgNo, ByRef strIniChoice, PrgLnchIni)
 {
 spr := ""
-strIniChoice := "" ; Global variable
+strIniChoice := "|" ; Global variable
 
 	loop % PrgNo
 	{
@@ -3091,6 +3086,56 @@ For eachNameToDel in namesToDel
 return KleenupPrgLnchFiles
 
 }
+
+FileCopy(Src, Dst, Overwrite := 0)
+{
+strRetVal := ""
+	Try
+	{
+	FileCopy, %Src%, %Dst%, %Overwrite%
+	}
+	Catch e
+	{
+	strRetVal := Src . " could not be copied with error: " . e
+	}
+Return strRetVal
+}
+FileMove(Src, Dst, Overwrite := 0)
+{
+strRetVal := ""
+	Try
+	{
+	FileMove, %Src%, %Dst%, %Overwrite%
+	}
+	Catch e
+	{
+	strRetVal := Dst . " could not be moved with error: " . e
+	}
+Return strRetVal
+}
+
+
+
+MoveFileUtil(Src, Dst, CopySrc := 0)
+{
+(CopySrc)? Action := "Copy": Action := "Move"
+
+	if (FileExist(Dst))
+	{
+		MsgBox, 1,, % """" . Dst . """" . " already exists. Replace it?"
+			IfMsgBox, Ok
+			strRetVal := File%Action%(Src, Dst, 1)
+			else
+			strRetVal := "Operation cancelled"
+	}
+	else
+	strRetVal := File%Action%(Src, Dst)
+
+Return strRetVal
+
+
+}
+
 WM_HELP(wp_notused, lParam, _msg, _hwnd)
 {
 local retVal := 0 ;using local this is now a global function
@@ -3704,7 +3749,7 @@ MonitorsSub:
 Tooltip
 	if A_OSVersion in WIN_2003,WIN_XP,WIN_2000
 	; Above expression : No spaces and doesn't like brackets!
-	ToolTip, % "Unable to display VSync for this OS!"
+	CreateToolTip("Unable to display VSync for this OS!")
 	;Probably bombs the script anyway
 	else
 	MDMF_GetMonHandle(targMonitorNum) ; only works for Vista+
@@ -3966,7 +4011,7 @@ PrgURLGui(ByRef PrgUrl, ByRef PrgUrlTest, SelPrgChoice, NoSaveURL := 0)
 	else
 	{
 	GuiControl, PrgLnchOpt:, UpdtPrgLnch, % "&Save URL"
-	ToolTip, % "Type to modify, Del to remove, or click ""Save URL"" to save URL."
+	CreateToolTip("Type to modify, Del to remove, or click " . """" . "Save URL" . """" . " to save URL.")
 	GuiControl, PrgLnchOpt: Enable, UpdtPrgLnch
 	GuiControlGet, PrgUrlTest, PrgLnchOpt:, UpdturlPrgLnch
 	}
@@ -4349,10 +4394,10 @@ else
 				if (txtPrgChoice)
 				{
 					if (temp="Make Shortcut")
-					ToolTip, "Click `"Make Shortcut`" to save."
+					CreateToolTip("Click " . """" . temp . """" . " to save.")
 					else
 					{
-					ToolTip, "Click `"Change Shortcut`" to save."
+					CreateToolTip("Click " . """" . temp . """" . " to save.")
 					GuiControl, PrgLnchOpt:, Remove Shortcut, % ChgShortcutVar
 					}
 				}
@@ -4360,9 +4405,9 @@ else
 				{
 				GuiControl, PrgLnchOpt:, MkShortcut, Remove Shortcut
 					if (PrgChoicePaths[selPrgChoice]) ;Path already exist?
-					ToolTip, "Click `"Remove Shortcut`" or hit Del to confirm."
+					CreateToolTip("Click " . """" . "Remove Shortcut" . """" . " or hit Del to confirm.")
 					else
-					ToolTip, "Click `"Remove Shortcut`" or hit Del to remove unexpected data from reference."
+					CreateToolTip("Click " . """" . "Remove Shortcut" . """" . " or hit Del to remove unexpected data from reference.")
 				}
 			}
 		}
@@ -4790,7 +4835,6 @@ ChkPrgNames(testName, PrgNo, IniBox := "", forDeletion := 0)
 {
 ; Returns 1 if testName is a spare, bad or default slot name
 
-
 	If (Inibox)
 	spr := IniBox
 	else
@@ -4942,6 +4986,8 @@ if (IsaPrgLnk)
 }
 else  ; Lnk is directory link OR regular Prg
 {
+	if (InStr(prgPath, "*",, Strlen(prgPath)))
+	prgPath := PrgPath := Substr(prgPath, 1, Strlen(prgPath) -1)
 	;case where prgPath is a directory link
 	if (InStr(prgPath, IniFileShortctSep,, 0))
 	PrgPath := Substr(prgPath, 1, InStr(prgPath, IniFileShortctSep,, 0) -1)
@@ -4959,6 +5005,7 @@ IsaPrgLnk := 0
 if (!UrlDisableGui)
 {
 PrgPth := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
+
 	if (!FileExist(PrgPth))
 	{
 	GuiControl, PrgLnchOpt: Disable, UpdturlPrgLnch
@@ -4983,7 +5030,7 @@ GuiControl, PrgLnchOpt: -ReadOnly, UpdturlPrgLnch
 			if (ErrorLevel)
 			{
 			PrgVer[selPrgChoice] := 0
-			MsgBox, 8192, , % "Problem with retrieving local version info for file " PrgPth
+			MsgBox, 8192, FileGetVersion: currPrgUrl, % "Problem with retrieving local version info for file " PrgPth
 			}
 			else
 			PrgVer[selPrgChoice] := PrgverOld
@@ -5037,7 +5084,7 @@ GuiControl, PrgLnchOpt: -ReadOnly, UpdturlPrgLnch
 						FileGetVersion, PrgverOld, % PrgPth
 							if (ErrorLevel)
 							{
-							MsgBox, 8192, , % "Problem with retrieving version info from the following Prg:`n" PrgPth "."
+							MsgBox, 8192, FileGetVersion, % "Problem with retrieving version info from the following Prg:`n" PrgPth "."
 							PrgVer[selPrgChoice] := 0
 							GuiControl, PrgLnchOpt: Disable, UpdturlPrgLnch
 							}
@@ -5148,6 +5195,44 @@ Util_VersionCompare(other,local)
 	return 0
 }
 
+TooltipTimer:
+CreateToolTip(tooltipText)
+Return
+
+CreateToolTip(tooltipText)
+{
+Static OwnerHwnd := 0
+
+	if (OwnerHwnd)
+	{
+	MouseGetPos,,, temp
+
+	SetTimer, TooltipTimer, Delete
+		if (temp = OwnerHwnd)
+		{
+		OwnerHwnd := 0
+		Return
+		}
+		else
+		{
+		Tooltip
+		ToolTip, %tooltipText%, 0, 0
+		OwnerHwnd := 0
+		}
+	}
+	else
+	{
+	ToolTip
+	MouseGetPos,,, OwnerHwnd
+	ToolTip, %tooltipText%
+	;OwnerHwnd := Format("0x{1:x}", OwnerHwnd)
+	
+		if ((OwnerHwnd = PrgLnch.Hwnd()) || (OwnerHwnd = PrgLnchOpt.Hwnd()))
+		SetTimer, TooltipTimer, 120		
+		else
+		ToolTip, %tooltipText%, 0, 0
+	}
+}
 
 #IfWinActive, PrgLnch Options ahk_class AutoHotkeyGUI
 {
@@ -5164,9 +5249,9 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 		ControlSetText,,,ahk_id %PrgChoiceHwnd%
 		GuiControl, PrgLnchOpt:, MkShortcut, Remove Shortcut
 			if (PrgChoicePaths[selPrgChoice])
-			ToolTip, "Click `"Remove Shortcut`" or hit Del to confirm."
+			CreateToolTip("Click " . """" . "Remove Shortcut" . """" . " or hit Del to confirm.")
 			else
-			ToolTip, "Click `"Remove Shortcut`" or hit Del to remove unexpected data from reference."
+			CreateToolTip("Click " . """" . "Remove Shortcut" . """" . " or hit Del to remove unexpected data from reference.")
 			Return
 		}
 		else
@@ -7805,7 +7890,7 @@ if (Monitors.Count = Monitors.targetMonitorNum)
 
 	if (!DllCall("dxva2\GetNumberOfPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint*", nMon))
 	{
-	ToolTip, % "GetNumberOfPhysicalMonitorsFromHMONITOR failed with code: " A_LastError " .", 0, 0
+	CreateToolTip("GetNumberOfPhysicalMonitorsFromHMONITOR failed with code: " . """" . A_LastError . """")
 	return False
 	}
 
@@ -7859,11 +7944,11 @@ if (Monitors.Count = Monitors.targetMonitorNum)
 
 			VarSetCapacity(MC_TIMING_REPORT, 0)
 		}
-		ToolTip, % outStr, 0, 0
+		CreateToolTip(outStr)
 	}
 	else
 	{
-	ToolTip, % "GetPhysicalMonitorsFromHMONITOR failed with code: " A_LastError " .", 0, 0
+	CreateToolTip("GetPhysicalMonitorsFromHMONITOR failed with code: " . """" . A_LastError . """")
 	}
 
 	VarSetCapacity(Physical_Monitor, 0)
@@ -8053,7 +8138,7 @@ NewThreadforDownload: ;Timer!
 			if (ErrorLevel)
 			{
 			PrgVer[selPrgChoice] := 0
-			MsgBox, 8192, , % "Problem with retrieving local version info for file " strTemp
+			MsgBox, 8192, Downloading, % "Problem with retrieving local version info for file " strTemp
 			}
 			else
 			{
@@ -8548,10 +8633,10 @@ else
 	if (!checkSubSys || (checkSubSys && !Instr(PrgChoicePaths[selPrgChoice], A_WinDir)))
 	{
 		if (A_IsAdmin)
-		msgbox, 8192 ,File Open, % exeStrOld " could not be accessed with error " A_LastError "."
+		msgbox, 8192 , DcmpExecutable: File Open, % exeStrOld " could not be accessed with error " A_LastError "."
 		else
 		{
-		msgbox, 8196 ,File Open, % exeStrOld " could not be accessed with error " A_LastError ".`nIs it opened by another process, or does it have special permissions?`nIt might be possible for PrgLnch to open it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
+		msgbox, 8196 , DcmpExecutable: File Open, % exeStrOld " could not be accessed with error " A_LastError ".`nIs it opened by another process, or does it have special permissions?`nIt might be possible for PrgLnch to open it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
 			IfMsgBox, Yes
 			RestartPrgLnch(1)
 		}
