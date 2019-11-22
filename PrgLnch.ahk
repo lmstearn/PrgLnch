@@ -316,6 +316,7 @@ iniTxtPadChoice := ""
 UndoTxt := ""
 GoConfigTxt = Prg Config
 iniSel := 0
+oldIniSel := 0
 selPrgChoice := 1
 selPrgChoiceTimer := 0
 RegoVar := 0
@@ -341,6 +342,7 @@ inputOnceOnly := 0
 PrgLnchIni := A_ScriptDir . "\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
 SelIniChoicePath := PrgLnchIni
 SelIniChoiceName = PrgLnch
+selIniNameSprIniSlot := ""
 oldSelIniChoiceName := ""
 oldSelIniChoicePath := "" ; Previously loaded preset: in many cases the path of oldSelIniChoiceName above
 dispMonNames := [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -452,7 +454,7 @@ DetectHiddenWindows, Off
 				}
 			}
 			else
-			strTemp2 := strRetVal ;Warning: Temp variable used long way down
+			selIniNameSprIniSlot := strRetVal
 		}
 	}
 
@@ -968,12 +970,18 @@ Gui, PrgLnch: Add, ComboBox, wp vIniChoice gIniChoiceSel HWNDIniChoiceHwnd
 GuiControl, PrgLnch:, IniChoice, %strIniChoice%
 
 
+
 if (SelIniChoiceName = "PrgLnch")
 {
-	if (strTemp2)
+	; User types at start before selecting from list-
+	if (!iniSel)
+	iniSel := FindFreeLnchPadSlot(PrgNo, IniChoiceNames)
+
+	if (selIniNameSprIniSlot)
 	{
-	GuiControl, PrgLnch: Choose, IniChoice, %strTemp2%
-	iniSel := SubStr(strTemp2, 4, Strlen(strTemp2))
+		if (selIniNameSprIniSlot != "PrgLnch")
+		iniSel := SubStr(selIniNameSprIniSlot, 4, Strlen(selIniNameSprIniSlot))
+	GuiControl, PrgLnch: ChooseString, IniChoice, % "ini" . iniSel
 	}
 	else
 	{
@@ -982,16 +990,9 @@ if (SelIniChoiceName = "PrgLnch")
 	}
 }
 else
-GuiControl, PrgLnch: Choose, IniChoice, %SelIniChoiceName%
+GuiControl, PrgLnch: ChooseString, IniChoice, %SelIniChoiceName%
 
 
-	; User types at start before selecting from list
-	if (!iniSel)
-	{
-	iniSel := 1
-	SelIniChoiceName := "ini1"
-	GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
-	}
 
 
 
@@ -2052,14 +2053,13 @@ GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 		Return
 	}
 
-	if (SelIniChoiceName = "ini" . iniSel)
-	oldSelIniChoiceName = PrgLnch
-	else
-	oldSelIniChoiceName := SelIniChoiceName
-
+oldSelIniChoiceName := SelIniChoiceName
 SelIniChoiceName := iniTxtPadChoice
 SelIniChoicePath := A_ScriptDir . "\" . SelIniChoiceName . ".ini"
 oldSelIniChoicePath := A_ScriptDir . "\" . oldSelIniChoiceName . ".ini"
+
+
+ChooseIniChoice(iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 
 	;Not replacing if exists!
 	if (!FileExist(oldSelIniChoicePath))
@@ -2073,15 +2073,17 @@ oldSelIniChoicePath := A_ScriptDir . "\" . oldSelIniChoiceName . ".ini"
 	MsgBox, 8192, File Operation, % strRetVal
 	iniTxtPadChoice = oldSelIniChoiceName
 	GuiControl, PrgLnch: Text, IniChoice, %oldSelIniChoiceName%
-	GuiControl, PrgLnch: Choose, IniChoice, % oldSelIniChoiceName
+	ChooseIniChoice(oldIniSel, oldSelIniChoiceName, PrgNo, IniChoiceNames)
 	Return
 	}
 
 
+
+
 IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
-oldSelIniChoiceName := selIniChoiceName
+
 GuiControl, PrgLnch:, IniChoice, %strIniChoice%
-GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
+ChooseIniChoice(iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 }
 else
 {
@@ -2250,7 +2252,7 @@ else
 		}
 		else ; Clicked here
 		{
-		
+		oldIniSel := inisel
 		iniSel := retVal + 1
 		ControlGetText,iniTxtPadChoice,,ahk_id %IniChoiceHwnd% ; "GuiControlGet, iniTxtPadChoice, PrgLnch:, IniChoice" fails when empty
 
@@ -2297,7 +2299,7 @@ else
 						MsgBox, 8192, File Copy , % SelIniChoiceName " Lnch Pad could not be created!"
 					IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 					GuiControl, PrgLnch:, IniChoice, %strIniChoice%
-					GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
+					GuiControl, PrgLnch: ChooseString, IniChoice, % SelIniChoiceName
 					}
 					else
 					{
@@ -2351,7 +2353,7 @@ PrepDelIni:
 		}
 		else
 		{
-			if (!ChkPrgNames(SelIniChoiceName, PrgNo, "Ini", 1))
+			if (!(ChkPrgNames(SelIniChoiceName, PrgNo, "Ini", 1) || SelIniChoiceName = "PrgLnch"))
 			{
 			GoConfigTxt = Del Lnch Pad
 			CreateToolTip("Click `" . GoConfigTxt . """" . " or hit Del to confirm.")
@@ -2382,9 +2384,11 @@ MsgBox, 8196, Del Lnch Pad, Really delete the Lnch Pad?`nThis will also remove t
 	oldSelIniChoiceName := SelIniChoiceName
 	SelIniChoiceName := "Ini" . iniSel
 	GuiControl, PrgLnch:, IniChoice, %strIniChoice%
-	GuiControl, PrgLnch: Choose, IniChoice, % SelIniChoiceName
+	GuiControl, PrgLnch: Choosestring, IniChoice, % SelIniChoiceName
 
-		if (!DelEntryonly)
+		if (DelEntryonly)
+		SelIniChoiceName := "PrgLnch"		
+		else
 		{
 		FileDelete, %SelIniChoicePath%
 			if (ErrorLevel)
@@ -2563,6 +2567,59 @@ strIniChoice := "|" ; Global variable
 spr := Substr(spr, 1, InStr(spr, ",",, 0) -1)
 IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
 }
+
+FindFreeLnchPadSlot(PrgNo, IniChoiceNames)
+{
+	loop, % PrgNo
+	{
+	if (IniChoiceNames[A_Index] = "Ini" . A_Index)
+	Return A_Index
+	}
+Return 0
+}				
+
+ChooseIniChoice(ByRef iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
+{
+	if (selIniChoiceName = "PrgLnch")
+	{
+		if (!iniSel)
+		iniSel := FindFreeLnchPadSlot(PrgNo, IniChoiceNames)
+
+		if (iniSel)
+		GuiControl, PrgLnch: ChooseString, IniChoice, % "Ini" . iniSel
+		else
+		MsgBox, 8192, Lnch Pad Slots, Slots full: Unexpected error.
+	}
+	else
+	GuiControl, PrgLnch: Choosestring, IniChoice, % selIniChoiceName
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4053,6 +4110,24 @@ return (HiWord << 16) | (LoWord & 0xffff)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ;Monitor functions
 iDevNo:
 Gui, PrgLnchOpt: Submit, Nohide
@@ -4248,9 +4323,7 @@ ControlGet, strTemp, List,,, % "ahk_id" ResIndexHwnd
 		if (!strTemp)
 		{
 		MsgBox, 8196, , % "Mismatch detected in desired resolution data for this monitor! This usually involves differing frequency values appertaining to the same resolution preset.`nExcerpt from MSDN: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
-			IfMsgBox, Yes
-			strTemp := "" ; dummy condition
-			else
+			IfMsgBox, No
 			IniWrite, 1, %SelIniChoicePath%, General, ResClashMsg
 		}
 	}
@@ -5030,7 +5103,7 @@ GuiControl, PrgLnchOpt: -ReadOnly, UpdturlPrgLnch
 			if (ErrorLevel)
 			{
 			PrgVer[selPrgChoice] := 0
-			MsgBox, 8192, FileGetVersion: currPrgUrl, % "Problem with retrieving local version info for file " PrgPth
+			CreateToolTip("FileGetVersion: currPrgUrl: Problem with retrieving local version info for file:`n" . """" . PrgPth . """" . ".")
 			}
 			else
 			PrgVer[selPrgChoice] := PrgverOld
@@ -5084,7 +5157,7 @@ GuiControl, PrgLnchOpt: -ReadOnly, UpdturlPrgLnch
 						FileGetVersion, PrgverOld, % PrgPth
 							if (ErrorLevel)
 							{
-							MsgBox, 8192, FileGetVersion, % "Problem with retrieving version info from the following Prg:`n" PrgPth "."
+							CreateToolTip("FileGetVersion: Problem with retrieving local version info from the following Prg:`n" . """" . PrgPth . """" . ".")
 							PrgVer[selPrgChoice] := 0
 							GuiControl, PrgLnchOpt: Disable, UpdturlPrgLnch
 							}
@@ -5314,19 +5387,40 @@ Return
 
 #IfWinActive, PrgLnch ahk_class AutoHotkeyGUI
 {
+^z::
+
+GuiControlGet, strTemp, PrgLnch: FocusV
+	if (strTemp = "PresetName")
+	{
+	GuiControl, PrgLnch:, PresetName, % UndoTxt
+	UndoTxt := ""
+	}
+	else
+	{
+		if (strTemp = "IniChoice")
+		{
+		GuiControl, PrgLnch:, IniChoice, % UndoTxt
+		UndoTxt := ""
+		}
+	}
+Return
 Del::
 GuiControlGet, strTemp, PrgLnch: FocusV
 	if (strTemp = "PresetName")
 	{
 		if (ffTemp = 1)
 		Return
+	GuiControlGet, UndoTxt,, PresetName
 	GuiControl, PrgLnch:, PresetName,
 	;PresetNameSub automatically invoked
 	}
 	else
 	{
 		if (strTemp = "IniChoice")
+		{
+		GuiControlGet, UndoTxt,, IniChoice
 		GoSub PrepDelIni
+		}
 	}
 Return
 }
@@ -5389,6 +5483,18 @@ WM_HELPMSG := 0x0053
 		ToolTip
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -6123,7 +6229,7 @@ else
 			;set script priority high
 			Process, Priority, , H
 			WinClose, ahk_pid %PrgPIDtmp%
-			sleep 200
+			sleep 220
 			;Try again
 			Process, Exist, %PrgPIDtmp%
 			if (ErrorLevel)
@@ -6132,9 +6238,9 @@ else
 				{
 
 				WinClose, ahk_pid %PrgPIDtmp%
-				sleep, 200
+				sleep, 220
 				}
-
+				sleep 30
 				if (PrgPIDtmp)
 				{
 				MsgBox, 8193, , There was a problem closing a Prg. If it is still open, `nthe Prg will no longer be monitored by PrgLnch. `nClick OK to confirm its force termination.`n`"%temp%`"
