@@ -316,7 +316,6 @@ iniTxtPadChoice := ""
 UndoTxt := ""
 GoConfigTxt = Prg Config
 iniSel := 0
-oldIniSel := 0
 selPrgChoice := 1
 selPrgChoiceTimer := 0
 RegoVar := 0
@@ -2073,7 +2072,7 @@ ChooseIniChoice(iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 	MsgBox, 8192, File Operation, % strRetVal
 	iniTxtPadChoice = oldSelIniChoiceName
 	GuiControl, PrgLnch: Text, IniChoice, %oldSelIniChoiceName%
-	ChooseIniChoice(oldIniSel, oldSelIniChoiceName, PrgNo, IniChoiceNames)
+	ChooseIniChoice(iniSel, oldSelIniChoiceName, PrgNo, IniChoiceNames)
 	Return
 	}
 
@@ -2252,7 +2251,6 @@ else
 		}
 		else ; Clicked here
 		{
-		oldIniSel := inisel
 		iniSel := retVal + 1
 		ControlGetText,iniTxtPadChoice,,ahk_id %IniChoiceHwnd% ; "GuiControlGet, iniTxtPadChoice, PrgLnch:, IniChoice" fails when empty
 
@@ -3802,14 +3800,17 @@ verTemp := PrgVer[selPrgChoice]
 }
 Return
 
+
+
 MonitorsSub:
-Tooltip
+
 	if A_OSVersion in WIN_2003,WIN_XP,WIN_2000
 	; Above expression : No spaces and doesn't like brackets!
 	CreateToolTip("Unable to display VSync for this OS!")
 	;Probably bombs the script anyway
 	else
 	MDMF_GetMonHandle(targMonitorNum) ; only works for Vista+
+
 Return
 
 TestMode:
@@ -5272,9 +5273,17 @@ TooltipTimer:
 CreateToolTip(tooltipText)
 Return
 
-CreateToolTip(tooltipText)
+CreateToolTip(tooltipText, saveForMonitors := 0)
 {
-Static OwnerHwnd := 0
+Static OwnerHwnd := 0, monitorInfo := ""
+
+	if (saveForMonitors = 1)
+	monitorInfo := tooltipText
+	else
+	{
+		if (saveForMonitors = 2)
+		tooltipText := monitorInfo
+	}
 
 	if (OwnerHwnd)
 	{
@@ -5309,6 +5318,31 @@ Static OwnerHwnd := 0
 
 #IfWinActive, PrgLnch Options ahk_class AutoHotkeyGUI
 {
+^z::
+
+GuiControlGet, strTemp, PrgLnchOpt: FocusV
+	if (strTemp = "CmdLinPrm")
+	{
+	GuiControl, PrgLnchOpt:, CmdLinPrm, % UndoTxt
+	UndoTxt := ""
+	}
+	else
+	{
+		if (strTemp = "UpdturlPrgLnch")
+		{
+		GuiControl, PrgLnchOpt:, UpdturlPrgLnch, % UndoTxt
+		UndoTxt := ""
+		}
+		else
+		{
+			if (strTemp = "PrgChoice")
+			{
+			GuiControl, PrgLnchOpt: Text, PrgChoice, % UndoTxt
+			UndoTxt := ""
+			}
+		}
+	}
+Return
 Del::
 
 GuiControlGet, strTemp, PrgLnchOpt: FocusV
@@ -5346,10 +5380,10 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 		if (strTemp="UpdturlPrgLnch")
 		{
 			ToolTip
+			GuiControlGet UndoTxt, PrgLnchOpt:, UpdturlPrgLnch
 			GuiControl, PrgLnchOpt:, UpdturlPrgLnch
 			GuiControl, PrgLnchOpt: Disable, UpdtPrgLnch
 			GuiControl, PrgLnchOpt:, newVerPrg
-			UndoTxt := PrgUrl[selPrgChoice]
 			PrgUrl[selPrgChoice] := ""
 			IniProc(selPrgChoice)
 		}
@@ -5358,6 +5392,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 			if (strTemp="CmdLinPrm")
 			{
 				ToolTip
+				GuiControlGet UndoTxt, PrgLnchOpt:, CmdLinPrm
 				GuiControl, PrgLnchOpt:, CmdLinPrm
 				UndoTxt := PrgCmdLine[selPrgChoice]
 				PrgCmdLine[selPrgChoice] := ""
@@ -5399,7 +5434,7 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 	{
 		if (strTemp = "IniChoice")
 		{
-		GuiControl, PrgLnch:, IniChoice, % UndoTxt
+		GuiControl, PrgLnch: Text, IniChoice, % UndoTxt
 		UndoTxt := ""
 		}
 	}
@@ -7970,8 +8005,17 @@ Return 1
 MDMF_GetMonHandle(targMonitorNum)
 {
 Static Monitors := 0
-Monitors := {Count: 0, targetMonitorNum: 0}
-Monitors.targetMonitorNum := targMonitorNum
+	if (Monitors.Count)
+	{
+	; Prglnch can crash on clicking/double clicking label, so use the saved text
+	CreateToolTip("", 2)
+	Return
+	}
+	else
+	{
+	Monitors := {Count: 0, targetMonitorNum: 0}
+	Monitors.targetMonitorNum := targMonitorNum
+	}
 
 
 ;If (Monitors.MaxIndex() = "") ; enumerate
@@ -7993,10 +8037,9 @@ if (Monitors.Count = Monitors.targetMonitorNum)
 
 ; Get Physical Monitor(s) from handle
 
-
 	if (!DllCall("dxva2\GetNumberOfPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint*", nMon))
 	{
-	CreateToolTip("GetNumberOfPhysicalMonitorsFromHMONITOR failed with code: " . """" . A_LastError . """")
+	CreateToolTip("GetNumberOfPhysicalMonitorsFromHMONITOR failed with code: " . """" . A_LastError . """", 1)
 	return False
 	}
 
@@ -8016,7 +8059,7 @@ if (Monitors.Count = Monitors.targetMonitorNum)
 			; 0 value Physical Monitor Handles are valid and common!!!
 			VarSetCapacity(MC_TIMING_REPORT, OffsetUchar + OffsetDWORD + OffsetDWORD)
 			retVal := DllCall("dxva2\GetTimingReport", "Ptr", physHand, "Ptr", &MC_TIMING_REPORT)
-			sleep 100
+			sleep 60
 			if (retVal)
 			{
 			; Get Monitor description
@@ -8050,11 +8093,11 @@ if (Monitors.Count = Monitors.targetMonitorNum)
 
 			VarSetCapacity(MC_TIMING_REPORT, 0)
 		}
-		CreateToolTip(outStr)
+		CreateToolTip(outStr, 1)
 	}
 	else
 	{
-	CreateToolTip("GetPhysicalMonitorsFromHMONITOR failed with code: " . """" . A_LastError . """")
+	CreateToolTip("GetPhysicalMonitorsFromHMONITOR failed with code: " . """" . A_LastError . """", 1)
 	}
 
 	VarSetCapacity(Physical_Monitor, 0)
