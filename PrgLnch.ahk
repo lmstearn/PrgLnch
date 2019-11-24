@@ -3,25 +3,26 @@
 #SingleInstance, force
 #NoEnv  ; Performance and compatibility with future AHK releases.
 ;#Warn, All , MsgBox ; Enable warnings to assist with detecting common errors.
-ListLines Off ;A_ListLines default is on
-SendMode Input  ; Recommended for new scripts due to superior speed & reliability.
+#Warn UseUnsetLocal, OutputDebug  ; Warn when a local variable is used before it's set; send to OutputDebug
 #MaxMem 256
-FileSetAttrib, -RH, % A_ScriptDir . "`\*.*", 1
-AutoTrim, Off
-SetTitleMatchMode, 2
 #MaxThreads 5
 #Persistent
-#Warn UseUnsetLocal, OutputDebug  ; Warn when a local variable is used before it's set; send to OutputDebug
+#Include %A_ScriptDir%
+
+AutoTrim, Off ; traditional assignments off
+ListLines Off ;A_ListLines default is on: history of lines most recently executed 
+SendMode Input  ; Recommended for new scripts due to superior speed & reliability.
+FileSetAttrib, -RH, % A_ScriptDir . "`\*.*", 1
 SetWinDelay, 100 ; Default
 ; ListVars for debugging
-;A_BatchLines is 10ms
-SetBatchLines, 3ms
+SetBatchLines, 20ms ; too fast? A_BatchLines is 10ms
+SetTitleMatchMode, 2 ;window's title can contain WinTitle anywhere inside it to be a match
+
 ;https://autohotkey.com/boards/viewtopic.php?p=114554#p114554
 OnMessage(0x112, "WM_SYSCOMMAND")
 OnMessage(0x0053, "WM_Help")
 OnMessage(0x201, "WM_LBUTTONDOWN")
 
-#Include %A_ScriptDir%
 
 
 
@@ -385,9 +386,11 @@ temp := PrgLnch.Title
 fTemp := 0
 ffTemp := 0
 DetectHiddenWindows, On
+; foundpos1, foundpos2 ... window IDs
 WinGet, foundpos, List, % temp
 
-if (foundpos > 1 && !A_Args[1]) ; No command line parms! See ComboBugFix
+
+if (foundpos > 1 && !A_Args[1]) ;  foundpos is no of window IDs found,.No command line parms! See ComboBugFix
 {
 	while foundpos%A_Index%
 	{
@@ -2419,7 +2422,15 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		{
 		spr .= IniChoiceNames[A_Index] . ","
 		IniChoicePaths[A_Index] := A_ScriptDir . "\" . IniChoiceNames[A_Index] . ".ini"
-		IniWrite, %strTemp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
+			if (FileExist(IniChoicePaths[A_Index]))
+			IniWrite, %strTemp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
+			else
+			{
+			MsgBox, 8196, , % "The Lnch Pad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the Lnch Pads. `n"
+				IfMsgBox, No
+				Return
+			}
+
 			if (Errorlevel)
 			{
 			MsgBox, 8196, , % "The following Lnch Pad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the Lnch Pads. `n"
@@ -2430,15 +2441,23 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		}
 	}
 	
+	if (FileExist(PrgLnchIni))
 	IniWrite, %strTemp%, %PrgLnchIni%, General, SelIniChoiceName
-		if (Errorlevel)
-		MsgBox, 8192, , % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTemp
+	else
+	{
+	MsgBox, 8208, ,The PrgLnch ini file cannot be written to!
+	Return
+	}
+	if (Errorlevel)
+	MsgBox, 8192, , % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTemp
+	
+	
 	sleep, 20
 	; Trim last ","
 	spr := SubStr(spr, 1, StrLen(spr) - 1)
 	Loop % PrgNo
 	{
-		if (IniChoicePaths[A_Index])
+		if (IniChoicePaths[A_Index] && FileExist(IniChoicePaths[A_Index]))
 		{
 		IniWrite, %spr%, % IniChoicePaths[A_Index], General, IniChoiceNames
 		sleep, 20
@@ -2449,7 +2468,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
 	Loop % PrgNo
 	{
-		if (IniChoicePaths[A_Index])
+		if (IniChoicePaths[A_Index] && FileExist(IniChoicePaths[A_Index]))
 		{
 		IniWrite, % (DefPresetSettings)? 1: A_Space, % IniChoicePaths[A_Index], General, DefPresetSettings
 		sleep, 20
@@ -3064,30 +3083,31 @@ SetTimer, NewThreadforDownload, Delete ;Cleanup
 
 
 
+strTemp := ""
 strTemp2 := ""
-strTemp3 := ""
 loop % PrgNo
 {
-	strTemp := ExtractPrgPath(A_Index, 0, PrgChoicePaths[A_Index], PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, temp)
+	; strIniChoice used as temp!
+	strIniChoice := ExtractPrgPath(A_Index, 0, PrgChoicePaths[A_Index], PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, temp)
 
-	if (strTemp && (PrgLnkInf[A_Index] != "\") && (PrgLnkInf[A_Index] != IniFileShortctSep) && (PrgLnkInf[A_Index] != "<>")) ; Don't care about invalid links- (but we do really!)
+	if (strIniChoice && (PrgLnkInf[A_Index] != "\") && (PrgLnkInf[A_Index] != IniFileShortctSep) && (PrgLnkInf[A_Index] != "<>")) ; Don't care about invalid links- (but we do really!)
 	{
 		if (temp) ;IsaPrgLnk
-		strTemp := PrgLnkInf[A_Index]
+		strIniChoice := PrgLnkInf[A_Index]
 
-	strRetVal := WorkingDirectory(strTemp, 1)
+	strRetVal := WorkingDirectory(strIniChoice, 1)
 
 		If (strRetVal)
 		strTemp2 .= "`n" . strRetVal
 		else
 		{
-			if (!InStr(strTemp, A_ScriptDir))
+			if (!InStr(strIniChoice, A_ScriptDir))
 			{
 			fTemp := KleenupPrgLnchFiles(1) ; An old (fixed?) bug where these ended up in wrong directory
 				if (fTemp)
 				{
-				SplitPath, strTemp, , strTemp
-				strTemp3 .= "`nFile(s): """ . fTemp . """ found in """ . strTemp . """ marked for the Recycle Bin."
+				SplitPath, strIniChoice, , strIniChoice
+				strTemp .= "`nFile(s): """ . fTemp . """ found in """ . strIniChoice . """ marked for the Recycle Bin."
 				}
 			}
 		}
@@ -3101,8 +3121,8 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 	else
 	KleenupPrgLnchFiles()
 
-	if (strTemp3)
-	MsgBox, 8192, PrgLnch Remnants, % (strTemp2)? ("Clean up failed for the following!`n" strTemp2 "`n`nAlso, " strTemp3): strTemp3
+	if (strTemp)
+	MsgBox, 8192, PrgLnch Remnants, % (strTemp2)? ("Clean up failed for the following!`n" strTemp2 "`n`nAlso, " strTemp): strTemp
 	else
 	{
 		if (strTemp2)
@@ -3801,9 +3821,8 @@ verTemp := PrgVer[selPrgChoice]
 Return
 
 
-
 MonitorsSub:
-
+ToolTip
 	if A_OSVersion in WIN_2003,WIN_XP,WIN_2000
 	; Above expression : No spaces and doesn't like brackets!
 	CreateToolTip("Unable to display VSync for this OS!")
@@ -4236,7 +4255,12 @@ Tooltip
 
 	ResIndexList := GetResList(PrgLnch.Monitor, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResArray, scrWidthDef, scrHeightDef, scrFreqDef, allModes, -1)
 
-	if (!PresetPropHwnd)  ;Update all at Load
+	if (PresetPropHwnd)
+	{
+		if (Fmode || Dynamic)
+		GuiControl, PrgLnchOpt:, currRes, % substr(ResIndexList, 1, StrLen(ResIndexList) - 1)
+	}
+	else  ;Update all at Load
 	{
 		GuiControl, PrgLnchOpt:, currRes, % substr(ResIndexList, 1, StrLen(ResIndexList) - 1)
 		if (defPrgStrng = "None")
@@ -4246,16 +4270,19 @@ Tooltip
 		scrFreq := scrFreqDef
 		}
 	}
-	else
-	{
-		if (Fmode || Dynamic)
-		GuiControl, PrgLnchOpt:, currRes, % substr(ResIndexList, 1, StrLen(ResIndexList) - 1)
-	}
-ResIndexList := % "|" . GetResList(PrgLnch.Monitor, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResArray, scrWidthDef, scrHeightDef, scrFreqDef, allModes)
+
+strtemp :=  substr(ResIndexList, 1, StrLen(ResIndexList) - 1)
+
+
+
+ResIndexList := "|" . GetResList(PrgLnch.Monitor, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResArray, scrWidthDef, scrHeightDef, scrFreqDef, allModes)
+
+
+
 
 ;Not the g-label ResListBox!
 GuiControl, PrgLnchOpt:, ResIndex, %ResIndexList%
-GuiControlGet currRes, PrgLnchOpt:, currRes ; Why?
+GuiControlGet, currRes, PrgLnchOpt:, currRes ; Recommended as per docs
 GuiControl, PrgLnchOpt: ChooseString, ResIndex, %currRes%
 GuiControl, PrgLnchOpt: Show, ResIndex
 Return
@@ -5273,17 +5300,9 @@ TooltipTimer:
 CreateToolTip(tooltipText)
 Return
 
-CreateToolTip(tooltipText, saveForMonitors := 0)
+CreateToolTip(tooltipText)
 {
-Static OwnerHwnd := 0, monitorInfo := ""
-
-	if (saveForMonitors = 1)
-	monitorInfo := tooltipText
-	else
-	{
-		if (saveForMonitors = 2)
-		tooltipText := monitorInfo
-	}
+Static OwnerHwnd := 0
 
 	if (OwnerHwnd)
 	{
@@ -6492,7 +6511,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 		}
 	}
 
-If (WinWaiter(PrgLnch))
+If (WinWaiter(PrgLnch, waitBreak))
 {
 	; check the PID of app. If it matches a Prg, use the index to retrieve the resolution
 
@@ -6521,22 +6540,24 @@ If (WinWaiter(PrgLnch))
 
 Return
 
-WinWaiter(winText := "", timeOut:= 0)
+WinWaiter(winText := "", waitBreak := 0, timeOut:= 0)
 {
-global
+
+
 ; https://autohotkey.com/boards/viewtopic.php?f=5&t=29822
-	(timeOut) && local t1 := A_TickCount
+	(timeOut) && t1 := A_TickCount
+	; if timout is 0, t1 is not initialised
 
 	Loop
 	{
 
-	Sleep -1
+	Sleep 10
 
-	} Until (!WinActive(winText) && local state := "inactive")
+	} Until (!WinActive(winText) && state := "inactive")
 
-	|| (waitBreak && local state := "break")
+	|| (waitBreak && state := "break")
 
-	|| (t1 && A_TickCount-t1 >= timeOut && local state := "timeout")
+	|| (t1 && A_TickCount-t1 >= timeOut && state := "timeout") ; t1 nothing
 
 	return state
 }
@@ -6718,7 +6739,7 @@ return substr(s, 2)
 }
 CheckPrgPaths(selPrgChoice, IniFileShortctSep, ByRef PrgChoicePaths, ByRef PrgLnkInf, ByRef PrgResolveShortcut)
 {
-Local strRetVal := "", strTemp := PrgChoicePaths[selPrgChoice], strTemp2 := PrgLnkInf[selPrgChoice], IsaPrgLnk := 0
+Local strRetVal := "", strTemp := PrgChoicePaths[selPrgChoice], strTemp2 := PrgLnkInf[selPrgChoice], IsaPrgLnk := 0, lnkPrg := 0
 ;gets, tests working directory of possible lnk, if any
 
 	if (LNKFlag(strTemp2))
@@ -7720,9 +7741,9 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 	NumPut(cbdevMode, Device_Mode, OffsetDWORD + offsetWORDStr, Ushort) ; initialise cbsize member
 
 	if (iChange)
-	retVal := DllCall("EnumDisplaySettings", PTR,dispMonNames[targMonitorNum], UInt,iMode, PTR,&Device_Mode)
+	retVal := DllCall("EnumDisplaySettings", PTR,dispMonNames[targMonitorNum], UInt, iMode, PTR, &Device_Mode)
 	else ;current display device
-	retVal := DllCall("EnumDisplaySettings", PTR,dispMonNames[PrgLnchMon], UInt,iMode, PTR,&Device_Mode)
+	retVal := DllCall("EnumDisplaySettings", PTR,dispMonNames[PrgLnchMon], UInt, iMode, PTR, &Device_Mode)
 
 
 	;NumGet(Device_Mode, 64bit*32 + 4 +OffsetdevMode/2,UShort) ;dmSize, (before the 2nd Tchar)
@@ -7893,7 +7914,7 @@ Return strRetVal
 
 GetResList(PrgLnchMon, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ByRef ResArray, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, allModes:= 0, iMode := 0)
 {
-ResList := "", Strng := ""
+ResList := "", Strng := "", checkDefMissing := 0
 iModeval := iMode, iModeCt := 0, ENUM_CURRENT_SETTINGS := -1
 scrWidth := 0, scrHeight := 0, scrDPI := 0, scrInterlace := 0, scrFreq := 0
 scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, scrFreqlast := 0
@@ -7903,19 +7924,52 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 	;imode = 0 caches the data for EnumSettings
 
 
+		; First check if the current settings is missing from the list and replace it.
+		if ((!checkDefMissing && iMode != ENUM_CURRENT_SETTINGS && scrWidth > scrWidthDef))
+		{
+
+			if (scrWidthLast = scrWidthDef)
+			{
+				if (!(scrHeightlast = scrHeight && scrFreqlast = scrFreq))
+				{
+				ResArray[iModeCt, 1] := scrWidthDef
+				ResArray[iModeCt, 2] := scrHeightDef
+				ResArray[iModeCt, 3] := scrFreqDef
+				iModeCt +=1
+				Strng := scrWidthDef . " `, " . scrHeightDef . " @ " . scrFreqDef . "Hz |"
+				ResList .= Strng
+				}
+			}
+			else
+			{
+				ResArray[iModeCt, 1] := scrWidthDef
+				ResArray[iModeCt, 2] := scrHeightDef
+				ResArray[iModeCt, 3] := scrFreqDef
+				iModeCt +=1
+				Strng := scrWidthDef . " `, " . scrHeightDef . " @ " . scrFreqDef . "Hz |"
+				ResList .= Strng
+
+			}
+		checkDefMissing := 1
+		}
+
+
 		if (scrWidthlast = scrWidth)
 		{
 			;many iModes here are equivalent for the above params. scrFreq & scrHeight may vary for a subset of those
-			if  (allModes && !(scrHeightlast = scrHeight))
+			if  (allModes && (scrHeightlast != scrHeight || scrFreqlast != scrFreq))
 			{
 			iModeCt += 1
 			Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq . "Hz |"
 			ResArray[iModeCt, 1] := scrWidth
 			ResArray[iModeCt, 2] := scrHeight
 			ResArray[iModeCt, 3] := scrFreq
-			if (iMode = ENUM_CURRENT_SETTINGS)
+			ResList .= Strng
+			}
+			else
+			{
+				if (iMode = ENUM_CURRENT_SETTINGS)
 				{
-
 				scrWidthDef := scrWidth
 				scrHeightDef := scrHeight
 				scrFreqDef := scrFreq
@@ -7923,35 +7977,47 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 				}
 				else
 				{
-				scrHeightlast := scrHeight
-				ResList .= Strng
+					if (scrHeightlast != scrHeight || scrFreqlast != scrFreq)
+					{
+					scrHeightlast := scrHeight
+					scrFreqlast := scrFreq
+					iModeCt += 1
+					ResArray[iModeCt, 1] := scrWidth
+					ResArray[iModeCt, 2] := scrHeight
+					ResArray[iModeCt, 3] := scrFreq
+					ResList .= scrWidth . " `, " . scrHeight . " @ " . scrFreq . "Hz |"
+					}
 				}
 			}
 		}
 		else
 		{
-		iModeCt += 1
-		scrWidthlast := scrWidth
-		scrHeightlast := scrHeight
-		scrDPIlast := scrDPI
-		scrInterlacelast := scrInterlace
-		scrFreqlast := scrFreq
+			if (scrHeightlast != scrHeight || scrFreqlast != scrFreq)
+			{
+			iModeCt += 1
+			scrWidthlast := scrWidth
+			scrHeightlast := scrHeight
+			scrDPIlast := scrDPI
+			scrInterlacelast := scrInterlace
+			scrFreqlast := scrFreq
 
-		;https://autohotkey.com/boards/viewtopic.php?f=5&t=23021&p=108567#p108567
-		Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
-			ResArray[iModeCt, 1] := scrWidth
-			ResArray[iModeCt, 2] := scrHeight
-			ResArray[iModeCt, 3] := scrFreq
-			if (iMode = ENUM_CURRENT_SETTINGS)
-			{
-				scrWidthDef := scrWidth
-				scrHeightDef := scrHeight
-				scrFreqDef := scrFreq
-				Return Strng
-			}
-			else
-			{
-			ResList .= Strng
+			;https://autohotkey.com/boards/viewtopic.php?f=5&t=23021&p=108567#p108567
+			Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
+				ResArray[iModeCt, 1] := scrWidth
+				ResArray[iModeCt, 2] := scrHeight
+				ResArray[iModeCt, 3] := scrFreq
+				if (iMode = ENUM_CURRENT_SETTINGS)
+				{
+					; Not enough, as this is the first of a bunch of candidates for the actual default
+					scrWidthDef := scrWidth
+					scrHeightDef := scrHeight
+					scrFreqDef := scrFreq
+					Return Strng
+				}
+				else
+				{
+				ResList .= Strng
+				}
 			}
 		}
 		iModeval += 1
@@ -8005,13 +8071,7 @@ Return 1
 MDMF_GetMonHandle(targMonitorNum)
 {
 Static Monitors := 0
-	if (Monitors.Count)
-	{
-	; Prglnch can crash on clicking/double clicking label, so use the saved text
-	CreateToolTip("", 2)
-	Return
-	}
-	else
+
 	{
 	Monitors := {Count: 0, targetMonitorNum: 0}
 	Monitors.targetMonitorNum := targMonitorNum
@@ -8039,7 +8099,7 @@ if (Monitors.Count = Monitors.targetMonitorNum)
 
 	if (!DllCall("dxva2\GetNumberOfPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint*", nMon))
 	{
-	CreateToolTip("GetNumberOfPhysicalMonitorsFromHMONITOR failed with code: " . """" . A_LastError . """", 1)
+	CreateToolTip("GetNumberOfPhysicalMonitorsFromHMONITOR failed with code: " . """" . A_LastError . """")
 	return False
 	}
 
@@ -8093,11 +8153,11 @@ if (Monitors.Count = Monitors.targetMonitorNum)
 
 			VarSetCapacity(MC_TIMING_REPORT, 0)
 		}
-		CreateToolTip(outStr, 1)
+		CreateToolTip(outStr)
 	}
 	else
 	{
-	CreateToolTip("GetPhysicalMonitorsFromHMONITOR failed with code: " . """" . A_LastError . """", 1)
+	CreateToolTip("GetPhysicalMonitorsFromHMONITOR failed with code: " . """" . A_LastError . """")
 	}
 
 	VarSetCapacity(Physical_Monitor, 0)
@@ -10229,7 +10289,7 @@ RestartPrgLnch(AsAdmin := 0, chgPreset := "", SprIniSlot := "")
 {
 Global
 Thread, NoTimers
-Local temp := 0, strTemp := PrgPID . ",", strTemp2 := ""
+Local temp := 0, strTemp := PrgPID . ",", strTemp2 := "", full_command_line := ""
 
 if (chgPreset)
 {
