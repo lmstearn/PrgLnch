@@ -2,8 +2,8 @@
 ;AutoHotkey /Debug C:\Users\New\Desktop\Desktemp\PrgLnch\PrgLnch.ahk
 #SingleInstance, force
 #NoEnv  ; Performance and compatibility with future AHK releases.
-;#Warn, All , MsgBox ; Enable warnings to assist with detecting common errors.
-#Warn UseUnsetLocal, OutputDebug  ; Warn when a local variable is used before it's set; send to OutputDebug
+#Warn, All, OutputDebug ; Enable warnings to assist with detecting common errors.
+;#Warn UseUnsetLocal, OutputDebug  ; Warn when a local variable is used before it's set; send to OutputDebug
 #MaxMem 256
 #MaxThreads 5
 #Persistent
@@ -242,6 +242,7 @@ PrgLAAHwnd := 0
 RnPrgLnchHwnd := 0
 UpdtPrgLnchHwnd := 0
 BackToPrgLnchHwnd := 0
+PresetPropHwnd := 0
 ;CDS_VIDEOPARAMETERS := 0x00000020 ;https://msdn.microsoft.com/en-us/library/windows/desktop/dd145196%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396
 
 PrgTermExit := 0
@@ -1783,7 +1784,7 @@ if (A_GuiEvent = "DoubleClick")
 	if (temp = "NS" || temp = "FAILED" || temp = "TERM" || temp = "ENDED" || !temp)
 	{
 
-	strRetVal := ChkExistingProcess(PrgLnkInf, PrgResolveShortcut, presetNoTest, batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep)
+	strRetVal := ChkExistingProcess(PrgLnkInf, presetNoTest, batchPrgStatus, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep)
 
 		if (strRetVal)
 		{
@@ -2294,10 +2295,9 @@ else
 					iniTxtPadChoice := SelIniChoiceName
 					SelIniChoicePath := A_ScriptDir . "\" . SelIniChoiceName . ".ini"
 
-					FileCopy %strTemp%, %SelIniChoicePath%
 
-						if (ErrorLevel)
-						MsgBox, 8192, File Copy , % SelIniChoiceName " Lnch Pad could not be created!"
+						if (strTemp2 := MoveFileUtil(strTemp, SelIniChoicePath))
+						MsgBox, 8192, File Copy , %strTemp2%
 					IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 					GuiControl, PrgLnch:, IniChoice, %strIniChoice%
 					GuiControl, PrgLnch: ChooseString, IniChoice, % SelIniChoiceName
@@ -3473,7 +3473,7 @@ Return
 DopowerPlan(planToChangeTo := "")
 {
 
-Static oldSchemeGUID, oldDesc, arrPowerPlanNames := []
+Static oldSchemeGUID := 0, oldDesc := "", plan := "", arrPowerPlanNames := []
 temp := 0, strTemp := "", strTemp2 := " call of PowerReadFriendlyName failed with "
 
 
@@ -4108,6 +4108,10 @@ MakeLong(LoWord, HiWord) ; courtesy Chris
 {
 return (HiWord << 16) | (LoWord & 0xffff)
 }
+
+
+
+
 
 
 
@@ -5596,7 +5600,7 @@ GuiControlGet strTemp, PrgLnch:, RunBatchPrg
 if ((presetNoTest && strTemp = "&Run Batch") || (!presetNoTest && temp = "&Test Run Prg"))
 {
 	lnchPrgIndex := selPrgChoice ; changes shortly
-	strRetVal := ChkExistingProcess(PrgLnkInf, PrgResolveShortcut, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep, 1)
+	strRetVal := ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep, 1)
 
 
 	if (strRetVal)
@@ -6032,7 +6036,7 @@ if (lnchPrgIndex > 0) ;Running
 				dy := Round(dy + h/2)
 				fTemp := 1
 					if (fTemp)
-					DllCall("SetCursorPos", UInt, dx, UInt, dy)
+					DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
 					else
 					fTemp := 1
 			}
@@ -6045,7 +6049,7 @@ if (lnchPrgIndex > 0) ;Running
 	{
 	dx := Round(x + w/2)
 	dy := Round(y + y/2)
-	DllCall("SetCursorPos", UInt, dx, UInt, dy)
+	DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
 	}
 		if (borderToggle)
 		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, 0, 0, scrWidth, scrHeight, PrgPIDtmp, 1) ; query
@@ -6191,7 +6195,7 @@ Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "", % "UseErrorLevel" (
 				}
 				dx := Round(dx + w/2)
 				dy := Round(dy + h/2)
-				DllCall("SetCursorPos", UInt, dx, UInt, dy)
+				DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
 			}
 
 
@@ -6644,7 +6648,7 @@ WinMover(PrgLnchOpt.Hwnd(), "d r")
 	SysGet, md, MonitorWorkArea, % PrgLnchMon
 	dx := Round(mdleft + (mdRight- mdleft)/2)
 	dy := Round(mdTop + (mdBottom - mdTop)/2)
-	DllCall("SetCursorPos", UInt, dx, UInt, dy)
+	DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
 	}
 
 
@@ -6851,7 +6855,7 @@ strRetVal := SubStr(strTemp, InStr(strTemp, "\",, -1) + 1)
 Return strRetVal
 }
 
-ChkExistingProcess(PrgLnkInf, PrgResolveShortcut, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgChoicePaths, IniFileShortctSep, btchRun := 0, multiInst := 0)
+ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgChoicePaths, IniFileShortctSep, btchRun := 0, multiInst := 0)
 {
 strComputer := ".", dupList := "", temp := 0, strTemp := "", strTemp2 := "", IsaPrgLnk := 0
 
@@ -6986,7 +6990,7 @@ else
 	{
 		if (PrgChoicePaths[A_Index] && PrgPIDMast[A_Index])
 		{
-		strRetVal := ChkExistingProcess(PrgLnkInf, PrgResolveShortcut, 0, A_Index, 0, 0, PrgChoicePaths, IniFileShortctSep, 0, 1)
+		strRetVal := ChkExistingProcess(PrgLnkInf, 0, A_Index, 0, 0, PrgChoicePaths, IniFileShortctSep, 0, 1)
 
 			if (strRetVal)
 			{
@@ -7655,7 +7659,7 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 		VarSetCapacity(DISPLAY_DEVICE, cbDISPDEV, 0)
 		NumPut(cbDISPDEV, DISPLAY_DEVICE, 0) ; initialising cb (byte counts) or size member
 
-		if (!DllCall("EnumDisplayDevices", PTR,0, UInt,iDevNumb, PTR,&DISPLAY_DEVICE, UInt,0))
+		if (!DllCall("EnumDisplayDevices", "PTR", 0, "UInt", iDevNumb, "PTR", &DISPLAY_DEVICE, "UInt", 0))
 		{
 		dispMonNamesNo := iDevNumb
 		break
@@ -7741,9 +7745,9 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 	NumPut(cbdevMode, Device_Mode, OffsetDWORD + offsetWORDStr, Ushort) ; initialise cbsize member
 
 	if (iChange)
-	retVal := DllCall("EnumDisplaySettings", PTR,dispMonNames[targMonitorNum], UInt, iMode, PTR, &Device_Mode)
+	retVal := DllCall("EnumDisplaySettings", "PTR", dispMonNames[targMonitorNum], "UInt", iMode, "PTR", &Device_Mode)
 	else ;current display device
-	retVal := DllCall("EnumDisplaySettings", PTR,dispMonNames[PrgLnchMon], UInt, iMode, PTR, &Device_Mode)
+	retVal := DllCall("EnumDisplaySettings", "PTR", dispMonNames[PrgLnchMon], "UInt", iMode, "PTR", &Device_Mode)
 
 
 	;NumGet(Device_Mode, 64bit*32 + 4 +OffsetdevMode/2,UShort) ;dmSize, (before the 2nd Tchar)
@@ -7825,7 +7829,6 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 	NumPut(scrWidth,Device_Mode,108+OffsetWORD, "UInt") ; A_ScreenWidth
 	NumPut(scrHeight,Device_Mode,112+OffsetWORD, "UInt") ; A_ScreenHeight
 	NumPut(scrFreq,Device_Mode,120+OffsetWORD, "UInt") ;
-
 
 
 	NumPut(0, Device_Mode,38+OffsetWORD/2, "Ushort") ;dmDriverExtra
