@@ -2,7 +2,7 @@
 ;AutoHotkey /Debug C:\Users\New\Desktop\Desktemp\PrgLnch\PrgLnch.ahk
 #SingleInstance, force
 #NoEnv  ; Performance and compatibility with future AHK releases.
-#Warn, All, OutputDebug ; Enable warnings to assist with detecting common errors.
+#Warn, All, OutputDebug ; Enable warnings for a debugger to display to assist with detecting common errors.
 ;#Warn UseUnsetLocal, OutputDebug  ; Warn when a local variable is used before it's set; send to OutputDebug
 #MaxMem 256
 #MaxThreads 5
@@ -3937,7 +3937,7 @@ strTemp2 := GetPrgLnkVal(strTemp, IniFileShortctSep, 1 ,resolveShortct)
 
 	if (strTemp2 = "<>")
 	{
-	MsgBox, 8208, Resolve shortcut, The Shortcut is invalid, please replace it.
+	MsgBox, 8208, Resolve shortcut, The shortcut is invalid, please replace it.
 	GuiControl, PrgLnchOpt:, resolveShortct, % PrgResolveShortcut[selPrgChoice]
 	Return
 	}
@@ -4203,7 +4203,7 @@ else
 		}
 		else
 		{
-		; If by misadventurer the values are zero
+		; If by misadventure the values are zero
 		MsgBox, 8192, No Resolution Mode, Monitor parameters for the selected or startup Prg do not exist!`n`nDefaults assumed.`nIt's recommended to save the parameters by reselecting the target monitor from the Monitor List, and, if required, changing the resolution mode.
 		GetDisplayData(PrgLnch.Monitor, targMonitorNum, dispMonNamesNo, , , , scrWidth, scrHeight, , scrFreq , -1, 1)
 		scrWidthDef := scrWidth
@@ -4827,9 +4827,10 @@ else
 
 		strTemp := PrgChoicePaths[selPrgChoice]
 		strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
+
 			if (InStr(strRetVal, "*"))
 			; Not a shortcut: check working  directory & strip the last "\"
-			strTemp2 := WorkingDirectory(strTemp)
+			strTemp2 := WorkingDirectory(AssocQueryApp(strTemp))
 			else
 			{
 				if (InStr(strRetVal, "|"))
@@ -4859,9 +4860,14 @@ else
 			{
 				if (strRetVal = "*")
 				{
-				; for unresolved targets e.g. recycle bin shortcuts
-				strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
-				PrgChoicePaths[selPrgChoice] .= strRetVal
+
+				strTemp2 := AssocQueryApp(strTemp)
+					if (strTemp = strTemp2)
+					{
+					; for unresolved targets e.g. recycle bin shortcuts
+					strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
+					PrgChoicePaths[selPrgChoice] .= strRetVal
+					} ; Forget associaions
 				}
 				else
 				{
@@ -5092,11 +5098,12 @@ if (IsaPrgLnk)
 else  ; Lnk is directory link OR regular Prg
 {
 	if (InStr(prgPath, "*",, Strlen(prgPath)))
-	prgPath := PrgPath := Substr(prgPath, 1, Strlen(prgPath) -1)
+	PrgPath := Substr(prgPath, 1, Strlen(prgPath) -1)
 	;case where prgPath is a directory link
 	if (InStr(prgPath, IniFileShortctSep,, 0))
 	PrgPath := Substr(prgPath, 1, InStr(prgPath, IniFileShortctSep,, 0) -1)
 }
+
 	if (!PrgPath)
 	PrgPath := "BadPath"
 Return %prgPath%
@@ -5825,7 +5832,7 @@ LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, 
 {
 
 
-strRetVal := "", PrgLnchMon := 0, primaryMon := 0, temp := 0, fTemp := 0, ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
+strRetVal := "", wkDir := "", PrgLnchMon := 0, primaryMon := 0, disableRedirect := 0, temp := 0, fTemp := 0, ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
 ERROR_FILE_NOT_FOUND := 0x2
 ERROR_ACCESS_DENIED := 0x5
 ERROR_CANCELLED := 0x4C7
@@ -5860,12 +5867,28 @@ if (lnchPrgIndex > 0) ;Running
 
 	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
+
+	strRetVal := AssocQueryApp(PrgPaths)
+	if (!(strRetVal = PrgPaths)) ; must be an association
+	{
+		;Treat as regular association
+		If (IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex])
+		IsaPrgLnk := 0
+
+		if ((!IsaPrgLnk))
+		{
+		; Easiest way to get working dir for assoications
+		SplitPath, PrgPaths,, wkDir
+		PrgPaths := AssocQueryApp(PrgPaths)
+		}
+	}
+
 	if (!FileExist(PrgPaths))
 	{
 	; https://www.autohotkey.com/boards/viewtopic.php?f=76&t=31269
-	if (A_Is64bitOS && A_PtrSize == 4)
-	if (!(disableRedirect := DllCall("Wow64DisableWow64FsRedirection", "Ptr*", oldRedirectionValue)))
-	Return "File does not exist and redirection error!"
+		if (A_Is64bitOS && A_PtrSize == 4)
+		if (!(disableRedirect := DllCall("Wow64DisableWow64FsRedirection", "Ptr*", oldRedirectionValue)))
+		Return SelIniChoicePath . " does not exist and there is a redirection error!"
 	}
 
 	if (FileExist(PrgPaths))
@@ -5913,7 +5936,7 @@ if (lnchPrgIndex > 0) ;Running
 	strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 		if (strRetVal)
 		{
-		MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n" strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
+		MsgBox, 8196, , % "Requested resolution change did not work.`nThe saved resolution data for the Prg is: " scrWidth ", " scrHeight " at " scrFreq " Hz.`nReason: `n" strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
 			IfMsgBox, No
 			{
 				if (disableRedirect)
@@ -5932,7 +5955,7 @@ if (lnchPrgIndex > 0) ;Running
 
 ;try
 ;{
-		Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "", % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
+		Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: wkDir, % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
 
 ;}
 ;catch temp
@@ -6034,7 +6057,7 @@ if (lnchPrgIndex > 0) ;Running
 
 				dx := Round(dx + w/2)
 				dy := Round(dy + h/2)
-				fTemp := 1
+
 					if (fTemp)
 					DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
 					else
@@ -6085,7 +6108,7 @@ if (lnchPrgIndex > 0) ;Running
 ;try
 ;{
 
-Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: "", % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
+Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: wkDir, % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
 
 ;}
 ;catch temp
@@ -7206,10 +7229,13 @@ strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
 	; get workdir: This blanks all if not lnk file  (or a shortcut  to an "unresolved" target tlke recycle bin, so expect return of ""
 	FileGetShortcut, %strTemp%, , strRetVal
 		if (ErrorLevel)
+		{
+			; IsaLnk is used on open of a new file through the dialog. In that case, "*" is always returned. This happens with associations as werll
 			if (IsALnk)
 			strRetVal := "<>"
 			else
 			strRetVal := "*"
+		}
 		else
 		{
 			if (strRetVal)
@@ -7723,7 +7749,7 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 	dispMonNamesNo := dispMonNamesNo - temp
 
 	}
-	else
+	else ; iMode is -1 or -2
 	{
 
 
@@ -7767,7 +7793,6 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 	scrFreq := scrFreq + 1
 	;Do not touch 148 dmPanningWidth or 152 dmPanningHeight
 
-
 	VarSetCapacity(Device_Mode, 0)
 	}
 	Return retVal
@@ -7784,10 +7809,10 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 	GuiControlGet FMode, PrgLnchOpt:, FMode
 		If (FMode)
 		CDSopt := CDS_RESET
-	GuiControlGet Tmp, PrgLnchOpt:, Tmp
+	GuiControlGet Dynamic, PrgLnchOpt:, Dynamic
 		If (Dynamic)
 		CDSopt := CDS_UPDATEREGISTRY
-	GuiControlGet Dynamic, PrgLnchOpt:, Dynamic
+	GuiControlGet Tmp, PrgLnchOpt:, Tmp
 		If (Tmp)
 		CDSopt := CDS_FULLSCREEN
 
@@ -7815,7 +7840,6 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 		{
 		GetDisplayData(PrgLnch.Monitor, targMonitorNum, dispMonNamesNo, , , scrDPI, , , scrInterlace, , -1, 1)
 		}
-
 
 
 
@@ -7926,51 +7950,34 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 	{
 	;imode = 0 caches the data for EnumSettings
 
-
-		; First check if the current settings is missing from the list and replace it.
+		;"Incompatible" resolution detected
+		; First check if the current settings is missing from the list and replace it .
 		if ((!checkDefMissing && iMode != ENUM_CURRENT_SETTINGS && scrWidth > scrWidthDef))
 		{
-
-			if (scrWidthLast = scrWidthDef)
+			if ((scrWidthLast = scrWidthDef && !(scrHeightlast = scrHeight && scrFreqlast = scrFreq)) || ((scrWidthLast != scrWidthDef)))
 			{
-				if (!(scrHeightlast = scrHeight && scrFreqlast = scrFreq))
-				{
-				ResArray[iModeCt, 1] := scrWidthDef
-				ResArray[iModeCt, 2] := scrHeightDef
-				ResArray[iModeCt, 3] := scrFreqDef
-				iModeCt +=1
-				Strng := scrWidthDef . " `, " . scrHeightDef . " @ " . scrFreqDef . "Hz |"
-				ResList .= Strng
-				}
-			}
-			else
-			{
-				ResArray[iModeCt, 1] := scrWidthDef
-				ResArray[iModeCt, 2] := scrHeightDef
-				ResArray[iModeCt, 3] := scrFreqDef
-				iModeCt +=1
-				Strng := scrWidthDef . " `, " . scrHeightDef . " @ " . scrFreqDef . "Hz |"
-				ResList .= Strng
-
+			iModeCt +=1
+			ResArray[iModeCt, 1] := scrWidthDef
+			ResArray[iModeCt, 2] := scrHeightDef
+			ResArray[iModeCt, 3] := scrFreqDef
+			Strng := scrWidthDef . " `, " . scrHeightDef . " @ " . scrFreqDef . "Hz |"
+			ResList .= Strng
 			}
 		checkDefMissing := 1
 		}
 
 
+
 		if (scrWidthlast = scrWidth)
 		{
 			;many iModes here are equivalent for the above params. scrFreq & scrHeight may vary for a subset of those
-			if  (allModes && (scrHeightlast != scrHeight || scrFreqlast != scrFreq))
+			if ((allModes && (scrHeightlast = scrHeight || scrFreqlast = scrFreq)) || (scrHeightlast != scrHeight || scrFreqlast != scrFreq))
 			{
 			iModeCt += 1
 			Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq . "Hz |"
 			ResArray[iModeCt, 1] := scrWidth
 			ResArray[iModeCt, 2] := scrHeight
 			ResArray[iModeCt, 3] := scrFreq
-			ResList .= Strng
-			}
-			else
-			{
 				if (iMode = ENUM_CURRENT_SETTINGS)
 				{
 				scrWidthDef := scrWidth
@@ -7978,24 +7985,16 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 				scrFreqDef := scrFreq
 				Return Strng
 				}
-				else
-				{
-					if (scrHeightlast != scrHeight || scrFreqlast != scrFreq)
-					{
-					scrHeightlast := scrHeight
-					scrFreqlast := scrFreq
-					iModeCt += 1
-					ResArray[iModeCt, 1] := scrWidth
-					ResArray[iModeCt, 2] := scrHeight
-					ResArray[iModeCt, 3] := scrFreq
-					ResList .= scrWidth . " `, " . scrHeight . " @ " . scrFreq . "Hz |"
-					}
-				}
+			ResList .= Strng
+			scrHeightlast := scrHeight
+			scrFreqlast := scrFreq
+			scrDPIlast := scrDPI
+			scrInterlacelast := scrInterlace
 			}
 		}
 		else
 		{
-			if (scrHeightlast != scrHeight || scrFreqlast != scrFreq)
+			if ((AllModes && scrHeightlast = scrHeight && scrFreqlast = scrFreq) || ((scrHeightlast != scrHeight || scrFreqlast != scrFreq)))
 			{
 			iModeCt += 1
 			scrWidthlast := scrWidth
@@ -8011,7 +8010,6 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 				ResArray[iModeCt, 3] := scrFreq
 				if (iMode = ENUM_CURRENT_SETTINGS)
 				{
-					; Not enough, as this is the first of a bunch of candidates for the actual default
 					scrWidthDef := scrWidth
 					scrHeightDef := scrHeight
 					scrFreqDef := scrFreq
@@ -8074,7 +8072,7 @@ Return 1
 MDMF_GetMonHandle(targMonitorNum)
 {
 Static Monitors := 0
-
+	if (!Monitors.Count)
 	{
 	Monitors := {Count: 0, targetMonitorNum: 0}
 	Monitors.targetMonitorNum := targMonitorNum
