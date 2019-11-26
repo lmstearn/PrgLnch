@@ -5936,7 +5936,7 @@ if (lnchPrgIndex > 0) ;Running
 	strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 		if (strRetVal)
 		{
-		MsgBox, 8196, , % "Requested resolution change did not work.`nThe saved resolution data for the Prg is: " scrWidth ", " scrHeight " at " scrFreq " Hz.`nReason: `n" strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
+		MsgBox, 8196, , % "Requested resolution change did not work.`nThe saved resolution data for the Prg is: " scrWidth " X " scrHeight " at " scrFreq " Hz.`nReason: `n" strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
 			IfMsgBox, No
 			{
 				if (disableRedirect)
@@ -6510,7 +6510,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			}
 		}
 		else
-		{ 
+		{
 			if (batchActive)
 			{
 			;get lastMonitorUsedInBatch
@@ -7941,8 +7941,9 @@ Return strRetVal
 
 GetResList(PrgLnchMon, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ByRef ResArray, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, allModes:= 0, iMode := 0)
 {
-ResList := "", Strng := "", checkDefMissing := 0
-iModeval := iMode, iModeCt := 0, ENUM_CURRENT_SETTINGS := -1
+static checkDefMissingMsg := 0
+ResList := "", Strng := ""
+iModeval := iMode, iModeCt := 0, ENUM_CURRENT_SETTINGS := -1, checkDefMissing := 0
 scrWidth := 0, scrHeight := 0, scrDPI := 0, scrInterlace := 0, scrFreq := 0
 scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, scrFreqlast := 0
 
@@ -7950,11 +7951,10 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 	{
 	;imode = 0 caches the data for EnumSettings
 
-		;"Incompatible" resolution detected
-		; First check if the current settings is missing from the list and replace it .
-		if ((!checkDefMissing && iMode != ENUM_CURRENT_SETTINGS && scrWidth > scrWidthDef))
+		;For "Incompatible" resolution detection,: first check if the current settings are missing from the list and replace it .
+		if (!checkDefMissing && (iMode != ENUM_CURRENT_SETTINGS && scrWidth > scrWidthDef))
 		{
-			if ((scrWidthLast = scrWidthDef && !(scrHeightlast = scrHeight && scrFreqlast = scrFreq)) || ((scrWidthLast != scrWidthDef)))
+			if ((scrWidthLast = scrWidthDef && !(scrHeightlast = scrHeightDef && scrFreqlast = scrFreqDef)) || ((scrWidthLast != scrWidthDef)))
 			{
 			iModeCt +=1
 			ResArray[iModeCt, 1] := scrWidthDef
@@ -7962,6 +7962,12 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 			ResArray[iModeCt, 3] := scrFreqDef
 			Strng := scrWidthDef . " `, " . scrHeightDef . " @ " . scrFreqDef . "Hz |"
 			ResList .= Strng
+
+				if (!checkDefMissingMsg)
+				{
+				MsgBox, 8192, Default Resolution, % "The current desktop resolution of " scrWidthDef " X " scrHeightDef " does not appear in the list of resolution modes for the active monitor. The mode has been inserted to the list of resolutions, however changes to this, or any other resolution mode in this PrgLnch instance will not work properly, if at all.`n`nIt's recommended the current desktop resolution be permanently changed to one which is more compatible with the driver.`nTo do so, select " . """" . "None" . """" . " in Shortcut slots, and choose " . """" . "Dynamic" . """" . " in the Res Options, and then select a new resolution mode from the list."
+				checkDefMissingMsg := 1
+				}
 			}
 		checkDefMissing := 1
 		}
