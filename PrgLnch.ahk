@@ -123,6 +123,11 @@ Class PrgLnch
 	;WinGetText, text, ahk_class %temp%
 	Return temp
 	}
+	Name()
+	{
+	SplitPath, A_ScriptFullPath,,,, temp
+	Return temp
+	}
 	PID()
 	{
 	Process, Exist
@@ -6406,8 +6411,8 @@ WatchSwitchBack:
 
 Thread, Priority, -536870911
 ;Problem is, this only deals with switching to and from Prglnch ATM . Not other apps.
-WinWaitActive, PrgLnch
-IfWinActive, PrgLnch
+WinWaitActive, % PrgLnch.Title
+If WinActive(PrgLnch.Title)
 {
 
 		if ((prgSwitchIndex)? PrgChgResonSwitch[prgSwitchIndex]: PrgChgResonSwitch[selPrgChoice])
@@ -6538,11 +6543,13 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 		}
 	}
 
-If (WinWaiter(PrgLnch, waitBreak))
+
+If (WinWaiter(PrgLnch.Title, waitBreak))
 {
 	; check the PID of app. If it matches a Prg, use the index to retrieve the resolution
 
 	timerfTemp := FindMatchingPID(lnchStat, currBatchNo, PrgListPID%btchPrgPresetSel%, PrgPID)
+MsgBox, 8192, WinWaiter, % " waitbreak " waitbreak " timerfTemp " timerfTemp " lnchStat " lnchStat
 
 	if (timerfTemp)
 	{
@@ -7935,7 +7942,17 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 Return strRetVal
 }
 
-
+FindResMatch(iModeCt, scrWidthDef, scrHeightDef, scrFreqDef, ResArray)
+{
+i := 0
+While (scrWidthDef = ResArray[iModeCt - i, 1])
+{
+	if (scrHeightDef = ResArray[iModeCt - i, 2] && scrFreqDef = ResArray[iModeCt - i, 3])
+	Return 1
+i++
+}
+Return 0
+}
 
 
 
@@ -7954,7 +7971,7 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 		;For "Incompatible" resolution detection,: first check if the current settings are missing from the list and replace it .
 		if (!checkDefMissing && (iMode != ENUM_CURRENT_SETTINGS && scrWidth > scrWidthDef))
 		{
-			if ((scrWidthLast = scrWidthDef && !(scrHeightlast = scrHeightDef && scrFreqlast = scrFreqDef)) || ((scrWidthLast != scrWidthDef)))
+			if ((!FindResMatch(iModeCt, scrWidthDef, scrHeightDef, scrFreqDef, ResArray)) || (scrWidthLast != scrWidthDef))
 			{
 			iModeCt +=1
 			ResArray[iModeCt, 1] := scrWidthDef
@@ -7965,7 +7982,7 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 
 				if (!checkDefMissingMsg)
 				{
-				MsgBox, 8192, Default Resolution, % "The current desktop resolution of " scrWidthDef " X " scrHeightDef " does not appear in the list of resolution modes for the active monitor. The mode has been inserted to the list of resolutions, however changes to this, or any other resolution mode in this PrgLnch instance will not work properly, if at all.`n`nIt's recommended the current desktop resolution be permanently changed to one which is more compatible with the driver.`nTo do so, select " . """" . "None" . """" . " in Shortcut slots, and choose " . """" . "Dynamic" . """" . " in the Res Options, and then select a new resolution mode from the list."
+				MsgBox, 8192, Default Resolution, % "The current desktop resolution of " scrWidthDef " X " scrHeightDef " does not appear in the list of resolution modes for the active monitor. The mode has been inserted to the list of resolutions, however changes to this, or any other resolution mode in this PrgLnch instance will not work properly, if at all.`n`nIt's recommended the current desktop resolution be permanently changed to one which is more compatible with the driver.`nTo do so, from PrgLnch Options, select " . """" . "None" . """" . " in Shortcut slots, and choose " . """" . "Dynamic" . """" . " in the Res Options, and then select an alternative resolution mode from the list. Be sure to return the selection in Res Options to " . """" . "Temporary" . """" . " if that is the preference."
 				checkDefMissingMsg := 1
 				}
 			}
