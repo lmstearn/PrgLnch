@@ -42,6 +42,7 @@ Process, priority, %PrgLnchPID%, A
 
 Class PrgLnchOpt
 	{
+	static Title := "PrgLnch Options"
 	temp := 0
 	Hwnd()
 	{
@@ -84,7 +85,7 @@ Class PrgLnchOpt
 Class PrgLnch
 	{
 	temp := 0
-	static Title := "PrgLnch" ;
+	static Title := "PrgLnch"
 	static Title1 := "Notepad++"
 	;static NplusplusClass := "ahk_exe Notepad++.exe"
 	;static NplusplusClass := "ahk_class Notepad++"
@@ -1113,41 +1114,6 @@ Process, priority, %PrgLnchPID%, B
 Return
 
 
-^!p::
-; This repositions the top left of the GUI to mouse cursor
-strTemp := A_CoordModeMouse
-CoordMode, Mouse, Screen
-MouseGetPos, x, y
-CoordMode, Mouse, % strTemp
-
-if (WinExist("PrgLnch.ahk") or WinExist("ahk_class" . PrgLnch) or WinExist ("ahk_class AutoHotkeyGUI"))
-{
-WinActivate
-
-	If (WinExist("PrgLnch"))
-	{
-	WinMove, , PrgLnch, x, y
-	WinMove, , PrgLnch Options, x, y
-	}
-	else
-	{
-		If (WinExist("PrgLnch Options"))
-		{
-		WinMove, , PrgLnch Options, x, y
-		WinMove, , PrgLnch, x, y
-		}
-		else
-		{
-		MsgBox, 8196, , Problem with Finding the PrgLnch Window! Quit PrgLnch?
-		IfMsgBox, Yes
-		GoSub PrgLnchButtonQuit_PrgLnch
-		}
-	}
-
-}
-Return
-
-
 ;LnchPad invocation
 LnchPadConfig:
 FileInstall LnchPadCfg.jpg, LnchPadCfg.jpg
@@ -1158,6 +1124,8 @@ temp := 0
 Return
 
 LnchPadSplashTimer:
+SetTitleMatchMode, 3
+
 	If (WinActive("LnchPad Setup"))
 	{
 	SetTimer, LnchPadSplashTimer, Delete
@@ -2128,9 +2096,9 @@ else
 			}
 		}
 	WinMover(PrgLnchOpt.Hwnd(), "d r")
-	Gui, PrgLnch: Show, Hide, PrgLnch
+	Gui, PrgLnch: Show, Hide, % PrgLnchOpt.Title
 	sleep, 10
-	Gui, PrgLnchOpt: Show, NA, PrgLnch Options
+	Gui, PrgLnchOpt: Show, NA, % PrgLnch.Title
 
 	}
 }
@@ -2150,6 +2118,37 @@ PresetProp:
 	if (btchPrgPresetSel && currBatchNo)
 	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
 Return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2722,9 +2721,11 @@ if (showCtl)
 	GuiControl, PrgLnch: Show, MovePrg
 	GuiControl, PrgLnch: Show, PresetName
 	GuiControl, PrgLnch: Show, BtchPrgPreset
+	GuiControl, PrgLnch: Hide, PwrChoice
 	GuiControl, PrgLnch: Show, RunBatchPrg
 	GuiControl, PrgLnch: Show, % GoConfigHwnd
 	GuiControl, PrgLnch: Show, IniChoice
+	GuiControl, PrgLnch: Hide, LnchPadConfig
 	GuiControl, PrgLnch: Show, % quitHwnd
 	}
 	else
@@ -2734,9 +2735,11 @@ if (showCtl)
 	GuiControl, PrgLnch: Hide, MovePrg
 	GuiControl, PrgLnch: Hide, PresetName
 	GuiControl, PrgLnch: Hide, BtchPrgPreset
+	GuiControl, PrgLnch: Hide, PwrChoice
 	GuiControl, PrgLnch: Hide, RunBatchPrg
 	GuiControl, PrgLnch: Hide, % GoConfigHwnd
 	GuiControl, PrgLnch: Hide, IniChoice
+	GuiControl, PrgLnch: Hide, LnchPadConfig
 	GuiControl, PrgLnch: Hide, % quitHwnd
 	}
 }
@@ -5345,7 +5348,29 @@ Static OwnerHwnd := 0
 	;OwnerHwnd := Format("0x{1:x}", OwnerHwnd)
 	
 		if ((OwnerHwnd = PrgLnch.Hwnd()) || (OwnerHwnd = PrgLnchOpt.Hwnd()))
-		SetTimer, TooltipTimer, 120		
+		{
+
+		CoordMode, ToolTip, Client
+		MouseGetPos,x,y
+		SysGet, temp, 31		
+		
+			if ((OwnerHwnd = PrgLnch.Hwnd()))
+			{
+			temp := floor(3 * (PrgLnch.Height()-temp)/4)
+				if (y > temp)
+				ToolTip, %tooltipText%, %x%, %temp%
+			}
+			else
+			{
+			temp := floor(2 * (PrgLnchOpt.Height()-temp)/3)
+				if (y > temp)
+				ToolTip, %tooltipText%, %x%, %temp%
+			}		
+		
+		
+		;lastTooltipText := tooltipText
+		SetTimer, TooltipTimer, 120
+		}
 		else
 		ToolTip, %tooltipText%, 0, 0
 	}
@@ -5353,6 +5378,32 @@ Static OwnerHwnd := 0
 
 #IfWinActive, PrgLnch Options ahk_class AutoHotkeyGUI
 {
+^!p::
+; This repositions the top left of the GUI to mouse cursor
+strTemp := A_CoordModeMouse
+CoordMode, Mouse, Screen
+MouseGetPos, x, y
+CoordMode, Mouse, % strTemp
+
+if (WinExist("PrgLnch.ahk") or WinExist("ahk_class" . PrgLnch.Title) or WinExist ("ahk_class AutoHotkeyGUI"))
+{
+WinActivate
+
+	If (WinExist(PrgLnchOpt.Title))
+	{
+	WinMove, , % PrgLnchOpt.Title, %x%, %y%
+	WinMove, , % PrgLnchOpt.Title, %x%, %y%
+	}
+	else
+	{
+	MsgBox, 8196, , Problem with Finding the PrgLnch Options Window! Quit PrgLnch?
+		IfMsgBox, Yes
+		GoSub PrgLnchButtonQuit_PrgLnch
+	}
+}
+Return
+
+
 ^z::
 
 GuiControlGet, strTemp, PrgLnchOpt: FocusV
@@ -5457,6 +5508,30 @@ Return
 
 #IfWinActive, PrgLnch ahk_class AutoHotkeyGUI
 {
+^!p::
+; This repositions the top left of the GUI to mouse cursor
+strTemp := A_CoordModeMouse
+CoordMode, Mouse, Screen
+MouseGetPos, x, y
+CoordMode, Mouse, % strTemp
+
+if (WinExist("PrgLnch.ahk") or WinExist("ahk_class" . PrgLnch.Title) or WinExist ("ahk_class AutoHotkeyGUI"))
+{
+WinActivate
+
+	If (WinExist(PrgLnch.Title))
+	{
+	WinMove, ,% PrgLnch.Title, %x%, %y%
+	WinMove, ,% PrgLnch.Title, %x%, %y%
+	}
+	else
+	{
+	MsgBox, 8196, , Problem with Finding the PrgLnch Window! Quit PrgLnch?
+		IfMsgBox, Yes
+		GoSub PrgLnchButtonQuit_PrgLnch
+	}
+}
+Return
 ^z::
 
 GuiControlGet, strTemp, PrgLnch: FocusV
@@ -6411,10 +6486,10 @@ WatchSwitchBack:
 
 Thread, Priority, -536870911
 ;Problem is, this only deals with switching to and from Prglnch ATM . Not other apps.
-WinWaitActive, % PrgLnch.Title
-If WinActive(PrgLnch.Title)
-{
+SetTitleMatchMode, 3
 
+If (WinActive(PrgLnch.Title) || WinActive(PrgLnchOpt.Title))
+{
 		if ((prgSwitchIndex)? PrgChgResonSwitch[prgSwitchIndex]: PrgChgResonSwitch[selPrgChoice])
 		{
 		scrWidth := scrWidthDef
@@ -6430,6 +6505,8 @@ If WinActive(PrgLnch.Title)
 	SetTimer, WatchSwitchBack, Off
 	SetTimer, WatchSwitchOut, -1000
 }
+else
+SetTimer, WatchSwitchBack, -1000
 Return
 
 WatchSwitchOut:
@@ -6503,6 +6580,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 	}
 	else ;In Config screen
 	{
+
 		if (PrgPID)
 		{
 			Process, Exist, %PrgPID%
@@ -6543,13 +6621,12 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 		}
 	}
 
-
-If (WinWaiter(PrgLnch.Title, waitBreak))
+SetTitleMatchMode, 3
+If (WinWaiter(presetNoTest, PrgLnch.Title, PrgLnchOpt.Title, waitBreak))
 {
 	; check the PID of app. If it matches a Prg, use the index to retrieve the resolution
 
 	timerfTemp := FindMatchingPID(lnchStat, currBatchNo, PrgListPID%btchPrgPresetSel%, PrgPID)
-MsgBox, 8192, WinWaiter, % " waitbreak " waitbreak " timerfTemp " timerfTemp " lnchStat " lnchStat
 
 	if (timerfTemp)
 	{
@@ -6571,20 +6648,21 @@ MsgBox, 8192, WinWaiter, % " waitbreak " waitbreak " timerfTemp " timerfTemp " l
 	SetTimer, WatchSwitchBack, -1000
 
 }
+else
+SetTimer, WatchSwitchOut, -1000
 
 Return
 
-WinWaiter(winText := "", waitBreak := 0, timeOut:= 0)
+WinWaiter(presetNoTest, PrgLnchText := "", PrgLnchOptText := "", waitBreak := 0, timeOut:= 0)
 {
-
-
 ; https://autohotkey.com/boards/viewtopic.php?f=5&t=29822
+winText := (presetNoTest)? PrgLnchText: PrgLnchOptText
+
 	(timeOut) && t1 := A_TickCount
 	; if timout is 0, t1 is not initialised
 
 	Loop
 	{
-
 	Sleep 10
 
 	} Until (!WinActive(winText) && state := "inactive")
@@ -6592,7 +6670,6 @@ WinWaiter(winText := "", waitBreak := 0, timeOut:= 0)
 	|| (waitBreak && state := "break")
 
 	|| (t1 && A_TickCount-t1 >= timeOut && state := "timeout") ; t1 nothing
-
 	return state
 }
 
@@ -8094,12 +8171,10 @@ Return 1
 
 MDMF_GetMonHandle(targMonitorNum)
 {
-Static Monitors := 0
-	if (!Monitors.Count)
-	{
-	Monitors := {Count: 0, targetMonitorNum: 0}
-	Monitors.targetMonitorNum := targMonitorNum
-	}
+
+Monitors := {Count: 0, targetMonitorNum: 0}
+Monitors.targetMonitorNum := targMonitorNum
+
 
 
 ;If (Monitors.MaxIndex() = "") ; enumerate
