@@ -4915,7 +4915,8 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 			{
 			; for unresolved targets e.g. recycle bin shortcuts
 			strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
-			PrgChoicePaths[selPrgChoice] .= strRetVal
+				if (strRetVal != "*")
+				PrgChoicePaths[selPrgChoice] .= strRetVal
 			} ; Forget associaions
 		}
 		else
@@ -6137,7 +6138,14 @@ if (lnchPrgIndex > 0) ;Running
 
 
 		if (Instr(PrgPaths, "DOSBox.exe"))
-		DOSBoxgameDir := InitDOSBoxGameDir(ByRef DOSBoxVer, PrgLnkInf[lnchPrgIndex], mountedDrive)
+		{
+			if (!(DOSBoxgameDir := InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInflnchPrgIndex, mountedDrive, DOSBoxVer)))
+			{
+				if (disableRedirect) ; doubt it for DOSBox- just to be sure
+				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+			Return "No Game selected!"
+			}
+		}
 
 
 ;try
@@ -6195,21 +6203,48 @@ if (lnchPrgIndex > 0) ;Running
 		}
 	}
 
+
 		if (Instr(PrgPaths, "DOSBox.exe"))
 		{
-
-		winactivate, %DOSBoxVer%
+		SetTitleMatchMode, 2
+			if (DOSBoxgameDir != "*")
+			{
 			; First dismount current drive
-			if (mountedDrive)
+			WinWaitActive, %DOSBoxVer%
 			send, MOUNT -u %mountedDrive%
+			sleep 20
+			Send {Enter}
+			sleep 20
 
+			WinWaitActive, %DOSBoxVer%
 
-		Send % "mount c " . """" . DOSBoxgameDir . """"
+			fTemp := A_KeyDelay
+			SetKeyDelay, 15
+			strTemp := "mount C " . """" . DOSBoxgameDir . """"
 
-		; Diskcaching reset
-		Send !{F4}
+			WinWaitActive, %DOSBoxVer%
+			SendEvent, %strTemp%
+
+			;msgbox % "Entry: mountedDrive " mountedDrive " DOSBoxVer " DOSBoxVer " DOSBoxgameDir " DOSBoxgameDir " strTemp " strTemp
+
+			sleep 200
+			Send {Enter}
+			sleep 20
+
+			; Diskcaching reset
+			WinWaitActive, %DOSBoxVer%
+			Send !{F4}
+			Send {Enter}
+			}
+		sleep 20
+		WinWaitActive, %DOSBoxVer%
+		; No support for CDRom
+		Send, % mountedDrive . ":"
 		Send {Enter}
+		sleep 20
 		Send dir /w
+		Send {Enter}
+		SetKeyDelay, %fTemp%
 		}
 
 
@@ -6571,9 +6606,10 @@ Return 0
 }
 
 
-InitDOSBoxGameDir(ByRef DOSBoxVer, PrgLnkInflnchPrgIndex, ByRef mountedDrive)
+InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInflnchPrgIndex, ByRef mountedDrive, ByRef DOSBoxVer)
 {
 gameDir := ""
+;msgbox % PrgLnkInflnchPrgIndex . "\DosBox.exe"
 ; first check entry in conf- "supposed to "take care" of micro versioning
 	if (IsaPrgLnk)
 	FileGetVersion, DOSBoxVer, % PrgLnkInflnchPrgIndex . "\DosBox.exe"
@@ -6590,23 +6626,23 @@ temp := Instr(DOSBoxVer, ".0", , strLen(DOSBoxVer) - 1)
 temp := (Instr(DOSBoxVer, ".", , 1, 2))
 
 DOSBoxVer := Substr(DOSBoxVer, 1, temp - 1) . "-" . Substr(DOSBoxVer, temp + 1)
-DOSBoxVer := "DOSBox-" . DOSBoxVer
-confFile := DOSBoxVer . ".conf"
-
+confFile := "DOSBox-" . DOSBoxVer . ".conf"
+DOSBoxVer := "DOSBox " . DOSBoxVer
 EnvGet, wkDir, LOCALAPPDATA
 wkDir .= "\DOSBox\"
 
-FileRead, s, % wkDir . confFile
+FileRead, strTemp, % wkDir . confFile
 ; after [autoexec] if line does not begin with #
-strTemp := Substr(strTemp, Instr(strTemp, "[autoexec]"), Strlen(strTemp))
+strTemp := Substr(strTemp, Instr(strTemp, "[autoexec]") + 10, Strlen(strTemp))
+
 strTemp2 := ""
-	Loop, Parse, strTemp, `n
+	Loop, Parse, strTemp, `r`n
 	{
-		if (!(Instr(A_Loopfield, "#", , 1, 1) = 1))
+		if ((A_Loopfield != "") && !Instr(A_Loopfield, "#", , 1, 1))
 		{
 			if ((Instr(A_Loopfield, "Mount", , 1, 1) = 1))
 			{
-				Loop, Parse, A_Loopfield, A_Space
+				Loop, Parse, A_Loopfield, %A_Space%
 				{
 					if (A_Loopfield = "Mount")
 					Continue
@@ -6621,15 +6657,14 @@ strTemp2 := ""
 		}
 	}
 
-fTemp := 0
 	if (strTemp2)
 	{
-	msgbox, 8196 , DOSBox Configuration File, % "The following entries are found in the [autoexec] section of the conf. file:~n" . strTemp2 . " Run DOSBox with those or select a different game?"
+	msgbox, 8196 , DOSBox Configuration File, % "Following entries are found in the [autoexec] section of the conf. file:`n`n" . strTemp2 . "`nRun DOSBox with those or select a different game?"
 		IfMsgBox, Yes
-		fTemp := 1
+		gameDir := "*"
 	}
 
-	if (!fTemp)
+	if (!gameDir)
 	{
 	FileSelectFolder, gameDir, % "*" . A_Desktop, 4, Select Folder containing the DOS game
 		if (ErrorLevel)
@@ -7492,15 +7527,21 @@ strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
 			strRetVal := ParseEnvVars(strRetVal) . "\"
 			else ; else; Regular Prgs get here. Note use of Errorlevel for the special location lnks
 			{
-				if (!ErrorLevel && InStr(strTemp2, ".lnk", false, strLen(strTemp2) - 4))
-				strRetVal := IniFileShortctSep
-				else
+				if (ErrorLevel)
 				{
 					if (IsALnk)
 					strRetVal := "<>"
 					else
 					strRetVal := "*"
 				}
+				else
+				{
+					if (InStr(strTemp2, ".lnk", false, strLen(strTemp2) - 4))
+					strRetVal := IniFileShortctSep
+					else
+					strRetVal := "*"
+				}
+
 			}
 		}
 	}
