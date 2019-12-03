@@ -854,8 +854,7 @@ else
 
 
 
-
-Gui, PrgLnchOpt: Show, Hide, PrgLnchOpt
+Gui, PrgLnchOpt: Show, Hide
 WinMover(PrgLnchOpt.Hwnd(), "d r")   ; "dr" means "down, right"
 
 	if (!FindStoredRes(SelIniChoicePath, scrWidth, scrHeight, scrFreq, ResIndexHwnd))
@@ -1117,7 +1116,7 @@ temp:= 1/2 * fTemp
 ;GuiControl, PrgLnch: Move, BtchPrgPreset, h%temp%
 
 
-Gui, PrgLnch: Show, Hide, PrgLnch
+Gui, PrgLnch: Show, Hide
 WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 61/80, PrgLnchOpt.Height() * 13/10)
 
 sleep, 20
@@ -1136,7 +1135,7 @@ DllCall("ChangeWindowMessageFilterEx", "Ptr", strTemp, "UInt", WM_COPYGLOBALDATA
 DllCall("ChangeWindowMessageFilterEx", "Ptr", strTemp, "UInt", WM_DROPFILES, "UInt", MSGFLT_ALLOW, "Ptr", 0)
 }
 
-Gui, PrgLnch: Show
+Gui, PrgLnch: Show,, % PrgLnch.Title
 
 
 
@@ -1805,15 +1804,13 @@ if (A_GuiEvent = "DoubleClick")
 			IniRead, fTemp, %SelIniChoicePath%, General, PrgAlreadyMsg
 			if (!fTemp)
 			{
-			MsgBox, 8195, , Selected Prg matches a process already running with `nthe same name. Might be an issue depending on instance requisites.`n`"%strRetVal%`"`n`nReply:`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `nCancel: Do nothing: `n
-				IfMsgBox, Yes
-				fTemp := 0 ; dummy condition
+			MsgBox, 8195, , Selected Prg matches a process already running with `nthe same name. Might be an issue depending on instance requisites.`n`"%strRetVal%`"`n`nReply:`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `nCancel: Do nothing.
+				IfMsgBox, Cancel
+				Return
 				else
 				{
 					IfMsgBox, No
 					IniWrite, 1, %SelIniChoicePath%, General, PrgAlreadyMsg
-					else
-					return
 				}
 			}
 		}
@@ -1884,11 +1881,11 @@ if (A_GuiEvent = "DoubleClick")
 				if (lnchPrgIndex > 0)
 				{
 					SetResDefaults(targMonitorNum, currRes, Dynamic, FMode, scrWidth, scrHeight, scrFreq, scrWidthDef, scrHeightDef, scrFreqDef, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr)
-					Gui, PrgLnch: Show, Hide, PrgLnch
+					Gui, PrgLnch: Show, Hide
 						if (!PrgLnchHide[lnchPrgIndex])
 						{
 						WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 61/80, PrgLnchOpt.Height() * 13/10)
-						Gui, PrgLnch: Show
+						Gui, PrgLnch: Show,, % PrgLnch.Title
 						}
 					batchActive := 1
 					strTemp .= "Active" . "|"
@@ -2129,9 +2126,9 @@ else
 			}
 		}
 	WinMover(PrgLnchOpt.Hwnd(), "d r")
-	Gui, PrgLnch: Show, Hide, % PrgLnchOpt.Title
+	Gui, PrgLnch: Show, Hide
 	sleep, 10
-	Gui, PrgLnchOpt: Show, NA, % PrgLnch.Title
+	Gui, PrgLnchOpt: Show, NA, % PrgLnchOpt.Title
 
 	}
 }
@@ -2784,7 +2781,7 @@ strTemp := 0
 	Loop % currBatchNo
 	{
 		strTemp := PrgListPIDbtchPrgPresetSel[A_Index]
-		if !(strTemp = "NS" || strTemp = "FAILED" || strTemp = "TERM" || strTemp = "ENDED" || !strTemp)
+		if (!(strTemp = "NS" || strTemp = "FAILED" || strTemp = "TERM" || strTemp = "ENDED" || !strTemp))
 		return 1
 	}
 Return 0
@@ -2965,7 +2962,7 @@ if (!PrgTermExit)
 	{
 		IfMsgBox, Yes
 		{
-		MsgBox, 8195, Terminate on Quit, Automatically terminate Prgs when quitting?`n`nYes: Terminate (Not recommended: This will not show again) `nNo: Terminate (The `"Active on Quit`" prompt will show again)`nCancel: Do nothing (The `"Active on Quit`" prompt will show again)`n
+		MsgBox, 8195, Terminate on Quit, Automatically terminate Prgs when quitting?`n`nYes: Terminate (Not recommended: This will not show again) `nNo: Terminate (The `"Active on Quit`" prompt will show again)`nCancel: Do nothing (The `"Active on Quit`" prompt will show again)
 			IfMsgBox, Cancel
 			RetVal := 1
 			else
@@ -3832,7 +3829,7 @@ else
 
 }
 
-Gui, PrgLnchOpt: Show, Hide, PrgLnchOpt
+Gui, PrgLnchOpt: Show, Hide
 WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 61/80, PrgLnchOpt.Height() * 13/10)
 SplashImage, PrgLnchLoading.jpg, Hide,,,LnchSplash
 Return
@@ -4813,15 +4810,15 @@ else
 	{
 	;Watch out for TIMERS!
 	Thread, NoTimers
-	if (resolveShortct)
-	FileSelectFile, strTemp, 1, % A_StartMenu "\Programs", Open a file`, Shortcuts resolved, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.lnk; *.scr)
-	else
-	FileSelectFile, strTemp, 32, % A_StartMenu "\Programs", Open a file or Shortcut, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.lnk; *.scr)
-	Thread, NoTimers, false
+		if (resolveShortct)
+		FileSelectFile, strTemp, 1, % A_StartMenu "\Programs", Open a file`, Shortcuts resolved, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.lnk; *.scr)
+		else
+		FileSelectFile, strTemp, 32, % A_StartMenu "\Programs", Open a file or Shortcut, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.lnk; *.scr)
+		Thread, NoTimers, false
 
-	if (!ErrorLevel)
-	GoSub ProcessNewPrg
-	;else cancelled out of FSF dialog: PrgChoicePaths is made blank
+		if (!ErrorLevel)
+		GoSub ProcessNewPrg
+		;else cancelled out of FSF dialog: PrgChoicePaths is made blank
 	}
 }
 Return
@@ -4832,7 +4829,6 @@ FileGetAttrib, temp, % strTemp
 	;The following does not affect folder shortcuts
 	If (InStr(temp, "D"))
 	{
-		PrgChoicePaths[selPrgChoice] := ""
 		txtPrgChoice := "Prg" . selPrgChoice
 		MsgBox, 8192, , Unable to use this Prg!
 		Return
@@ -4841,6 +4837,7 @@ FileGetAttrib, temp, % strTemp
 PrgChoicePaths[selPrgChoice] := strTemp
 	if (ChkPrgNames(txtPrgChoice, PrgNo))
 	{
+	; Instead of SplitPath
 	temp := SubStr(strTemp, 1, InStr(strTemp, ".") - 1)
 	strTemp := SubStr(temp, InStr(temp, "\",, -1) + 1)
 		if (InStr(strTemp, "PrgLnch") || InStr(strTemp, "BadPath"))
@@ -4909,15 +4906,11 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 	{
 		if (strRetVal = "*")
 		{
-
 		strTemp2 := AssocQueryApp(strTemp)
 			if (strTemp = strTemp2)
-			{
 			; for unresolved targets e.g. recycle bin shortcuts
 			strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
-				if (strRetVal != "*")
-				PrgChoicePaths[selPrgChoice] .= strRetVal
-			} ; Forget associaions
+			; else: Forget associations
 		}
 		else
 		{
@@ -4973,6 +4966,8 @@ PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPr
 	}
 Return
 
+
+
 PrgLnchOptGuiDropFiles:
 Gui, PrgLnchOpt: Submit, Nohide
 strTemp := ""
@@ -4987,11 +4982,17 @@ strTemp2 := ""
 		}
 	strTemp := A_LoopField
 	}
+
 	if (PrgChoicePaths[selPrgChoice])
 	{
-	MsgBox, 8196, Prg Replacement, % strTemp2 "Replace existing Prg with this file?"
-		IfMsgBox, No
+	MsgBox, 8195, Prg Replacement, % "Replace existing Prg and PrgName info with the following file?`n" strTemp2 "`n`nYes: Replace both.`nNo: Replace existing Prg, but keep the current Prg Name.`nCancel: Do nothing."
+		IfMsgBox, Yes
+		SplitPath, strTemp, , , , txtPrgChoice
+		Else
+		{
+		IfMsgBox, Cancel
 		Return
+		}
 	}
 
 GoSub ProcessNewPrg
@@ -5540,12 +5541,14 @@ GuiControlGet, strTemp, PrgLnchOpt: FocusV
 		{
 			if (strTemp = "PrgChoice")
 			{
+			ToolTip
 			GuiControl, PrgLnchOpt: Text, PrgChoice, % UndoTxt
 			UndoTxt := ""
 			}
 		}
 	}
 Return
+
 Del::
 
 GuiControlGet, strTemp, PrgLnchOpt: FocusV
@@ -5636,7 +5639,7 @@ Return
 GuiControlGet, strTemp, PrgLnch: FocusV
 	if (strTemp = "PresetName")
 	{
-	GuiControl, PrgLnch:, PresetName, % UndoTxt
+	GuiControl, PrgLnch: Text, PresetName, % UndoTxt
 	UndoTxt := ""
 	}
 	else
@@ -5648,13 +5651,14 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 		}
 	}
 Return
+
 Del::
 GuiControlGet, strTemp, PrgLnch: FocusV
 	if (strTemp = "PresetName")
 	{
 		if (ffTemp = 1)
 		Return
-	GuiControlGet, UndoTxt,, PresetName
+	GuiControlGet, UndoTxt,, %PresetNameHwnd%
 	GuiControl, PrgLnch:, PresetName,
 	;PresetNameSub automatically invoked
 	}
@@ -5803,15 +5807,13 @@ if ((presetNoTest && strTemp = "&Run Batch") || (!presetNoTest && temp = "&Test 
 		IniRead, fTemp, %SelIniChoicePath%, General, PrgAlreadyMsg
 		if (!fTemp)
 		{
-		MsgBox, 8195, , One or more Prgs scheduled for start matches a process running with `nthe same name. Might be an issue depending on instance requisites.`n`"%strRetVal%`"`n`nReply:`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `nCancel: Do nothing: `n
-			IfMsgBox, Yes
-			fTemp := 0 ; dummy condition
+		MsgBox, 8195, , One or more Prgs scheduled for start matches a process running with `nthe same name. Might be an issue depending on instance requisites.`n`"%strRetVal%`"`n`nReply:`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `nCancel: Do nothing.
+			IfMsgBox, Cancel
+			Return
 			else
 			{
 				IfMsgBox, No
 				IniWrite, 1, %SelIniChoicePath%, General, PrgAlreadyMsg
-				else
-				return
 			}
 		}
 
@@ -5918,12 +5920,12 @@ loop % ((presetNoTest)? currBatchno: 1)
 			if (lnchPrgIndex > 0)
 			{
 				if (PrgLnchHide[selPrgChoice])
-				Gui, PrgLnchOpt: Show, Hide, PrgLnchOpt
+				Gui, PrgLnchOpt: Show, Hide
 				else
 				{
 				WinMover(PrgLnchOpt.Hwnd(), "d r")
 				HideShowTestRunCtrls()
-				Gui, PrgLnchOpt: Show
+				Gui, PrgLnchOpt: Show,, % PrgLnchOpt.Title
 				}
 			}
 			else ;just cancelled- but not from a hidden form!
@@ -5934,7 +5936,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 			if (lnchPrgIndex > 0)
 			{
 				if (PrgLnchHide[lnchPrgIndex])
-				Gui, PrgLnch: Show, Hide, PrgLnch
+				Gui, PrgLnch: Show, Hide
 				else
 				WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 61/80, PrgLnchOpt.Height() * 13/10)
 			batchActive := 1
@@ -5975,9 +5977,9 @@ Thread, NoTimers, false
 				{
 				waitBreak := 0
 				SetTimer, WatchSwitchOut, 1000
-				Break
 				}
 			}
+		CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, Fmode, dispMonNamesNo, scrWidth, scrHeight, scrWidthDef, scrHeightDef, scrFreqDef, waitBreak)
 		}
 	}
 	else
@@ -6050,7 +6052,8 @@ if (lnchPrgIndex > 0) ;Running
 
 
 	strRetVal := AssocQueryApp(PrgPaths)
-	if (!(strRetVal = PrgPaths)) ; must be an association
+
+	if (strRetVal && strRetVal != PrgPaths) ; must be an association
 	{
 		;Treat as regular association
 		If (IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex])
@@ -6070,6 +6073,7 @@ if (lnchPrgIndex > 0) ;Running
 		if (A_Is64bitOS && A_PtrSize == 4)
 		if (!(disableRedirect := DllCall("Wow64DisableWow64FsRedirection", "Ptr*", oldRedirectionValue)))
 		Return SelIniChoicePath . " does not exist and there is a redirection error!"
+	sleep 20
 	}
 
 	if (FileExist(PrgPaths))
@@ -6084,7 +6088,7 @@ if (lnchPrgIndex > 0) ;Running
 
 		}
 
-	If (!IsaPrgLnk && PrgCmdLine[lnchPrgIndex])
+	If (((IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex]) || !IsaPrgLnk) && PrgCmdLine[lnchPrgIndex])
 	PrgPaths := PrgPaths . A_Space . "" . PrgCmdLine[lnchPrgIndex] . ""
 
 	if (targMonitorNum = PrgLnchMon)
@@ -6097,7 +6101,7 @@ if (lnchPrgIndex > 0) ;Running
 		IniRead, fTemp, %SelIniChoicePath%, General, LoseGuiChangeResWrn
 			if (!fTemp)
 			{
-			MsgBox, 8195, , In the unlikely situation of the PrgLnch Gui relocating `noff the screen after switching to lower resolutions, `nuse <CTRL-Alt-P> to return the Gui to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do nothing: `n
+			MsgBox, 8195, , In the unlikely situation of the PrgLnch Gui relocating `noff the screen after switching to lower resolutions, `nuse <CTRL-Alt-P> to return the Gui to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do nothing.
 				IfMsgBox, No
 				IniWrite, 1, %SelIniChoicePath%, General, LoseGuiChangeResWrn
 				else
@@ -6139,7 +6143,7 @@ if (lnchPrgIndex > 0) ;Running
 
 		if (Instr(PrgPaths, "DOSBox.exe"))
 		{
-			if (!(DOSBoxgameDir := InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInflnchPrgIndex, mountedDrive, DOSBoxVer)))
+			if (!(DOSBoxgameDir := InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInf[lnchPrgIndex], mountedDrive, DOSBoxVer)))
 			{
 				if (disableRedirect) ; doubt it for DOSBox- just to be sure
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
@@ -6210,16 +6214,18 @@ if (lnchPrgIndex > 0) ;Running
 			if (DOSBoxgameDir != "*")
 			{
 			; First dismount current drive
-			WinWaitActive, %DOSBoxVer%
-			send, MOUNT -u %mountedDrive%
-			sleep 20
-			Send {Enter}
-			sleep 20
-
-			WinWaitActive, %DOSBoxVer%
-
 			fTemp := A_KeyDelay
 			SetKeyDelay, 15
+
+			sleep 20
+			WinWaitActive, %DOSBoxVer%
+
+			SendEvent, MOUNT -u %mountedDrive%
+			sleep 20
+			SendEvent, {Enter}
+			sleep 20
+			WinWaitActive, %DOSBoxVer%
+
 			strTemp := "mount C " . """" . DOSBoxgameDir . """"
 
 			WinWaitActive, %DOSBoxVer%
@@ -6251,8 +6257,9 @@ if (lnchPrgIndex > 0) ;Running
 	Process, Priority, PrgPIDtmp, % PrgPrty
 	;Add to PID list
 
+	Sleep 200
 	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
-	Sleep 500
+	Sleep 200
 
 	DetectHiddenWindows, On
 	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
@@ -6405,9 +6412,9 @@ Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: wkDir, % "UseErrorLevel
 
 		Process, Priority, PrgPIDtmp, % PrgPrty
 
-
+		Sleep 200
 		FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
-		Sleep 500
+		Sleep 200
 
 		DetectHiddenWindows, On
 		WinGet, temp, MinMax, ahk_pid%PrgPIDtmp%
@@ -6504,6 +6511,8 @@ else
 	PrgPIDtmp := "TERM"
 	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
 	outStr := "Unable to determine the location of `n" . PrgPaths
+		if (disableRedirect)
+		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 	return outStr
 	}
 
@@ -6608,13 +6617,14 @@ Return 0
 
 InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInflnchPrgIndex, ByRef mountedDrive, ByRef DOSBoxVer)
 {
-gameDir := ""
-;msgbox % PrgLnkInflnchPrgIndex . "\DosBox.exe"
+gameDir := "", PrgPathNoCmdLine := Substr(PrgPaths, 1, Instr(PrgPaths, "DOSBox.exe") + 10)
+
 ; first check entry in conf- "supposed to "take care" of micro versioning
+
 	if (IsaPrgLnk)
-	FileGetVersion, DOSBoxVer, % PrgLnkInflnchPrgIndex . "\DosBox.exe"
+	FileGetVersion, DOSBoxVer, % PrgLnkInflnchPrgIndex
 	else
-	FileGetVersion, DOSBoxVer, % PrgPaths
+	FileGetVersion, DOSBoxVer, % PrgPathNoCmdLine
 
 	if (ErrorLevel)
 	Return
@@ -6688,25 +6698,25 @@ if (lnchStat = -1)
 	{
 		if (lnchStat = 1)
 		{
-		loop % currBatchno
-		{
-		fTemp := PrgListPID[A_Index]
-		if (fTemp = "NS" || fTemp = "FAILED" || fTemp = "TERM" || fTemp = "ENDED")
-		{
-			if (fTemp != "TERM")
+			loop % currBatchno
 			{
-			PrgListPID[A_Index] := PrgPIDtmp
-			Break
-			}
-		}
-		else
-		{
-		Process, Exist, % fTemp
-		if (!ErrorLevel)
-		PrgListPID[A_Index] := "ENDED"
-		}
+			fTemp := PrgListPID[A_Index]
+				if (fTemp = "NS" || fTemp = "FAILED" || fTemp = "TERM" || fTemp = "ENDED")
+				{
+					if (fTemp != "TERM")
+					{
+					PrgListPID[A_Index] := PrgPIDtmp
+					Break
+					}
+				}
+				else
+				{
+				Process, Exist, % fTemp
+					if (!ErrorLevel)
+					PrgListPID[A_Index] := "ENDED"
+				}
 
-		}
+			}
 		}
 		else
 		PrgListPID[prgIndex] := PrgPIDtmp
@@ -6888,6 +6898,7 @@ Return
 WinWaiter(presetNoTest, PrgLnchText := "", PrgLnchOptText := "", waitBreak := 0, timeOut:= 0)
 {
 ; https://autohotkey.com/boards/viewtopic.php?f=5&t=29822
+t1 := 0
 winText := (presetNoTest)? PrgLnchText: PrgLnchOptText
 
 	(timeOut) && t1 := A_TickCount
@@ -6942,7 +6953,7 @@ if (presetNoTest)
 
 	WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 61/80, PrgLnchOpt.Height() * 13/10)
 		if (PrgLnchHide[selPrgChoice])
-		Gui, PrgLnch: Show
+		Gui, PrgLnch: Show,, % PrgLnch.Title
 
 	DopowerPlan("Default")
 
@@ -6979,7 +6990,7 @@ else
 	; No problem if a batch preset completes at exactly the same time.
 WinMover(PrgLnchOpt.Hwnd(), "d r")
 	if (PrgLnchHide[selPrgChoice])
-	Gui, PrgLnchOpt: Show
+	Gui, PrgLnchOpt: Show,, % PrgLnchOpt.Title
 }
 
 	if (!waitBreak && presetNoTest < 2)
@@ -7205,7 +7216,7 @@ loop % currBatchNo
 	temp := PrgBatchIni[A_Index]
 	strTemp := ExtractPrgPath(temp, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)
 
-	temp := InStr(PrgPaths, ".lnk", false, strLen(PrgPaths) - 4)
+	temp := InStr(PrgChoicePaths, ".lnk", false, strLen(PrgChoicePaths) - 4)
 	if (InStr(strTemp, "PrgLnch.exe") || InStr(strTemp, "BadPath"))
 	Return "PrgLnch"
     if (!(strTemp := GetProcFromPath(strTemp, temp)))
@@ -8015,7 +8026,7 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 
 
-		devFlags := NumGet(DISPLAY_DEVICE, OffsetDWORD + offsetWORDStr + OffsetLongStr, UInt)
+		devFlags := NumGet(DISPLAY_DEVICE, OffsetDWORD + offsetWORDStr + OffsetLongStr, "UInt")
 		devKey := StrGet(&DISPLAY_DEVICE + OffsetDWORD + OffsetDWORD + offsetWORDStr + OffsetLongStr + OffsetLongStr, OffsetLongStr)
 
 		If (devFlags & DISPLAY_DEVICE_MIRRORING_DRIVER)
@@ -8105,11 +8116,11 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 	;scrdmPostionY:=NumGet(Device_Mode, 64bit*32 + 12 +OffsetdevMode/2,UInt) ;
 
 	;The following settings are applicable to other monitors
-	scrDPI:=NumGet(Device_Mode, 104+OffsetdevMode,UInt) ; colour depth (pel is pixel) or A_ScreenDPI
-	scrWidth:=NumGet(Device_Mode, 108+OffsetdevMode,UInt) ; dmPelsWidth or A_ScreenWidth
-	scrHeight:=NumGet(Device_Mode, 112+OffsetdevMode,UInt) ; dmPelsHeight or A_ScreenHeight
-	scrInterlace:=NumGet(Device_Mode, 116+OffsetdevMode,UInt) ; DM_GRAYSCALE, DM_INTERLACED (non interlaced if not specified)
-	scrFreq:=NumGet(Device_Mode, 120+OffsetdevMode,UInt) ; Do not change 
+	scrDPI:=NumGet(Device_Mode, 104+OffsetdevMode,"UInt") ; colour depth (pel is pixel) or A_ScreenDPI
+	scrWidth:=NumGet(Device_Mode, 108+OffsetdevMode,"UInt") ; dmPelsWidth or A_ScreenWidth
+	scrHeight:=NumGet(Device_Mode, 112+OffsetdevMode,"UInt") ; dmPelsHeight or A_ScreenHeight
+	scrInterlace:=NumGet(Device_Mode, 116+OffsetdevMode,"UInt") ; DM_GRAYSCALE, DM_INTERLACED (non interlaced if not specified)
+	scrFreq:=NumGet(Device_Mode, 120+OffsetdevMode,"UInt") ; Do not change 
 	;https://support.microsoft.com/en-au/kb/2006076
 	if (scrFreq = 59)
 	scrFreq := scrFreq + 1
@@ -8383,7 +8394,7 @@ IniRead, defResmsg, %SelIniChoicePath%, General, DefResmsg
 	}
 	else
 	{
-	MsgBox, 8195, Resolution Change, The resolution on the target monitor is the same as the current resolution. `n(It will automatically change when "Change at every mode" in "Res Options" is selected, irrespective of the following choice):`n`nReply:`nYes: Change resolution (This will not show again)`nNo: Do not change resolution: (Recommended: This will not show again) `n `nCancel: Do nothing: `n
+	MsgBox, 8195, Resolution Change, The resolution on the target monitor is the same as the current resolution. `n(It will automatically change when "Change at every mode" in "Res Options" is selected, irrespective of the following choice):`n`nReply:`nYes: Change resolution (This will not show again)`nNo: Do not change resolution: (Recommended: This will not show again) `n `nCancel: Do nothing.
 	;note msgbox isn't modal if called from function
 		IfMsgBox, No
 		{
@@ -9145,7 +9156,7 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 					MsgBox, 8192, , % "Unable to write LAA Flag. Is " exeStrOld " opened in an editor?"
 				}
 				else
-				MsgBox, 8192, , %  "Unexpected data in Characteristics field. LAA flag cannot not be written!"
+				MsgBox, 8192, , %  exeStrOld "`n`nUnexpected data in Characteristics field. LAA flag cannot not be written!"
 				}
 				}
 
@@ -9153,17 +9164,17 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 		}
 		else
 		{
-		MsgBox, 8192, , %  "Bad exe file: no NT Headers"
+		MsgBox, 8192, , %  exeStrOld "`n`nBad exe file: no NT Headers"
 		}
 
 	}
 	else
 	{
 		if (e_magic = IMAGE_DOS_SIGNATURE_BIG_ENDIAN)
-		MsgBox, 8192, , %  "No can do! This executable runs on a Big_Endian system!"
+		MsgBox, 8192, , %  exeStrOld "`n`nNo can do! This executable runs on a Big_Endian system!"
 		else
 		{
-		MsgBox, 8192, , %  "Bad exe file: no DOS sig."
+		MsgBox, 8192, , %  exeStrOld "`n`nBad exe file: no DOS sig."
 		;creates empty file if non-existent: Already checked above!
 		exeStr.Close()
 		FileGetSize temp, %exeStr%
@@ -10539,7 +10550,7 @@ if (FileExist(fileName))
 }
 
 Gui, PrgProperties: Font, CLEARTYPE_QUALITY
-Gui, PrgProperties: Show, Hide, PrgProperties
+Gui, PrgProperties: Show, Hide
 
 
 SysGet, temp, MonitorWorkArea, PrgLnch.Monitor
