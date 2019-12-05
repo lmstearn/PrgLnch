@@ -5190,8 +5190,8 @@ IsaPrgLnk := 0
 if (!UrlDisableGui)
 {
 PrgPth := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
-
-	if (!FileExist(PrgPth))
+SplitPath, PrgPth, , , strTemp
+	if (!FileExist(PrgPth) || InStr(PrgPth, "BadPath", True, 1, 7) || InStr(strTemp, "bat") || InStr(strTemp, "cmd") || InStr(strTemp, "pif") || InStr(strTemp, "lnk"))
 	{
 	; Can happen if the file is in sysdir and/or has restricted access
 	GuiControl, PrgLnchOpt:, newVerPrg
@@ -5335,8 +5335,8 @@ Return -1
 AssocQueryApp(prgPath)
 {
 SplitPath, prgPath, , , Ext
-
-if (InStr(Ext, "exe") || InStr(Ext, "com") || InStr(Ext, "scr")) ; "real" executables
+;exe, com ,scr:  "real" executables
+if (InStr(Ext, "exe") || InStr(Ext, "com") || InStr(Ext, "scr") || InStr(Ext, "bat") || InStr(Ext, "cmd") || InStr(Ext, "pif") || InStr(Ext, "lnk"))
 	strPrg := prgPath
 else
 {
@@ -6012,10 +6012,9 @@ Return
 
 LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, Fmode, btchPowerName)
 {
-
-
-PrgLnchMon := 0, primaryMon := 0, disableRedirect := 0, temp := 0, fTemp := 0, ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
-strRetVal := "", wkDir := "", mountedDrive := "", DOSBoxgameDir := "", DOSBoxVer:= ""
+PrgLnchMon := 0, primaryMon := 0, disableRedirect := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0
+temp := 0, fTemp := 0, strRetVal := "", wkDir := ""
+ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
 ERROR_FILE_NOT_FOUND := 0x2
 ERROR_ACCESS_DENIED := 0x5
 ERROR_CANCELLED := 0x4C7
@@ -6143,7 +6142,7 @@ if (lnchPrgIndex > 0) ;Running
 
 		if (Instr(PrgPaths, "DOSBox.exe"))
 		{
-			if (!(DOSBoxgameDir := InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInf[lnchPrgIndex], mountedDrive, DOSBoxVer)))
+			if (!(InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInf[lnchPrgIndex])))
 			{
 				if (disableRedirect) ; doubt it for DOSBox- just to be sure
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
@@ -6209,49 +6208,7 @@ if (lnchPrgIndex > 0) ;Running
 
 
 		if (Instr(PrgPaths, "DOSBox.exe"))
-		{
-		SetTitleMatchMode, 2
-			if (DOSBoxgameDir != "*")
-			{
-			; First dismount current drive
-			fTemp := A_KeyDelay
-			SetKeyDelay, 15
-
-			sleep 20
-			WinWaitActive, %DOSBoxVer%
-
-			SendEvent, MOUNT -u %mountedDrive%
-			sleep 20
-			SendEvent, {Enter}
-			sleep 20
-			WinWaitActive, %DOSBoxVer%
-
-			strTemp := "mount C " . """" . DOSBoxgameDir . """"
-
-			WinWaitActive, %DOSBoxVer%
-			SendEvent, %strTemp%
-
-			;msgbox % "Entry: mountedDrive " mountedDrive " DOSBoxVer " DOSBoxVer " DOSBoxgameDir " DOSBoxgameDir " strTemp " strTemp
-
-			sleep 200
-			Send {Enter}
-			sleep 20
-
-			; Diskcaching reset
-			WinWaitActive, %DOSBoxVer%
-			Send !{F4}
-			Send {Enter}
-			}
-		sleep 20
-		WinWaitActive, %DOSBoxVer%
-		; No support for CDRom
-		Send, % mountedDrive . ":"
-		Send {Enter}
-		sleep 20
-		Send dir /w
-		Send {Enter}
-		SetKeyDelay, %fTemp%
-		}
+		InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInf[lnchPrgIndex], 1)
 
 
 	Process, Priority, PrgPIDtmp, % PrgPrty
@@ -6332,149 +6289,160 @@ if (lnchPrgIndex > 0) ;Running
 	else ; monitor other than current
 	{
 
-
-			if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+		if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+		{
+		strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
+			if (strRetVal)
 			{
-			strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
-				if (strRetVal)
+			MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n " strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
+				IfMsgBox, No
 				{
-				MsgBox, 8196, , % "Requested resolution change did not work. Reason: `n " strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
-					IfMsgBox, No
-					{
-						if (disableRedirect)
-						DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-					Return "Cancelled by user!"
-					}
-					else
-					{
-					WinMover(, , , , "PrgLaunching.jpg")
-					Sleep 200
-					}
+					if (disableRedirect)
+					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+				Return "Cancelled by user!"
 				}
 				else
-				Sleep 1200
+				{
+				WinMover(, , , , "PrgLaunching.jpg")
+				Sleep 200
+				}
 			}
+			else
+			Sleep 1200
+		}
+
+		if (Instr(PrgPaths, "DOSBox.exe"))
+		{
+			if (!(InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInf[lnchPrgIndex])))
+			{
+				if (disableRedirect) ; doubt it for DOSBox- just to be sure
+				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+			Return "No Game selected!"
+			}
+		}
 ;try
 ;{
 
-Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: wkDir, % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
+	Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: wkDir, % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
 
 ;}
 ;catch temp
 ;{
-	if (A_LastError)
-	{
-	sleep, 120
-		if (A_LastError = ERROR_FILE_NOT_FOUND || A_LastError = ERROR_ACCESS_DENIED || A_LastError = ERROR_CANCELLED)
+		if (A_LastError)
 		{
-			if (A_IsAdmin)
+		sleep, 120
+			if (A_LastError = ERROR_FILE_NOT_FOUND || A_LastError = ERROR_ACCESS_DENIED || A_LastError = ERROR_CANCELLED)
 			{
-			outStr := PrgNames[lnchPrgIndex] . " cannot launch with error " . A_LastError . ".`nIs it a system file, or does it have special permissions?"
+				if (A_IsAdmin)
+				{
+				outStr := PrgNames[lnchPrgIndex] . " cannot launch with error " . A_LastError . ".`nIs it a system file, or does it have special permissions?"
+					if (disableRedirect)
+					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+				Return outStr 
+				}
+				else
+				msgbox, 8196 ,Run Elevated?, % PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nIt might be possible for PrgLnch to run it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
+
 				if (disableRedirect)
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-			Return outStr 
+
+				IfMsgBox, Yes
+				Return RestartPrgLnch(1)
+				else
+				Return "Prg could not be run with the current credentials."
+			;Try elevation
 			}
 			else
-			msgbox, 8196 ,Run Elevated?, % PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nIt might be possible for PrgLnch to run it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
+			{
+				;Add to PID list
+				PrgPIDtmp := "TERM"
+				FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
+					;WinShow ahk_class Shell_TrayWnd
+					if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+					{
+						if (!ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum))
+						{
+						sleep, 1000
+						scrWidth := scrWidthDef
+						scrHeight := scrHeightDef
+						scrFreq := scrFreqDef
+						}
+					}
+				outStr := PrgNames[lnchPrgIndex] . " could not launch with error " . A_LastError
+					if (disableRedirect)
+					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+				return outStr
+			}
+		}
 
+		if (Instr(PrgPaths, "DOSBox.exe"))
+		InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInf[lnchPrgIndex], 1)
+
+	Process, Priority, PrgPIDtmp, % PrgPrty
+
+	Sleep 200
+	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
+	Sleep 200
+
+	DetectHiddenWindows, On
+	WinGet, temp, MinMax, ahk_pid%PrgPIDtmp%
+	if (temp)
+	WinRestore, ahk_pid%PrgPIDtmp%
+
+	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
+
+	;change res, launch Prg, move window of Prg 
+	; Get source and destination work areas (excludes taskbar-reserved space.)
+
+	SysGet, md, MonitorWorkArea, % targMonitorNum
+
+		if (!(mdLeft - mdRight) && (mdTop - mdBottom))
+		{
+		outStr := "Incorrect destination co-ordinates.`nIf the monitor has just been configured, a reboot may resolve the issue."
 			if (disableRedirect)
 			DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-
-			IfMsgBox, Yes
-			Return RestartPrgLnch(1)
-			else
-			Return "Prg could not be run with the current credentials."
-		;Try elevation
+		return outStr
 		}
-		else
+
+	; Possible the default window co-ords are in the other monitor from a previous run here
+		if !(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom)
 		{
-			;Add to PID list
-			PrgPIDtmp := "TERM"
-			FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
-				;WinShow ahk_class Shell_TrayWnd
-				if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
-				{
-					if (!ChangeResolution(scrWidthDef, scrHeightDef, scrFreqDef, targMonitorNum))
-					{
-					sleep, 1000
-					scrWidth := scrWidthDef
-					scrHeight := scrHeightDef
-					scrFreq := scrFreqDef
-					}
-				}
-			outStr := PrgNames[lnchPrgIndex] . " could not launch with error " . A_LastError
-				if (disableRedirect)
-				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-			return outStr
+		SysGet, ms, MonitorWorkArea, % PrgLnchMon
+		msw := msRight - msLeft, msh := msBottom - msTop
+		mdw := mdRight - mdLeft, mdh := mdBottom - mdTop
+
+
+		; Calculate new size for new monitor.
+		dx := mdLeft + (x-msLeft)*(mdw/msw)
+		dy := mdTop + (y-msTop)*(mdh/msh)
+
+			if (wp_IsResizable())
+			{
+			w := Round(w*(mdw/msw))
+			h := Round(h*(mdh/msh))
+			}
+
+		; Move window, using resolution difference to scale co-ordinates.
+
+			try
+			{
+			WinMove, ahk_pid%PrgPIDtmp%, , dx, dy, w, h
+			}
+			catch
+			{
+			sleep, 20
+			WinGetPos, x, y, , , % "ahk_pid" PrgPIDtmp
+				if (x = dx && y = dy)
+				MsgBox, 8192, , % " Move Window failed for " PrgNames[lnchPrgIndex]
+			}
+			dx := Round(dx + w/2)
+			dy := Round(dy + h/2)
+			DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
 		}
-	}
 
 
-		Process, Priority, PrgPIDtmp, % PrgPrty
-
-		Sleep 200
-		FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
-		Sleep 200
-
-		DetectHiddenWindows, On
-		WinGet, temp, MinMax, ahk_pid%PrgPIDtmp%
-		if (temp)
-		WinRestore, ahk_pid%PrgPIDtmp%
-
-		WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
-
-		;change res, launch Prg, move window of Prg 
-		; Get source and destination work areas (excludes taskbar-reserved space.)
-
-		SysGet, md, MonitorWorkArea, % targMonitorNum
-
-			if (!(mdLeft - mdRight) && (mdTop - mdBottom))
-			{
-			outStr := "Incorrect destination co-ordinates.`nIf the monitor has just been configured, a reboot may resolve the issue."
-				if (disableRedirect)
-				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-			return outStr
-			}
-
-		; Possible the default window co-ords are in the other monitor from a previous run here
-			if !(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom)
-			{
-			SysGet, ms, MonitorWorkArea, % PrgLnchMon
-			msw := msRight - msLeft, msh := msBottom - msTop
-			mdw := mdRight - mdLeft, mdh := mdBottom - mdTop
-
-
-			; Calculate new size for new monitor.
-			dx := mdLeft + (x-msLeft)*(mdw/msw)
-			dy := mdTop + (y-msTop)*(mdh/msh)
-
-				if (wp_IsResizable())
-				{
-				w := Round(w*(mdw/msw))
-				h := Round(h*(mdh/msh))
-				}
-
-			; Move window, using resolution difference to scale co-ordinates.
-
-				try
-				{
-				WinMove, ahk_pid%PrgPIDtmp%, , dx, dy, w, h
-				}
-				catch
-				{
-				sleep, 20
-				WinGetPos, x, y, , , % "ahk_pid" PrgPIDtmp
-					if (x = dx && y = dy)
-					MsgBox, 8192, , % " Move Window failed for " PrgNames[lnchPrgIndex]
-				}
-				dx := Round(dx + w/2)
-				dy := Round(dy + h/2)
-				DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
-			}
-
-
-		; Restore min/max
-		(temp = 1)? (WinMaximize, ahk_pid %PrgPIDtmp%): ((temp = -1)? (WinMinimize, ahk_pid %PrgPIDtmp%): )
+	; Restore min/max
+	(temp = 1)? (WinMaximize, ahk_pid %PrgPIDtmp%): ((temp = -1)? (WinMinimize, ahk_pid %PrgPIDtmp%): )
 
 		if (borderToggle)
 		{
@@ -6487,6 +6455,7 @@ Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: wkDir, % "UseErrorLevel
 		;WinMove, A ,, mswLeft + (mswRight - mswLeft) // 2 - W // 2, mswTop + (mswBottom - mswTop) // 2 - H // 2
 
 	}
+
 	DetectHiddenWindows, Off
 	; Set power here rather than at the beginning
 	if (currBatchno = 1 & lnchStat = 1)
@@ -6615,70 +6584,116 @@ Return 0
 }
 
 
-InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInflnchPrgIndex, ByRef mountedDrive, ByRef DOSBoxVer)
+InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInflnchPrgIndex, InitDOSBoxGame := 0)
 {
-gameDir := "", PrgPathNoCmdLine := Substr(PrgPaths, 1, Instr(PrgPaths, "DOSBox.exe") + 10)
-
-; first check entry in conf- "supposed to "take care" of micro versioning
-
-	if (IsaPrgLnk)
-	FileGetVersion, DOSBoxVer, % PrgLnkInflnchPrgIndex
-	else
-	FileGetVersion, DOSBoxVer, % PrgPathNoCmdLine
-
-	if (ErrorLevel)
-	Return
-
-temp := Instr(DOSBoxVer, ".0", , strLen(DOSBoxVer) - 1)
-	if (temp)
-	DOSBoxVer := Substr(DOSBoxVer, 1, temp - 1)
-;now replace second period with hyphen
-temp := (Instr(DOSBoxVer, ".", , 1, 2))
-
-DOSBoxVer := Substr(DOSBoxVer, 1, temp - 1) . "-" . Substr(DOSBoxVer, temp + 1)
-confFile := "DOSBox-" . DOSBoxVer . ".conf"
-DOSBoxVer := "DOSBox " . DOSBoxVer
-EnvGet, wkDir, LOCALAPPDATA
-wkDir .= "\DOSBox\"
-
-FileRead, strTemp, % wkDir . confFile
-; after [autoexec] if line does not begin with #
-strTemp := Substr(strTemp, Instr(strTemp, "[autoexec]") + 10, Strlen(strTemp))
-
-strTemp2 := ""
-	Loop, Parse, strTemp, `r`n
+Static mountedDrive := "", DOSBoxVer := "", gameDir := ""
+if (InitDOSBoxGame)
 	{
-		if ((A_Loopfield != "") && !Instr(A_Loopfield, "#", , 1, 1))
+	SetTitleMatchMode, 2
+		if (gameDir != "*")
 		{
-			if ((Instr(A_Loopfield, "Mount", , 1, 1) = 1))
-			{
-				Loop, Parse, A_Loopfield, %A_Space%
-				{
-					if (A_Loopfield = "Mount")
-					Continue
-					else
-					{
-					mountedDrive := A_Loopfield
-					Break			
-					}
-				}
-			}
-		strTemp2 .= A_Loopfield . "`n"
+		; First dismount current drive
+		fTemp := A_KeyDelay
+		SetKeyDelay, 15
+
+		sleep 20
+		WinWaitActive, %DOSBoxVer%
+
+		SendEvent, MOUNT -u %mountedDrive%
+		sleep 20
+		SendEvent, {Enter}
+		sleep 20
+		WinWaitActive, %DOSBoxVer%
+
+		strTemp := "mount C " . """" . gameDir . """"
+
+		WinWaitActive, %DOSBoxVer%
+		SendEvent, %strTemp%
+
+		sleep 200
+		Send {Enter}
+		sleep 20
+
+		; Diskcaching reset
+		WinWaitActive, %DOSBoxVer%
+		Send !{F4}
+		Send {Enter}
 		}
+	sleep 20
+	WinWaitActive, %DOSBoxVer%
+	; No support for CDRom
+	Send, % mountedDrive . ":"
+	Send {Enter}
+	sleep 20
+	Send dir /w
+	Send {Enter}
+	SetKeyDelay, %fTemp%
 	}
-
-	if (strTemp2)
+	else ;InitDOSBoxGame 1
 	{
-	msgbox, 8196 , DOSBox Configuration File, % "Following entries are found in the [autoexec] section of the conf. file:`n`n" . strTemp2 . "`nRun DOSBox with those or select a different game?"
-		IfMsgBox, Yes
-		gameDir := "*"
-	}
+	PrgPathNoCmdLine := Substr(PrgPaths, 1, Instr(PrgPaths, "DOSBox.exe") + 10)
+	gameDir := ""
+	; first check entry in conf- "supposed to "take care" of micro versioning
 
-	if (!gameDir)
-	{
-	FileSelectFolder, gameDir, % "*" . A_Desktop, 4, Select Folder containing the DOS game
+		if (IsaPrgLnk)
+		FileGetVersion, DOSBoxVer, % PrgLnkInflnchPrgIndex
+		else
+		FileGetVersion, DOSBoxVer, % PrgPathNoCmdLine
+
 		if (ErrorLevel)
 		Return
+
+	temp := Instr(DOSBoxVer, ".0", , strLen(DOSBoxVer) - 1)
+		if (temp)
+		DOSBoxVer := Substr(DOSBoxVer, 1, temp - 1)
+	;now replace second period with hyphen
+	temp := (Instr(DOSBoxVer, ".", , 1, 2))
+
+	DOSBoxVer := Substr(DOSBoxVer, 1, temp - 1) . "-" . Substr(DOSBoxVer, temp + 1)
+	confFile := "DOSBox-" . DOSBoxVer . ".conf"
+	DOSBoxVer := "DOSBox " . DOSBoxVer
+	EnvGet, wkDir, LOCALAPPDATA
+	wkDir .= "\DOSBox\"
+
+	FileRead, strTemp, % wkDir . confFile
+	; after [autoexec] if line does not begin with #
+	strTemp := Substr(strTemp, Instr(strTemp, "[autoexec]") + 10, Strlen(strTemp))
+
+	strTemp2 := ""
+		Loop, Parse, strTemp, `r`n
+		{
+			if ((A_Loopfield != "") && !Instr(A_Loopfield, "#", , 1, 1))
+			{
+				if ((Instr(A_Loopfield, "Mount", , 1, 1) = 1))
+				{
+					Loop, Parse, A_Loopfield, %A_Space%
+					{
+						if (A_Loopfield = "Mount")
+						Continue
+						else
+						{
+						mountedDrive := A_Loopfield
+						Break			
+						}
+					}
+				}
+			strTemp2 .= A_Loopfield . "`n"
+			}
+		}
+
+		if (strTemp2)
+		{
+		msgbox, 8196 , DOSBox Configuration File, % "Following entries are found in the [autoexec] section of the conf. file:`n`n" . strTemp2 . "`nRun DOSBox with those or select a different game?"
+			IfMsgBox, Yes
+			gameDir := "*"
+		}
+
+		if (!gameDir)
+		{
+		FileSelectFolder, gameDir, % "*" . A_Desktop, 4, Select Folder containing the DOS game
+			if (ErrorLevel)
+			Return
+		}
 	}
 Return gameDir
 }
@@ -7534,7 +7549,7 @@ strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
 		else
 		{
 		FileGetShortcut, %strTemp2%, ,strRetVal
-			if (strRetVal) ; PrgLnkInf receives the working dir of resolved lnk
+			if (strRetVal) ; PrgLnkInf receives the working dir of resolved lnk: Review the terminating backslash!
 			strRetVal := ParseEnvVars(strRetVal) . "\"
 			else ; else; Regular Prgs get here. Note use of Errorlevel for the special location lnks
 			{
@@ -9027,7 +9042,7 @@ Local strTemp2 := ""
 
 DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, checkSubSys := 0)
 {
-sizeOfOptionalHeader := 0, e_lfanew := 0, e_magic := 0, ntHeaders32 := 0, temp := 0
+sizeOfOptionalHeader := 0, e_lfanew := 0, e_magic := 0, ntHeaders32 := 0, temp := 0, IsaPrgLnk := 0
 
 IMAGE_DOS_SIGNATURE_BIG_ENDIAN := 0x4D5A
 IMAGE_DOS_SIGNATURE := 0x5A4D ; first 2 bytes 23117
@@ -9055,9 +9070,13 @@ IMAGE_FILE_DLL := 0x2000
 IMAGE_FILE_UP_SYSTEM_ONLY := 0x4000 ; What's an UP machine?
 IMAGE_FILE_BYTES_REVERSED_HI := 0x8000 ;obsolete
 
-exeStr := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)
+if (!(exeStr := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)))
+Return
 
-	if (!fileExist(exeStr) || InStr(exeStr, ".lnk", false, strLen(exeStr) - 4) || InStr(exeStr, "BadPath", True, 1, 7))
+
+SplitPath, exeStr, , , temp
+
+if (!fileExist(exeStr) || InStr(exeStr, "BadPath", True, 1, 7) || InStr(temp, "bat") || InStr(temp, "cmd") || InStr(temp, "pif") || InStr(temp, "lnk"))
 	Return
 	else
 	exeStr := AssocQueryApp(exeStr)
