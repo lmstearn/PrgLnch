@@ -1151,7 +1151,7 @@ Return
 ;LnchPad invocation
 LnchPadConfig:
 FileInstall LnchPadCfg.jpg, LnchPadCfg.jpg
-SplashImage, LnchPadCfg.jpg, B,,, LnchPadCfg
+SplashImage, LnchPadCfg.jpg, A B,,, LnchPadCfg
 SetTimer, LnchPadSplashTimer, 100
 LnchLnchPad()
 temp := 0
@@ -1168,11 +1168,20 @@ SetTitleMatchMode, 3
 	else
 	{
 	temp++
-		if (temp > 100)
+		if (temp > 99)
 		{
-		MsgBox, 8192, , There is a problem with Lnch Pad Config!
-		SetTimer, LnchPadSplashTimer, Delete
-		SplashImage, LnchPadCfg.jpg, Hide,,, LnchPadCfg
+			; Prompt for Admin
+			if (winactive("Run PrgLnch Elevated?") || winactive("PrgLnch Executable Required!"))
+			temp := 0
+			else
+			{
+				if (temp = 100)
+				{
+				MsgBox, 8192, Lnch Pad Config Delay, There is a problem with the load of Lnch Pad Config!
+				SetTimer, LnchPadSplashTimer, Delete
+				SplashImage, LnchPadCfg.jpg, Hide,,, LnchPadCfg
+				}
+			}
 		}
 	}
 Return
@@ -3125,27 +3134,30 @@ strTemp := ""
 strTemp2 := ""
 loop % PrgNo
 {
+	if (PrgChoicePaths[A_Index])
+	{
 	; strIniChoice used as temp!
 	strIniChoice := ExtractPrgPath(A_Index, 0, PrgChoicePaths[A_Index], PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, temp)
 
-	if (strIniChoice && (PrgLnkInf[A_Index] != "\") && (PrgLnkInf[A_Index] != IniFileShortctSep) && (PrgLnkInf[A_Index] != "<>")) ; Don't care about invalid links- (but we do really!)
-	{
-		if (temp) ;IsaPrgLnk
-		strIniChoice := PrgLnkInf[A_Index]
-
-	strRetVal := WorkingDirectory(strIniChoice, 1)
-
-		If (strRetVal)
-		strTemp2 .= "`n" . strRetVal
-		else
+		if (strIniChoice && (PrgLnkInf[A_Index] != "\") && (PrgLnkInf[A_Index] != IniFileShortctSep) && (PrgLnkInf[A_Index] != "<>")) ; Don't care about invalid links- (but we do really!)
 		{
-			if (!InStr(strIniChoice, A_ScriptDir))
+			if (temp) ;IsaPrgLnk
+			strIniChoice := PrgLnkInf[A_Index]
+
+		strRetVal := WorkingDirectory(strIniChoice, 1)
+
+			If (strRetVal)
+			strTemp2 .= "`n" . strRetVal
+			else
 			{
-			fTemp := KleenupPrgLnchFiles(1) ; An old (fixed?) bug where these ended up in wrong directory
-				if (fTemp)
+				if (!InStr(strIniChoice, A_ScriptDir))
 				{
-				SplitPath, strIniChoice, , strIniChoice
-				strTemp .= "`nFile(s): """ . fTemp . """ found in """ . strIniChoice . """ marked for the Recycle Bin."
+				fTemp := KleenupPrgLnchFiles(1) ; An old (fixed?) bug where these ended up in wrong directory
+					if (fTemp)
+					{
+					SplitPath, strIniChoice, , strIniChoice
+					strTemp .= "`nFile(s): """ . fTemp . """ found in """ . strIniChoice . """ marked for the Recycle Bin."
+					}
 				}
 			}
 		}
@@ -4463,6 +4475,14 @@ SetResDefaults(targMonitorNum, currRes, Dynamic, FMode, ByRef scrWidth, ByRef sc
 
 
 
+
+
+
+
+
+
+
+
 ;Navigational
 PrgChoice:
 Gui, PrgLnchOpt: Submit, Nohide
@@ -5014,6 +5034,20 @@ testStr := RegExReplace(testStr, "\s+", , (!temp)? temp: fTemp)
 Return % (temp || fTemp)
 }
 
+IsRealExecutable(PrgPth)
+{
+SplitPath, PrgPth, , , strTemp
+	if (strTemp = "exe" ) || (strTemp = "com" ) || (strTemp = "scr" )
+	Return 1
+	else
+	{
+		if (InStr(strTemp, "bat") || InStr(strTemp, "cmd") || InStr(strTemp, "pif") || InStr(strTemp, "msc") || InStr(strTemp, "ps1"))
+		Return -1
+		else
+		Return 0
+	}
+}
+
 
 ChkPrgNames(testName, PrgNo, IniBox := "", forDeletion := 0)
 {
@@ -5075,6 +5109,9 @@ strTemp := StrReplace(strPrgChoice, "|", "|", foundpos1)
 	else
 	return strPrgChoice
 }
+
+
+
 PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
 {
 
@@ -5190,8 +5227,9 @@ IsaPrgLnk := 0
 if (!UrlDisableGui)
 {
 PrgPth := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
-SplitPath, PrgPth, , , strTemp
-	if (!FileExist(PrgPth) || InStr(PrgPth, "BadPath", True, 1, 7) || InStr(strTemp, "bat") || InStr(strTemp, "cmd") || InStr(strTemp, "pif") || InStr(strTemp, "lnk"))
+
+
+	if (!FileExist(PrgPth) || InStr(PrgPth, "BadPath", True, 1, 7) || IsaPrgLnk || (IsRealExecutable(PrgPth) < 1))
 	{
 	; Can happen if the file is in sysdir and/or has restricted access
 	GuiControl, PrgLnchOpt:, newVerPrg
@@ -5309,7 +5347,7 @@ ChkURLPrgExe(TstUrl)
 strTemp := 0, temp := 0
 ;strTemp := SubStr(PrgUrlTest, InStr(PrgUrlTest, ".",, -1) + 1)
 SplitPath, TstUrl,,, strTemp
-if (strTemp = "exe" ) || (strTemp = "bat" ) || (strTemp = "com" ) || (strTemp = "cmd" ) || (strTemp = "pif" ) || (strTemp = "msc" ) || (strTemp = "scr" )
+If (IsRealExecutable(TstUrl) > -1)
 Return 0
 else
 {
@@ -5336,10 +5374,10 @@ AssocQueryApp(prgPath)
 {
 SplitPath, prgPath, , , Ext
 ;exe, com ,scr:  "real" executables
-if (InStr(Ext, "exe") || InStr(Ext, "com") || InStr(Ext, "scr") || InStr(Ext, "bat") || InStr(Ext, "cmd") || InStr(Ext, "pif") || InStr(Ext, "lnk"))
+	if (IsRealExecutable(PrgPath) > -1)
 	strPrg := prgPath
-else
-{
+	else
+	{
 	RegRead, type, HKCU, Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.%Ext%, Application
 		If (ErrorLevel)
 		{
@@ -5364,9 +5402,9 @@ else
 	; strip last quote and all that follows
 	foundpos := InStr(strPrg, """")
 
-	if (foundpos)
-	strPrg := SubStr(strPrg, 1, foundpos-1)
-}
+		if (foundpos)
+		strPrg := SubStr(strPrg, 1, foundpos-1)
+	}
 return strPrg
 }
 
@@ -6050,7 +6088,7 @@ if (lnchPrgIndex > 0) ;Running
 	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
 
-	strRetVal := AssocQueryApp(PrgPaths)
+	strRetVal := (IsaPrgLnk)? AssocQueryApp(PrgPaths): PrgPaths
 
 	if (strRetVal && strRetVal != PrgPaths) ; must be an association
 	{
@@ -6149,7 +6187,6 @@ if (lnchPrgIndex > 0) ;Running
 			Return "No Game selected!"
 			}
 		}
-
 
 ;try
 ;{
@@ -9073,10 +9110,7 @@ IMAGE_FILE_BYTES_REVERSED_HI := 0x8000 ;obsolete
 if (!(exeStr := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)))
 Return
 
-
-SplitPath, exeStr, , , temp
-
-if (!fileExist(exeStr) || InStr(exeStr, "BadPath", True, 1, 7) || InStr(temp, "bat") || InStr(temp, "cmd") || InStr(temp, "pif") || InStr(temp, "lnk"))
+	if (!fileExist(exeStr) || InStr(exeStr, "BadPath", True, 1, 7) || IsaPrgLnk || IsRealExecutable(exeStr))
 	Return
 	else
 	exeStr := AssocQueryApp(exeStr)
@@ -9085,7 +9119,8 @@ exeStrOld := exeStr
 SplitPath, exeStrOld, exeStrOld
 
 
-exeStr := FileOpen(exeStr , "rw" "-rwd")
+;FileOpen returns an object
+exeStr := FileOpen(exeStr, "rw" "-rwd")
 
 
 if (IsObject(exeStr))
@@ -9196,9 +9231,10 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 		MsgBox, 8192, , %  exeStrOld "`n`nBad exe file: no DOS sig."
 		;creates empty file if non-existent: Already checked above!
 		exeStr.Close()
-		FileGetSize temp, %exeStr%
-		if (!temp)
-		FileDelete, %exeStr%
+		FileGetSize temp, %exeStrOld%
+		sleep 20
+			if (!temp && FileExist(exeStrOld))
+			FileDelete, %exeStrOld%
 		Return 0
 		}
 	}

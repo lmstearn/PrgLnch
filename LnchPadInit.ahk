@@ -154,7 +154,7 @@ retVal := 0
 strTmp := ""
 strTmp2 := ""
 currDrive := ""
-tmp := 1
+tmp := 0
 i := 0
 
 prgName1 := ["Wrye Bash", "ModOrganizer", "Performance Monitor", "xEdit", "", "", "", "", "", "", "", ""]
@@ -220,11 +220,11 @@ Auburn := "A52A2A"
 	Loop, Files, % A_ScriptDir . "\*.exe"
 	{
 	if (A_LoopFileName = "PrgLnch.exe")
-	tmp := 0
+	tmp := 1
 	}
-	if (tmp)
+	if (!tmp && A_IsCompiled)
 	{
-	msgbox, 8192, PrgLnch Required, This cannot be run without Prglnch!
+	msgbox, 8192, PrgLnch Executable Required!, This cannot be run without Prglnch in the same folder!
 	ExitApp
 	}
 
@@ -233,7 +233,7 @@ lnchPadPID := DllCall("GetCurrentProcessId")
 
 	if not A_IsAdmin
 	{
-	msgbox, 8196, Run Elevated?, Lnch Pad search requires Admin to work properly.`nReply:`n`nYes: Restart PrgLnch as Admin.`nNo: Try it without Admin.`n
+	msgbox, 8196, Run PrgLnch Elevated?, Lnch Pad search requires Admin to work properly.`nReply:`n`nYes: Restart PrgLnch as Admin.`nNo: Try it without Admin.`n
 		IfMsgBox, Yes
 		{
 		run *runAs "%A_ScriptFullPath%"  ; Requires v1.0.92.01+
@@ -650,11 +650,14 @@ tmp := substr(A_GuiControl, 0)
 Return
 
 overWriteIni:
-	overWriteIniFile := 1
+Gui, Submit, Nohide
+GuiControlGet, overWriteIniFile, , overWriteIni
 Return
 
-GuiControl, , UpdateIni, % Value
+
 UpdateIni:
+Gui, Submit, Nohide
+overWriteIniFile := 0
 Return
 
 addToLnchPad:
@@ -705,6 +708,7 @@ GuiControlGet, strTmp, , addToLnchPad
 
 			if (tmp && FileExist(PrgLnchIniPath))
 			{
+			overWriteIniFile := 0
 			GuiControl, Show, overWriteIni
 			GuiControl, Show, UpdateIni
 			GuiControl,, UpdateIni, 1
@@ -720,6 +724,7 @@ GuiControlGet, strTmp, , addToLnchPad
 					}
 					else
 					{
+					overWriteIniFile := 0
 					GuiControl, Show, overWriteIni
 					GuiControl, Show, UpdateIni
 					GuiControl,, UpdateIni, 1
@@ -727,9 +732,10 @@ GuiControlGet, strTmp, , addToLnchPad
 				}
 				else
 				{
-				GuiControl, Show, overWriteIni
-				GuiControl,, overWriteIni, 1	
 				overWriteIniFile := 1
+				GuiControl, Show, overWriteIni
+				GuiControl,, overWriteIni, % overWriteIniFile	
+				
 				}
 			}
 		}
@@ -748,57 +754,57 @@ GuiControlGet, strTmp, , addToLnchPad
 
 		if (overWriteIniFile)
 		{
-		if (FileExist(gameIniPath))
-		FileRecycle, % gameIniPath
+			if (FileExist(gameIniPath))
+			FileRecycle, % gameIniPath
 		FileCopy, %PrgLnchIniPath%, % A_ScriptDir . "\" . gameIniPath
-			if (ErrorLevel)
-			{
-			Tooltip, Problem with %gameIniPath% . Cannot continue!
-			retVal := 1
-			}
 		}
 		else
 		{
 			if (!FileExist(gameIniPath))
-			{
 			FileCopy, %PrgLnchIniPath%, % A_ScriptDir . "\" . gameIniPath
-				if (ErrorLevel)
-				{
-				Tooltip, Problem with %gameIniPath% . Cannot continue!
-				retVal := 1
-				}
-			}
 		}
 
+		if (ErrorLevel)
+		{
+		Tooltip, Problem with %gameIniPath% . Cannot continue!
+		retVal := 1
+		}
 
 		if (!retVal)
 		{
-		AddToIniProc(tabStat, gameIniPath, prgPath%tabStat%)
-
-		; Write updated slots to PrgLnch.ini
+		AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, IniFileShortctSep)
 		tmp := 0
-		strTmp := ""
 			Loop, % PrgNo
 			{
 				if (!iniNames[A_Index] && !tmp)
 				{
-				tmp := 1
-				iniNames[A_Index] := gameList[tabStat]
+				tmp := A_Index
+				iniNames[tmp] := gameList[tabStat]
 				}
-			strTmp .= iniNames[A_Index] . ","
 			}
-		IniWrite, % SubStr(strTmp, 1, StrLen(strTmp) -1), %PrgLnchIniPath%, General, IniChoiceNames
+
+			if (tmp)
+			; Write updated slots to PrgLnch.ini
+			UpdateAllIni(prgNo, tmp, prgPath%tabStat%, PrgLnchIniPath, iniNames[tmp], IniChoiceNames)
+			else
+			{
+			Tooltip, Lnch Pad Slots full! Cannot continue!
+			retVal := 1
+			}
+
 		}
+	overWriteIniFile := 0
 	GuiControl,, UpdateIni, 0
 	GuiControl,, overWriteIni, 0
 	GuiControl, Hide, overWriteIni
 	GuiControl, Hide, UpdateIni
 	guiControl, , addToLnchPad, % "&Locate " gameList[tabStat] " Lnch Pad Slot"
+	Tooltip, Prgs Added!
 	}
 
 Return
 
-AddToIniProc(tabStat, gameIniPath, prgPathtabStat)
+AddToIniProc(prgNo, tabStat, gameIniPath, prgPathtabStat, IniFileShortctSep)
 {
 WrittentoSlotArrayCt := 0
 PrgPathWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
@@ -816,10 +822,11 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 		freeSlotArray[A_Index] := 1
 		; retrieve possible link 
 		tmp := InStr(strTmp, IniFileShortctSep)
+			; They should be direct exe links anyway, but...
 			if (tmp)
 			{
-			strTmp2 := SubStr(strTmp, InStr(strTmp, IniFileShortctSep) + 1)
-			strTmp := Substr(strTmp, 1, InStr(strTmp, IniFileShortctSep))
+			strTmp2 := SubStr(strTmp, tmp + 1)
+			strTmp := Substr(strTmp, 1, tmp)
 			SplitPath, strTmp2 ,,,, SelIniChoiceName
 			}
 			else
@@ -827,13 +834,12 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 			SplitPath, strTmp ,,,, SelIniChoiceName
 			strTmp := ""
 			}
-msgbox % " strTmp2 " strTmp2 " strTmp " strTmp " SelIniChoiceName " SelIniChoiceName " gameIniPath " gameIniPath
-		tmp := 0				
+
+		tmp := A_Index				
 
 			loop % prgNo
 			{
-			prgPathStr := prgPathtabStat[A_Index]
-				if (prgPathStr)
+				if (prgPathStr := prgPathtabStat[A_Index])
 				{
 				;  Not handling associations here
 				SplitPath, % prgPathStr ,,,, strTmp2
@@ -841,7 +847,7 @@ msgbox % " strTmp2 " strTmp2 " strTmp " strTmp " SelIniChoiceName " SelIniChoice
 					{
 					WrittentoSlotArrayCt++
 					PrgPathWrittentoSlotArray[WrittentoSlotArrayCt] := prgPathStr
-					IniWrite, % strTmp . prgPathStr, %gameIniPath%, Prg[A_Index], PrgPath
+					IniWrite, % strTmp . prgPathStr, %gameIniPath%, Prg%tmp%, PrgPath
 					}
 				}
 			}
@@ -849,35 +855,124 @@ msgbox % " strTmp2 " strTmp2 " strTmp " strTmp " SelIniChoiceName " SelIniChoice
 		}
 	}
 
+	; Fine - we may want commandline Parms as well- e.g. Wrye Bash.exe -debug
 	WrittentoSlotArrayCt := 0
 	loop, % PrgNo
 	{
-	strTmp := prgPathtabStat[A_Index]
-		if (strTmp && !PrgPathWrittentoSlotArray[A_Index])
+	tmp := 0
+		if (strTmp := prgPathtabStat[A_Index])
 		{
-		WrittentoSlotArrayCt++
-		PrgPathNotWrittentoSlotArray[WrittentoSlotArrayCt] := strTmp
+			Loop, % PrgNo
+			{
+				if (strTmp = PrgPathWrittentoSlotArray[A_Index])
+				tmp := 1
+			}
+			if (!tmp)
+			{
+				Loop, % PrgNo
+				{
+					if (!PrgPathWrittentoSlotArray[A_Index])
+					{
+					WrittentoSlotArrayCt++
+					PrgPathNotWrittentoSlotArray[WrittentoSlotArrayCt] := strTmp
+					Break
+					}
+				}
+			}
 		}
 	}
-	; ALSO NAMES URLS
+	; ALSO NAMES & URLS
 	; write the path to a new Prg
 	loop, % prgNo
 	{
-	strTmp := PrgPathNotWrittentoSlotArray[A_Index]
-		if (strTmp)
+		if (strTmp := PrgPathNotWrittentoSlotArray[A_Index])
 		{
 			Loop, % PrgNo
 			{
 				if (!freeSlotArray[A_Index])
-				IniWrite, % strTmp, %gameIniPath%, Prg[A_Index], PrgPath
+				{
+				IniWrite, % strTmp, %gameIniPath%, Prg%A_Index%, PrgPath
 				SplitPath, strTmp ,,,, SelIniChoiceName
-				IniWrite, %SelIniChoiceName%, %gameIniPath%, Prg[A_Index], PrgName
-			freeSlotArray[A_Index] := 1
+				IniWrite, %SelIniChoiceName%, %gameIniPath%, Prg%A_Index%, PrgName
+				freeSlotArray[A_Index] := 1
+				Break
+				}
 			}
 		}
 	}
 }
 
+
+UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames, DefPresetSettings := 0) ; won't allow A_Space
+{
+spr := "", strTemp := "", fTemp := 0
+IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
+
+	strTemp := % (SelIniChoiceName = "Ini" . iniSel)? A_Space: SelIniChoiceName
+	Loop % PrgNo
+	{
+		if (IniChoiceNames[A_Index])
+		{
+		spr .= IniChoiceNames[A_Index] . ","
+		IniChoicePaths[A_Index] := A_ScriptDir . "\" . IniChoiceNames[A_Index] . ".ini"
+			if (FileExist(IniChoicePaths[A_Index]))
+			IniWrite, %strTemp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
+			else
+			{
+			MsgBox, 8196, , % "The Lnch Pad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the Lnch Pads. `n"
+				IfMsgBox, No
+				Return
+			}
+
+			if (Errorlevel)
+			{
+			MsgBox, 8196, , % "The following Lnch Pad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the Lnch Pads. `n"
+				IfMsgBox, No
+				Return
+			}
+		sleep, 20
+		}
+		else
+		spr .= ","
+
+	}
+	
+	if (FileExist(PrgLnchIni))
+	IniWrite, %strTemp%, %PrgLnchIni%, General, SelIniChoiceName
+	else
+	{
+	MsgBox, 8208, ,The PrgLnch ini file cannot be written to!
+	Return
+	}
+	if (Errorlevel)
+	MsgBox, 8192, , % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTemp
+	
+	
+	sleep, 20
+	; Trim last ","
+	spr := SubStr(spr, 1, StrLen(spr) - 1)
+	Loop % PrgNo
+	{
+		if (IniChoicePaths[A_Index] && FileExist(IniChoicePaths[A_Index]))
+		{
+		IniWrite, %spr%, % IniChoicePaths[A_Index], General, IniChoiceNames
+		sleep, 20
+		}
+	}
+	IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
+	sleep, 20
+
+	Loop % PrgNo
+	{
+		if (IniChoicePaths[A_Index] && FileExist(IniChoicePaths[A_Index]))
+		{
+		IniWrite, % (DefPresetSettings)? 1: A_Space, % IniChoicePaths[A_Index], General, DefPresetSettings
+		sleep, 20
+		}
+	}
+	IniWrite, % (DefPresetSettings)? 1: A_Space, %PrgLnchIni%, General, DefPresetSettings
+
+}
 
 LnchPadTab:
 
@@ -1196,7 +1291,7 @@ searchStat := 0
 guiControl, , searchDrive, % "&Search PC for " gameList[tabStat] " Apps"
 GuiControl,, addToLnchPad, % "&Locate " gameList[tabStat] " Lnch Pad Slot"
 
-
+overWriteIniFile := 1
 GuiControl,, UpdateIni, 0
 GuiControl,, overWriteIni, 0
 GuiControl, Hide, overWriteIni
