@@ -2518,7 +2518,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		}
 	}
 	IniWrite, % (DefPresetSettings)? 1: A_Space, %PrgLnchIni%, General, DefPresetSettings
-
+	sleep, 20
 }
 
 

@@ -122,6 +122,7 @@ WM_HELPMSG := 0x0053
 WS_EX_CONTEXTHELP := 0x00000400
 
 gameList := ["Morrowind", "Oblivion", "Skyrim", "", "", "", "", "", "", "", "", ""]
+iniNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
 PrgLnchIniPath := A_ScriptDir . "\PrgLnch.ini"
 gameIniPath := ""
@@ -745,22 +746,24 @@ GuiControlGet, strTmp, , addToLnchPad
 			Return
 		}
 	guiControl, , addToLnchPad, % "&Add to " gameList[tabStat] " Lnch Pad Slot"
+
 	}
-	else
+	else ; Update Lnch Pad Slots
 	{
+
 	retVal := 0
 	gameIniPath := gameList[tabStat] . ".ini"
-
+	strTmp := FileExist(gameIniPath)
 
 		if (overWriteIniFile)
 		{
-			if (FileExist(gameIniPath))
+			if (strTmp)
 			FileRecycle, % gameIniPath
 		FileCopy, %PrgLnchIniPath%, % A_ScriptDir . "\" . gameIniPath
 		}
 		else
 		{
-			if (!FileExist(gameIniPath))
+			if (!strTmp)
 			FileCopy, %PrgLnchIniPath%, % A_ScriptDir . "\" . gameIniPath
 		}
 
@@ -776,16 +779,29 @@ GuiControlGet, strTmp, , addToLnchPad
 		tmp := 0
 			Loop, % PrgNo
 			{
-				if (!iniNames[A_Index] && !tmp)
+				if (iniNames[A_Index] = strTmp)
 				{
 				tmp := A_Index
-				iniNames[tmp] := gameList[tabStat]
+				Break
+				}
+			}
+
+			if (!tmp)
+			{
+				Loop, % PrgNo
+				{
+					if (!iniNames[A_Index])
+					{
+					tmp := A_Index
+					iniNames[tmp] := gameList[tabStat]
+					Break
+					}
 				}
 			}
 
 			if (tmp)
 			; Write updated slots to PrgLnch.ini
-			UpdateAllIni(prgNo, tmp, prgPath%tabStat%, PrgLnchIniPath, iniNames[tmp], IniChoiceNames)
+			UpdateAllIni(prgNo, tmp, prgPath%tabStat%, PrgLnchIniPath, iniNames)
 			else
 			{
 			Tooltip, Lnch Pad Slots full! Cannot continue!
@@ -814,7 +830,7 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	loop % prgNo
 	{
 	IniRead, strTmp, %gameIniPath%, Prg%A_Index%, PrgPath
-	; Also consider name check:
+	; Check each PrgPath in the ini. Also consider name check:
 	; IniRead, SelIniChoiceName, %PrgLnchIniPath%, Prg%A_Index%, PrgName ,,, if (InStr(SelIniChoiceName, gameList[tabStat]))
 
 		if (strTmp)
@@ -903,12 +919,13 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 }
 
 
-UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames, DefPresetSettings := 0) ; won't allow A_Space
+UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, IniChoiceNames)
 {
 spr := "", strTemp := "", fTemp := 0
 IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
-	strTemp := % (SelIniChoiceName = "Ini" . iniSel)? A_Space: SelIniChoiceName
+	strTemp := (IniChoiceNames[iniSel])? A_Space: IniChoiceNames[iniSel]
+
 	Loop % PrgNo
 	{
 		if (IniChoiceNames[A_Index])
@@ -961,17 +978,6 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	}
 	IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
 	sleep, 20
-
-	Loop % PrgNo
-	{
-		if (IniChoicePaths[A_Index] && FileExist(IniChoicePaths[A_Index]))
-		{
-		IniWrite, % (DefPresetSettings)? 1: A_Space, % IniChoicePaths[A_Index], General, DefPresetSettings
-		sleep, 20
-		}
-	}
-	IniWrite, % (DefPresetSettings)? 1: A_Space, %PrgLnchIni%, General, DefPresetSettings
-
 }
 
 LnchPadTab:
