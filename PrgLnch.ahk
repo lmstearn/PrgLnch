@@ -486,40 +486,8 @@ DetectHiddenWindows, Off
 		}
 	}
 
-
-
-
-	strRetVal := IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
-		if (strRetVal)
-		{
-		msgbox, 8192 , Lnch Pad Ini File, % strRetVal
-		oldSelIniChoiceName := selIniChoiceName
-		SelIniChoicePath := PrgLnchIni
-		IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, , (SelIniChoicePath = PrgLnchIni))
-			Loop, % PrgNo
-			{
-				if (IniChoiceNames[A_Index] = oldSelIniChoiceName)
-				{
-				IniChoiceNames[A_Index] := "Ini" . A_Index
-				inisel := A_Index
-				Break
-				}
-			}
-		WriteIniChoiceNames(IniChoiceNames, PrgNo, strIniChoice, PrgLnchIni)
-		IniWrite, %A_Space%, %SelIniChoicePath%, General, SelIniChoiceName
-		}
-
-
-	oldSelIniChoiceName := selIniChoiceName
-		Loop % PrgNo
-		{
-			if (IniChoiceNames[A_Index] = SelIniChoiceName)
-			{
-			iniSel := A_Index
-			Break
-			}
-		}
-	}
+	IniProcIniFileStart()
+}
 
 IniProc()
 ; No screen parms yet
@@ -1153,7 +1121,16 @@ LnchPadConfig:
 FileInstall LnchPadCfg.jpg, LnchPadCfg.jpg
 SplashImage, LnchPadCfg.jpg, A B,,, LnchPadCfg
 SetTimer, LnchPadSplashTimer, 100
-LnchLnchPad()
+
+	if (!LnchLnchPad())
+	{
+	IniProcIniFileStart()
+	GuiControl, PrgLnch:, IniChoice,
+	GuiControl, PrgLnch:, IniChoice, %strIniChoice%
+	GuiControl, PrgLnch: Choosestring, IniChoice, % SelIniChoiceName
+	GuiControl, PrgLnch: Show, IniChoice
+	}
+
 temp := 0
 Return
 
@@ -2739,6 +2716,7 @@ RunWait, LnchPadInit.exe, , UseErrorLevel:
 		strTemp := ERROR_CANCELLED		
 		}
 	MsgBox, 8192, , % "LnchPadInit will not run. Code: " strTemp? strTemp: A_LastError
+	strTemp := "Error"
 	}
 
 Gui, PrgLnch: -Disabled
@@ -2747,8 +2725,8 @@ DetectHiddenWindows, On
 PrgLnch.Activate()
 oldDHW := A_DetectHiddenWindows
 
-
 DetectHiddenWindows, %oldDHW%
+Return strTemp
 }
 
 HideShowLnchControls(quitHwnd, GoConfigHwnd, showCtl := 0)
@@ -3181,6 +3159,42 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 
 DopowerPlan()
 ExitApp
+
+IniProcIniFileStart()
+{
+Global
+strRetVal := IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+	if (strRetVal)
+	{
+	msgbox, 8192 , Lnch Pad Ini File, % strRetVal
+	oldSelIniChoiceName := selIniChoiceName
+	SelIniChoicePath := PrgLnchIni
+	IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, , (SelIniChoicePath = PrgLnchIni))
+		Loop, % PrgNo
+		{
+			if (IniChoiceNames[A_Index] = oldSelIniChoiceName)
+			{
+			IniChoiceNames[A_Index] := "Ini" . A_Index
+			inisel := A_Index
+			Break
+			}
+		}
+	WriteIniChoiceNames(IniChoiceNames, PrgNo, strIniChoice, PrgLnchIni)
+	IniWrite, %A_Space%, %SelIniChoicePath%, General, SelIniChoiceName
+	}
+
+
+oldSelIniChoiceName := selIniChoiceName
+	Loop % PrgNo
+	{
+		if (IniChoiceNames[A_Index] = SelIniChoiceName)
+		{
+		iniSel := A_Index
+		Break
+		}
+	}
+}
+
 
 KleenupPrgLnchFiles(RecycleNow := 0)
 {
@@ -5224,17 +5238,18 @@ PrgURLEnable(ByRef PrgUrlTest, ByRef UrlPrgIsCompressed, selPrgChoice, PrgChoice
 currPrgUrl := PrgUrl[selPrgChoice]
 PrgverOld := PrgVer[selPrgChoice]
 IsaPrgLnk := 0
+
 if (!UrlDisableGui)
 {
 PrgPth := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
 
-	if (!FileExist(PrgPth) || InStr(PrgPth, "BadPath", True, 1, 7) || IsaPrgLnk || (IsRealExecutable(PrgPth) < 1))
+	if (!FileExist(PrgPth) || InStr(PrgPth, "BadPath", True, 1, 7) || (IsRealExecutable(PrgPth) = -1))
 	{
 	; Can happen if the file is in sysdir and/or has restricted access
-	GuiControl, PrgLnchOpt:, newVerPrg
 	GuiControl, PrgLnchOpt:, UpdturlPrgLnch
 	GuiControl, PrgLnchOpt: Disable, UpdturlPrgLnch
+	PrgURLGui(PrgUrl, PrgUrlTest, SelPrgChoice, 1)
 	Return
 	}
 }
@@ -5277,6 +5292,7 @@ GuiControl, PrgLnchOpt: -ReadOnly, UpdturlPrgLnch
 	else
 	{
 	GuiControl, PrgLnchOpt:, UpdturlPrgLnch
+
 	PrgURLGui(PrgUrl, PrgUrlTest, SelPrgChoice, 1)
 	PrgVerNew := 0
 		If (UrlDisableGui)
@@ -9110,7 +9126,7 @@ IMAGE_FILE_BYTES_REVERSED_HI := 0x8000 ;obsolete
 if (!(exeStr := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)))
 Return
 
-	if (!fileExist(exeStr) || InStr(exeStr, "BadPath", True, 1, 7) || IsaPrgLnk || IsRealExecutable(exeStr))
+	if (!fileExist(exeStr) || InStr(exeStr, "BadPath", True, 1, 7) || IsaPrgLnk || InStr(PrgLnkInf[selPrgChoice], "|") || (IsRealExecutable(exeStr) = -1))
 	Return
 	else
 	exeStr := AssocQueryApp(exeStr)

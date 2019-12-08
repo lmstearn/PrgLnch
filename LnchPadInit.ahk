@@ -153,7 +153,7 @@ IniFileShortctSep := "?" ; Change if different in Main!
 retVal := 0
 
 strTmp := ""
-strTmp2 := ""
+strRetVal := ""
 currDrive := ""
 tmp := 0
 i := 0
@@ -170,6 +170,9 @@ prgPath3 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath1bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath2bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath3bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgUrl1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgUrl2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgUrl3 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgInfUrl1 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io/", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrim/mods/49015", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrim/mods/6491", "https://www.nexusmods.com/skyrimspecialedition/mods/134/", "https://www.nexusmods.com/skyrim/mods/83200", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
 prgInfUrl2 := ["https://www.nexusmods.com/oblivion/mods/22368", "https://github.com/ModOrganizer2/modorganizer", "https://boss-developers.github.io/", "https://www.nexusmods.com/oblivion/mods/36370", "http://tes5edit.github.io", "https://www.nexusmods.com/oblivion/mods/3311", "https://www.nexusmods.com/oblivion/mods/41447", "https://www.nexusmods.com/oblivion/mods/40549", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/oblivion/mods/15781", "https://www.nexusmods.com/skyrim/mods/5755", "https://github.com/matortheeternal/merge-plugins"]
 prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io/", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrim/mods/49015", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrim/mods/6491", "https://www.nexusmods.com/skyrimspecialedition/mods/134/", "https://www.nexusmods.com/skyrim/mods/83200", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
@@ -709,10 +712,10 @@ GuiControlGet, strTmp, , addToLnchPad
 
 			if (tmp && FileExist(PrgLnchIniPath))
 			{
-			overWriteIniFile := 0
 			GuiControl, Show, overWriteIni
 			GuiControl, Show, UpdateIni
-			GuiControl,, UpdateIni, 1
+			GuiControl,, overWriteIni, % overWriteIniFile
+			GuiControl,, UpdateIni, % !overWriteIniFile
 			}
 			else
 			{
@@ -725,10 +728,10 @@ GuiControlGet, strTmp, , addToLnchPad
 					}
 					else
 					{
-					overWriteIniFile := 0
 					GuiControl, Show, overWriteIni
 					GuiControl, Show, UpdateIni
-					GuiControl,, UpdateIni, 1
+					GuiControl,, overWriteIni, % overWriteIniFile
+					GuiControl,, UpdateIni, % !overWriteIniFile
 					}
 				}
 				else
@@ -750,10 +753,9 @@ GuiControlGet, strTmp, , addToLnchPad
 	}
 	else ; Update Lnch Pad Slots
 	{
-
-	retVal := 0
+	strRetVal := ""
 	gameIniPath := gameList[tabStat] . ".ini"
-	strTmp := FileExist(gameIniPath)
+	strTmp := (FileExist(gameIniPath))? gameList[tabStat]:
 
 		if (overWriteIniFile)
 		{
@@ -768,14 +770,11 @@ GuiControlGet, strTmp, , addToLnchPad
 		}
 
 		if (ErrorLevel)
-		{
-		Tooltip, Problem with %gameIniPath% . Cannot continue!
-		retVal := 1
-		}
+		strRetVal := "Problem with " gameIniPath . " Cannot continue!"
 
-		if (!retVal)
+		if (!strRetVal)
 		{
-		AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, IniFileShortctSep)
+		strRetVal := AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, prgUrl%tabStat%, IniFileShortctSep)
 		tmp := 0
 			Loop, % PrgNo
 			{
@@ -803,10 +802,7 @@ GuiControlGet, strTmp, , addToLnchPad
 			; Write updated slots to PrgLnch.ini
 			UpdateAllIni(prgNo, tmp, prgPath%tabStat%, PrgLnchIniPath, iniNames)
 			else
-			{
-			Tooltip, Lnch Pad Slots full! Cannot continue!
-			retVal := 1
-			}
+			strRetVal := "Lnch Pad Slots full! Cannot continue!"
 
 		}
 	overWriteIniFile := 0
@@ -815,35 +811,47 @@ GuiControlGet, strTmp, , addToLnchPad
 	GuiControl, Hide, overWriteIni
 	GuiControl, Hide, UpdateIni
 	guiControl, , addToLnchPad, % "&Locate " gameList[tabStat] " Lnch Pad Slot"
-	Tooltip, Prgs Added!
+		if (strRetVal)
+		Tooltip, % strRetVal
+		else
+		Tooltip, Prgs Added!
 	}
 
 Return
 
-AddToIniProc(prgNo, tabStat, gameIniPath, prgPathtabStat, IniFileShortctSep)
+AddToIniProc(prgNo, tabStat, gameIniPath, prgPathtabStat, prgUrltabStat, IniFileShortctSep)
 {
 WrittentoSlotArrayCt := 0
+freeSlotArrayCt := 0
+AllocatedtoSlotArrayCt := 0
+prgPathtabStatCt := 0
+strTmp := ""
+strTmp2 := ""
+strRetVal := ""
 PrgPathWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgPathNotWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
 freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
+
 	loop % prgNo
 	{
 	IniRead, strTmp, %gameIniPath%, Prg%A_Index%, PrgPath
+	IniRead, strTmp2, %gameIniPath%, Prg%A_Index%, PrgUrl
 	; Check each PrgPath in the ini. Also consider name check:
 	; IniRead, SelIniChoiceName, %PrgLnchIniPath%, Prg%A_Index%, PrgName ,,, if (InStr(SelIniChoiceName, gameList[tabStat]))
 
 		if (strTmp)
 		{
 		freeSlotArray[A_Index] := 1
+		freeSlotArrayCt++
 		; retrieve possible link 
 		tmp := InStr(strTmp, IniFileShortctSep)
 			; They should be direct exe links anyway, but...
 			if (tmp)
 			{
-			strTmp2 := SubStr(strTmp, tmp + 1)
+			strRetVal := SubStr(strTmp, tmp + 1)
 			strTmp := Substr(strTmp, 1, tmp)
-			SplitPath, strTmp2 ,,,, SelIniChoiceName
+			SplitPath, strRetVal ,,,, SelIniChoiceName
 			}
 			else
 			{
@@ -858,12 +866,16 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 				if (prgPathStr := prgPathtabStat[A_Index])
 				{
 				;  Not handling associations here
-				SplitPath, % prgPathStr ,,,, strTmp2
-					if (InStr(SelIniChoiceName, strTmp2) || InStr(strTmp2, SelIniChoiceName))
+				SplitPath, % prgPathStr ,,,, strRetVal
+					if (InStr(SelIniChoiceName, strRetVal) || InStr(strRetVal, SelIniChoiceName))
 					{
 					WrittentoSlotArrayCt++
 					PrgPathWrittentoSlotArray[WrittentoSlotArrayCt] := prgPathStr
 					IniWrite, % strTmp . prgPathStr, %gameIniPath%, Prg%tmp%, PrgPath
+
+						if (prgUrltabStat[A_Index])
+						IniWrite, % prgUrltabStat[A_Index], %gameIniPath%, Prg%tmp%, PrgUrl
+						; Else: Policy: existing urls not erased.
 					}
 				}
 			}
@@ -871,8 +883,19 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 		}
 	}
 
+	loop % prgNo
+	{
+		if (prgPathtabStat[A_Index])
+		prgPathtabStatCt++
+	}
+
+; Existing entries excluded
+;AdjustedprgPathtabStatCt := prgPathtabStatCt - 
+oldWrittentoSlotArrayCt := WrittentoSlotArrayCt
+
+
 	; Fine - we may want commandline Parms as well- e.g. Wrye Bash.exe -debug
-	WrittentoSlotArrayCt := 0
+	AllocatedtoSlotArrayCt := 0
 	loop, % PrgNo
 	{
 	tmp := 0
@@ -889,8 +912,8 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 				{
 					if (!PrgPathWrittentoSlotArray[A_Index])
 					{
-					WrittentoSlotArrayCt++
-					PrgPathNotWrittentoSlotArray[WrittentoSlotArrayCt] := strTmp
+					AllocatedtoSlotArrayCt++
+					PrgPathNotWrittentoSlotArray[AllocatedtoSlotArrayCt] := strTmp
 					Break
 					}
 				}
@@ -907,15 +930,37 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 			{
 				if (!freeSlotArray[A_Index])
 				{
+				WrittentoSlotArrayCt++
 				IniWrite, % strTmp, %gameIniPath%, Prg%A_Index%, PrgPath
 				SplitPath, strTmp ,,,, SelIniChoiceName
 				IniWrite, %SelIniChoiceName%, %gameIniPath%, Prg%A_Index%, PrgName
+					if (PrgUrl[A_Index])
+					IniWrite, % PrgUrl[A_Index], %gameIniPath%, Prg%A_Index%, PrgUrl
 				freeSlotArray[A_Index] := 1
 				Break
 				}
 			}
 		}
 	}
+
+	strRetVal := ""
+	if (!freeSlotArrayCt)
+	strRetVal := " No free Slots in the Lnch Pad!"
+	else
+	{
+		if (oldWrittentoSlotArrayCt < prgPathtabStatCt - AllocatedtoSlotArrayCt)
+		strRetVal := "Not all of the " . (prgPathtabStatCt - AllocatedtoSlotArrayCt) . " Prg entries could be written to the Lnch Pad Slot!"
+		else
+		{
+			if (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt < AllocatedtoSlotArrayCt)
+			strRetVal := "Only " (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt) " of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the Lnch Pad Slot!"
+		}
+	}
+
+
+Return strRetVal
+
+
 }
 
 
