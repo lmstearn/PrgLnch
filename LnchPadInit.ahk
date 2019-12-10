@@ -133,6 +133,7 @@ maxDrives := 9 ; it's actually 24 letters, but focus on NFTS
 DriveLetter := Object()
 DriveLetterBak := Object()
 FATDrives := ""
+maxBatchPrgs := 6
 prgNo := 12
 thisGuiW := floor(A_ScreenWidth/2)
 thisGuiH := floor(A_ScreenHeight/2)
@@ -221,6 +222,9 @@ Taupe := "483C32"
 Auburn := "A52A2A"
 
 
+(A_PtrSize = 8)? 64bit := 1 : 64bit := 0 ; ONLY checks .exe bitness
+
+
 	Loop, Files, % A_ScriptDir . "\*.exe"
 	{
 	if (A_LoopFileName = "PrgLnch.exe")
@@ -268,7 +272,7 @@ Gui, Add, Text, Center gaddToLnchPad vaddToLnchPad HWNDaddToLnchPadHwnd wp, % "&
 	guiControl, Hide, Drive%A_Index%
 	}
 
-Gui, Add, Radio, goverWriteIni voverWriteIni HWNDoverWriteIniHwnd, Overwrite Ini File with PrgLnch defaults
+Gui, Add, Radio, goverWriteIni voverWriteIni HWNDoverWriteIniHwnd, Overwrite existing Slot with PrgLnch defaults
 Gui, Add, Radio, gUpdateIni vUpdateIni HWNDUpdateIniHwnd, Update existing Ini File with acquired Prg info.
 GuiControl, Hide, overWriteIni
 GuiControl, Hide, UpdateIni
@@ -754,23 +758,47 @@ GuiControlGet, strTmp, , addToLnchPad
 	else ; Update Lnch Pad Slots
 	{
 	strRetVal := ""
-	gameIniPath := gameList[tabStat] . ".ini"
+	gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 	strTmp := (FileExist(gameIniPath))? gameList[tabStat]:
 
 		if (overWriteIniFile)
 		{
 			if (strTmp)
 			FileRecycle, % gameIniPath
-		FileCopy, %PrgLnchIniPath%, % A_ScriptDir . "\" . gameIniPath
+		FileCopy, %PrgLnchIniPath%, %gameIniPath%
 		}
 		else
 		{
 			if (!strTmp)
-			FileCopy, %PrgLnchIniPath%, % A_ScriptDir . "\" . gameIniPath
+			FileCopy, %PrgLnchIniPath%, %gameIniPath%
 		}
 
 		if (ErrorLevel)
-		strRetVal := "Problem with " gameIniPath . " Cannot continue!"
+		strRetVal := "Problem with " . gameList[tabStat] . ".ini. Cannot continue!"
+
+		; Clear data in new file
+		if (!strTmp)
+		{
+		loop % maxBatchPrgs
+		IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIni%A_Index%
+
+		IniWrite, %A_Space%, %gameIniPath%, Prgs, PresetNames
+		IniWrite, %A_Space%, %gameIniPath%, Prgs, StartupPrgName
+		IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIniStartup
+
+			loop % PrgNo
+			{
+			IniDelete, %gameIniPath%, Prg%A_Index%
+
+			IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgName
+			IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgPath
+			IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgCmdLine
+			IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgUrl
+			IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgVer
+			strTmp := "1,0,-1,-1,0,0,0"
+			IniWrite, %strTmp%, %gameIniPath%, Prg%A_Index%, PrgMisc
+			}
+		}
 
 		if (!strRetVal)
 		{
@@ -778,7 +806,7 @@ GuiControlGet, strTmp, , addToLnchPad
 		tmp := 0
 			Loop, % PrgNo
 			{
-				if (iniNames[A_Index] = strTmp)
+				if (iniNames[A_Index] = gameList[tabStat])
 				{
 				tmp := A_Index
 				Break
@@ -800,7 +828,7 @@ GuiControlGet, strTmp, , addToLnchPad
 
 			if (tmp)
 			; Write updated slots to PrgLnch.ini
-			UpdateAllIni(prgNo, tmp, prgPath%tabStat%, PrgLnchIniPath, iniNames)
+			UpdateAllIni(prgNo, tmp, PrgLnchIniPath, iniNames)
 			else
 			strRetVal := "Lnch Pad Slots full! Cannot continue!"
 
@@ -822,7 +850,6 @@ Return
 AddToIniProc(prgNo, tabStat, gameIniPath, prgPathtabStat, prgUrltabStat, IniFileShortctSep)
 {
 WrittentoSlotArrayCt := 0
-freeSlotArrayCt := 0
 AllocatedtoSlotArrayCt := 0
 prgPathtabStatCt := 0
 strTmp := ""
@@ -843,7 +870,6 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 		if (strTmp)
 		{
 		freeSlotArray[A_Index] := 1
-		freeSlotArrayCt++
 		; retrieve possible link 
 		tmp := InStr(strTmp, IniFileShortctSep)
 			; They should be direct exe links anyway, but...
@@ -906,6 +932,7 @@ oldWrittentoSlotArrayCt := WrittentoSlotArrayCt
 				if (strTmp = PrgPathWrittentoSlotArray[A_Index])
 				tmp := 1
 			}
+
 			if (!tmp)
 			{
 				Loop, % PrgNo
@@ -944,18 +971,14 @@ oldWrittentoSlotArrayCt := WrittentoSlotArrayCt
 	}
 
 	strRetVal := ""
-	if (!freeSlotArrayCt)
-	strRetVal := " No free Slots in the Lnch Pad!"
+	if (oldWrittentoSlotArrayCt < prgPathtabStatCt - AllocatedtoSlotArrayCt)
+	strRetVal := "Not all of the " . (prgPathtabStatCt - AllocatedtoSlotArrayCt) . " Prg entries could be written to the Lnch Pad Slot!"
 	else
 	{
-		if (oldWrittentoSlotArrayCt < prgPathtabStatCt - AllocatedtoSlotArrayCt)
-		strRetVal := "Not all of the " . (prgPathtabStatCt - AllocatedtoSlotArrayCt) . " Prg entries could be written to the Lnch Pad Slot!"
-		else
-		{
-			if (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt < AllocatedtoSlotArrayCt)
-			strRetVal := "Only " (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt) " of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the Lnch Pad Slot!"
-		}
+		if (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt < AllocatedtoSlotArrayCt)
+		strRetVal := "Only " (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt) " of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the Lnch Pad Slot!"
 	}
+
 
 
 Return strRetVal
@@ -964,12 +987,12 @@ Return strRetVal
 }
 
 
-UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, IniChoiceNames)
+UpdateAllIni(PrgNo, iniSel, PrgLnchIni, IniChoiceNames)
 {
-spr := "", strTemp := "", fTemp := 0
+spr := "", strTmp := ""
 IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
-	strTemp := (IniChoiceNames[iniSel])? A_Space: IniChoiceNames[iniSel]
+	strTmp := (IniChoiceNames[iniSel])? A_Space: IniChoiceNames[iniSel]
 
 	Loop % PrgNo
 	{
@@ -978,7 +1001,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		spr .= IniChoiceNames[A_Index] . ","
 		IniChoicePaths[A_Index] := A_ScriptDir . "\" . IniChoiceNames[A_Index] . ".ini"
 			if (FileExist(IniChoicePaths[A_Index]))
-			IniWrite, %strTemp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
+			IniWrite, %strTmp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
 			else
 			{
 			MsgBox, 8196, , % "The Lnch Pad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the Lnch Pads. `n"
@@ -1000,14 +1023,14 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	}
 	
 	if (FileExist(PrgLnchIni))
-	IniWrite, %strTemp%, %PrgLnchIni%, General, SelIniChoiceName
+	IniWrite, %strTmp%, %PrgLnchIni%, General, SelIniChoiceName
 	else
 	{
 	MsgBox, 8208, ,The PrgLnch ini file cannot be written to!
 	Return
 	}
 	if (Errorlevel)
-	MsgBox, 8192, , % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTemp
+	MsgBox, 8192, , % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTmp
 	
 	
 	sleep, 20
@@ -1270,7 +1293,7 @@ GuiControlGet, tmp, Name, % mControl
 	}
 	else
 	{
-		if (InStr(tmp, "addToLnchPad" ))
+		if (InStr(tmp, "addToLnchPad"))
 		Return
 
 		switch tabStat
@@ -2130,17 +2153,33 @@ local ContextId    := NumGet(lParam + 16 + 64bit * 8, "uint")
 local MousePosX    := NumGet(lParam + 20 + 64bit * 8, "int")
 local MousePosY    := NumGet(lParam + 24 + 64bit * 8, "int")
 
-retVal := 0
+local retVal := 0, tmp := 0
 ;This key must be set to 1!
 ;HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced >> EnableBalloonTips
 
-if (ItemHandle = PresetPropHwnd)
-retVal := RunChm("PrgLnch Batch`\PrgLnch Batch", "PresetProperties")
+if (ItemHandle = searchDriveHwnd)
+retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "SearchDrive")
 else
-if (ItemHandle = BackToPrgLnchHwnd)
-retVal := RunChm("PrgLnch Config`\PrgLnch Config", "BackToPrglnch")
+if (ItemHandle = addToLnchPadHwnd)
+retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "LocateSlot")
+else
+if (ItemHandle = UpdateIniHwnd)
+retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "UpdateExisting")
+else
+if (ItemHandle = overWriteIniHwnd)
+retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "overWriteExisting")
 else
 {
+	Loop, % maxGames
+	{
+		if (ItemHandle = PrgIndex%A_Index%Hwnd)
+		{
+		retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "Listbox")
+		tmp := 1
+		Break
+		}
+	}
+if (!tmp)
 retVal := RunChm()
 }
 
@@ -2156,39 +2195,125 @@ if (retVal) ; error
 }
 RunChm(chmTopic := 0, Anchor := "")
 {
-x := 0, y := 0, w := 0, tmp := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
+x := 0, y := 0, w := 0, h := 0, tmp := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
 
 if (!FileExist(A_ScriptDir . "\PrgLnch.chm"))
 return -1
 
-WinGetPos, x, y, w, , A
+WinGetPos, x, y, w, h, A
 
-if (chmTopic)
-run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm#%Anchor%,, UseErrorLevel
-else
-run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/About%A_Space%PrgLnch.htm,, UseErrorLevel
+
+	if (chmTopic)
+	run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm#%Anchor%,, UseErrorLevel
+	else
+	run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/About%A_Space%PrgLnch.htm,, UseErrorLevel
+retVal := A_LastError
 sleep, 120
 
 
-if (!A_LastError) ; uses last found window
+if (!retVal)
 {
-if (WinExist("PrgLnch_Help"))
+
+	if (WinExist("PrgLnch_Help"))
 	{
 	;if  not maximised
 	WinGet, tmp, MinMax
 	;Tablet mode perhaps? https://autohotkey.com/boards/viewtopic.php?f=6&t=15619
 	;We are launching as "normal" but just in case this is overidden by user modifying shortcut properties. (probably not)
-	if (!tmp)
-	{
-	WinRestore
-	sleep, 120
-	}
+		if (tmp)
+		WinRestore
 	WinGetPos, , , , tmp
-		if (y > tmp)
-		WinMove, , , x, % y - tmp, w
-		else
-		WinMove, , , x, % tmp - y, w
+	sleep, 60
+	SysGet, md, MonitorWorkArea, % GetPrgLnchMonNum(1)
+	dx := Round(mdleft + (mdRight- mdleft)/2)
+	dy := Round(mdTop + (mdBottom - mdTop)/2)
+
+	WinMove, A , , % mdRight - w, % mdTop, %w%, Floor(3*h/4)
+
 	}
 }
-return A_LastError 
+return retVal
+}
+GetPrgLnchMonNum(fromMouse := 0)
+{
+iDevNumb := 9, monitorHandle := 0,  MONITOR_DEFAULTTONULL := 0, strTemp := ""
+VarSetCapacity(monitorInfo, 40)
+NumPut(40, monitorInfo)
+
+
+hWnd := ListBoxProps.Hwnd()
+	if (!hWnd)
+	{
+	MsgBox, 8192, , % "Cannot get handle of Script! Error: " A_LastError
+	VarSetCapacity(monitorInfo, 0)
+	Return -1
+	}
+	;winHandle := WinExist("A") ; LastWindow: The PrgLnch Window if clicked on
+
+	; Assume her  primaryMonitor is"1"
+
+	if (fromMouse)
+	{
+	strTmp := A_CoordModeMouse
+	CoordMode, Mouse, Screen
+	MouseGetPos, x, y
+	CoordMode, Mouse, % strTmp
+	}
+	else
+	{
+		if (monitorHandle := DllCall("MonitorFromWindow", "uint", hWnd, "uint", MONITOR_DEFAULTTONULL)) 
+			&& DllCall("GetMonitorInfo", "uint", monitorHandle, "uint", &monitorInfo) 
+		{
+		msLeft :=		NumGet(monitorInfo, 4, "Int")
+		msTop := 		NumGet(monitorInfo, 8, "Int")
+		msRight := 		NumGet(monitorInfo, 12, "Int")
+		msBottom := 	NumGet(monitorInfo, 16, "Int")
+		mswLeft := 		NumGet(monitorInfo, 20, "Int")
+		mswTop := 		NumGet(monitorInfo, 24, "Int")
+		mswRight := 	NumGet(monitorInfo, 28, "Int")
+		mswBottom :=	NumGet(monitorInfo, 32, "Int")
+		mswPrimary :=	NumGet(monitorInfo, 36, "Int") & 1
+		}
+	}
+
+	; GetMonitorIndexFromWindow(windowHandle)
+
+	Loop %iDevNumb%
+	{
+		SysGet, mt, Monitor, %A_Index%
+
+		; Compare location to determine the monitor index.
+		if (fromMouse)
+		{
+			if (x >= mtLeft && x <= mtRight && y <= mtBottom && y >= mtTop)
+			{
+
+			msI := A_Index
+			break
+			}
+		}
+		else
+		{
+			if ((msLeft = mtLeft) and (msTop = mtTop)
+				and (msRight = mtRight) and (msBottom = mtBottom))
+			{
+			msI := A_Index
+			break
+			}
+		}
+	}
+
+
+VarSetCapacity(monitorInfo, 0)
+	if (msI)
+	return msI
+	else ; should never get here
+	{
+	strTemp := "Cannot retrieve Monitor info from the"
+		if (fromMouse)
+		MsgBox, 8192, , %strTemp% mouse cursor!
+		else
+		MsgBox, 8192, , %strTemp% target window!
+	return 1 ;hopefully this monitor is the one!
+	}
 }

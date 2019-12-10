@@ -2329,7 +2329,7 @@ else
 
 					SelIniChoiceName = PrgLnch
 					; Update all ini files
-					UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames, temp)
+					UpdateAllIni(PrgNo, iniSel, PrgLnchIni, SelIniChoiceName, IniChoiceNames, temp)
 					RestartPrgLnch(0, SelIniChoiceName, iniTxtPadChoice)
 					}
 				}
@@ -2338,7 +2338,7 @@ else
 			{
 				if (FileExist(iniTxtPadChoice . ".ini"))
 				{
-				UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, iniTxtPadChoice, IniChoiceNames, fTemp)
+				UpdateAllIni(PrgNo, iniSel, PrgLnchIni, iniTxtPadChoice, IniChoiceNames, fTemp)
 				RestartPrgLnch(0, iniTxtPadChoice)
 				}
 				else
@@ -2428,9 +2428,9 @@ GoConfigTxt = Prg Config
 Return retVal
 }
 
-UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchIni, SelIniChoiceName, IniChoiceNames, DefPresetSettings := 0) ; won't allow A_Space
+UpdateAllIni(PrgNo, iniSel, PrgLnchIni, SelIniChoiceName, IniChoiceNames, DefPresetSettings := 0) ; won't allow A_Space
 {
-spr := "", strTemp := "", fTemp := 0
+spr := "", strTemp := ""
 IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
 	strTemp := % (SelIniChoiceName = "Ini" . iniSel)? A_Space: SelIniChoiceName
@@ -2524,7 +2524,7 @@ if (iniSel)
 	foundPos := InStr(strIniChoice, "|", false, foundPos + 1)
 	strIniChoice := spr . SubStr(strIniChoice, foundPos)
 
-	UpdateAllIni(PrgNo, iniSel, SelIniChoicePath, PrgLnchPath, SelIniChoiceName, IniChoiceNames)
+	UpdateAllIni(PrgNo, iniSel, PrgLnchPath, SelIniChoiceName, IniChoiceNames)
 }
 else ; Read in names
 {
@@ -3455,22 +3455,22 @@ sleep, 120
 
 if (!A_LastError) ; uses last found window
 {
-if (WinExist("PrgLnch_Help"))
+	if (WinExist("PrgLnch_Help"))
 	{
 	;if  not maximised
 	WinGet, temp, MinMax
 	;Tablet mode perhaps? https://autohotkey.com/boards/viewtopic.php?f=6&t=15619
 	;We are launching as "normal" but just in case this is overidden by user modifying shortcut properties. (probably not)
-	if (!temp)
-	{
-	WinRestore
-	sleep, 120
-	}
+		if (!temp)
+		{
+		WinRestore
+		sleep, 60
+		}
 	WinGetPos, , , , temp
 		if (y > temp)
-		WinMove, , , x, % y - temp, w
+		WinMove, , , %x%, % y - temp, %w%
 		else
-		WinMove, , , x, % temp - y, w
+		WinMove, , , %x%, % temp - y, %w%
 	}
 }
 return A_LastError 
@@ -6101,8 +6101,9 @@ if (lnchPrgIndex > 0) ;Running
 	temp := (PrgRnPriority[lnchPrgIndex])
 	(!temp)? PrgPrty := "B": (temp = 1)? PrgPrty := "H": PrgPrty := "N"
 
-	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
+
+	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
 	strRetVal := (IsaPrgLnk)? AssocQueryApp(PrgPaths): PrgPaths
 
@@ -6112,13 +6113,14 @@ if (lnchPrgIndex > 0) ;Running
 		If (IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex])
 		IsaPrgLnk := 0
 
-		if ((!IsaPrgLnk))
+		if (!IsaPrgLnk)
 		{
 		; Easiest way to get working dir for assoications
 		SplitPath, PrgPaths,, wkDir
 		PrgPaths := AssocQueryApp(PrgPaths)
 		}
 	}
+
 
 	if (!FileExist(PrgPaths))
 	{
@@ -6140,6 +6142,10 @@ if (lnchPrgIndex > 0) ;Running
 		Return % strRetVal
 
 		}
+
+	;Special case for scr
+	If (IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex] && Instr(PrgPaths, ".scr", , Strlen(PrgPaths) - 4), Strlen(PrgPaths))
+	PrgPaths := "*Config " . PrgPaths
 
 	If (((IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex]) || !IsaPrgLnk) && PrgCmdLine[lnchPrgIndex])
 	PrgPaths := PrgPaths . A_Space . "" . PrgCmdLine[lnchPrgIndex] . ""
@@ -6204,9 +6210,10 @@ if (lnchPrgIndex > 0) ;Running
 			}
 		}
 
+
 ;try
 ;{
-		Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: wkDir, % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
+		Run, %PrgPaths%, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: wkDir, % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
 
 ;}
 ;catch temp
@@ -6301,7 +6308,7 @@ if (lnchPrgIndex > 0) ;Running
 				try
 				{
 				fTemp := 1
-				WinMove, ahk_pid%PrgPIDtmp%, , dx, dy, w, h
+				WinMove, ahk_pid%PrgPIDtmp%, , %dx%, %dy%, %w%, %h%
 				}
 				catch
 				{
@@ -6326,8 +6333,8 @@ if (lnchPrgIndex > 0) ;Running
 		}
 	}
 
-	; Prevents cursor from reverting to primary if PrgLnch not primary
-	if (!fTemp && PrgLnchMon != primaryMon)
+	; Prevents cursor from reverting to primary if PrgLnchMon not primary
+	if (!fTemp && PrgLnchMon != primaryMonprimaryMon)
 	{
 	dx := Round(x + w/2)
 	dy := Round(y + y/2)
@@ -6376,7 +6383,7 @@ if (lnchPrgIndex > 0) ;Running
 ;try
 ;{
 
-	Run, % PrgPaths, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: wkDir, % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
+	Run, %PrgPaths%, % (IsaPrgLnk)? PrgLnkInf[lnchPrgIndex]: wkDir, % "UseErrorLevel" ((IsaPrgLnk)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
 
 ;}
 ;catch temp
@@ -6479,7 +6486,7 @@ if (lnchPrgIndex > 0) ;Running
 
 			try
 			{
-			WinMove, ahk_pid%PrgPIDtmp%, , dx, dy, w, h
+			WinMove, ahk_pid%PrgPIDtmp%, , %dx%, %dy%, %w%, %h%
 			}
 			catch
 			{
@@ -7061,7 +7068,7 @@ WinMover(PrgLnchOpt.Hwnd(), "d r")
 	Gui, PrgLnchOpt: Show,, % PrgLnchOpt.Title
 }
 
-	if (!waitBreak && presetNoTest < 2)
+	if (!waitBreak && presetNoTest = 1)
 	{
 	SysGet, md, MonitorWorkArea, % PrgLnchMon
 	dx := Round(mdleft + (mdRight- mdleft)/2)
@@ -7477,12 +7484,13 @@ Return retVal
 
 GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, ByRef primaryMon, fromMouse := 0)
 {
-	iDevNumb := 0, monitorHandle := 0,  MONITOR_DEFAULTTONULL := 0, strTemp := ""
-	VarSetCapacity(monitorInfo, 40)
-	NumPut(40, monitorInfo)
+iDevNumb := 0, monitorHandle := 0,  MONITOR_DEFAULTTONULL := 0, strTemp := ""
+VarSetCapacity(monitorInfo, 40)
+NumPut(40, monitorInfo)
 
 
-	hWnd := PrgLnchOpt.Hwnd()
+hWnd := PrgLnchOpt.Hwnd()
+
 	If (!hWnd)
 	{
 	MsgBox, 8192, , % "Cannot get handle of Script! Error: " A_LastError
@@ -7525,46 +7533,46 @@ GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, ByRef primaryMon, fromMouse := 0)
 		}
 	}
 
-		; GetMonitorIndexFromWindow(windowHandle)
+	; GetMonitorIndexFromWindow(windowHandle)
 
-		Loop %iDevNumb%
+	Loop %iDevNumb%
+	{
+		SysGet, mt, Monitor, %A_Index%
+
+		; Compare location to determine the monitor index.
+		if (fromMouse)
 		{
-			SysGet, mt, Monitor, %A_Index%
-
-			; Compare location to determine the monitor index.
-			if (fromMouse)
+			if (x >= mtLeft && x <= mtRight && y <= mtBottom && y >= mtTop)
 			{
-				if (x >= mtLeft && x <= mtRight && y <= mtBottom && y >= mtTop)
-				{
 
-				msI := A_Index
-				break
-				}
-			}
-			else
-			{
-				if ((msLeft = mtLeft) and (msTop = mtTop)
-					and (msRight = mtRight) and (msBottom = mtBottom))
-				{
-				msI := A_Index
-				break
-				}
+			msI := A_Index
+			break
 			}
 		}
+		else
+		{
+			if ((msLeft = mtLeft) and (msTop = mtTop)
+				and (msRight = mtRight) and (msBottom = mtBottom))
+			{
+			msI := A_Index
+			break
+			}
+		}
+	}
 
 
 VarSetCapacity(monitorInfo, 0)
-if (msI)
-return msI
-else ; should never get here
-{
-strTemp := "Cannot retrieve Monitor info from the"
-	if (fromMouse)
-	MsgBox, 8192, , %strTemp% mouse cursor!
-	else
-	MsgBox, 8192, , %strTemp% target window!
-return 1 ;hopefully this monitor is the one!
-}
+	if (msI)
+	return msI
+	else ; should never get here
+	{
+	strTemp := "Cannot retrieve Monitor info from the"
+		if (fromMouse)
+		MsgBox, 8192, , %strTemp% mouse cursor!
+		else
+		MsgBox, 8192, , %strTemp% target window!
+	return 1 ;hopefully this monitor is the one!
+	}
 
 }
 GetPrgLnkVal(strTemp, IniFileShortctSep, ProcessLnk := 0, resolveNow := 0)
@@ -7595,13 +7603,15 @@ strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
 			else
 			{
 			strTemp2 := SubStr(strTemp, IsALnk + 1)
-				if (strTemp2 != strRetVal && !strTemp2)
+				if (strTemp2 != strRetVal)
 				MsgBox, 8192, , % "Shortcut target`n" strRetVal "`nhas been updated"
+			;FileGetShortcut may not error if not lnk
+			SplitPath, strRetVal, , strRetVal
 			}
 		}
 		else
 		{
-		FileGetShortcut, %strTemp2%, ,strRetVal
+		FileGetShortcut, %strTemp2%, , strRetVal
 			if (strRetVal) ; PrgLnkInf receives the working dir of resolved lnk: Review the terminating backslash!
 			strRetVal := ParseEnvVars(strRetVal) . "\"
 			else ; else; Regular Prgs get here. Note use of Errorlevel for the special location lnks
@@ -7926,7 +7936,7 @@ WinGet, S, Style, ahk_pid%PrgPID%
 	; Remove borders
 	winSet, Style, % -PrgStyleTmp, ahk_pid%PrgPID%
 	sleep 30
-	WinMove, ahk_pid%PrgPID%, , dx, dy, scrWidth, scrHeight
+	WinMove, ahk_pid%PrgPID%, , %dx%, %dy%, %scrWidth%, %scrHeight%
 	}
 	else
 	{
@@ -7935,7 +7945,7 @@ WinGet, S, Style, ahk_pid%PrgPID%
 	WinGetPos, x, y, w, h, ahk_pid%PrgPID%
 		if (!PrgPos[3])
 		PrgPos[1] := x, PrgPos[2] := y, PrgPos[3] := w, PrgPos[4] := h
-	WinMove, ahk_pid%PrgPID%,, PrgPos[1], PrgPos[2], PrgPos[3], PrgPos[4]
+	WinMove, ahk_pid%PrgPID%,, % PrgPos[1], % PrgPos[2], % PrgPos[3], % PrgPos[4]
 	; Return to original position & maximize if required
 		if (PrgMinMaxVar)
 		WinMaximize, ahk_pid%PrgPID%
@@ -9633,17 +9643,16 @@ if (!FileExistSelIniChoicePath)
 		;for  each PrgChoicePaths[%A_Index%]
 		if (reWriteini)
 		{
-		spr := PrgChoicePaths[A_Index]
-		if (spr)
-		{
-			if (InStr(spr, ".lnk", False, StrLen(spr) - 4))
-				{
-				;Append resolved path
-				strRetVal := GetPrgLnkVal(spr, IniFileShortctSep)
-					if (LNKFlag(strRetVal) && InStr(strRetVal, "|"))
-					PrgChoicePaths[A_Index] .= (!InStr(PrgChoicePaths[A_Index], IniFileShortctSep))? IniFileShortctSep: . strRetVal
-				}
-		}
+			if (spr := PrgChoicePaths[A_Index])
+			{
+				if (InStr(spr, ".lnk", False, StrLen(spr) - 4))
+					{
+					;Append resolved path
+					strRetVal := GetPrgLnkVal(spr, IniFileShortctSep)
+						if (LNKFlag(strRetVal) && InStr(strRetVal, "|"))
+						PrgChoicePaths[A_Index] .= (!InStr(PrgChoicePaths[A_Index], IniFileShortctSep))? IniFileShortctSep: . strRetVal
+					}
+			}
 		}
 		IniWrite, % (PrgChoicePaths[A_Index])? PrgChoicePaths[A_Index]: A_Space, %SelIniChoicePath%, Prg%A_Index%, PrgPath
 
@@ -10631,15 +10640,15 @@ WinGetPos,, propY,, propH, % "ahk_id" PrgPropertiesHwnd
 
 
 	if (tempBottom - y > tempBottom - propH)
-	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % propH - y, w
+	WinMove, % "ahk_id" PrgPropertiesHwnd, , %x%, % propH - y, %w%
 	else
-	WinMove, % "ahk_id" PrgPropertiesHwnd, , x, % y - propH, w
+	WinMove, % "ahk_id" PrgPropertiesHwnd, , %x%, % y - propH, %w%
 
 
 
 ;For low screen res 
 if (propH + h > (tempBottom - tempTop))
-	WinMove, % "ahk_id" PrgPropertiesHwnd, , , tempBottom, , % tempBottom - tempTop
+	WinMove, % "ahk_id" PrgPropertiesHwnd, , , %tempBottom%, , % tempBottom - tempTop
 
 DetectHiddenWindows, Off
 
