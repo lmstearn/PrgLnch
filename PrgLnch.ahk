@@ -2,7 +2,7 @@
 ;AutoHotkey /Debug C:\Users\New\Desktop\Desktemp\PrgLnch\PrgLnch.ahk
 #SingleInstance, force
 #NoEnv  ; Performance and compatibility with future AHK releases.
-#Warn, All, OutputDebug ; Enable warnings for a debugger to display to assist with detecting common errors.
+;#Warn, All, OutputDebug ; Enable warnings for a debugger to display to assist with detecting common errors.
 ;#Warn UseUnsetLocal, OutputDebug  ; Warn when a local variable is used before it's set; send to OutputDebug
 #MaxMem 256
 #MaxThreads 5
@@ -814,7 +814,7 @@ else
 
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
 	GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
-	borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, 1)
+	borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
 	TogglePrgOptCtrls(txtPrgChoice, navShortcut, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
 	GuiControl, PrgLnchOpt: , DefaultPrg, 1
 	}
@@ -4046,7 +4046,7 @@ Return
 
 PrgLAARn:
 Tooltip
-DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep)
+DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
 Return
 
 UpdturlPrgLnchText:
@@ -4609,7 +4609,7 @@ else
 				GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
 				GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
-				borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, 1)
+				borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
 				TogglePrgOptCtrls(txtPrgChoice, navShortcut, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
 
 				GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
@@ -4978,7 +4978,7 @@ GuiControl, PrgLnchOpt: Enable, DefaultPrg
 GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 
 
-borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, 1)
+borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
 
 TogglePrgOptCtrls(txtPrgChoice, navShortcut, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1, InStr(PrgLnkInf[selPrgChoice], "\", false, StrLen(PrgLnkInf[selPrgChoice])) || InStr(PrgLnkInf[selPrgChoice], "|"))
 
@@ -5019,7 +5019,7 @@ strTemp2 := ""
 
 	if (PrgChoicePaths[selPrgChoice])
 	{
-	MsgBox, 8195, Prg Replacement, % "Replace existing Prg and PrgName info with the following file?`n" strTemp2 "`n`nYes: Replace both.`nNo: Replace existing Prg, but keep the current Prg Name.`nCancel: Do nothing."
+	MsgBox, 8195, Prg Replacement, % "Replace existing Prg and PrgName info with the following file?`n`n" . """" . strTemp . """" . "`n`nYes: Replace both.`nNo: Replace existing Prg, but keep the current Prg Name.`nCancel: Do nothing."
 		IfMsgBox, Yes
 		SplitPath, strTemp, , , , txtPrgChoice
 		Else
@@ -5243,8 +5243,7 @@ if (!UrlDisableGui)
 {
 PrgPth := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
-
-	if (!FileExist(PrgPth) || InStr(PrgPth, "BadPath", True, 1, 7) || (IsRealExecutable(PrgPth) = -1))
+	if (!FileExist(PrgPth) || InStr(PrgPth, "BadPath", True, 1, 7) || PrgLnkInf[selPrgChoice] = "|*" || (IsRealExecutable(PrgPth) = -1))
 	{
 	; Can happen if the file is in sysdir and/or has restricted access
 	GuiControl, PrgLnchOpt:, UpdturlPrgLnch
@@ -5494,7 +5493,10 @@ Static OwnerHwnd := 0
 		SetTimer, TooltipTimer, 120
 		}
 		else
+		{
 		ToolTip, %tooltipText%, 0, 0
+		OwnerHwnd := 0
+		}
 	}
 }
 
@@ -6134,13 +6136,24 @@ if (lnchPrgIndex > 0) ;Running
 	if (FileExist(PrgPaths))
 	;If Notepad, copy Notepad exe to  %A_ScriptDir% and it will not run! (Windows 10 1607)
 	{
-	strRetVal := WorkingDirectory(PrgPaths, 1)
-		If (strRetVal)
-		{
-			if (disableRedirect)
-			DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-		Return % strRetVal
 
+		if (IsaPrgLnk)
+			FileGetAttrib, strRetVal, % PrgLnkInf[lnchPrgIndex]
+				if (!InStr(strRetVal, "D"))
+				{
+				SplitPath, % PrgLnkInf[lnchPrgIndex], , strRetVal
+				PrgLnkInf[lnchPrgIndex] := strRetVal
+				}
+		else
+		{
+		; In most cases wkDir is null, so set the working directory as the Prg location
+		strRetVal := WorkingDirectory(PrgPaths, 1)
+			If (strRetVal)
+			{
+				if (disableRedirect)
+				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+			Return % strRetVal
+			}
 		}
 
 	;Special case for scr
@@ -6149,6 +6162,8 @@ if (lnchPrgIndex > 0) ;Running
 
 	If (((IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex]) || !IsaPrgLnk) && PrgCmdLine[lnchPrgIndex])
 	PrgPaths := PrgPaths . A_Space . "" . PrgCmdLine[lnchPrgIndex] . ""
+
+msgbox % PrgLnkInf[lnchPrgIndex]
 
 	if (targMonitorNum = PrgLnchMon)
 	{
@@ -6202,7 +6217,7 @@ if (lnchPrgIndex > 0) ;Running
 
 		if (Instr(PrgPaths, "DOSBox.exe"))
 		{
-			if (!(InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInf[lnchPrgIndex])))
+			if (!(InitDOSBoxGameDir(PrgPaths)))
 			{
 				if (disableRedirect) ; doubt it for DOSBox- just to be sure
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
@@ -6268,7 +6283,7 @@ if (lnchPrgIndex > 0) ;Running
 
 
 		if (Instr(PrgPaths, "DOSBox.exe"))
-		InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInf[lnchPrgIndex], 1)
+		InitDOSBoxGameDir(PrgPaths, 1)
 
 
 	Process, Priority, PrgPIDtmp, % PrgPrty
@@ -6334,8 +6349,9 @@ if (lnchPrgIndex > 0) ;Running
 	}
 
 	; Prevents cursor from reverting to primary if PrgLnchMon not primary
-	if (!fTemp && PrgLnchMon != primaryMonprimaryMon)
+	if (!fTemp && PrgLnchMon != primaryMon)
 	{
+
 	dx := Round(x + w/2)
 	dy := Round(y + y/2)
 	DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
@@ -6373,7 +6389,7 @@ if (lnchPrgIndex > 0) ;Running
 
 		if (Instr(PrgPaths, "DOSBox.exe"))
 		{
-			if (!(InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInf[lnchPrgIndex])))
+			if (!(InitDOSBoxGameDir(PrgPaths)))
 			{
 				if (disableRedirect) ; doubt it for DOSBox- just to be sure
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
@@ -6436,7 +6452,7 @@ if (lnchPrgIndex > 0) ;Running
 		}
 
 		if (Instr(PrgPaths, "DOSBox.exe"))
-		InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInf[lnchPrgIndex], 1)
+		InitDOSBoxGameDir(PrgPaths, 1)
 
 	Process, Priority, PrgPIDtmp, % PrgPrty
 
@@ -6644,7 +6660,7 @@ Return 0
 }
 
 
-InitDOSBoxGameDir(PrgPaths, IsaPrgLnk, PrgLnkInflnchPrgIndex, InitDOSBoxGame := 0)
+InitDOSBoxGameDir(PrgPaths, InitDOSBoxGame := 0)
 {
 Static mountedDrive := "", DOSBoxVer := "", gameDir := ""
 if (InitDOSBoxGame)
@@ -6695,10 +6711,7 @@ if (InitDOSBoxGame)
 	gameDir := ""
 	; first check entry in conf- "supposed to "take care" of micro versioning
 
-		if (IsaPrgLnk)
-		FileGetVersion, DOSBoxVer, % PrgLnkInflnchPrgIndex
-		else
-		FileGetVersion, DOSBoxVer, % PrgPathNoCmdLine
+	FileGetVersion, DOSBoxVer, % PrgPathNoCmdLine
 
 		if (ErrorLevel)
 		Return
@@ -7606,7 +7619,6 @@ strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
 				if (strTemp2 != strRetVal)
 				MsgBox, 8192, , % "Shortcut target`n" strRetVal "`nhas been updated"
 			;FileGetShortcut may not error if not lnk
-			SplitPath, strRetVal, , strRetVal
 			}
 		}
 		else
@@ -9103,7 +9115,7 @@ Local strTemp2 := ""
 	}
 }
 
-DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, IniFileShortctSep, checkSubSys := 0)
+DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, checkSubSys := 0)
 {
 sizeOfOptionalHeader := 0, e_lfanew := 0, e_magic := 0, ntHeaders32 := 0, temp := 0, IsaPrgLnk := 0
 
@@ -9133,10 +9145,10 @@ IMAGE_FILE_DLL := 0x2000
 IMAGE_FILE_UP_SYSTEM_ONLY := 0x4000 ; What's an UP machine?
 IMAGE_FILE_BYTES_REVERSED_HI := 0x8000 ;obsolete
 
-if (!(exeStr := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)))
+if (!(exeStr := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)))
 Return
 
-	if (!fileExist(exeStr) || InStr(exeStr, "BadPath", True, 1, 7) || IsaPrgLnk || InStr(PrgLnkInf[selPrgChoice], "|") || (IsRealExecutable(exeStr) = -1))
+	if (!fileExist(exeStr) || InStr(exeStr, "BadPath", True, 1, 7) || (!PrgResolveShortcut[selPrgChoice] && IsaPrgLnk) || InStr(PrgLnkInf[selPrgChoice], "|") || (IsRealExecutable(exeStr) = -1))
 	Return
 	else
 	exeStr := AssocQueryApp(exeStr)
