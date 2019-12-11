@@ -1,5 +1,6 @@
 ﻿#SingleInstance, force
 #NoEnv  ; Performance and compatibility with future AHK releases.
+#Warn, All, OutputDebug
 ;#Warn, All , MsgBox ; Enable warnings to assist with detecting common errors.
 SendMode Input  ; Recommended for new scripts due to superior speed & reliability.
 ; SetBatchLines, -1  ; affects CPU utilization... script will run at max speed
