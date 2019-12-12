@@ -5243,7 +5243,7 @@ if (!UrlDisableGui)
 {
 PrgPth := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
-	if (!FileExist(PrgPth) || InStr(PrgPth, "BadPath", True, 1, 7) || PrgLnkInf[selPrgChoice] = "|*" || (IsRealExecutable(PrgPth) = -1))
+	if (!FileExist(PrgPth) || InStr(PrgPth, "BadPath", True, 1, 7) || PrgLnkInf[selPrgChoice] = "|*" || (IsRealExecutable(PrgPth) < 1))
 	{
 	; Can happen if the file is in sysdir and/or has restricted access
 	GuiControl, PrgLnchOpt:, UpdturlPrgLnch
@@ -5389,7 +5389,7 @@ AssocQueryApp(prgPath)
 {
 SplitPath, prgPath, , , Ext
 ;exe, com ,scr:  "real" executables
-	if (IsRealExecutable(PrgPath) > -1)
+	if (IsRealExecutable(PrgPath))
 	strPrg := prgPath
 	else
 	{
@@ -9154,7 +9154,6 @@ Return
 
 exeStrOld := exeStr
 SplitPath, exeStrOld, exeStrOld
-
 
 ;FileOpen returns an object
 exeStr := FileOpen(exeStr, "rw" "-rwd")
