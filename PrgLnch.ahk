@@ -5537,7 +5537,7 @@ CoordMode, Mouse, % strTemp
 		{
 		w := A_ScreenWidth - w
 		h := A_ScreenHeight - h
-		;msgbox % " w " w " h " h " Title " winTitle
+
 			if ((x > w) && (y > h))
 			WinMove, ,%winTitle%, %w%, %h%
 			else
@@ -6163,7 +6163,6 @@ if (lnchPrgIndex > 0) ;Running
 	If (((IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex]) || !IsaPrgLnk) && PrgCmdLine[lnchPrgIndex])
 	PrgPaths := PrgPaths . A_Space . "" . PrgCmdLine[lnchPrgIndex] . ""
 
-msgbox % PrgLnkInf[lnchPrgIndex]
 
 	if (targMonitorNum = PrgLnchMon)
 	{

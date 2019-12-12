@@ -19,6 +19,7 @@ Class ListBoxProps
 	Static LB_GETSELCOUNT := 0x190
 	Static LB_GETSELITEMS := 0x191
 	Static LB_GETCARETINDEX := 0x19F
+	Static LB_SETSEL := 0x185
 	Static LB_GETSEL := 0x187
 	Static sizeOfDWORD := 4
 	Static LB_ERR := -1
@@ -112,6 +113,22 @@ Class ListBoxProps
 		else
 		Return -tmp
 	}
+	Down()
+	{
+	tmp := this.GetOneItem()
+		if (tmp = this.prgNo)
+		SendMessage, % this.LB_SETSEL, True, 0, , % "ahk_id" this._hWnd
+		else
+		SendMessage, % this.LB_SETSEL, True, %tmp%, , % "ahk_id" this._hWnd
+	}
+	Up()
+	{
+	tmp := this.GetOneItem()
+		if (tmp = 1)
+		SendMessage, % this.LB_SETSEL, True, % this.prgNo - 1, , % "ahk_id" this._hWnd
+		else
+		SendMessage, % this.LB_SETSEL, True, % tmp - 2, , % "ahk_id" this._hWnd
+	}
 }
 
 
@@ -160,10 +177,10 @@ currDrive := ""
 tmp := 0
 i := 0
 
-prgName1 := ["Wrye Bash", "ModOrganizer", "Performance Monitor", "xEdit", "", "", "", "", "", "", "", ""]
+prgName1 := ["Wrye Mash", "MLOX", "TESTool", "Bsa Browser", "MWEdit", "MMOG", "TESAME", "TESPCD", "TES Dependency TK", "MEN Combat MG", "TESFiles 3.1", "Groundcover GP"]
 prgName2 := ["Wrye Bash", "ModOrganizer", "BOSS", "Construction Set Extender", "xEdit", "BSA Commander", "Multi Purpose Gui", "Landscape LOD generator", "NifSkope", "TES4LODGen", "DDSOpt", "MergePlugins"]
 prgName3 := ["Wrye Bash", "ModOrganizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "DynDOLOD", "NifSkope.exe", "Skyrim Performance Monitor", "xTranslator", "hkxcmd", "SSELODGen"]
-prgExe1 := ["Wrye Bash.exe", "ModOrganizer.exe", "PerformanceMonitor.exe", "MWEdit.exe", "", "", "", "", "", "", "", ""]
+prgExe1 := ["Wrye Mash.exe", "mlox.exe", "TESTool.exe", "BSA Browser.exe", "MWEdit.exe", "mmog.exe", "TES Advanced Mod Editor.exe", "tespcdv031.exe", "TESDTK.exe", "MENCMG.exe", "TESFiles.exe", "Grass.exe"]
 prgExe2 := ["Wrye Bash.exe", "ModOrganizer.exe", "BOSS.exe", "TESConstructionSetOld.exe", "TES4Edit.exe", "bsacmd.exe", "mpgui.exe", "tes4ll.exe", "NifSkope.exe", "TES4LODGen.exe", "DDSOpt X*.exe", "MergePlugins.exe"]
 prgExe3 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "SSEEdit.exe", "bae.exe", "BodySlide*.exe", "DynDOLOD.exe", "NifSkope.exe", "PerformanceMonitor.exe", "xTranslator*.exe", "hkxcmd.exe", "SSELODGen.exe"]
 prgPath1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
@@ -175,9 +192,9 @@ prgPath3bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl3 := ["", "", "", "", "", "", "", "", "", "", "", ""]
-prgInfUrl1 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io/", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrim/mods/49015", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrim/mods/6491", "https://www.nexusmods.com/skyrimspecialedition/mods/134/", "https://www.nexusmods.com/skyrim/mods/83200", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
-prgInfUrl2 := ["https://www.nexusmods.com/oblivion/mods/22368", "https://github.com/ModOrganizer2/modorganizer", "https://boss-developers.github.io/", "https://www.nexusmods.com/oblivion/mods/36370", "http://tes5edit.github.io", "https://www.nexusmods.com/oblivion/mods/3311", "https://www.nexusmods.com/oblivion/mods/41447", "https://www.nexusmods.com/oblivion/mods/40549", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/oblivion/mods/15781", "https://www.nexusmods.com/skyrim/mods/5755", "https://github.com/matortheeternal/merge-plugins"]
-prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io/", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrim/mods/49015", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrim/mods/6491", "https://www.nexusmods.com/skyrimspecialedition/mods/134/", "https://www.nexusmods.com/skyrim/mods/83200", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
+prgInfUrl1 := ["https://github.com/Wrye-Code-Collection/Wrye-Mash/releases", "https://www.nexusmods.com/morrowind/mods/43001", "http://web.archive.org/web/20040617055545/http://www34.brinkster.com/ghostwheel/TESTool.htm", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "http://mwedit.sourceforge.net", "http://abitoftaste.altervista.org/morrowind/index2.php?option=downloads&no_comp=1&no_html=1&task=download&id=53&Itemid=50&-download-MMOG-Morrowind-Merged-Objects-Generator", "http://mw.modhistory.com/download-95-5289", "https://www.nexusmods.com/morrowind/mods/3874", "https://www.nexusmods.com/morrowind/mods/304", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=63&Itemid=50&-MEN-Combat-Merged-Generator", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=90&Itemid=50&-TESFiles-3-1", "http://www.nexusmods.com/morrowind/mods/43907"]
+prgInfUrl2 := ["https://www.nexusmods.com/oblivion/mods/22368", "https://github.com/ModOrganizer2/modorganizer", "https://boss-developers.github.io", "https://www.nexusmods.com/oblivion/mods/36370", "http://tes5edit.github.io", "https://www.nexusmods.com/oblivion/mods/3311", "https://www.nexusmods.com/oblivion/mods/41447", "https://www.nexusmods.com/oblivion/mods/40549", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/oblivion/mods/15781", "https://www.nexusmods.com/skyrim/mods/5755", "https://github.com/matortheeternal/merge-plugins"]
+prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrim/mods/49015", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrim/mods/6491", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrim/mods/83200", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
 listboxIndices := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 WS_CLIPSIBLINGS := 0x4000000
 WS_EX_TOPMOST := 0x8
@@ -289,7 +306,7 @@ CtlColors.Attach(addToLnchPadHwnd, Red, "White")
 
 Gui, Add, Tab2, x0 y0 w%thisguiW% h%thisguiH% vLnchPadTab gLnchPadTab AltSubmit HWNDLnchPadTabHwnd, % substr(gameListStr, 1, StrLen(gameListStr) - 1)
 
-Gui Show, w%thisguiW% h%thisguiH% Hide, LnchPad Setup
+Gui Show, w%thisguiW% h%thisguiH% Hide,
 
 tabguiH := thisguiH - GetTabRibbonHeight(GuiHwnd)
 tabguiW := thisguiW - A_LastError
@@ -1171,6 +1188,21 @@ DllCall( "ReleaseDC", Int,0, UInt,hDC ), S := Round( ( -NumGet( LF,0,"Int" )*72 
 Return DllCall( "MulDiv",Int,&LF+28, Int,1,Int,1, Str ), DllCall( "SetLastError", UInt,S ) ; sneaky way of returning a second value without using function parameters
 }
 
+
+#IfWinActive LnchPad Setup
+{
+Down::
+GuiControlGet, tmp, FocusV
+	if (tmp = (tmp := PrgIndex%tabStat%))
+	ListBoxProps.Down()
+Return
+Up::
+GuiControlGet, tmp, FocusV
+	if (tmp = (tmp := PrgIndex%tabStat%))
+	ListBoxProps.Up()
+Return
+}
+
 ~RButton::
 
 	While(getKeyState("RButton", "P"))
@@ -1181,6 +1213,19 @@ Return DllCall( "MulDiv",Int,&LF+28, Int,1,Int,1, Str ), DllCall( "SetLastError"
 		{
 		GuiControlGet, tmp, , LnchPadTab
 		Tooltip % "info on item number " LBEX_ItemFromCursor(PrgIndex%tmp%Hwnd) " for " gameList[TabStat] "."
+/*
+if (ItemHandle = overWriteIniHwnd)
+retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "overWriteExisting")
+
+if (retVal) ; error
+{
+	if (retVal < 0)
+	MsgBox, 8192, , Could not find the Help file. Has it, or the script been moved?
+	else
+	MsgBox, 8192, , There is a problem with the help file. Code: %retVal%.
+}
+*/
+
 		}
 	}
 Return
