@@ -192,7 +192,7 @@ prgPath3bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl3 := ["", "", "", "", "", "", "", "", "", "", "", ""]
-prgInfUrl1 := ["https://github.com/Wrye-Code-Collection/Wrye-Mash/releases", "https://www.nexusmods.com/morrowind/mods/43001", "http://web.archive.org/web/20040617055545/http://www34.brinkster.com/ghostwheel/TESTool.htm", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "http://mwedit.sourceforge.net", "http://abitoftaste.altervista.org/morrowind/index2.php?option=downloads&no_comp=1&no_html=1&task=download&id=53&Itemid=50&-download-MMOG-Morrowind-Merged-Objects-Generator", "http://mw.modhistory.com/download-95-5289", "https://www.nexusmods.com/morrowind/mods/3874", "https://www.nexusmods.com/morrowind/mods/304", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=63&Itemid=50&-MEN-Combat-Merged-Generator", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=90&Itemid=50&-TESFiles-3-1", "http://www.nexusmods.com/morrowind/mods/43907"]
+prgInfUrl1 := ["https://www.nexusmods.com/morrowind/mods/45439", "https://www.nexusmods.com/morrowind/mods/43001", "http://web.archive.org/web/20040617055545/http://www34.brinkster.com/ghostwheel/TESTool.htm", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "http://mwedit.sourceforge.net", "http://abitoftaste.altervista.org/morrowind/index2.php?option=downloads&no_comp=1&no_html=1&task=download&id=53&Itemid=50&-download-MMOG-Morrowind-Merged-Objects-Generator", "http://mw.modhistory.com/download-95-5289", "https://www.nexusmods.com/morrowind/mods/3874", "https://www.nexusmods.com/morrowind/mods/304", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=63&Itemid=50&-MEN-Combat-Merged-Generator", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=90&Itemid=50&-TESFiles-3-1", "http://www.nexusmods.com/morrowind/mods/43907"]
 prgInfUrl2 := ["https://www.nexusmods.com/oblivion/mods/22368", "https://github.com/ModOrganizer2/modorganizer", "https://boss-developers.github.io", "https://www.nexusmods.com/oblivion/mods/36370", "http://tes5edit.github.io", "https://www.nexusmods.com/oblivion/mods/3311", "https://www.nexusmods.com/oblivion/mods/41447", "https://www.nexusmods.com/oblivion/mods/40549", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/oblivion/mods/15781", "https://www.nexusmods.com/skyrim/mods/5755", "https://github.com/matortheeternal/merge-plugins"]
 prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrim/mods/49015", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrim/mods/6491", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrim/mods/83200", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
 listboxIndices := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -259,7 +259,7 @@ lnchPadPID := DllCall("GetCurrentProcessId")
 
 	if not A_IsAdmin
 	{
-	msgbox, 8196, Run PrgLnch Elevated?, Lnch Pad search requires Admin to work properly.`nReply:`n`nYes: Restart PrgLnch as Admin.`nNo: Try it without Admin.`n
+	msgbox, 8196, Run PrgLnch Elevated?, LnchPad search requires Admin to work properly.`nReply:`n`nYes: Restart PrgLnch as Admin.`nNo: Try it without Admin.`n
 		IfMsgBox, Yes
 		{
 		run *runAs "%A_ScriptFullPath%"  ; Requires v1.0.92.01+
@@ -282,7 +282,7 @@ GuiHwnd := WinExist()
 	}
 
 Gui, Add, Text, x0 y0 Center +E%WS_EX_TOPMOST% gsearchDrive vsearchDrive HWNDsearchDriveHwnd, % "&Search PC for " gameList[1] " Apps"
-Gui, Add, Text, Center gaddToLnchPad vaddToLnchPad HWNDaddToLnchPadHwnd wp, % "&Locate " gameList[1] " Lnch Pad Slot"
+Gui, Add, Text, Center gaddToLnchPad vaddToLnchPad HWNDaddToLnchPadHwnd wp, % "&Locate " gameList[1] " LnchPad Slot"
 
 	loop % maxDrives
 	{
@@ -745,7 +745,7 @@ GuiControlGet, strTmp, , addToLnchPad
 				{
 					if (i > (PrgNo))
 					{
-					Tooltip, % "The Lnch Pad Preset Ini File already exists for " gameList[tabStat] ",`nhowever PrgLnch has no available slots!"
+					Tooltip, % "The LnchPad Preset Ini File already exists for " gameList[tabStat] ",`nhowever PrgLnch has no available slots!"
 					Return
 					}
 					else
@@ -770,10 +770,10 @@ GuiControlGet, strTmp, , addToLnchPad
 			Tooltip, There are no ini files to write to. Cannot continue!
 			Return
 		}
-	guiControl, , addToLnchPad, % "&Add to " gameList[tabStat] " Lnch Pad Slot"
+	guiControl, , addToLnchPad, % "&Add to " gameList[tabStat] " LnchPad Slot"
 
 	}
-	else ; Update Lnch Pad Slots
+	else ; Update LnchPad Slots
 	{
 	strRetVal := ""
 	gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
@@ -848,7 +848,7 @@ GuiControlGet, strTmp, , addToLnchPad
 			; Write updated slots to PrgLnch.ini
 			UpdateAllIni(prgNo, tmp, PrgLnchIniPath, iniNames)
 			else
-			strRetVal := "Lnch Pad Slots full! Cannot continue!"
+			strRetVal := "LnchPad Slots full! Cannot continue!"
 
 		}
 	overWriteIniFile := 0
@@ -856,7 +856,7 @@ GuiControlGet, strTmp, , addToLnchPad
 	GuiControl,, overWriteIni, 0
 	GuiControl, Hide, overWriteIni
 	GuiControl, Hide, UpdateIni
-	guiControl, , addToLnchPad, % "&Locate " gameList[tabStat] " Lnch Pad Slot"
+	guiControl, , addToLnchPad, % "&Locate " gameList[tabStat] " LnchPad Slot"
 		if (strRetVal)
 		Tooltip, % strRetVal
 		else
@@ -990,11 +990,11 @@ oldWrittentoSlotArrayCt := WrittentoSlotArrayCt
 
 	strRetVal := ""
 	if (oldWrittentoSlotArrayCt < prgPathtabStatCt - AllocatedtoSlotArrayCt)
-	strRetVal := "Not all of the " . (prgPathtabStatCt - AllocatedtoSlotArrayCt) . " Prg entries could be written to the Lnch Pad Slot!"
+	strRetVal := "Not all of the " . (prgPathtabStatCt - AllocatedtoSlotArrayCt) . " Prg entries could be written to the LnchPad Slot!"
 	else
 	{
 		if (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt < AllocatedtoSlotArrayCt)
-		strRetVal := "Only " (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt) " of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the Lnch Pad Slot!"
+		strRetVal := "Only " (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt) " of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the LnchPad Slot!"
 	}
 
 
@@ -1022,14 +1022,14 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 			IniWrite, %strTmp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
 			else
 			{
-			MsgBox, 8196, , % "The Lnch Pad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the Lnch Pads. `n"
+			MsgBox, 8196, , % "The LnchPad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the LnchPads. `n"
 				IfMsgBox, No
 				Return
 			}
 
 			if (Errorlevel)
 			{
-			MsgBox, 8196, , % "The following Lnch Pad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the Lnch Pads. `n"
+			MsgBox, 8196, , % "The following LnchPad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the LnchPads. `n"
 				IfMsgBox, No
 				Return
 			}
@@ -1212,10 +1212,14 @@ Return
 		if (InStr(mControl, "Listbox"))
 		{
 		GuiControlGet, tmp, , LnchPadTab
-		Tooltip % "info on item number " LBEX_ItemFromCursor(PrgIndex%tmp%Hwnd) " for " gameList[TabStat] "."
+		{
+		strTmp := LBEX_ItemFromCursor(PrgIndex%tmp%Hwnd)
+		retVal := RunChm("LnchPad Setup`\LnchPad Setup", strTmp)
+		}
+		
 /*
 if (ItemHandle = overWriteIniHwnd)
-retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "overWriteExisting")
+retVal := RunChm("LnchPad Setup`\LnchPad Setup", "overWriteExisting")
 
 if (retVal) ; error
 {
@@ -1409,7 +1413,7 @@ searchStat := 0
 	guiControl, Hide, Drive%A_Index%
 	}
 guiControl, , searchDrive, % "&Search PC for " gameList[tabStat] " Apps"
-GuiControl,, addToLnchPad, % "&Locate " gameList[tabStat] " Lnch Pad Slot"
+GuiControl,, addToLnchPad, % "&Locate " gameList[tabStat] " LnchPad Slot"
 
 overWriteIniFile := 1
 GuiControl,, UpdateIni, 0
@@ -2204,23 +2208,23 @@ local retVal := 0, tmp := 0
 ;HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced >> EnableBalloonTips
 
 if (ItemHandle = searchDriveHwnd)
-retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "SearchDrive")
+retVal := RunChm("LnchPad Setup`\LnchPad Setup", "SearchDrive")
 else
 if (ItemHandle = addToLnchPadHwnd)
-retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "LocateSlot")
+retVal := RunChm("LnchPad Setup`\LnchPad Setup", "LocateSlot")
 else
 if (ItemHandle = UpdateIniHwnd)
-retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "UpdateExisting")
+retVal := RunChm("LnchPad Setup`\LnchPad Setup", "UpdateExisting")
 else
 if (ItemHandle = overWriteIniHwnd)
-retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "overWriteExisting")
+retVal := RunChm("LnchPad Setup`\LnchPad Setup", "overWriteExisting")
 else
 {
 	Loop, % maxGames
 	{
 		if (ItemHandle = PrgIndex%A_Index%Hwnd)
 		{
-		retVal := RunChm("Lnch Pad Setup`\Lnch Pad Setup", "Listbox")
+		retVal := RunChm("LnchPad Setup`\LnchPad Setup", "Listbox")
 		tmp := 1
 		Break
 		}

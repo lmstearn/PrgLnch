@@ -511,7 +511,7 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 	FileInstall PrgLnch.chm, PrgLnch.chm
 	sleep, 300
 	SetTimer, RnChmWelcome, 3500
-	; init Lnch Pad here
+	; init LnchPad here
 	IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 	oldSelIniChoiceName := selIniChoiceName
 	}
@@ -629,7 +629,7 @@ loop % PrgNo
 	else
 	{
 		; PIDs again checked in InitBtchStat later
-		; Point of this is to save the _same_ PIDs when switching Lnch Pad Slots (in case of multiple instances)
+		; Point of this is to save the _same_ PIDs when switching LnchPad Slots (in case of multiple instances)
 
 		batchActive := ProcessActivePrgsAtStart(SelIniChoicePath, PrgNo, PrgLnkInf, PrgChoicePaths, IniFileShortctSep, PrgPIDMast, oldSelIniChoicePath)
 	
@@ -988,7 +988,7 @@ if (SelIniChoiceName = "PrgLnch")
 	else
 	{
 	GuiControl, PrgLnch: Text, IniChoice,
-	SetEditCueBanner(IniChoiceHwnd, "Lnch Pad Slot", 1)
+	SetEditCueBanner(IniChoiceHwnd, "LnchPad Slot", 1)
 	}
 }
 else
@@ -1154,7 +1154,7 @@ SetTitleMatchMode, 3
 			{
 				if (temp = 100)
 				{
-				MsgBox, 8192, Lnch Pad Config Delay, There is a problem with the load of Lnch Pad Config!
+				MsgBox, 8192, LnchPad Config Delay, There is a problem with the load of LnchPad Config!
 				SetTimer, LnchPadSplashTimer, Delete
 				SplashImage, LnchPadCfg.jpg, Hide,,, LnchPadCfg
 				}
@@ -2009,7 +2009,7 @@ GoConfig:
 Gui PrgLnch: +OwnDialogs
 
 
-if (GoConfigTxt = "Save Lnch Pad")
+if (GoConfigTxt = "Save LnchPad")
 {
 ToolTip
 
@@ -2023,7 +2023,7 @@ GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 		Return
 	}
 	else
-	SetEditCueBanner(IniChoiceHwnd, "Lnch Pad Slot", 1)
+	SetEditCueBanner(IniChoiceHwnd, "LnchPad Slot", 1)
 
 	Loop, % prgNo
 	{
@@ -2034,13 +2034,13 @@ GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 		Return
 		}
 		else
-		SetEditCueBanner(IniChoiceHwnd, "Lnch Pad Slot", 1)
+		SetEditCueBanner(IniChoiceHwnd, "LnchPad Slot", 1)
 	}
 
 
 	if (IniChoiceNames[iniSel] && IniChoiceNames[iniSel] != "ini" . iniSel)
 	{
-	MsgBox, 8196, , % """" IniChoiceNames[iniSel] """" " is a Lnch Pad slot already, so replacing it will remove its data.`n`nYes: Overwrite the existing Lnch Pad with the one just configured.`nNo: Cancel the operation."
+	MsgBox, 8196, , % """" IniChoiceNames[iniSel] """" " is a LnchPad slot already, so replacing it will remove its data.`n`nYes: Overwrite the existing LnchPad with the one just configured.`nNo: Cancel the operation."
 		IfMsgBox, No
 		Return
 	}
@@ -2056,7 +2056,7 @@ ChooseIniChoice(iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 	;Not replacing if exists!
 	if (!FileExist(oldSelIniChoicePath))
 	{
-	MsgBox, 8192, Lnch Pad File , % oldSelIniChoiceName " Lnch Pad file could not be found!`nCannot continue."
+	MsgBox, 8192, LnchPad File , % oldSelIniChoiceName " LnchPad file could not be found!`nCannot continue."
 	Return
 	}
 	
@@ -2080,7 +2080,7 @@ ChooseIniChoice(iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 else
 {
 
-	if (GoConfigTxt = "Del Lnch Pad")
+	if (GoConfigTxt = "Del LnchPad")
 	{
 	ControlSetText,,,ahk_id %IniChoiceHwnd%
 	GuiControl, PrgLnch:, IniChoice,
@@ -2263,7 +2263,7 @@ else
 						}
 					}
 
-				GoConfigTxt := "Save Lnch Pad"
+				GoConfigTxt := "Save LnchPad"
 				CreateToolTip("Click `" . GoConfigTxt . """" . " to save.")
 				GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
 				}
@@ -2294,7 +2294,7 @@ else
 
 		strRetVal := WorkingDirectory(A_ScriptDir, 1)
 		If (strRetVal)
-		MsgBox, 8192, Script Directory, % strRetVal "`nCannot load Lnch Pad file!"
+		MsgBox, 8192, Script Directory, % strRetVal "`nCannot load LnchPad file!"
 		else
 		{
 
@@ -2307,7 +2307,7 @@ else
 				if (!ChkPrgNames(oldSelIniChoiceName, PrgNo, "Ini") && fTemp = "")
 				{
 				temp := 0
-				MsgBox, 8195, Current or default settings, A spare Lnch Pad slot has just been clicked.`nIt can be initialised with either the current or the default Lnch Pad.`n`nReply:`nYes: Use current (Warn like this next time)`nNo: Do not use current (Recommended: This will not show again)`nCancel: Do not use current (Warn like this next time):`n
+				MsgBox, 8195, Current or default settings, A spare LnchPad slot has just been clicked.`nIt can be initialised with either the current or the default LnchPad.`n`nReply:`nYes: Use current (Warn like this next time)`nNo: Do not use current (Recommended: This will not show again)`nCancel: Do not use current (Warn like this next time):`n
 					IfMsgBox, Yes
 					{
 					strTemp := SelIniChoicePath
@@ -2355,7 +2355,7 @@ else
 Return
 
 PrepDelIni:
-	if (GoConfigTxt = "Del Lnch Pad")
+	if (GoConfigTxt = "Del LnchPad")
 	{
 		if (DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPadChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice))
 		RestartPrgLnch(0, oldSelIniChoiceName, SelIniChoiceName)
@@ -2376,7 +2376,7 @@ PrepDelIni:
 		{
 			if (!(ChkPrgNames(SelIniChoiceName, PrgNo, "Ini", 1) || SelIniChoiceName = "PrgLnch"))
 			{
-			GoConfigTxt = Del Lnch Pad
+			GoConfigTxt = Del LnchPad
 			CreateToolTip("Click `" . GoConfigTxt . """" . " or hit Del to confirm.")
 			GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
 			}
@@ -2391,9 +2391,9 @@ DelIniPresetProc(iniSel, ByRef GoConfigTxt, ByRef iniTxtPadChoice, ByRef SelIniC
 ToolTip
 retVal := 0
 if (DelEntryonly)
-MsgBox, 8196, Ini File Missing, Lnch Pad Ini file not found in script directory.`nDelete its entry?`n`nYes: Remove "" %SelIniChoiceName% "" from the list `nNo: Retain the entry.
+MsgBox, 8196, Ini File Missing, LnchPad Ini file not found in script directory.`nDelete its entry?`n`nYes: Remove "" %SelIniChoiceName% "" from the list `nNo: Retain the entry.
 else
-MsgBox, 8196, Del Lnch Pad, Really delete the Lnch Pad?`nThis will also remove the file.
+MsgBox, 8196, Del LnchPad, Really delete the LnchPad?`nThis will also remove the file.
 	IfMsgBox, Yes
 	{
 		If (WinExist("ahk_id" . PrgPropsHwnd))
@@ -2413,7 +2413,7 @@ MsgBox, 8196, Del Lnch Pad, Really delete the Lnch Pad?`nThis will also remove t
 		{
 		FileDelete, %SelIniChoicePath%
 			if (ErrorLevel)
-			MsgBox, 8192, File Delete , % SelIniChoicePath " Lnch Pad file could not be removed!"
+			MsgBox, 8192, File Delete , % SelIniChoicePath " LnchPad file could not be removed!"
 		retVal := 1
 		sleep, 30
 		}
@@ -2446,14 +2446,14 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 			IniWrite, %strTemp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
 			else
 			{
-			MsgBox, 8196, , % "The Lnch Pad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the Lnch Pads. `n"
+			MsgBox, 8196, , % "The LnchPad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the LnchPads. `n"
 				IfMsgBox, No
 				Return
 			}
 
 			if (Errorlevel)
 			{
-			MsgBox, 8196, , % "The following Lnch Pad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the Lnch Pads. `n"
+			MsgBox, 8196, , % "The following LnchPad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the LnchPads. `n"
 				IfMsgBox, No
 				Return
 			}
@@ -2577,7 +2577,7 @@ if (!strRetVal)
 		SplitPath, SelIniChoicePath, , , , SelIniChoiceName
 	}
 	else
-	strRetVal := "Lnch Pad file for " . """" . strTemp . """" . "is in error- Reverting to PrgLnch.ini."
+	strRetVal := "LnchPad file for " . """" . strTemp . """" . "is in error- Reverting to PrgLnch.ini."
 }
 
 }
@@ -2625,7 +2625,7 @@ ChooseIniChoice(ByRef iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 		if (iniSel)
 		GuiControl, PrgLnch: ChooseString, IniChoice, % "Ini" . iniSel
 		else
-		MsgBox, 8192, Lnch Pad Slots, Slots full: Unexpected error.
+		MsgBox, 8192, LnchPad Slots, Slots full: Unexpected error.
 	}
 	else
 	GuiControl, PrgLnch: Choosestring, IniChoice, % selIniChoiceName
@@ -3166,7 +3166,7 @@ Global
 strRetVal := IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 	if (strRetVal)
 	{
-	msgbox, 8192 , Lnch Pad Ini File, % strRetVal
+	msgbox, 8192 , LnchPad Ini File, % strRetVal
 	oldSelIniChoiceName := selIniChoiceName
 	SelIniChoicePath := PrgLnchIni
 	IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, , (SelIniChoicePath = PrgLnchIni))
@@ -6700,7 +6700,7 @@ if (InitDOSBoxGame)
 	Send, % mountedDrive . ":"
 	Send {Enter}
 	sleep 20
-	Send dir /w
+	Send dir /w /p
 	Send {Enter}
 	SetKeyDelay, %fTemp%
 	}
@@ -7390,7 +7390,7 @@ retVal := 0
 if (oldSelIniChoicePath)
 {
 
-; No "WarnAlreadyRunning" as this is default when switching Lnch Pads
+; No "WarnAlreadyRunning" as this is default when switching LnchPads
 	Loop % PrgNo
 	{
 		strTemp2 := PrgChoicePaths[A_Index]
