@@ -3935,7 +3935,13 @@ IniProc(selPrgChoice)
 if (PrgPID) ;test only from config
 {
 	if (PrgMinMaxVar = 1)
+	{
 	WinMaximize, ahk_pid %PrgPID%
+	WinWaitNotActive, % "ahk_id" . This.Hwnd()
+	WinActivate, % "ahk_id" . This.Hwnd()
+	WinSet, Top,, % "ahk_id" . This.Hwnd()
+	Gui, PrgLnchOpt: Show,, % PrgLnchOpt.Title
+	}
 	else
 	{
 		if (PrgMinMaxVar = -1)

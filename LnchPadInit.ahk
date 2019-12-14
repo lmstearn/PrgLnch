@@ -177,11 +177,11 @@ currDrive := ""
 tmp := 0
 i := 0
 
-prgName1 := ["Wrye Mash", "MLOX", "TESTool", "Bsa Browser", "MWEdit", "MMOG", "TESAME", "TESPCD", "TES Dependency TK", "MEN Combat MG", "TESFiles 3.1", "Groundcover GP"]
-prgName2 := ["Wrye Bash", "ModOrganizer", "BOSS", "Construction Set Extender", "xEdit", "BSA Commander", "Multi Purpose Gui", "Landscape LOD generator", "NifSkope", "TES4LODGen", "DDSOpt", "MergePlugins"]
+prgName1 := ["Wrye Mash", "MLOX", "TESTool", "Bsa Browser", "MWEdit", "MMOG", "TESAME", "TESPCD", "Enchanted Editor", "MEN Combat MG", "TESFiles 3.1", "Groundcover GP"]
+prgName2 := ["Wrye Bash", "BOSS", "Construction Set Extender", "TES4Edit", "BSA Commander", "Multi Purpose Gui", "Landscape LOD generator", "NifSkope", "TES4LODGen", "DDSOpt", "MergePlugins", "LandMagic"]
 prgName3 := ["Wrye Bash", "ModOrganizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "DynDOLOD", "NifSkope.exe", "Skyrim Performance Monitor", "xTranslator", "hkxcmd", "SSELODGen"]
-prgExe1 := ["Wrye Mash.exe", "mlox.exe", "TESTool.exe", "BSA Browser.exe", "MWEdit.exe", "mmog.exe", "TES Advanced Mod Editor.exe", "tespcdv031.exe", "TESDTK.exe", "MENCMG.exe", "TESFiles.exe", "Grass.exe"]
-prgExe2 := ["Wrye Bash.exe", "ModOrganizer.exe", "BOSS.exe", "TESConstructionSetOld.exe", "TES4Edit.exe", "bsacmd.exe", "mpgui.exe", "tes4ll.exe", "NifSkope.exe", "TES4LODGen.exe", "DDSOpt X*.exe", "MergePlugins.exe"]
+prgExe1 := ["Wrye Mash.exe", "mlox.exe", "TESTool.exe", "BSA Browser.exe", "MWEdit.exe", "mmog.exe", "TES Advanced Mod Editor.exe", "tespcdv031.exe", "Enchanted.exe", "MENCMG.exe", "TESFiles.exe", "Grass.exe"]
+prgExe2 := ["Wrye Bash.exe", "BOSS.exe", "TESConstructionSetOld.exe", "TES4Edit.exe", "bsacmd.exe", "mpgui.exe", "tes4ll.exe", "NifSkope.exe", "TES4LODGen.exe", "DDSOpt X*.exe", "MergePlugins.exe", "LandMagic.exe"]
 prgExe3 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "SSEEdit.exe", "bae.exe", "BodySlide*.exe", "DynDOLOD.exe", "NifSkope.exe", "PerformanceMonitor.exe", "xTranslator*.exe", "hkxcmd.exe", "SSELODGen.exe"]
 prgPath1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
@@ -192,8 +192,8 @@ prgPath3bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl3 := ["", "", "", "", "", "", "", "", "", "", "", ""]
-prgInfUrl1 := ["https://www.nexusmods.com/morrowind/mods/45439", "https://www.nexusmods.com/morrowind/mods/43001", "http://web.archive.org/web/20040617055545/http://www34.brinkster.com/ghostwheel/TESTool.htm", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "http://mwedit.sourceforge.net", "http://abitoftaste.altervista.org/morrowind/index2.php?option=downloads&no_comp=1&no_html=1&task=download&id=53&Itemid=50&-download-MMOG-Morrowind-Merged-Objects-Generator", "http://mw.modhistory.com/download-95-5289", "https://www.nexusmods.com/morrowind/mods/3874", "https://www.nexusmods.com/morrowind/mods/304", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=63&Itemid=50&-MEN-Combat-Merged-Generator", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=90&Itemid=50&-TESFiles-3-1", "http://www.nexusmods.com/morrowind/mods/43907"]
-prgInfUrl2 := ["https://www.nexusmods.com/oblivion/mods/22368", "https://github.com/ModOrganizer2/modorganizer", "https://boss-developers.github.io", "https://www.nexusmods.com/oblivion/mods/36370", "http://tes5edit.github.io", "https://www.nexusmods.com/oblivion/mods/3311", "https://www.nexusmods.com/oblivion/mods/41447", "https://www.nexusmods.com/oblivion/mods/40549", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/oblivion/mods/15781", "https://www.nexusmods.com/skyrim/mods/5755", "https://github.com/matortheeternal/merge-plugins"]
+prgInfUrl1 := ["https://www.nexusmods.com/morrowind/mods/45439", "https://www.nexusmods.com/morrowind/mods/43001", "http://web.archive.org/web/20040617055545/http://www34.brinkster.com/ghostwheel/TESTool.htm", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "http://mwedit.sourceforge.net", "http://abitoftaste.altervista.org/morrowind/index2.php?option=downloads&no_comp=1&no_html=1&task=download&id=53&Itemid=50&-download-MMOG-Morrowind-Merged-Objects-Generator", "http://mw.modhistory.com/download-95-5289", "https://www.nexusmods.com/morrowind/mods/3874", "http://mw.modhistory.com/download--1662", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=63&Itemid=50&-MEN-Combat-Merged-Generator", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=90&Itemid=50&-TESFiles-3-1", "http://www.nexusmods.com/morrowind/mods/43907"]
+prgInfUrl2 := ["https://www.nexusmods.com/oblivion/mods/22368", "https://boss-developers.github.io", "https://www.nexusmods.com/oblivion/mods/36370", "http://tes5edit.github.io", "https://www.nexusmods.com/oblivion/mods/3311", "https://www.nexusmods.com/oblivion/mods/41447", "https://www.nexusmods.com/oblivion/mods/40549", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/oblivion/mods/15781", "https://www.nexusmods.com/skyrim/mods/5755", "https://github.com/matortheeternal/merge-plugins", "https://www.nexusmods.com/oblivion/mods/30519"]
 prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrim/mods/49015", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrim/mods/6491", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrim/mods/83200", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
 listboxIndices := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 WS_CLIPSIBLINGS := 0x4000000
@@ -627,10 +627,11 @@ currDrive := DriveLetter[A_Index]
 				loop % prgNo
 				{
 				SplitPath, A_Loopfield, strTmp
+					if (!strTmp) ; trailing `n in fileList
+					Break
+
 					if (strTmp = prgExe%tabStat%[A_Index])
 					{
-						if (!strTmp) ; trailing `n in fileList
-						Break
 					prgPath%tabStat%[A_Index] := A_Loopfield
 					prgPath%tabStat%bak[A_Index] := A_Loopfield
 					GuiControl, Choose, PrgIndex%tabStat%, %A_Index%
@@ -1213,7 +1214,7 @@ Return
 		{
 		GuiControlGet, tmp, , LnchPadTab
 		{
-		strTmp := LBEX_ItemFromCursor(PrgIndex%tmp%Hwnd)
+		strTmp := tabStat . LBEX_ItemFromCursor(PrgIndex%tmp%Hwnd)
 		retVal := RunChm("LnchPad Setup`\LnchPad Setup", strTmp)
 		}
 		
