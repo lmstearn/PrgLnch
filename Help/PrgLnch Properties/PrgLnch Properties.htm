@@ -9,18 +9,18 @@
 </HEAD>
 <BODY>
 <h1>PrgLnch Properties</h1>
-<p>This consists of a list of properties of each Prg in the <a href="PrgLnch Batch\PrgLnch Batch.htm#BatchPresetsLabel">Selected Preset</a>  displayed in each tab: <br>
+<p>This consists of a list of properties of each Prg in the <a href="PrgLnch Batch\PrgLnch Batch.htm#PresetProperties">Selected Preset</a>  displayed in each tab: <br>
 </p>
 <table class="info">
   <tr id="Attributes &amp; Filesize">
     <td>Attributes &amp; Filesize</td>
-    <td>R = READONLY<br>
-A = ARCHIVE<br>
-S = SYSTEM<br>
-H = HIDDEN<br>
-N = NORMAL<br>
-O = OFFLINE<br>
-T = TEMPORARY<br>
+    <td>READONLY (Cannot alter or remove)<br>
+ARCHIVE (Common: For backup or removal)<br>
+SYSTEM (Used by OS)<br>
+HIDDEN (Won't show in folders)<br>
+NORMAL (No other attributes set)<br>
+OFFLINE (Used by Remote Storage)<br>
+TEMPORARY (Used by Temp Storage)<br>
 
 File size in <a href="https://en.wikipedia.org/wiki/Kilobyte">Kilobytes</a>.
 </td>
@@ -42,7 +42,7 @@ File size in <a href="https://en.wikipedia.org/wiki/Kilobyte">Kilobytes</a>.
    <td></td>
  </tr>
 </table>
-The following list applies to Prgs which are not <a href="PrgLnch Config/PrgLnch Config.htm#PrgCanBeShortcutToFile">shortcuts (.lnk files)</a>. Properties for files linked by association will be displayed for their target executables:
+The following list applies to Prgs which are not <a href="PrgLnch Config/PrgLnch Config.htm#PrgCanBeShortcutToFile">shortcuts (.lnk files)</a>. Properties for files linked by association in Windows will be displayed for their target executables:
 <ul>
   <li>Product Name</li>
  <li>Company Name</li>
