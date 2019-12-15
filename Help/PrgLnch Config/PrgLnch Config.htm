@@ -11,8 +11,8 @@
 <h1>PrgLnch Config</h1>
 <h2>Prg Options</h2>
 <table class="info">
- <tr href="#" id="ShortcutSlots">
-  <td>Shortcut Slots:
+<tr href="#" id="ShortcutSlots">
+<td>Shortcut Slots:
 </td>
 <td>Select a Shortcut Slot to fill or modify the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a>, or clear the text in order to remove it with the <I>del</I> key or <a href="#ModifyShortcut">Modify Shortcut</a> button below. Else leave at "None" to change the resolution of the selected monitor. The <a href="PrgLnch FAQ.htm#Del">Del key</a> is reserved for removing all contents of the box.
 </td>
@@ -22,7 +22,7 @@
 Change, or modify Shortcut:
 </td>
 <td>
-Depending on the contents of <a href="#ShortcutSlots">Shortcut Slot</a> above, the current Prg name and/or path associated with the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a> can be added, modified, or removed with this button. Associations &amp; UNC paths supported.
+Depending on the contents of <a href="#ShortcutSlots">Shortcut Slot</a> above, the current Prg name and/or path associated with the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a> can be added, modified, or removed with this button. To complement this facility there is support for <a href="PrgLnch FAQ.htm#DragIn">Drag In Files</a>, Associations &amp; UNC paths along with provision for <a href="PrgLnch FAQ.htm#DosBox">DosBox</a>.
 </td>
 </tr>
 <tr href="#" id="CmdLineExtras">
@@ -35,7 +35,7 @@ Command Line Extras:
 <td>
 Monitor Name:
 </td>
-<td>This displays the system name of the monitor that the current Prg will run on. Blue indicates a primary monitor, orange indicates a secondary monitor, and the grey, spare monitor slots,
+<td>This displays the system name of the monitor that the current Prg will run on. Blue indicates a primary monitor, orange indicates a secondary monitor, and the grey, spare monitor slots. Click the label for a tooltip on monitor info.
 </td>
  </tr>
 <tr href="#" id="MonitorList">
@@ -57,7 +57,7 @@ If checked, all links in the <a href="#ModifyShortcut">Make Shortcut</a> dialog 
  When unchecked, navigation through links in the <a href="#ModifyShortcut">Make Shortcut</a> dialog is not possible, thus it's possible for the selected Prg to be a file with a <B>*.lnk</B> extension.<br>
 <STRONG>Resolve Shortcut</STRONG>:
 This is greyed if Prg is not a <B>.lnk</B> file.<br>
-When unchecked, the linked executable file or verb is then launched with the properties specified in the <B>.lnk</B> file (seen through the file explorer) in play. Here, the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a> command line and URL options are unavailable. When checked, the <B>*.lnk</B> properties are ignored, command line options are available, and the selected resolved target is now used.
+When unchecked, the linked executable file is then launched with the properties specified in the <B>.lnk</B> file (seen through the file explorer) in play. Here, the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a> command line and URL options are unavailable, and the initial <a href="PrgLnch FAQ.htm#WorkingDirectory">working directory</a>  is set via the <B>.lnk</B> properties. When checked, the <a href="PrgLnch FAQ.htm#WorkingDirectory">working directory</a> changes, <EM>Window Min-Norm-Max  </EM>,command line and URL options are available, as the resolved target is now preferred.
 </td>
  </tr>
 </table>
@@ -147,7 +147,7 @@ The <a href="PrgLnch FAQ.htm#BorderlessPoint">Borderless</a> check (available fo
 <STRONG>Ext. Borderless</STRONG>:
 When checked, <a href="https://docs.microsoft.com/en-us/windows/desktop/winmsg/extended-window-styles">extended</a> borderless styles are detected in addition to the commonly used size and caption styles.<br>
 <STRONG>Apply Borderless</STRONG>:
-The (optionally extended) borderless styles are available only on <a href="PrgLnch Config/PrgLnch Config.htm#TestRunPrg">Test Runs</a>. Borderless windows are resized to match the dimensions of the target monitor, with a notable exception in the resizing of  console (or command) windows.<br>
+The regular and optionally extended borderless styles are available for toggle on <a href="PrgLnch Config/PrgLnch Config.htm#TestRunPrg">Test Runs</a> only. Borderless windows are resized to match the dimensions of the target monitor, with a notable exception in the resizing of  console (or command) windows.<br>
 <STRONG>Note:</STRONG> Resizing after border adjustments isn't optional, thus there is a possibility of conflict with it and a few legacy 3D engines which may rely on positional screen attributes.
 </td>
  </tr>
@@ -156,7 +156,7 @@ The (optionally extended) borderless styles are available only on <a href="PrgLn
 Hide PrgLnch on Run:
 </td>
 <td>
-Hides the PrgLnch Gui after a Prg is launched. The Gui will re-appear when either the Prg is terminated, or is active in a Batch Preset followed by other Prgs launched in the Preset that do not have this setting checked.
+Hides the PrgLnch Gui after a Prg is launched. The Gui will re-appear in the case of Prg termination, or the case  Prg is still running and is listed as <a href="PrgLnch Batch/PrgLnch Batch.htm#PrgStatus">active</a> in a Batch Preset,- followed by other active Prgs launched in the Preset that do not have this setting checked. A hidden Prglnch can be brought back with <a href="PrgLnch FAQ.htm#RepositionPrgLnch">CTRL-ALT-P</a>.
 </td>
  </tr>
 <tr href="#" id="ShowAtStartup">
@@ -187,7 +187,7 @@ Either runs the Prg or <a href="PrgLnch FAQ.htm#PrgCancellation">cancels</a> one
 Update Prg:
 </td>
 <td>
-Click this to update Prg to a newer version<sup><a href="PrgLnch Config/PrgLnch Config.htm#ref1">1</a></sup>  at the <a href="#UrlName">URL Location</a> displayed in the box underneath. A progress bar and <a href="#UrlName">Prg Update Status</a> indicate the download status, and on completion of the download a prompt will appear for the Prg to be launched. If Prg is a <B>.lnk</B> file, the Update Prg button is unavailable. Although executable files at remote URLs are better handled by PrgLnch, compressed files require external decompression programs before use.
+Click this to update Prg to a newer version<sup><a href="PrgLnch Config/PrgLnch Config.htm#Authref">1</a></sup>  at the <a href="#UrlName">URL Location</a> displayed in the box underneath. A progress bar and <a href="#UrlName">Prg Update Status</a> indicate the download status, and on completion of the download a prompt will appear for the Prg to be launched. If Prg is a <B>.lnk</B> file, the Update Prg button is unavailable. Although executable files at remote URLs are better handled by PrgLnch, compressed files require external decompression programs before use.
 </td>
  </tr>
 <tr href="#" id="UrlName">
@@ -195,7 +195,7 @@ Click this to update Prg to a newer version<sup><a href="PrgLnch Config/PrgLnch 
 Url Name:
 </td>
 <td>
-Type in a valid <a href="https://en.wikipedia.org/wiki/Uniform_Resource_Locator">Url</a> of where the newer version of Prg is expected to reside. The <a href="PrgLnch FAQ.htm#Del">Del key</a> deletes all contents of the edit box
+Type in a valid <a href="https://en.wikipedia.org/wiki/Uniform_Resource_Locator">Url</a> of where the newer version of Prg is expected to reside. The <a href="PrgLnch FAQ.htm#Del">Del key</a> deletes all contents of the edit box. In the current version, at least, URL Name is not available if Prg isn't an <B>.exe</B>, <B>.com</B> or <B>.scr</B> by extension.
 </td>
 </tr>
 <tr href="#" id="PrgUpdateStatus">
