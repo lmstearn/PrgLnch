@@ -178,11 +178,11 @@ tmp := 0
 i := 0
 
 prgName1 := ["Wrye Mash", "MLOX", "TESTool", "Bsa Browser", "MWEdit", "MMOG", "TESAME", "TESPCD", "Enchanted Editor", "MEN Combat MG", "TESFiles 3.1", "Groundcover GP"]
-prgName2 := ["Wrye Bash", "BOSS", "Construction Set Extender", "TES4Edit", "BSA Commander", "Multi Purpose Gui", "Landscape LOD generator", "NifSkope", "TES4LODGen", "DDSOpt", "MergePlugins", "LandMagic"]
-prgName3 := ["Wrye Bash", "ModOrganizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "DynDOLOD", "NifSkope.exe", "Skyrim Performance Monitor", "xTranslator", "hkxcmd", "SSELODGen"]
+prgName2 := ["Wrye Bash", "BOSS", "Construction Set Extender", "TES4Edit", "BSA Commander", "Multi Purpose Gui", "Landscape LOD Generator", "NifSkope", "TES4LODGen", "DDSOpt", "MergePlugins", "LandMagic"]
+prgName3 := ["Wrye Bash", "ModOrganizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "DynDOLOD", "NifSkope.exe", "Skyrim Performance Monitor 64", "xTranslator", "hkxcmd", "SSELODGen"]
 prgExe1 := ["Wrye Mash.exe", "mlox.exe", "TESTool.exe", "BSA Browser.exe", "MWEdit.exe", "mmog.exe", "TES Advanced Mod Editor.exe", "tespcdv031.exe", "Enchanted.exe", "MENCMG.exe", "TESFiles.exe", "Grass.exe"]
-prgExe2 := ["Wrye Bash.exe", "BOSS.exe", "TESConstructionSetOld.exe", "TES4Edit.exe", "bsacmd.exe", "mpgui.exe", "tes4ll.exe", "NifSkope.exe", "TES4LODGen.exe", "DDSOpt X*.exe", "MergePlugins.exe", "LandMagic.exe"]
-prgExe3 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "SSEEdit.exe", "bae.exe", "BodySlide*.exe", "DynDOLOD.exe", "NifSkope.exe", "PerformanceMonitor.exe", "xTranslator*.exe", "hkxcmd.exe", "SSELODGen.exe"]
+prgExe2 := ["Wrye Bash.exe", "BOSS.exe", "TESConstructionSetOld.exe", "TES4Edit.exe", "bsacmd.exe", "mpgui.exe", "tes4ll.exe", "NifSkope.exe", "TES4LODGen.exe", "DDSOpt X64.exe", "MergePlugins.exe", "LandMagic.exe"]
+prgExe3 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "SSEEdit.exe", "bae.exe", "BodySlideX64.exe", "DynDOLOD.exe", "NifSkope.exe", "PerformanceMonitor64.exe", "xTranslator.exe", "hkxcmd.exe", "SSELODGen.exe"]
 prgPath1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath3 := ["", "", "", "", "", "", "", "", "", "", "", ""]

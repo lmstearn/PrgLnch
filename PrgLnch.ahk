@@ -44,6 +44,25 @@ Process, priority, %PrgLnchPID%, A
 
 ; Virtual screen: https://msdn.microsoft.com/en-us/library/vs/alm/dd145136(v=vs.85).aspx
 
+Class PrgProperties
+	{
+	static propsHwnd := 0
+	hWnd
+	{
+		set
+		{
+		this.propsHwnd := value
+		}
+		get
+		{
+			if (!WinExist("ahk_id" . this.propsHwnd))
+			this.propsHwnd := 0
+		return this.propsHwnd
+		}
+	}
+
+	}
+
 Class PrgLnchOpt
 	{
 	static Title := "PrgLnch Options"
@@ -144,12 +163,12 @@ Class PrgLnch
 	Activate() ;Activates window with Title - This.Title
 	{
 	DetectHiddenWindows, On
-		If (WinExist(This.Title))
+		if (WinExist(This.Title))
 		WinActivate, % "ahk_id" . This.Hwnd()
 		;This replaced +LastFound as "WinActivate" would not work for some reason.
 		else
 		{
-			If (WinExist(This.Title1))
+			if (WinExist(This.Title1))
 			WinActivate
 		}
 	DetectHiddenWindows, Off
@@ -251,7 +270,6 @@ PrgPriorityHwnd := 0
 BordlessHwnd := 0
 PrgLnchHdHwnd := 0
 resolveShortctHwnd := 0
-PrgPropsHwnd := 0
 
 ;Radio
 TestHwnd := 0
@@ -999,7 +1017,6 @@ GuiControl, PrgLnch: ChooseString, IniChoice, %SelIniChoiceName%
 
 
 
-
 Gui, PrgLnch: Add, Button, cdefault vLnchPadConfig gLnchPadConfig HWNDLnchPadConfigHwnd wp, LnchPad Setup
 Gui, PrgLnch: Add, Text, wp
 
@@ -1415,12 +1432,10 @@ sleep, 120
 	IniWrite, %A_Space%, %SelIniChoicePath%, Prgs, PrgBatchIni%btchPrgPresetSel%
 	 ; Nothing to write!
 
-	;If PrgProperties window is showing, update it
-	Gui, PrgProperties: +LastFoundExist
-	If (WinExist())
-	{
-	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
-	}
+		;If PrgProperties window is showing, update it
+		If (PrgProperties.Hwnd)
+		PopPrgProperties(currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
+
 }
 
 
@@ -1490,9 +1505,11 @@ if (btchPrgPresetSel = temp)
 			else
 			{
 
-			Gui, PrgProperties: +LastFoundExist
-				If (WinExist())
+				If (PrgProperties.Hwnd)
+				{
 				Gui, PrgProperties: Destroy
+				PrgProperties.Hwnd := 0
+				}
 
 
 				loop % currBatchNo
@@ -1540,9 +1557,11 @@ if (btchPrgPresetSel = temp)
 		else
 		{
 
-		Gui, PrgProperties: +LastFoundExist
-			If (WinExist())
+			If (PrgProperties.Hwnd)
+			{
 			Gui, PrgProperties: Destroy
+			PrgProperties.Hwnd := 0
+			}
 
 			loop % currBatchNo
 			{
@@ -1632,11 +1651,8 @@ else
 
 
 		;If PrgProperties window is showing, update it
-		Gui, PrgProperties: +LastFoundExist
-			If (WinExist())
-			{
-			PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
-			}
+			If (PrgProperties.Hwnd)
+			PopPrgProperties(currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
 
 		}
 		else ;nothing in ini to restore, so write to it!
@@ -1690,9 +1706,11 @@ else
 			else
 			{
 			; Nothing Nothing
-			Gui, PrgProperties: +LastFoundExist
-				If (WinExist())
+				If (PrgProperties.Hwnd)
+				{
 				Gui, PrgProperties: Destroy
+				PrgProperties.Hwnd := 0
+				}
 
 				if (!batchActive)
 				{
@@ -2096,10 +2114,10 @@ else
 	presetNoTest := 0
 
 	PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, PrgPIDMast, 1)
-		If (WinExist("ahk_id" . PrgPropsHwnd))
+		If (PrgProperties.Hwnd)
 		{
 		Gui, PrgProperties: Destroy
-		PrgPropsHwnd := 0
+		PrgProperties.Hwnd := 0
 		}
 
 		if (PrgPID)
@@ -2132,7 +2150,7 @@ Return
 
 PresetProp:
 	if (btchPrgPresetSel && currBatchNo)
-	PopPrgProperties(PrgPropsHwnd, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
+	PopPrgProperties(currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
 Return
 
 
@@ -2396,11 +2414,12 @@ else
 MsgBox, 8196, Del LnchPad, Really delete the LnchPad?`nThis will also remove the file.
 	IfMsgBox, Yes
 	{
-		If (WinExist("ahk_id" . PrgPropsHwnd))
+		If (PrgProperties.Hwnd)
 		{
 		Gui, PrgProperties: Destroy
-		PrgPropsHwnd := 0
+		PrgProperties.Hwnd := 0
 		}
+
 	IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
 	oldSelIniChoiceName := SelIniChoiceName
 	SelIniChoiceName := "Ini" . iniSel
@@ -3433,8 +3452,7 @@ temp := 0
 		WinGet, temp, , A ;or WinGetActive
 		if (temp = PrgLnchOpt.Hwnd() || temp = PrgLnch.Hwnd())
 		return 0
-		else
-		Gui, PrgProperties: Destroy
+		; else destroys PrgProperties.Hwnd anyhow
     }
 }
 RunChm(chmTopic := 0, Anchor := "")
@@ -5511,9 +5529,11 @@ RepositionGuiToMouse(IsOptions := 0)
 ; This repositions the top left of the GUI to mouse cursor
 
 ;Close properties
-Gui, PrgProperties: +LastFoundExist
-	If (WinExist())
+	If (PrgProperties.Hwnd)
+	{
 	Gui, PrgProperties: Destroy
+	PrgProperties.Hwnd := 0
+	}
 
 
 if (IsOptions)
@@ -5573,6 +5593,11 @@ CoordMode, Mouse, % strTemp
 ^!p::
 SetTitleMatchMode, 3
 RepositionGuiToMouse()
+Return
+
+Esc::
+Gui, PrgProperties: Destroy
+PrgProperties.Hwnd := 0
 Return
 }
 
@@ -6113,21 +6138,24 @@ if (lnchPrgIndex > 0) ;Running
 
 	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
-	strRetVal := (IsaPrgLnk)? AssocQueryApp(PrgPaths): PrgPaths
-
-	if (strRetVal && strRetVal != PrgPaths) ; must be an association
+	if (IsaPrgLbk)
 	{
-		;Treat as regular association
-		If (IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex])
-		IsaPrgLnk := 0
-
-		if (!IsaPrgLnk)
+		if ((strRetVal := PrgPaths) != AssocQueryApp(PrgPaths)) ; must be an association
 		{
-		; Easiest way to get working dir for assoications
-		SplitPath, PrgPaths,, wkDir
-		PrgPaths := AssocQueryApp(PrgPaths)
+			;Treat as regular association
+			If (PrgResolveShortcut[lnchPrgIndex])
+			IsaPrgLnk := 0
+
+			if (!IsaPrgLnk)
+			{
+			; "Easiest" way to use working dir for associations
+			SplitPath, PrgPaths,, wkDir
+			PrgPaths := AssocQueryApp(PrgPaths)
+			}
+
 		}
 	}
+
 
 
 	if (!FileExist(PrgPaths))
@@ -10361,8 +10389,21 @@ Thread, NoTimers, false
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ;Properties routines
-PopPrgProperties(ByRef PrgPropertiesHwnd, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
+PopPrgProperties(currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
 {
 IsaPrgLnk := 0, strTemp := "", fTemp := 0, temp := 0, foundpos := 0, batchPos := 0, pathCol := 0, pathColH := 0, pathColHOld := 0, defCol := 0, defColW := 0, defColH := 0, propY := 0, propW := 0, propH := 0, truncFileName := "", errorText := "", strRetVal := "", fileName := ""
 static tabName := 0
@@ -10397,6 +10438,8 @@ sleep, 120
 
 Gui, PrgProperties: New,, Prg_Properties
 Gui, PrgProperties: -MaximizeBox -MinimizeBox +OwnDialogs +HwndPrgPropertiesHwnd
+; PrgProperties.Hwnd in this thread isn't valid while the form is hidden unofrtunately
+PrgProperties.Hwnd := PrgPropertiesHwnd
 Gui, PrgProperties: Color, FFFFCC
 
 
@@ -10653,7 +10696,6 @@ SysGet, temp, MonitorWorkArea, PrgLnch.Monitor
 
 DetectHiddenWindows, On
 WinGetPos,, propY,, propH, % "ahk_id" PrgPropertiesHwnd
-
 
 	if (tempBottom - y > tempBottom - propH)
 	WinMove, % "ahk_id" PrgPropertiesHwnd, , %x%, % propH - y, %w%
