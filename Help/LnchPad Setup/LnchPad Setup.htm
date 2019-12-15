@@ -1,1 +1,170 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<title>LnchPad Setup</title>
+<meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<link href="theme.css" rel="stylesheet" type="text/css">
+</HEAD>
+<BODY>
+<h1>LnchPad Setup</h1>
+<p>This utility allows for a quick inclusion of modding tools for Bethesda Games (and possibly <a href="PrgLnch FAQ.htm#games">others</a>) into PrgLnch. A tab is allocated to a search page for each game. The first button performs a drive search, the second creates/updates a <a href="PrgLnch Batch/PrgLnch Batch.htm#LnchPadSlots">LnchPad Slot</a>.<br>
+</p>
+<table class="info">
+<tr href="#" id="SearchDrive">
+<td>Search Drive for...
+</td>
+<td>Click and select drives to search for modding tools for the game. The RH listbox will consequently update with the search results.
+</td>
+</tr>
+<tr href="#" id="LocateSlot">
+<td>Locate ... LnchPad Slot
+</td>
+<td>Examines existing <a PrgLnch Batch/PrgLnch Batch.htm#LnchPadSlots">LnchPad Slots</a> for the game. If one does not exist, a new Slot is created. <STRONG>Existing Slots</STRONG> are handled according to <a href="#UpdateExisting">Update Existing Slot</a> and <a href="#overWriteExisting">Overwrite Existing Slot</a>.
+</td>
+</tr>
+<tr href="#" id="UpdateExisting">
+<td>Update Existing Slot...
+</td>
+<td>From the Listbox, updates the paths and <a href="PrgLnch Config/PrgLnch Config.htm#UrlName">Urls</a> for existing Prgs in the <a PrgLnch Batch/PrgLnch Batch.htm#LnchPadSlots">Slot</a>, and, if the Slot has <a href="PrgLnch FAQ.htm#Limitations">enough room</a>,  adds in new Prgs.
+</td>
+</tr>
+<tr href="#" id="overWriteExisting">
+<td>Overwrite Existing Slot...
+</td>
+<td>Removes the existing <a PrgLnch Batch/PrgLnch Batch.htm#LnchPadSlots">Slot</a> and initialises a new one for inclusion of Prgs from the Listbox. Used only if there are issues with the current Slot.
+</td>
+</tr>
+<tr href="#" id="Listbox">
+<td>Search Results listbox...
+</td>
+<td>Lists the names of well used modding tools associated with the game. An item is automatically selected if found on a drive, right-click on an item brings up an appropriate help info topic.
+</td>
+</tr>
+</table>
+<h1>Game Mods</h1>
+<p>Below is the suggested list of mods for each game, along with their linked description sources.
+</p>
 
+<h2>Morrowind</h2>
+<dl>
+<dt href="#" id="11"><a href="https://www.nexusmods.com/morrowind/mods/45439">Wrye Mash</a></dt>
+<dd>{<a href="https://en.uesp.net/wiki/Tes3Mod:Wrye_Mash">UESP</a>}: Wrye Mash is a general purpose utility for managing and repairing mods and savegames. Currently it is the only tool that systematically prevents doubling. It combines multiple mod-management capabilities making it one of the most strongly recommended utilities for both modders and players. <a href="https://github.com/Wrye-Code-Collection/Wrye-Mash/releases/">Sharlikran's fork</a>.</dd>
+<dt href="#" id="12"><a href="https://www.nexusmods.com/morrowind/mods/43001/">MLOX</a></dt>
+<dd>{<a href="http://wiki.theassimilationlab.com/mmw/Mlox ">Morrowind Modding Wiki</a>}Mlox is the Mod Load Order eXpert, a tool originally developed by john.moonsugar that is designed to help people manage large collections of Morrowind plugins, it sorts plugins based on a very simple set of ordering rules that comprise a partial order over the set of plugins using a standard topological sort.<br>
+MLOX also provides advice on plugin conflicts, missing pre-requisites, and general information of interest based on the user's particular set of plugins: </dd>
+<dt href="#" id="13"><a href="http://web.archive.org/web/20040617055545/http://www34.brinkster.com/ghostwheel/TESTool.htm">TESTool</a></dt>
+<dd>{<a href="https://en.uesp.net/wiki/Tes3Mod:TESTool">UESP</a>}: TESTool is a mod management, repair and cleaning utility. It can Generate conflict reports, Manage Active Plugins, Merge Leveled Lists, Objects Dialogs, and perform mod cleaning.</dd>
+<dt href="#" id="14"><a href="https://www.nexusmods.com/skyrimspecialedition/mods/1756">Bsa Browser</a></dt>
+<dd>{<a href="https://en.uesp.net/wiki/Tes3Mod:BSA_Managers">UESP</a>}: BSA Browser is a GUI Morrowind BSA archive viewer/editor built around GhostWheel's command line tool BSAPack which lists, packs and unpacks Morrowind BSA Archive files .</dd>
+<dt href="#" id="15"><a href=""></a></dt>
+<dd>{<a href="http://wiki.theassimilationlab.com/mmw/MWEdit">Morrowind Modding Wiki</a>}: MWEdit is an unofficial incomplete alternate editor for Morrowind plugin files (ESPs and ESMs). It allows creating, editing and deleting records in a plugin file and has different and extra features compared to the Construction Set.</dd>
+<dt href="#" id="16"><a href="http://abitoftaste.altervista.org/morrowind/index2.php?option=downloads&no_comp=1&no_html=1&task=download&id=53&Itemid=50&-download-MMOG-Morrowind-Merged-Objects-Generator">MMOG</a></dt>
+<dd>{<a href="http://wiki.theassimilationlab.com/mmw/TESTool">Morrowind Modding Wiki</a>}: With large mod lists TESTool's "Merge Objects for active plugins" function can crash. It appears that an index which TESTool uses to keep track of the objects it's merging can be overwhelmed by a user with a large number of mods.
+User <B>abot</B> created MMOG (Morrowind Merged Objects Generator) which uses tes3cmd in tandem with TESTool to bypass this problem.</dd>
+<dt href="#" id="17"><a href="http://mw.modhistory.com/download-95-5289">TESAME</a></dt>
+<dd>{<a href="http://wiki.theassimilationlab.com/mmw/TESAME">Morrowind Modding Wiki</a>}: The Elder Scrolls Advanced Mod Editor is a tool used by both modders and players that can clean dirty mods, and merge any two mods.</dd>
+<dt href="#" id="18"><a href="https://www.nexusmods.com/morrowind/mods/3874">TESPCD</a></dt>
+<dd>{<a href="https://en.uesp.net/wiki/Tes3Mod:TES_Plugin_Conflict_Detector">Morrowind Modding Wiki</a>}: TES Plugin Conflict Detector is primarily used for detecting and dealing with mod conflicts, but also has powerful global search abilities which can be used across multiple mods.</dd>
+<dt href="#" id="19"><a href="http://mw.modhistory.com/download--1662">Enchanted Editor</a></dt>
+<dd>{<a href="https://en.uesp.net/wiki/Tes3Mod:Enchanted_Editor">UESP</a>}: Enchanted Editor is a low-level editor for Morrowind mod and save files. It is not a tool to create mods with, but rather a tool to examine, tweak and fix mods and save games in a low-level way.</dd>
+<dt href="#" id="110"><a href="https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=63&Itemid=50&-MEN-Combat-Merged-Generator">MEN Combat MG</a></dt>
+<dd>{Mod page}: Uses tes3cmd.exe and TESTool.exe to generate "MEN_Combat_merged.esp" for Logitech's MEN_Combat.esp, using only mods in your loading order and removing duplicates for a smaller/faster result file.</dd>
+<dt href="#" id="111"><a href="https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=90&Itemid=50&-TESFiles-3-1">TESFiles 3.1</a></dt>
+<dd>{<a href="http://wiki.theassimilationlab.com/mmw/Morrowind_Mod_Maker%27s_Manual">Morrowind Mod Maker's Manual</a>}: Use this utility to pack your mod. It will identify all the necessary files to play your plug-in that are not contained in the Morrowind, Tribunal, or Bloodmoon. Then put them in a folder together, so you can then just zip them up together with the .esp and your readme</dd>
+<dt href="#" id="112"><a href="http://www.nexusmods.com/morrowind/mods/43907/?">Groundcover Generation Package</a></dt>
+<dd>{Mod Page}: This is a packaging of several artist's grass assets along with the required utility and configuration files to allow one to generate grass plugins for non-vanilla landmasses.</dd>
+</dl>
+
+<h2>Oblivion</h2>
+<dl>
+<dt href="#" id="21"><a href="https://www.nexusmods.com/oblivion/mods/22368">Wrye Bash</a></dt>
+<dd>{<a href="https://en.uesp.net/wiki/Tes4Mod:Modding#Tools">UESP</a>}: Wrye Bash has a very large number of features associated with managing, reconciling and editing mods and savegames, as well as extracting and modifying data in them.
+<ul>
+<li>Mod/Savefile management.</li>
+<li>Player face import/export.</li>
+<li>Bashed Patch: Automated mod tweaking and conflict resolution</li>
+</ul>
+</dd>
+<dt href="#" id="22"><a href="https://boss-developers.github.io">BOSS</a></dt>
+<dd>{<a href="http://wiki.theassimilationlab.com/tescosi/Better_Oblivion_Sorting_Software">TESCOSI</a>}: Better Oblivion Sorting Software (BOSS) automatically orders more than 10,000 plugins, and it will save the user a ton of work managing a load order, or even multiple load orders. The result is not always 100% correct, but if the plugins are not all unknown, the result will be close. Most users are recommended to follow the BOSS load order unless they want to make specific tweaks and know what they are doing.</dd>
+<dt href="#" id="23"><a href="https://www.nexusmods.com/oblivion/mods/36370">Construction Set Extender</a></dt>
+<dd>{Mod Page}: The Construction Set Extender is a lone and handsome vagabond OBSE plugin that enhances the TES4 CS by fixing various bugs and adding new tools. One may say it makes the CS what it was meant to be, but that would be a lie given how uncreative &lt;<strike>snipped's</strike>&gt; talent is - Take a look at Oblivion.</dd>
+<dt href="#" id="24"><a href="http://tes5edit.github.io/">TES4Edit</a></dt>
+<dd>{Mod Page}: xEdit is an advanced graphical module editor and conflict detector for Bethesda games. It currently supports Fallout 3, Fallout New Vegas, Fallout 4, Oblivion, Skyrim, and Skyrim SE. We refer to the program as xEdit for short.</dd>
+<dt href="#" id="25"><a href="https://www.nexusmods.com/oblivion/mods/3311">BSA Commander</a></dt>
+<dd>{Mod Page}: Work with oblivion archive files (.bsa) with friendly interface. With BSA Commander you can
+<ul>
+<li> unpack files from archive (all files or any of them).</li>
+<li>create new .bsa archives.</li>
+<li>view content of .bsa files.</li>
+<li>get detailed info about archive and save it to file.</li>
+<li>register archive files for game.</li>
+</ul>
+</dd>
+<dt href="#" id="26"><a href="https://www.nexusmods.com/oblivion/mods/41447">Multi Purpose Gui</a></dt>
+<dd>{<a href="https://ortham.github.io/buddah/">Buddah</a>}: Aims to be a graphical frontend for various command-line based tools such as Lightwaves TESAnnwyn or TES4qLOD.</dd>
+<dt href="#" id="27"><a href="https://www.nexusmods.com/oblivion/mods/40549">Landscape LOD Generator</a></dt>
+<dd>{<a href="http://wiki.theassimilationlab.com/tescosi/Programs_and_Utilities">TESCOSI</a>}: Mod created by Gruftikus that lets you generate distant landscape LOD and its corresponding normal map and color map according to your mod lists. It creates new and individual high-resolution landscape meshes including all the additional changes added by the mods which one has installed.</dd>
+<dt href="#" id="28"><a href="http://niftools.sourceforge.net/wiki/NifSkope">NifSkope</a></dt>
+<dd>{<a href="http://niftools.sourceforge.net/wiki/NifSkope">NifTools Wiki</a>}: A graphical program that allows you to open NIF files, view their contents, edit them, and write them back out again. You can use it to quickly make changes to specific properties of a NIF file such as changing the texture, adding translucency, and more. A 3D view of the contents of the NIF file allows you to preview your changes instantly. You can even create texture templates, and import & export OBJ files.</dd>
+<dt href="#" id="29"><a href="https://www.nexusmods.com/oblivion/mods/15781">TES4LODGen</a></dt>
+<dd>{<a href="https://ortham.github.io/buddah/">Buddah</a>}: Allows you to generate Objects LOD for worldspace(s) by scanning all mods in load order that add visible from distant objects.</dd>
+<dt href="#" id="210"><a href="https://www.nexusmods.com/skyrim/mods/5755">DDSOpt</a></dt>
+<dd>{<a href="https://ortham.github.io/buddah/">Buddah</a>}: A tool which manages and recompressed DDS-files. It has been forked off NIFopt and both programm share the same underlying technology regarding DDSs and BSAs.</dd>
+<dt href="#" id="211"><a href="https://github.com/matortheeternal/merge-plugins">MergePlugins</a></dt>
+<dd>{Mod Page}: Merge Plugins Standalone (or just Merge Plugins), is a tool for combining mods from Bethesda games which have .ESP/.ESM files. It uses the xEdit codebase as an API, and can be used with Skyrim, Oblivion, Fallout New Vegas, and Fallout 3. Merge Plugins Standalone is the successor of my Merge Plugins xEdit Script. Feel free to check out the screenshot gallery to get an idea of the look and feel of Merge Plugins.</dd>
+<dt href="#" id="212"><a href="https://www.nexusmods.com/oblivion/mods/30519">LandMagic</a></dt>
+<dd>{Mod Page}: This tool fixes(or tries to) tears in the landscape. This usually occurs if mods change the same group of cells but not totally overwrite each others.</dd>
+</dl>
+
+<h2>Skyrim</h2>
+<dl>
+<dt href="#" id="31"><a href="https://www.nexusmods.com/skyrimspecialedition/mods/6837">Wrye Bash</a></dt>
+<dd>{Mod page}: Wrye Bash is a powerful mod management utility for TES IV: Oblivion, TES V: Skyrim, Fallout 4 and TES V Skyrim SE.
+<ul>
+<li>It's a mod installation and file conflict manager</li>
+<li>A plugin load order manager</li>
+<li>Screenshot manager</li>
+<li>.ini and settings files tweak management.</li>
+<li>It makes it safe to try out new mods because it will restore everything to the way it was when you uninstall a mod</li>
+<li>It makes more mods compatible with each other by importing information from different mods into a "bashed patch" .. and many more features</li>
+</ul></dd>
+<dt href="#" id="32"><a href="https://github.com/ModOrganizer2/modorganizer">ModOrganizer 2</a></dt>
+<dd>{<a href="https://ortham.github.io/buddah/">Buddah</a>} A tool for managing mod collections of arbitrary size. It is specifically designed for people who like to experiment with mods and thus need an easy and reliable way to install and uninstall them. Mod Organizer 2 is a mod manager created by Tannin to support 64-bit games like Skyrim Special Edition and Fallout 4 in addition to all the 32-bit games MO1 already supported.</dd>
+<dt href="#" id="33"><a href="https://loot.github.io/">LOOT</a></dt>
+<dd>{Mod Page}: LOOT is a plugin load order optimiser for TES III: Morrowind, TES IV: Oblivion, TES V: Skyrim, TES V: Skyrim Special Edition, TES V: Skyrim VR, Fallout 3, Fallout: New Vegas, Fallout 4 and Fallout 4 VR. It is designed to assist mod users in avoiding detrimental conflicts, by automatically calculating a load order that satisfies all plugin dependencies and maximises each plugin's impact on the user's game.</dd>
+<dt href="#" id="34"><a href="http://tes5edit.github.io">SSEEdit</a></dt>
+<dd>{<a href="https://wiki.step-project.com/Guide:XEdit">STEP</a>}: xEdit is an advanced tool for analyzing and editing Bethesda's game plugins. It works by loading one or multiple plugins (.esp), along with their explicit masters (.esm), and displaying their contents in a specific user interface. It provides a clear layout and useful navigation controls to visualize the data of the loaded plugins, as well as powerful editing functions to clean, edit, or even create new plugins for mods and mod patches.
+xEdit was originally developed by ElminsterAU as TES4Edit, for TES: Oblivion. It then was updated to handle Fallout 3 (FO3Edit) and Fallout New Vegas (FNVEdit). Finally, support for Skyrim (TES5Edit), Fallout 4 (FO4Edit), and Skyrim SE (SSEEdit) was added by the authors: Hlp, Sharlikran, and Zilav. These different versions of the tools collectively became known as, "xEdit" within the modding community. Therefore, xEdit is often used to refer to the specific version for whichever game is being discussed.
+It is important to note that whichever version has been downloaded, they are all the same executable. It's possible to switch from one version to another by simply renaming the executable to the proper name, or by attaching an argument to the executable, which switches the program for use with a specific game.</dd>
+<dt href="#" id="35"><a href="https://www.nexusmods.com/skyrimspecialedition/mods/974">Bethesda Archive Extractor</a></dt>
+<dd>{<a href="https://wiki.step-project.com/Guide:BAE">STEP</a>}: B.A.E is an archive extractor for Bethesda's archive file format. Unlike most of the "old" tools such as BSAOpt, it supports both .bsa format (Skyrim and former games), and .ba2 format (new archive format which appeared with Fallout 4's release).
+It provides an extremely quick, efficient, and easy-to-use means of extracting Bethesda's archive according to the user need. Moreover, it allow to visualize the content of an archive without having to extract it.
+The main "downside" is that the tool is only designed for archive extraction, and won't allow re-packaging of archives. Though originally designed for Fallout 4 archive extraction, and thus available only on the FO4's Nexus section, it supports Skyrim and any other Bethesda games using the .bsa format just as well.</dd>
+<dt href="#" id="36"><a href="https://www.nexusmods.com/skyrim/mods/49015">BodySlide</a></dt>
+<dd>{<a href="https://ortham.github.io/buddah/">Buddah</a>}: BodySlide and Outfit Studio is a tool to convert, create, and customize outfits and bodies for Bethesda games.</dd>
+<dt href="#" id="37"><a href="https://www.nexusmods.com/skyrim/mods/59721">DynDOLOD</a></dt>
+<dd>{Mod Page}: DynDOLOD is a set of simple tools based on xEdit/xLODGen to automatically create a Skyrim mod based on the load order which adds distant LOD for objects and trees to Skyrim. By combining DynDOLOD with xLODGen users can create drastically enhanced static object LOD + tree LOD and the new, optional dynamic distant object LOD in a few simple steps.</dd>
+<dt href="#" id="38"><a href="http://niftools.sourceforge.net/wiki/NifSkope">NifSkope</a></dt>
+<dd>{<a href="http://niftools.sourceforge.net/wiki/NifSkope">NifTools Wiki</a>}: A graphical program that allows you to open NIF files, view their contents, edit them, and write them back out again. You can use it to quickly make changes to specific properties of a NIF file such as changing the texture, adding translucency, and more. A 3D view of the contents of the NIF file allows you to preview your changes instantly. You can even create texture templates, and import & export OBJ files.</dd>
+<dt href="#" id="39"><a href="https://www.nexusmods.com/skyrimspecialedition/mods/3826">Skyrim Performance Monitor 64</a></dt>
+<dd>{<a href="https://ortham.github.io/buddah/">Buddah</a>}: The Skyrim Performance Monitor is a utility used for tracking Skyrims Memory, VRAM, Disk I/O, CPU, GPU, GPU Temperature, and Threads system resource usage, and also FPS as they relate to INI settings and installed mods.</dd>
+<dt href="#" id="310"><a href="https://www.nexusmods.com/skyrimspecialedition/mods/134">XTranslator</a></dt>
+<dd>{Mod Page}: sseTranslator is an advanced translation editor featuring:
+<ul>
+<li>Automatic translation.</li>
+<li>Heuristic suggestions.</li>
+<li>Extraction/Injection in bsa/ba2.</li>
+<li>Pex file Decompilation.</li>
+<li>Quest table, Voice/Fuz map support.</li>
+</ul></dd>
+<dt href="#" id="311"><a href="https://www.nexusmods.com/skyrim/mods/83200">HKXCmd PS UI</a></dt>
+<dd>{Mod Page}: This is a simple PowerShell script that wraps HKXCmd (a tool for converting Skyrim Havok animation files from the binary packed format to XML or to Gamebryo Animation format from Skyrim), allowing access to some of its features via a menu system. Bear in mind that I created it for my personal use, so not all functions are fully tested.</dd>
+<dt href="#" id="312"><a href="https://www.nexusmods.com/skyrimspecialedition/mods/6642">SSELODGen</a></dt>
+<dd>{<a href="https://ortham.github.io/buddah/">Buddah</a>}: Allows you to generate Objects LOD for worldspace(s) by scanning all mods in load order that add visible from distant objects.</dd>
+</dl>
+
+</BODY>
+</HTML>
