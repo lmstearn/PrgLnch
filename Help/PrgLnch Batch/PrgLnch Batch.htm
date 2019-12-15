@@ -10,10 +10,10 @@
 <BODY>
 <h1>PrgLnch Batch</h1>
 <table class="info">
- <tr href="#" id="BatchPresetsLabel">
-  <td>Batch Presets label:
+ <tr href="#" id="PresetProperties">
+  <td>Preset Properties:
 </td>
-<td>Bluish colour on a selected preset, becoming a clickable portal to <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a>. Closed when the  <a href="#BatchPresets">Preset</a> is de-activated.</td>
+<td>Gets <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a> of a selected Batch Preset. Closed when the  <a href="#BatchPresets">Preset</a> is de-activated.</td>
  </tr>
  <tr href="#" id="BatchPresetName">
 <td>
@@ -29,6 +29,15 @@ List of Batch Presets:
 </td>
 <td>Select a preset will commit the preset to the .<B>ini</B> file slot on disk if it exists. If the .<B>ini</B> file slot is empty the current Preset list is written to it. Deselect a preset, (by clicking it again), to remove the corresponding Preset info from the .<B>ini</B> file. The status of a Prg allocated to the Preset which is selected from the adjacent <a href="#BatchPrgs">Batch Prgs List</a>, is also displayed in the <a href="#PrgStatus">Prg Status List</a>.
 </td>
+ </tr>
+<tr href="#" id="ThisPresetatLoad">
+<td>
+This Preset at Load:
+</td>
+<td>
+When checked, the current <a href="#BatchPresets">Preset</a> is shown and selected when PrgLnch starts.
+</td>
+ </tr>
 <tr href="#" id="BatchPrgs">
 <td>
 Batch Prgs List:
@@ -53,12 +62,13 @@ Prg Lnch Interval:
 Default setting is a medium wait between launch of Prgs in the batch. Check the box for a longer wait, clear it for a short wait.
 </td>
  </tr>
-<tr href="#" id="ThisPresetatLoad">
+<tr href="#" id="PowerPlans">
 <td>
-This Preset at Load:
+Power Plans:
 </td>
 <td>
-When checked, the current <a href="#BatchPresets">Preset</a> is shown and selected when PrgLnch starts.
+A <a href="https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/create-a-custom-power-plan-technicalreference">Power Plan</a> can be applied for an actve Batch. The Power Plan used by the OS before PrgLnch loads is the first one in the list, the <STRONG>Default</STRONG>, which corresponds to one of the following plans in the list.<br>
+A Batch Power Plan will be replaced by the Power Plan of the most recent concurrent Batch activated. When PrgLnch starts, a Power Plan for an already active Batch is actually <STRONG>Default</STRONG>, contrary to the list selection, and Power Plans revert to <STRONG>Default</STRONG> when PrgLnch is quit.
 </td>
  </tr>
 <tr href="#" id="RunBatch">
@@ -77,12 +87,20 @@ Prg Config:
 Launches the <a href="PrgLnch Config/PrgLnch Config.htm">Prg Configuration</a> option dialog. 
 </td>
  </tr>
-<tr href="#" id="IniLnchPad">
+<tr href="#" id="LnchPadSlots">
 <td>
-Lnch Pad Slots:
+LnchPad Slots:
 </td>
 <td>
-Up to 12 slots are provided as Lnch Pads for programs related to a certain project, game, or schedule of choice. A filled, or active slot relies on its own ini settings file in the PrgLnch directory. For ease of use, it's intended to bundle in extra scripts to initialise Lnch Pad Slots for programs which mod popular games. The last used Lnch Pad is loaded each time PrgLnch starts.
+Up to 12 slots are provided as LnchPads for programs related to a certain project, game, or schedule of choice. A  slot configured for such a purpose is manifest within its <I>ini</I> settings file in the directory PrgLnch is run from. The last used LnchPad is loaded each time PrgLnch starts.
+</td>
+ </tr>
+<tr href="#" id="LnchPadConfig">
+<td>
+LnchPad Config:
+</td>
+<td>
+A <a href="LnchPad Setup/LnchPad Setup.htm">WIP dialog</a> that can prefill slots for a <a href="PrgLnch FAQ.htm#games">selection</a> of games based on modding tools for various games. On return to PrgLnch, any newly created LnchPad Slots are to be found on the <a href="PrgLnch Batch/PrgLnch Batch.htm#LnchPadSlots">above list</a>.
 </td>
  </tr>
 <tr href="#" id="QuitPrgLnch">
