@@ -14,8 +14,12 @@ About <span style="color: #40e0d0;">P</span> <span style="color: #8b4513;">r</sp
   <dt href="#" id="PrgLnchShortcut">What is a PrgLnch Shortcut?</dt>
   <dd>A PrgLnch Shortcut, or template for a Prg, isn't a Windows shortcut, but a kind of extension of it. Most of the items in <a href="PrgLnch Config/PrgLnch Config.htm"> PrgLnch Config </a> can be considered to make up a PrgLnch shortcut. These items allow the Prg various monitor and resolution settings, and much more.
  The <a href="PrgLnch Config/PrgLnch Config.htm#ModifyShortcut">Make Shortcut</a> button and dialog can launch Windows shortcut files, but in not modifying them, they are able to <a href="PrgLnch Config/PrgLnch Config.htm#ResolveShortcut">resolve</a> them for extra options in the dialog.</dd>
- <dt>Why doesn't PrgLnch detect more than one monitor in a multi monitor setup?</dt>
- <dd>The extra monitors may be configured as <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/dd145179%28v=vs.85%29.aspx">independent displays</a>, or using either <a href="https://en.wikipedia.org/wiki/AMD_Eyefinity">Eyefinity</a> or <a href="https://www.geforce.com/hardware/technology/surround/system-requirements">NVIDIA Surround</a> .
+<dt href="#" id="DragIn">Can Prgs be added by Drag In From Explorer/Desktop?</dt>
+<dd>As of version 2.2, yes, it's possible to drag in files from the desktop, explorer windows, or explorer type dialogs to the <a href="PrgLnch Config/PrgLnch Config.htm">PrgLnch Config</a> dialog.</dd>
+<dt>Can PrgLnch run in more than one instance?</dt>
+<dd>No. At this stage there is no provision in the code even if it were run from different locations on the same machine.</dd>
+<dt href="#" id="WorkingDirectory">How does a Prg use a Working Directory</dt>
+ <dd>A Prg generally handles its own work area in its own code, and on initialisation, a Working Directory can be of some value when the Prg uses relative paths. If the Prg is added to PrgLnch as a <B>*.lnk</B> file, and if the shortcut is <a href="PrgLnch Config/PrgLnch Config.htm#ResolveShortcut">resolved</a>, PrgLnch sets the Working Directory as the location of the Prg itself rather than the working path specified in the <B>*.lnk</B> file or the <B>*.lnk</B> file location.
  </dd>
   <dt>Can PrgLnch run in more than one instance?</dt>
   <dd>No. At this stage there is no provision in the code even if it were run from different locations on the same machine.</dd>
@@ -31,17 +35,19 @@ About <span style="color: #40e0d0;">P</span> <span style="color: #8b4513;">r</sp
   <dt>My Prg ended when it wasn't supposed to. What happened?</dt>
   <dd>PrgLnch doesn't track what a Prg does operationally. If the Prg has its own requirements for display or resolution which conflict with PrgLnch settings there may be a problem.
  </dd>
-  <dt>Can PrgLnch forms be postioned of the currently used (default) display?</dt>
+  <dt href="#" id="RepositionPrgLnch">Can PrgLnch forms be postioned of the currently used (default) display?</dt>
   <dd>Possible if target resolutions are less than 1024 pixels wide. A hotkey combination (CTRL-ALT-P) should bring the window to the location of the mouse. Another edge case is if when the screen height is less than 600 pixels, <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a> may clip off the top edge of the display. 
 </dd>
   <dt>Can a Prg exhibit different behaviour when run from an explorer folder or desktop shortcut instead of from within PrgLnch?</dt>
-  <dd>Yes, even when PrgLnch settings for Prg match the "native" environment. See <a href="https://autohotkey.com/boards/viewtopic.php?f=5&amp;t=29200">here</a> for an example. It also helps to check the environment requisites in the Prg's documentation, as it may set its own dedicated resolution mode for execution.</dd>
+  <dd>Yes, even when PrgLnch settings for Prg match the "native" environment. See <a href="https://autohotkey.com/boards/viewtopic.php?f=5&amp;t=29200">here</a> for an example. It also helps to check the environment requisites in the Prg's documentation, as it may set its own dedicated resolution mode for execution.<br>
+Conversely, there can be unexpected behaviour when a Prg exhibits the <I>same</I> behaviour. For example, when Notepad is temporarily set to run in a non-default monitor through PrgLnch; a later rerun of the Prg outside Prglnch will still launch it in the non-default monitor, because Notepad_from_explorer initialises according to its stored MRU registry settings.
+</dd>
  <dt href="#" id="Limitations">What are the limitations of PrgLnch?</dt>
   <dd>It can manage up to and including 12 Prgs but no more than 6 can be run through a batch at a time. As AutoHotKey <I>v</I>. 1.x does not <a href="https://autohotkey.com/boards/viewtopic.php?f=5&amp;t=13941">support long paths</a>, so PrgLnch does not.<br>
 Another limitation on Prg batching is the rigid start time schedule. There is, for example, no option for a Prg to start as soon as the preceding Prg has become inactive, an important requirement for certain batch runs. Or no option for a Prg to wait until the IO activity of its precedent reaches a given threshold..
 </dd>
  <dt href="#" id="ScreenSavers">Can PrgLnch run Screensavers on other Monitors?</dt>
-  <dd>Yes. One of the quirks of Windows is that screensaver animations are run only from shortcuts (<B>lnk</B> files),- so if running a <B>lnk</B>, uncheck the <a href="PrgLnch Config/PrgLnch Config.htm#ResolveShortcut">Resolve Shortcut</a> box, else the screensaver Properties dialogs are displayed.
+  <dd>Yes. Screensaver animations can be run from shortcuts (<B>lnk</B> files),- so if running a <B>lnk</B>, uncheck the <a href="PrgLnch Config/PrgLnch Config.htm#ResolveShortcut">Resolve Shortcut</a> box, else PrgLnch launches the screensaver Properties dialog.
  </dd>
   <dt>Why does PrgLnch produce a <a href="https://autohotkey.com/docs/FAQ.htm#Virus">virus alert</a>?</dt>
   <dd>It's possible the vendor of the antivirus program has not analysed the file yet. If the issue will not resolve, please refer to any notifications provided on one of these <a href="About PrgLnch.htm#Links">links</a>.
@@ -60,17 +66,25 @@ For a wider range of monitors and resolutions without an OEM driver, consider th
   <dt>Why does PrgLnch show the range of monitors starting from Display<B>N</B>?</dt>
   <dd>It's how they are emumerated. In most cases the first monitor is <B>1</B>, but after driver removal &amp; installation it might be temporarily incremented by the number of monitors detected.
  </dd>
-  <dt href="#" id="Del">Pressing the <B>Del</B> key deletes entire contents of an Edit Box without undo.</dt>
-  <dd>By "design." Text tracking routines would impact the performance of PrgLnch. A combination of <B>Backspace</B> and the <B>Home</B>/<B>Arrow</B>/<B>End</B> keys provide equivalent functionality. for a future release.
- </dd>
-  <dt href="#" id="TerminatePrgs">What happens to Prgs still active after quitting PrgLnch?
+  <dt href="#" id="Del">Pressing the <B>Del</B> key deletes entire contents of an Edit Box.</dt>
+  <dd>By "design." To date, text tracking routines are not coded in PrgLnch. <STRONG>CTRL-Z</STRONG> will return the value to the box as long as it is in focus, alternatively, a combination of <B>Backspace</B> and the <B>Home</B>/<B>Arrow</B>/<B>End</B> keys provide equivalent functionality.
+</dd>
+<dt href="#" id="TerminatePrgs">What happens to Prgs still active after quitting PrgLnch?
 </dt>
-  <dd>User will be prompted as to whether active Prgs remain so, when quitting Prglnch. If cancellation is preferred, (consider the case of more than one instance of Prg is executing), only those Prgs <a href="PrgLnch Config/PrgLnch 
+<dd>User will be prompted as to whether active Prgs remain so, when quitting Prglnch. If cancellation is preferred, (consider the case of more than one instance of Prg is executing), only those Prgs <a href="PrgLnch Config/PrgLnch 
 Config.htm#TestRunPrg">Test Run</a>, or monitored in the PrgLnch <a href="PrgLnch Batch\PrgLnch Batch.htm#PrgStatus">Prg Status List</a>, are closed.
 </dd>
-  <dt href="#" id="Browser">New browser instances opened through PrgLnch cannot be controlled by PrgLnch.
+<dt href="#" id="games">Will more games be added to LnchPad Setup?
 </dt>
-  <dd>Modern browsers typically run under one process ID, so they require different handling, currently not on offer by PrgLnch.
+<dd>Yes. A necessary pre-requisite is a diverse range of modding tools! 
+</dd>
+<dt href="#" id="DosBox">Does PrgLnch Support DOSBox?.
+</dt>
+<dd>Although not a <a href="https://www.dosbox.com/wiki/DOSBoxFrontends#Windows_Only">DOSBox frontend</a>, PrgLnch provides support for single games by initialising the box with the desired game directory. This happens when either the DOSBox <B>lnk</B> file is resolved or a shortcut is made from the original DOSBox executable. There is no support for games running from CDROM or DVD drives in DOSBox.
+</dd>
+<dt href="#" id="Browser">New browser instances opened through PrgLnch cannot be controlled by PrgLnch.
+</dt>
+<dd>Modern browsers typically run under one process ID, so they require different handling, currently not on offer by PrgLnch.
 </dd>
 
 </dl>

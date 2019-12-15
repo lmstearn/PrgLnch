@@ -34,6 +34,10 @@
 		<param name="Local" value="PrgLnch Properties\PrgLnch Properties.htm">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="LnchPad Setup">
+		<param name="Local" value="LnchPad Setup\LnchPad Setup.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="PrgLnch FAQ">
 		<param name="Local" value="PrgLnch FAQ.htm">
 		</OBJECT>

@@ -12,21 +12,22 @@
 <h2>Preliminaries</h2>
 <p>As a reference guide the question mark on the titlebar along with the F1 key are provided for context help on the various form items.<br>
 <img src="Help.jpg" width="" height="" alt=""><br>
-An idea of the approximate location of programs or shortcuts to be used in PrgLnch is obtained by a quick search in a File Explorer window. For best results in any file search, <a href="https://www.tenforums.com/tutorials/58569-rebuild-search-index-windows-10-a.html">rebuild its index</a>.
+
+Run PrgLnch, first checking the controls on the form are not clipped (usually a result of the font being other than MS Shell Dlg at 8 size), as not all fonts have been tested.
+PrgLnch uses files on your disk, so an idea of the approximate location of programs or shortcuts to be used in PrgLnch is obtained by a quick search in a File Explorer window. For best results in any file search, <a href="https://www.tenforums.com/tutorials/58569-rebuild-search-index-windows-10-a.html">rebuild its index</a>.
 </p>
 <h2>Navigating Through PrgLnch</h2>
 <p>
-PrgLnch opens with the <a href="PrgLnch Batch/PrgLnch Batch.htm">PrgLnch Batch</a> form, where batched programs will be listed. Not much here yet, so, click <a href="PrgLnch Batch/PrgLnch Batch.htm#PrgConfig">Prg Config</a> on the bottom RHS, and proceed to the <a href="PrgLnch Config/PrgLnch Config.htm#ShortcutSlots">drop-down list</a> on the Upper LHS where an empty slot can be chosen for your very first Prg.<br>
+PrgLnch opens with the <a href="PrgLnch Batch/PrgLnch Batch.htm">PrgLnch Batch</a> form, where batched programs are to be listed. Not much here yet, so, click <a href="PrgLnch Batch/PrgLnch Batch.htm#PrgConfig">Prg Config</a> on the bottom RHS, and proceed to the <a href="PrgLnch Config/PrgLnch Config.htm#ShortcutSlots">drop-down list</a> on the Upper LHS where an empty slot can be chosen for your very first Prg.<br>
 <img src="Shortcut.jpg" width="" height="" alt=""><br>
 </p>
 <h2>Adding a Shortcut to a Prg</h2>
-<p>
-Consider leaving <a href="PrgLnch Config/PrgLnch Config.htm#ResolveShortcut">Shortcut Nav. (Dlg)</a> unchecked if an actual shortcut, or <I>lnk</I> file is to be used instead of a program file. Type in a name for the Prg (optional), then click the <a href="PrgLnch Config/PrgLnch Config.htm#ModifyShortcut">Make Shortcut</a> button underneath to navigate to the  location of the file. For example, navigate to <I>Windows Accessories</I> from <I>Programs</I> in the dialog box, and select the <EM>Notepad</EM> shortcut, alternatively, navigate to <I>C:\Windows</I> to locate <EM>Notepad.exe</EM>.<br>
+<p>The easist way is to just <a href="PrgLnch FAQ.htm#DragIn">drag in a file</a> from your preferred location. Alternatively, consider leaving <a href="PrgLnch Config/PrgLnch Config.htm#ResolveShortcut">Shortcut Nav. (Dlg)</a> unchecked if an actual shortcut, or <I>lnk</I> file is to be used instead of a program file. Then type in a name for the Prg (optional), then click the <a href="PrgLnch Config/PrgLnch Config.htm#ModifyShortcut">Make Shortcut</a> button underneath to navigate to the  location of the file. For example, navigate to <I>Windows Accessories</I> from <I>Programs</I> in the dialog box, and select the <EM>Notepad</EM> shortcut, alternatively, navigate to <I>C:\Windows</I> to locate <EM>Notepad.exe</EM>.<br>
 </p>
 <h2>Configure Prg Settings</h2>
 <p>
 If desired, change the monitor &amp; resolution, and opt for <a href="PrgLnch Config/PrgLnch Config.htm#TestMode">TestMode</a> along with other selections of your choice. Here, the Prg will launch at below normal priority. In the following graphic, wini.ini is opened as an ANSII file with the text in <a href="PrgLnch Config/PrgLnch Config.htm#CmdLineExtras">Command Line Extras</a>. Later on, we''ll see what happens when opening it with a <B><I>/w </I></B>switch instead!
-<img src="PrgOptions.jpg" width="" height="" alt="">
+<img src="PrgLnchOptions.jpg" width="" height="" alt="">
 </p>
 
 <h2>Test Run the Prg</h2>
@@ -42,12 +43,12 @@ Config.htm#TestRunPrg">Test Run Prg</a>  steps and set the Res Option at the rec
 </p>
 <h2>Batch Preset Preliminaries</h2>
 <p>It's possible to associate a <a href="PrgLnch Batch\PrgLnch Batch.htm#BatchPresets">Batch Preset</a> with just one Prg, but many situations require programs to be launched in some ordered sequence. Later we'll demonstrate two Prgs running in a batch. Click <a href="PrgLnch Config/PrgLnch Config.htm#BackToPrglnch">Back To Prglnch</a> and select a <a href="PrgLnch Batch\PrgLnch Batch.htm#BatchPresets">Batch Preset</a>, and optionally assign it a <a href="PrgLnch Batch\PrgLnch Batch.htm#BatchPresetName">Preset Name</a>.</p>
-<img src="NotePadPreset.jpg" width="" height="" alt=""><br>
 
+<img src="NotePadPreset.jpg" width="" height="" alt=""><br>
 
 <h2>Configure a Batch Preset</h2>
 <p>
-Choose a <a href="PrgLnch Batch\PrgLnch Batch.htm#BatchPresetName">Preset</a> and some Prgs from the <a href="PrgLnch Batch\PrgLnch Batch.htm#BatchPrgs">Batch Prg List</a>.The selected Prg names will be prefixed with a number surrounded by asterisks. The number denotes the monitor they will be launched on, and the up-down arrows to the right determine the order of launching, the top in the list being the first. Click <a href="PrgLnch Batch\PrgLnch Batch.htm#BatchPresetsLabel">Preset Selected</a> to view the <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a>.</p>
+Choose a <a href="PrgLnch Batch\PrgLnch Batch.htm#BatchPresetName">Preset</a> and some Prgs from the <a href="PrgLnch Batch\PrgLnch Batch.htm#BatchPrgs">Batch Prg List</a>.The selected Prg names will be prefixed with a number surrounded by asterisks. The number denotes the monitor they will be launched on, and the up-down arrows to the right determine the order of launching, the top in the list being the first. Click <a href="PrgLnch Batch\PrgLnch Batch.htm#PresetProperties">Preset Properties</a> to view the <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a>.</p>
 <img src="PrgProperties.jpg" width="" height="" alt=""><br>
 
 <h2>Starting a Batch Preset</h2>
@@ -56,14 +57,14 @@ Choose a <a href="PrgLnch Batch\PrgLnch Batch.htm#BatchPresetName">Preset</a> an
 For example, here's how the Notepad batch looks on Monitor 1 after moving NotepadA from Monitor 2, and with their windows repositioned (Word Wrap is turned on in Notepad):<br>
 <img src="Notepad.jpg" width="" height="" alt=""><br>
 </p>
-<h2>Creating a Lnch Pad Slot</h2>
+<h2>Creating a LnchPad Slot</h2>
 <p>
-Type a name in the <a href="PrgLnch Batch/PrgLnch Batch.htm#IniLnchPad">Lnch Pad Slot</a> and click the save button to create the file.</p>
+Type a name in the <a href="PrgLnch Batch/PrgLnch Batch.htm#LnchPadSlots">LnchPad Slot</a> and click the save button to create the file. For Bethesda Game tragics, there's <a href="LnchPad Setup/LnchPad Setup.htm">Lnch Pad presets</a> available for a selection of games on the click of <a href="PrgLnch Batch/PrgLnch Batch.htm#LnchPadConfig">LnchPad Config</a>.</p>
+<img src="LnchPad Setup.jpg" width="" height="" alt="">
 
 <h2>Updating a Prg</h2>
 <p>A rudimentary example of an updater is setup with <a href="https://github.com/lmstearn/Bigger-Directories/wiki">Bigger Directories</a>.  The URL <a href="http://www.ozemail.com.au/~lmstearn/files/BiggerDirectories.exe">http://www.ozemail.com.au/~lmstearn/files/BiggerDirectories.exe</a> can be pasted into the Prg's <a href="PrgLnch Config/PrgLnch Config.htm#UrlName">Url Name</a> box, and is saved when the <I>Save URL</I> button is activated. Bigger Directories can then be updated whenever <a href="PrgLnch Config/PrgLnch Config.htm#UpdatePrg">Update Prg</a> is next clicked.</p>
 <img src="BiggerDirectories.jpg" width="" height="" alt="">
-
 
 
 <p><a href="What is Prglnch.htm">What is Prglnch?</a><br></p>

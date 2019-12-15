@@ -38,8 +38,8 @@
 		<param name="Local" value="What Is PrgLnch.htm">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Batch Presets Label">
-		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm#BatchPresetsLabel">
+		<param name="Name" value="PresetProperties">
+		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Batch Preset Name">
@@ -66,6 +66,10 @@
 		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm#PrgLnchInterval">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Power Plans">
+		<param name="Local" value="PrgLnch Batch.htm#PowerPlans">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="This Preset at Load">
 		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm#ThisPresetatLoad">
 		</OBJECT>
@@ -78,12 +82,20 @@
 		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm#PrgConfig">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Lnch Pad Slots">
-		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm#IniLnchPad">
+		<param name="Name" value="LnchPad Slots">
+		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm#LnchPadSlots">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Run Batch">
 		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm#RunBatch">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="LnchPad Config">
+		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm#LnchPadConfig">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="LnchPad Setup">
+		<param name="Local" value="LnchPad Setup\LnchPad Setup.htm">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Quit PrgLnch">
