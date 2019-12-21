@@ -10,6 +10,8 @@ ListLines, Off
 #MaxMem 256
 AutoTrim, Off
 
+
+
 Class ListBoxProps
 {
 
@@ -33,11 +35,11 @@ Class ListBoxProps
 		this.prgNo := value
 		}
 	}
-	NewHeight
+	NewItemHeight
 	{
 		set
 		{
-		this._NewHeight := value
+		this._NewItemHeight := value
 		}
 	}
 	hWnd
@@ -59,7 +61,7 @@ Class ListBoxProps
 
 	SetItemHeight()
 	{
-	SendMessage, % this.LB_SETITEMHEIGHT, 0, % this._NewHeight, , % "ahk_id" this._hWnd
+	SendMessage, % this.LB_SETITEMHEIGHT, 0, % this._NewItemHeight, , % "ahk_id" this._hWnd
 	WinSet, Redraw, , % "ahk_id" this._hWnd
 	Return ErrorLevel
 	}
@@ -139,24 +141,25 @@ OnMessage(0x0053, "WM_Help")
 WM_HELPMSG := 0x0053
 WS_EX_CONTEXTHELP := 0x00000400
 
-gameList := ["Morrowind", "Oblivion", "Skyrim", "", "", "", "", "", "", "", "", ""]
+gameList := ["Morrowind", "Oblivion", "Skyrim", "Fallout 3", "Fallout NV", "Fallout 4", "", "", "", "", "", ""]
 iniNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
 PrgLnchIniPath := A_ScriptDir . "\PrgLnch.ini"
 gameIniPath := ""
 gameListStr := ""
 tooltipDriveStr := ""
-maxGames := 3
+maxGames := 6
 maxDrives := 9 ; it's actually 24 letters, but focus on NFTS
 DriveLetter := Object()
 DriveLetterBak := Object()
 FATDrives := ""
 maxBatchPrgs := 6
 prgNo := 12
-thisGuiW := floor(A_ScreenWidth/2)
-thisGuiH := floor(A_ScreenHeight/2)
+thisGuiW := 0
+thisGuiH := 0
 tabGuiW := 0
 tabGuiH := 0
+GuiHwnd := 0
 
 
 mControl := 0
@@ -178,23 +181,41 @@ tmp := 0
 i := 0
 
 prgName1 := ["Wrye Mash", "MLOX", "TESTool", "Bsa Browser", "MWEdit", "MMOG", "TESAME", "TESPCD", "Enchanted Editor", "MEN Combat MG", "TESFiles 3.1", "Groundcover GP"]
-prgName2 := ["Wrye Bash", "BOSS", "Construction Set Extender", "TES4Edit", "BSA Commander", "Multi Purpose Gui", "Landscape LOD Generator", "NifSkope", "TES4LODGen", "DDSOpt", "MergePlugins", "LandMagic"]
-prgName3 := ["Wrye Bash", "ModOrganizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "DynDOLOD", "NifSkope.exe", "Skyrim Performance Monitor 64", "xTranslator", "hkxcmd", "SSELODGen"]
+prgName2 := ["Wrye Bash", "BOSS", "Construction Set Extender", "TES4Edit", "BSA Commander", "Multi Purpose Gui", "Landscape LOD Generator", "NifSkope", "TES4LODGen", "DDSOpt", "Merge Plugins", "Land Magic"]
+prgName3 := ["Wrye Bash", "Mod Organizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "DynDOLOD", "NifSkope.exe", "Skyrim Performance Monitor 64", "xTranslator", "HKXCmd PS UI", "SSELODGen"]
+prgName4 := ["Wrye Flash", "Fallout Mod Manager", "Garden of Eden Creation Kit", "FO3Edit", "LOOT", "FO3LODGen", "Merge Plugins", "NifSkope", "BSArch", "Fallout 3 Configator", "FO3Dump", "Nifty Automagic Dismember Tool"]
+prgName5 := ["Wrye Flash", "Fallout Mod Manager", "Garden of Eden Creation Kit", "FNVEdit", "LOOT", "FNVLODGen", "Merge Plugins", "NifSkope", "BSArch", "New Vegas Configator", "GECK PowerUp for NV", "FO3 Save Import Utility"]
+prgName6 := ["Wrye Bash", "Mod Organizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "Fallout 4 Config Tool", "NifSkope", "Fallout Performance Monitor 64", "xTranslator", "Bsa Browser", "Material Editor"]
 prgExe1 := ["Wrye Mash.exe", "mlox.exe", "TESTool.exe", "BSA Browser.exe", "MWEdit.exe", "mmog.exe", "TES Advanced Mod Editor.exe", "tespcdv031.exe", "Enchanted.exe", "MENCMG.exe", "TESFiles.exe", "Grass.exe"]
 prgExe2 := ["Wrye Bash.exe", "BOSS.exe", "TESConstructionSetOld.exe", "TES4Edit.exe", "bsacmd.exe", "mpgui.exe", "tes4ll.exe", "NifSkope.exe", "TES4LODGen.exe", "DDSOpt X64.exe", "MergePlugins.exe", "LandMagic.exe"]
 prgExe3 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "SSEEdit.exe", "bae.exe", "BodySlideX64.exe", "DynDOLOD.exe", "NifSkope.exe", "PerformanceMonitor64.exe", "xTranslator.exe", "hkxcmd.exe", "SSELODGen.exe"]
+prgExe4 := ["Wrye Flash.exe", "fomm.exe", "Geck.exe", "FO3Edit.exe", "Loot.exe", "FO3LODGen.exe", "MergePlugins.exe", "NifSkope.exe", "bsarch.exe", "FO3Configator.exe", "FO3Dump.exe", "nifty.exe"]
+prgExe5 := ["Wrye Flash.exe", "fomm.exe", "Geck.exe", "FNVEdit.exe", "Loot.exe", "FNVLODGen.exe", "MergePlugins.exe", "NifSkope.exe", "bsarch.exe", "NVConfigator.exe", "geckpu-nv.exe", "FO3 Save Importer.exe"]
+prgExe6 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "FO4Edit.exe", "bae.exe", "BodySlideX64.exe", "Fallout4ConfigTool.exe", "NifSkope.exe", "PerformanceMonitor64.exe", "xTranslator.exe ", "BSA Browser.exe", "Material Editor.exe "]
 prgPath1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath3 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgPath4 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgPath5 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgPath6 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath1bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath2bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath3bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgPath4bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgPath5bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgPath6bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl3 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgUrl4 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgUrl5 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgUrl6 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgInfUrl1 := ["https://www.nexusmods.com/morrowind/mods/45439", "https://www.nexusmods.com/morrowind/mods/43001", "http://web.archive.org/web/20040617055545/http://www34.brinkster.com/ghostwheel/TESTool.htm", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "http://mwedit.sourceforge.net", "http://abitoftaste.altervista.org/morrowind/index2.php?option=downloads&no_comp=1&no_html=1&task=download&id=53&Itemid=50&-download-MMOG-Morrowind-Merged-Objects-Generator", "http://mw.modhistory.com/download-95-5289", "https://www.nexusmods.com/morrowind/mods/3874", "http://mw.modhistory.com/download--1662", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=63&Itemid=50&-MEN-Combat-Merged-Generator", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=90&Itemid=50&-TESFiles-3-1", "http://www.nexusmods.com/morrowind/mods/43907"]
 prgInfUrl2 := ["https://www.nexusmods.com/oblivion/mods/22368", "https://boss-developers.github.io", "https://www.nexusmods.com/oblivion/mods/36370", "http://tes5edit.github.io", "https://www.nexusmods.com/oblivion/mods/3311", "https://www.nexusmods.com/oblivion/mods/41447", "https://www.nexusmods.com/oblivion/mods/40549", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/oblivion/mods/15781", "https://www.nexusmods.com/skyrim/mods/5755", "https://github.com/matortheeternal/merge-plugins", "https://www.nexusmods.com/oblivion/mods/30519"]
-prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrim/mods/49015", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrim/mods/6491", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrim/mods/83200", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
+prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://www.nexusmods.com/skyrimspecialedition/mods/6194", "https://loot.github.io", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrimspecialedition/mods/201", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrimspecialedition/mods/3826", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrim/mods/83200", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
+prgInfUrl4 := ["https://www.nexusmods.com/fallout3/mods/11336", "https://www.nexusmods.com/newvegas/mods/54991", "http://geck.bethsoft.com/index.php?title=Garden_of_Eden_Creation_Kit", "https://www.nexusmods.com/fallout3/mods/637", "https://loot.github.io", "https://www.nexusmods.com/fallout3/mods/21174", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/fallout3/mods/6769", "http://modsreloaded.com/fo3dump", "https://www.nexusmods.com/fallout3/mods/2631"]
+prgInfUrl5 := ["https://www.nexusmods.com/newvegas/mods/35003", "https://www.nexusmods.com/newvegas/mods/54991", "http://geck.bethsoft.com/index.php?title=Garden_of_Eden_Creation_Kit", "https://www.nexusmods.com/newvegas/mods/34703", "https://loot.github.io", "https://www.nexusmods.com/newvegas/mods/58562", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/newvegas/mods/40442", "https://www.nexusmods.com/newvegas/mods/36290", "https://www.nexusmods.com/newvegas/mods/37649"]
+prgInfUrl6 := ["https://www.nexusmods.com/fallout4/mods/20032", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io", "https://www.nexusmods.com/fallout4/mods/2737", "https://www.nexusmods.com/fallout4/mods/78", "https://www.nexusmods.com/fallout4/mods/25", "https://www.nexusmods.com/fallout4/mods/102", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/fallout4/mods/1762", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "https://www.nexusmods.com/fallout4/mods/3635"]
 listboxIndices := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 WS_CLIPSIBLINGS := 0x4000000
 WS_EX_TOPMOST := 0x8
@@ -203,7 +224,6 @@ LBS_MULTIPLESEL	:= 0x8
 
 Black := "000000"
 White := "ffffff"
-Gray := "808080"
 Onyx := "353839"
 Silver := "c0c0c0"
 Yellow := "ffff00"
@@ -214,6 +234,7 @@ Olive := "808000"
 Viridian := "40826D"
 Avocado := "008000"
 Lime := "00ff00"
+Feldgrau := "5d5d3d"
 Blue := "ff0000"
 Navy := "000080"
 Turquoise := "40E0D0"
@@ -232,13 +253,16 @@ Violet := "7F00FF"
 Plum := "8E4585"
 Orange := "FFA500"
 Salmon := "fa8072"
+DkSalmon := "E9967A"
 Peach := "FFE5B4"
 Beige := "F5F5DC"
 Chestnut := "954535"
 Chocolate := "7B3F00"
 Taupe := "483C32"
 Auburn := "A52A2A"
-
+Gray := "808080"
+Steingrau := "555548"
+Khakigrau := "746643"
 
 (A_PtrSize = 8)? 64bit := 1 : 64bit := 0 ; ONLY checks .exe bitness
 
@@ -295,14 +319,27 @@ Gui, Add, Radio, gUpdateIni vUpdateIni HWNDUpdateIniHwnd, Update existing Ini Fi
 GuiControl, Hide, overWriteIni
 GuiControl, Hide, UpdateIni
 
+
+
 A_GuiFont := GuiDefaultFont()
 A_GuiFontSize := A_LastError
-Gui, Font, % "s" A_GuiFontSize + 2
+
+thisGuiW := floor(GetMonWidth(GuiHwnd))
+thisGuiH := floor(GetMonHeight(GuiHwnd))
+
+tmp := (thisGuiW > 1400)? ((thisGuiW > 1800)? 4: 2): 1
+
+Gui, Font, % "s" A_GuiFontSize + tmp
+
 GuiControl, Font, searchDrive
 GuiControl, Font, addToLnchPad
 Gui, Font
 CtlColors.Attach(searchDriveHwnd, Red, "White")
 CtlColors.Attach(addToLnchPadHwnd, Red, "White")
+
+thisGuiW := floor(thisGuiW/2)
+thisGuiH := floor(thisGuiH/2)
+
 
 Gui, Add, Tab2, x0 y0 w%thisguiW% h%thisguiH% vLnchPadTab gLnchPadTab AltSubmit HWNDLnchPadTabHwnd, % substr(gameListStr, 1, StrLen(gameListStr) - 1)
 
@@ -318,36 +355,55 @@ tabguiW := thisguiW - A_LastError
 	PrgIndexList := ""
 	Gui, Tab, %A_Index%
 
-
 	Gui, Add, ListBox, %LBS_MULTIPLESEL% x0 y0 vPrgIndex%A_Index% gPrgListBox HWNDPrgIndex%A_Index%Hwnd
 	ListBoxProps._hWnd := PrgIndex%A_Index%Hwnd
-	ListBoxProps.NewHeight := floor(3/2 * ListBoxProps.GetItemHeight())
+	; Not the best....
+	tmp := (thisGuiH > 520)? ((thisGuiH > 700)? 4: 3): (thisGuiH > 420)? 2: 1
+	Gui, Font, % "s" A_GuiFontSize + tmp
+	GuiControl, Font, % PrgIndex%A_Index%Hwnd
+	Gui, Font
+	ListBoxProps.NewItemHeight := floor(3/2 * ListBoxProps.GetItemHeight())
 	ListBoxProps.SetItemHeight()
-	GuiControl, Move, PrgIndex%A_Index%, % "x" 11 * tabguiW/16 "y" tabguiH/4 "w" tabguiW/4 "h" 11 * tabguiH/16
+
+	GuiControl, Move, PrgIndex%A_Index%, % "x" 11 * tabguiW/16 "y" tabguiH/4 "w" tabguiW/4 "h" (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
+
 	CtlColors.Attach(PrgIndex%A_Index%Hwnd, Pink, "White")
 
-		if (A_Index = 1)
-		{
+
+	switch A_Index
+	{
+	case 1:
+	{
 		tmp = LnchPadMorrowind.jpg
 		FileInstall LnchPadMorrowind.jpg, LnchPadMorrowind.jpg
-		}
-		else
-		{
-			if (A_Index = 2)
-			{
-			tmp = LnchPadOblivion.jpg
-			FileInstall LnchPadOblivion.jpg, LnchPadOblivion.jpg
-			}
-			else
-			{
-				if (A_Index = 3)
-				{
-				tmp = LnchPadSkyrim.jpg
-				FileInstall LnchPadSkyrim.jpg, LnchPadSkyrim.jpg
-				}
-			}
-		
-		}
+	}
+	case 2:
+	{
+		tmp = LnchPadOblivion.jpg
+		FileInstall LnchPadOblivion.jpg, LnchPadOblivion.jpg
+	}
+	case 3:
+	{
+		tmp = LnchPadSkyrim.jpg
+		FileInstall LnchPadSkyrim.jpg, LnchPadSkyrim.jpg
+	}
+	case 4:
+	{
+		tmp = LnchPadFallout 3.jpg
+		FileInstall LnchPadFallout 3.jpg, LnchPadFallout 3.jpg
+	}
+	case 5:
+	{
+		tmp = LnchPadFallout NV.jpg
+		FileInstall LnchPadFallout NV.jpg, LnchPadFallout NV.jpg
+	}
+	case 6:
+	{
+		tmp = LnchPadFallout 4.jpg
+		FileInstall LnchPadFallout 4.jpg, LnchPadFallout 4.jpg
+	}
+
+	}
 
 
 
@@ -405,10 +461,12 @@ tabStat := 1
 GoSub LnchPadTab
 GuiControl, Choose, LnchPadTab, %tabStat%
 Gui Show, xCenter yCenter w%thisguiW% h%thisguiH%, LnchPad Setup
-
+SetTaskBarIcon(GuiHwnd)
 
 
 WinSet, Redraw,, ahk_id %GuiHwnd%
+
+
 Return
 
 
@@ -1096,21 +1154,39 @@ switch tabStat
 {
 case 1:
 {
-CtlColors.Change(PrgIndex1Hwnd, Chestnut, "Yellow")
-CtlColors.Change(searchDriveHwnd, Chestnut, "Yellow")
-CtlColors.Change(addToLnchPadHwnd, Auburn, "Yellow")
+CtlColors.Change(PrgIndex1Hwnd, Chocolate, "Yellow")
+CtlColors.Change(searchDriveHwnd, Chocolate, "Yellow")
+CtlColors.Change(addToLnchPadHwnd, Chestnut, "Yellow")
 }
 case 2:
 {
 CtlColors.Change(PrgIndex2Hwnd, Taupe, "Goldenrod")
 CtlColors.Change(searchDriveHwnd, Taupe, "Goldenrod")
-CtlColors.Change(addToLnchPadHwnd, Chocolate, "Goldenrod")
+CtlColors.Change(addToLnchPadHwnd, Khakigrau, "Goldenrod")
 }
 case 3:
 {
 CtlColors.Change(PrgIndex3Hwnd, Black, "Silver")
 CtlColors.Change(searchDriveHwnd, Black, "Silver")
 CtlColors.Change(addToLnchPadHwnd, Onyx, "Silver")
+}
+case 4:
+{
+CtlColors.Change(PrgIndex4Hwnd, Steingrau, "Goldenrod")
+CtlColors.Change(searchDriveHwnd, Steingrau, "Goldenrod")
+CtlColors.Change(addToLnchPadHwnd, Feldgrau, "Goldenrod")
+}
+case 5:
+{
+CtlColors.Change(PrgIndex5Hwnd, Auburn, "Yellow")
+CtlColors.Change(searchDriveHwnd, Auburn, "Yellow")
+CtlColors.Change(addToLnchPadHwnd, Vermilion, "Yellow")
+}
+case 6:
+{
+CtlColors.Change(PrgIndex6Hwnd, Steingrau, "White")
+CtlColors.Change(searchDriveHwnd, Steingrau, "White")
+CtlColors.Change(addToLnchPadHwnd, Khakigrau, "White")
 }
 }
 buttonBkdChange := 0 ; just in case
@@ -1181,12 +1257,12 @@ GuiDefaultFont()
 {
 ;https://autohotkey.com/board/topic/7984-ahk-functions-incache-cache-list-of-recent-items/://autohotkey.com/board/topic/7984-ahk-functions-incache-cache-list-of-recent-items/page-10?&#entry443622
 hwnd := 0 ; entire screen
-hFont := DllCall( "GetStockObject", UInt,17 ) ; DEFAULT_GUI_FONT
-VarSetCapacity( LF, szLF := 60*( A_IsUnicode ? 2:1 ) )
-DllCall("GetObject", UInt,hFont, Int,szLF, UInt,&LF )
-hDC := DllCall( "GetDC", UInt,hwnd ), DPI := DllCall( "GetDeviceCaps", UInt,hDC, Int,90 )
-DllCall( "ReleaseDC", Int,0, UInt,hDC ), S := Round( ( -NumGet( LF,0,"Int" )*72 ) / DPI ) ; S is fonstsize
-Return DllCall( "MulDiv",Int,&LF+28, Int,1,Int,1, Str ), DllCall( "SetLastError", UInt,S ) ; sneaky way of returning a second value without using function parameters
+hFont := DllCall( "GetStockObject", "UInt", 17) ; DEFAULT_GUI_FONT
+VarSetCapacity( LF, szLF := 60*((A_IsUnicode)? 2:1))
+DllCall("GetObject", "UInt", hFont, "Int", szLF, "UInt",&LF )
+hDC := DllCall( "GetDC", "UInt", hwnd ), DPI := DllCall( "GetDeviceCaps", "UInt", hDC, "Int", 90 )
+DllCall( "ReleaseDC", "Int", 0, "UInt", hDC ), S := Round(( -NumGet(LF,0, "Int") * 72) / DPI) ; S is fonstsize
+Return DllCall( "MulDiv", "Unt", &LF+28, "Int", 1, "Int", 1, "Str"), DllCall( "SetLastError", "UInt", S ) ; sneaky way of returning a second value without using function parameters
 }
 
 
@@ -1334,11 +1410,17 @@ GuiControlGet, tmp, Name, % mControl
 		switch tabStat
 		{
 		case 1:
-		CtlColors.Change(searchDriveHwnd, Auburn, "Yellow")
+		CtlColors.Change(searchDriveHwnd, Chocolate, "Yellow")
 		case 2:
 		CtlColors.Change(searchDriveHwnd, Taupe, "Goldenrod")
 		case 3:
 		CtlColors.Change(searchDriveHwnd, Black, "Silver")
+		case 4:
+		CtlColors.Change(searchDriveHwnd, Steingrau, "Goldenrod")
+		case 5:
+		CtlColors.Change(searchDriveHwnd, Auburn, "Yellow")
+		case 6:
+		CtlColors.Change(searchDriveHwnd, Steingrau, "White")
 		}
 
 	}
@@ -1352,9 +1434,15 @@ GuiControlGet, tmp, Name, % mControl
 		case 1:
 		CtlColors.Change(addToLnchPadHwnd, Chestnut, "Yellow")
 		case 2:
-		CtlColors.Change(addToLnchPadHwnd, Chocolate, "Goldenrod")
+		CtlColors.Change(addToLnchPadHwnd, Khakigrau, "Goldenrod")
 		case 3:
 		CtlColors.Change(addToLnchPadHwnd, Onyx, "Silver")
+		case 4:
+		CtlColors.Change(addToLnchPadHwnd, Feldgrau, "Goldenrod")
+		case 5:
+		CtlColors.Change(addToLnchPadHwnd, Vermilion, "Yellow")
+		case 6:
+		CtlColors.Change(addToLnchPadHwnd, Khakigrau, "White")
 		}
 	}
 buttonBkdChange := 0
@@ -1869,12 +1957,12 @@ Static MessageHandler := "CtlColors_OnMessage"
 ; Windows Messages
 Static WM_CTLCOLOR := {Edit: 0x0133, ListBox: 0x134, Static: 0x0138}
 ; HTML Colors (BGR NOT RGB)
-Static HTML := {CYAN: 0xFFFF00, BLACK: 0x000000, BLUE: 0xFF0000, FUCHSIA: 0xFF00FF, GRAY: 0x808080, AUBURN: 0X2A2AA5
- , LIME: 0X00FF00, MAROON: 0X000080, NAVY: 0X800000, OLIVE: 0X008080, PURPLE: 0X800080, RED: 0X0000FF
- , SILVER: 0XC0C0C0, TEAL: 0X808000, WHITE: 0XFFFFFF, YELLOW: 0X00FFFF, ORANGE: 0X00A5FF, BEIGE: 0XDCF5F5
- , CHESTNUT: 0X354595, CHOCOLATE: 0X003F7B, TAUPE: 0X323C48, SALMON: 0X7280FA, VIOLET: 0XFF007F, GRAPE: 0XA82D6F
- , PEACH: 0XB4E5FF, VERMILION: 0X3442E3, CERULEAN: 0XA77B00, 0XTURQUOISE: 0XD0E040, VIRIDIAN: 0X6D8240
- , PLUM: 0X85458E, MAGENTA: 0XA653F6, GOLD: 0X00D7FF, GOLDENROD: 0X20A5DA, GREEN: 0X008000, ONYX: 0X393835}
+Static HTML := {CYAN: 0xFFFF00, BLACK: 0x000000, BLUE: 0xFF0000, FUCHSIA: 0xFF00FF, GRAY: 0x808080, AUBURN: 0XA52A2A
+ , LIME: 0X00FF00, MAROON: 0X000080, NAVY: 0X800000, OLIVE: 0X008080, PURPLE: 0X800080, RED: 0X0000FF, FELDGRAU: 0X5d5d3d
+ , SILVER: 0XC0C0C0, TEAL: 0X808000, WHITE: 0XFFFFFF, YELLOW: 0X00FFFF, ORANGE: 0X00A5FF, BEIGE: 0XDCF5F5, AVOCADO: 0X008000
+ , CHESTNUT: 0X354595, CHOCOLATE: 0X003F7B, TAUPE: 0X323C48, SALMON: 0X7280FA, VIOLET: 0XFF007F, GRAPE: 0XA82D6F, STEINGRAU: 0X555548
+ , PEACH: 0XB4E5FF, VERMILION: 0X3442E3, CERULEAN: 0XA77B00, TURQUOISE: 0XD0E040, VIRIDIAN: 0X6D8240, DKSALMON: 0XE9967A
+ , PLUM: 0X85458E, MAGENTA: 0XA653F6, GOLD: 0X00D7FF, GOLDENROD: 0X20A5DA, GREEN: 0X008000, ONYX: 0X393835, KHAKIGRAU: 0X746643}
 
  ; Transparent Brush
 Static NullBrush := DllCall("GetStockObject", "Int", 5, "UPtr")
@@ -2194,6 +2282,22 @@ Critical
 	Return CTL.Brush
 	}
 }
+SetTaskBarIcon(Hwnd)
+{
+WM_SETICON:=0x80
+LR_LOADFROMFILE:=0x10
+IconFile := A_ScriptDir . "\PrgLnch.ico"
+hIcon := DllCall("LoadImage", "uint", 0, "str", IconFile, "uint", 1, "int", 0, "int", 0, "uint", LR_LOADFROMFILE)
+
+	if (!hIcon)
+	{
+	MsgBox, 8192, Icon File, Icon file missing or invalid!
+	Return
+	}
+;hIcon := Format("0x{:x}", hIcon + 0) : ; hIcon does not want hex formatting for ahk_id...
+SendMessage, %WM_SETICON%, 0, %hIcon%,, % "ahk_id " . Hwnd
+}
+
 WM_HELP(wp_notused, lParam, _msg, _hwnd)
 {
 local Size         := NumGet(lParam +  0, "uint")
@@ -2264,10 +2368,33 @@ sleep, 120
 
 if (!retVal)
 {
+tmp := 0
 
-	if (WinExist("PrgLnch_Help"))
+	Loop
+	{
+	Sleep 30
+	tmp++
+		if (tmp = 1000)
+		{
+		msgbox, 8196, Help Working?, Help has not started.`nReply:`n`nYes: Continue to wait.`nNo: Continue without waiting.
+			IfMsgBox, Yes
+			tmp := 0
+			else
+			Break
+		}
+	} Until (WinActive("PrgLnch_Help"))
+
+
+
+	if (WinExist())
 	{
 	;if  not maximised
+	WinGetText, strTmp , A
+
+		; Too bad if we missed it
+		if (strTmp != "PrgLnch_Help")
+		Return retVal
+
 	WinGet, tmp, MinMax
 	;Tablet mode perhaps? https://autohotkey.com/boards/viewtopic.php?f=6&t=15619
 	;We are launching as "normal" but just in case this is overidden by user modifying shortcut properties. (probably not)
@@ -2275,8 +2402,9 @@ if (!retVal)
 		WinRestore
 	WinGetPos, , , , tmp
 	sleep, 60
-	SysGet, md, MonitorWorkArea, % GetPrgLnchMonNum(1)
-	dx := Round(mdleft + (mdRight- mdleft)/2)
+	SysGet, md, MonitorWorkArea, % GetPrgLnchMonNum()
+
+	dx := Round(mdleft + (mdRight - mdleft)/2)
 	dy := Round(mdTop + (mdBottom - mdTop)/2)
 
 	WinMove, A , , % mdRight - w, % mdTop, %w%, Floor(3*h/4)
@@ -2285,32 +2413,26 @@ if (!retVal)
 }
 return retVal
 }
-GetPrgLnchMonNum(fromMouse := 0)
+GetMonWidth(GuiHwnd)
+{
+	SysGet, md, MonitorWorkArea, % GetPrgLnchMonNum(GuiHwnd)
+	dx := mdRight - mdleft
+	Return dx
+}
+GetMonHeight(GuiHwnd)
+{
+	SysGet, md, MonitorWorkArea, % GetPrgLnchMonNum(GuiHwnd)
+	dy := mdBottom - mdTop
+	Return dy
+}
+GetPrgLnchMonNum(Hwnd := 0)
 {
 iDevNumb := 9, monitorHandle := 0,  MONITOR_DEFAULTTONULL := 0, strTemp := ""
 VarSetCapacity(monitorInfo, 40)
 NumPut(40, monitorInfo)
 
 
-hWnd := ListBoxProps.Hwnd()
-	if (!hWnd)
-	{
-	MsgBox, 8192, , % "Cannot get handle of Script! Error: " A_LastError
-	VarSetCapacity(monitorInfo, 0)
-	Return -1
-	}
-	;winHandle := WinExist("A") ; LastWindow: The PrgLnch Window if clicked on
-
-	; Assume her  primaryMonitor is"1"
-
-	if (fromMouse)
-	{
-	strTmp := A_CoordModeMouse
-	CoordMode, Mouse, Screen
-	MouseGetPos, x, y
-	CoordMode, Mouse, % strTmp
-	}
-	else
+	if (Hwnd)
 	{
 		if (monitorHandle := DllCall("MonitorFromWindow", "uint", hWnd, "uint", MONITOR_DEFAULTTONULL)) 
 			&& DllCall("GetMonitorInfo", "uint", monitorHandle, "uint", &monitorInfo) 
@@ -2326,6 +2448,13 @@ hWnd := ListBoxProps.Hwnd()
 		mswPrimary :=	NumGet(monitorInfo, 36, "Int") & 1
 		}
 	}
+	else
+	{
+	strTmp := A_CoordModeMouse
+	CoordMode, Mouse, Screen
+	MouseGetPos, x, y
+	CoordMode, Mouse, % strTmp
+	}
 
 	; GetMonitorIndexFromWindow(windowHandle)
 
@@ -2334,20 +2463,20 @@ hWnd := ListBoxProps.Hwnd()
 		SysGet, mt, Monitor, %A_Index%
 
 		; Compare location to determine the monitor index.
-		if (fromMouse)
+		if (Hwnd)
 		{
-			if (x >= mtLeft && x <= mtRight && y <= mtBottom && y >= mtTop)
+			if ((msLeft = mtLeft) and (msTop = mtTop)
+				and (msRight = mtRight) and (msBottom = mtBottom))
 			{
-
 			msI := A_Index
 			break
 			}
 		}
 		else
 		{
-			if ((msLeft = mtLeft) and (msTop = mtTop)
-				and (msRight = mtRight) and (msBottom = mtBottom))
+			if (x >= mtLeft && x <= mtRight && y <= mtBottom && y >= mtTop)
 			{
+
 			msI := A_Index
 			break
 			}
