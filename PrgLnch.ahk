@@ -4936,7 +4936,7 @@ PrgChoicePaths[selPrgChoice] := strTemp
 		{
 			PrgChoicePaths[selPrgChoice] := ""
 			txtPrgChoice := "Prg" . selPrgChoice
-			MsgBox, 8192, Prg Name, Unable to use this Prg!
+			MsgBox, 8192, Prg Name, Unable to use this Prg Name!
 			Return
 		}
 	PrgChoiceNames[selPrgChoice] := strTemp
@@ -5069,6 +5069,7 @@ PrgLnchOptGuiDropFiles:
 Gui, PrgLnchOpt: Submit, Nohide
 strTemp := ""
 strTemp2 := ""
+; WS_EX_ACCEPTFILES does not allow GUID links e.g. explorer.exe shell:::{4234d49b-0245-4df3-B780-3893943456e1}
 
 	Loop, Parse, A_GuiEvent, `n
 	{
@@ -6149,7 +6150,6 @@ ERROR_ACCESS_DENIED := 0x5
 ERROR_CANCELLED := 0x4C7
 
 
-
 PrgLnchMon := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, primaryMon)
 if (PrgLnch.Monitor != PrgLnchMon)
 {
@@ -6215,14 +6215,7 @@ if (lnchPrgIndex > 0) ;Running
 	;If Notepad, copy Notepad exe to  %A_ScriptDir% and it will not run! (Windows 10 1607)
 	{
 
-		if (IsaPrgLnk)
-			FileGetAttrib, strRetVal, % PrgLnkInflnchPrgIndex
-				if (!InStr(strRetVal, "D"))
-				{
-				SplitPath, % PrgLnkInflnchPrgIndex, , strRetVal
-				PrgLnkInflnchPrgIndex := strRetVal
-				}
-		else
+		if (!IsaPrgLnk)
 		{
 		; In most cases wkDir is null, so set the working directory as the Prg location
 		strRetVal := WorkingDirectory(PrgPaths, 1)
@@ -6242,53 +6235,56 @@ if (lnchPrgIndex > 0) ;Running
 	PrgPaths := PrgPaths . A_Space . "" . PrgCmdLine[lnchPrgIndex] . ""
 
 
+
 	if (targMonitorNum = PrgLnchMon)
 	{
 
 	;WinHide ahk_class Shell_TrayWnd ;Necessary?
-
-	if (scrWidth + 120 < scrWidthDef) ; 120 pixels might be enough
+	if (!Instr(PrgLnkInflnchPrgIndex, "|*"))
 		{
-		IniRead, fTemp, %SelIniChoicePath%, General, LoseGuiChangeResWrn
-			if (!fTemp)
+
+		if (scrWidth + 120 < scrWidthDef) ; 120 pixels might be enough
 			{
-			MsgBox, 8195, , In the unlikely situation of the PrgLnch Gui relocating `noff the screen after switching to lower resolutions, `nuse <CTRL-Alt-P> to return the Gui to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do nothing.
+			IniRead, fTemp, %SelIniChoicePath%, General, LoseGuiChangeResWrn
+				if (!fTemp)
+				{
+				MsgBox, 8195, , In the unlikely situation of the PrgLnch Gui relocating `noff the screen after switching to lower resolutions, `nuse <CTRL-Alt-P> to return the Gui to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do nothing.
+					IfMsgBox, No
+					IniWrite, 1, %SelIniChoicePath%, General, LoseGuiChangeResWrn
+					else
+					{
+						IfMsgBox, Cancel
+						{
+							if (disableRedirect)
+							DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+						Return "Cancelled by user!"
+						}
+					}
+				WinMover(, , , , "PrgLaunching.jpg")
+				}
+			}
+		if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+		{
+		strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
+			if (strRetVal)
+			{
+			MsgBox, 8196, , % "Requested resolution change did not work.`nThe saved resolution data for the Prg is: " scrWidth " X " scrHeight " at " scrFreq " Hz.`nReason: `n" strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
 				IfMsgBox, No
-				IniWrite, 1, %SelIniChoicePath%, General, LoseGuiChangeResWrn
+				{
+					if (disableRedirect)
+					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+				Return "Cancelled by user!"
+				}
 				else
 				{
-					IfMsgBox, Cancel
-					{
-						if (disableRedirect)
-						DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-					Return "Cancelled by user!"
-					}
+				WinMover(, , , , "PrgLaunching.jpg")
+				Sleep 200
 				}
-			WinMover(, , , , "PrgLaunching.jpg")
-			}
-		}
-	if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
-	{
-	strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
-		if (strRetVal)
-		{
-		MsgBox, 8196, , % "Requested resolution change did not work.`nThe saved resolution data for the Prg is: " scrWidth " X " scrHeight " at " scrFreq " Hz.`nReason: `n" strRetVal "`n`nReply:`nYes: Continue, and launch " PrgNames[lnchPrgIndex] ".`nNo: Do not launch the Prg: `n"
-			IfMsgBox, No
-			{
-				if (disableRedirect)
-				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-			Return "Cancelled by user!"
 			}
 			else
-			{
-			WinMover(, , , , "PrgLaunching.jpg")
-			Sleep 200
-			}
+			Sleep 1200
 		}
-		else
-		Sleep 1200
 	}
-
 
 
 
@@ -6371,6 +6367,7 @@ if (lnchPrgIndex > 0) ;Running
 	Sleep 150
 
 
+
 	temp:= 0
 	DetectHiddenWindows, On
 	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
@@ -6386,7 +6383,7 @@ if (lnchPrgIndex > 0) ;Running
 
 	fTemp := 0
 	; Possible the default window co-ords are in another monitor from a previous run here
-	if (temp)
+	if (temp && (PrgRnMinMax[lnchPrgIndex] > 0))
 	{
 	loop % dispMonNamesNo
 	{
@@ -6452,12 +6449,16 @@ if (lnchPrgIndex > 0) ;Running
 		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, 0, 0, scrWidth, scrHeight, PrgPIDtmp, 1) ; query
 
 
+
+
+
 	;WinShow ahk_class Shell_TrayWnd
 	}
 	else ; monitor other than current
 	{
 
-		if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+
+		if (!Instr(PrgLnkInflnchPrgIndex, "|*") && DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 		{
 		strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 			if (strRetVal)
