@@ -241,6 +241,8 @@ DISP_CHANGE_BADMODE := -2
 DISP_CHANGE_FAILED := -1
 DISP_CHANGE_RESTART := 1
 
+; Updown
+UDM_SETRANGE := 0X0465
 
 ;HWND
 PresetHwnd := 0
@@ -1125,8 +1127,6 @@ DllCall("ChangeWindowMessageFilterEx", "Ptr", strTemp, "UInt", WM_DROPFILES, "UI
 }
 
 Gui, PrgLnch: Show,, % PrgLnch.Title
-
-
 
 
 SplashImage, PrgLnchLoading.jpg, Hide,,,LnchSplash
@@ -3832,14 +3832,9 @@ msgbox, 8212, No Power Plan, Error: Power Plan has been removed!`n`nReply:`nYes:
 
 
 BackToPrgLnch:
-SetTimer, WatchSwitchOut, Off
-SetTimer, WatchSwitchBack, Off
-GoSub WatchSwitchOut
-SetTimer, WatchSwitchBack, Off
 
 Tooltip
 
-UDM_SETRANGE := 0X0465
 
 strRetVal := WorkingDirectory(A_ScriptDir, 1)
 If (strRetVal)
@@ -3849,7 +3844,20 @@ SplashImage, PrgLnchLoading.jpg, A B,,, LnchSplash
 WinGetPos, , , w, h, LnchSplash
 
 WinMove, LnchSplash, , % PrgLnchOpt.X() + (PrgLnchOpt.Width() - w)/2, % PrgLnchOpt.Y() + (PrgLnchOpt.Height() - h)
-sleep, 120
+sleep, 60
+
+
+
+
+waitBreak := 1
+SetTimer, WatchSwitchOut, Delete
+SetTimer, WatchSwitchBack, Delete
+sleep, 60
+GoSub WatchSwitchOut
+SetTimer, WatchSwitchBack, Off
+
+WinActivate, LnchSplash
+
 GuiControl, PrgLnch:, batchPrgStatus, % ReorgBatch(batchPrgNo, maxBatchPrgs, btchPrgPresetSel, PrgMonToRn, PrgBatchIni%btchPrgPresetSel%, currBatchNo, PrgListIndex, PrgBdyBtchTog)
 
 sleep 60
@@ -3866,6 +3874,7 @@ ffTemp := 0
 Gosub FrontendInit
 presetNoTest := 2
 GoSub InitBtchStat
+
 Return
 
 
@@ -5294,7 +5303,21 @@ else  ; Lnk is directory link OR regular Prg
 }
 
 	if (!PrgPath)
-	PrgPath := "BadPath"
+	{
+	; One more try for symbolic lnk
+
+		if (strTemp = IniFileShortctSep)
+		{
+		prgPath := (PrgPth)? PrgPth: PrgChoicePaths[selPrgChoice]
+			if (PrgPath := Substr(prgPath, 1, InStr(prgPath, IniFileShortctSep,, 0) - 1))
+			{
+			IsaPrgLnk := -1
+			Return %PrgPath%
+			}
+		}
+	PrgPath := "BadPath"	
+	}
+
 Return %prgPath%
 }
 
@@ -6175,8 +6198,13 @@ if (lnchPrgIndex > 0) ;Running
 	;Fix priority
 	temp := (PrgRnPriority[lnchPrgIndex])
 	(!temp)? PrgPrty := "B": (temp = 1)? PrgPrty := "H": PrgPrty := "N"
-
 	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
+
+	if (IsaPrgLnk < 1) ; Terrible!
+	{
+	PrgLnkInflnchPrgIndex := "|*"
+	IsaPrgLnk := 0
+	}
 	
 	if ((!Instr(PrgLnkInflnchPrgIndex, "|*")) && (strRetVal := PrgPaths) != AssocQueryApp(PrgPaths)) ; must be an association
 	{
@@ -6200,7 +6228,6 @@ if (lnchPrgIndex > 0) ;Running
 		PrgPaths := AssocQueryApp(PrgPaths)
 		}
 	}
-
 
 	if (!FileExist(PrgPaths))
 	{
@@ -6365,7 +6392,6 @@ if (lnchPrgIndex > 0) ;Running
 	Sleep 200
 	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
 	Sleep 150
-
 
 
 	temp:= 0
@@ -7713,8 +7739,9 @@ strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
 	; PrgLnkInf :
 	; <>	invalid
 	; * regular prg
-	;  |* directory link
+	;  |* directory link (!IsaPrgLnk)
 	; IniFileShortctSep : Lnk for which FileGetShortcut suceeds but returns a blank working directory
+	; IniFileShortctSep also applies ro symbolic lnks, but has to ve reclassified as |* directory link (!IsaPrgLnk) for now
 
 	if (ProcessLnk)
 	{
@@ -7793,7 +7820,7 @@ strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
 			FileGetShortcut, %strTemp%, strRetVal
 				if (strRetVal)
 				strRetVal := "|"
-				else
+				else ; Problematic : All symbolic lnks go here
 				strRetVal := IniFileShortctSep
 			}
 		}
