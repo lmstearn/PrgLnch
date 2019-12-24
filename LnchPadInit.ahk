@@ -266,12 +266,18 @@ Khakigrau := "746643"
 
 (A_PtrSize = 8)? 64bit := 1 : 64bit := 0 ; ONLY checks .exe bitness
 
+	if FileExist("PrgLnch.ico")
+	Menu, Tray, Icon, PrgLnch.ico
 
 	Loop, Files, % A_ScriptDir . "\*.exe"
 	{
-	if (A_LoopFileName = "PrgLnch.exe")
-	tmp := 1
+		if (InStr(A_LoopFileName, "PrgLnch.exe"))
+		{
+		tmp := 1
+		Break
+		}
 	}
+
 	if (!tmp && A_IsCompiled)
 	{
 	msgbox, 8192, PrgLnch Executable Required!, This cannot be run without Prglnch in the same folder!
@@ -440,6 +446,7 @@ tabguiW := thisguiW - A_LastError
 ;Gui, Tab
 
 ; 8 is default size of MS Shell Dlg for controls
+
 GuiControl, Move, searchDrive, % "x" thisguiW/6 "y" 3 * thisguiH/8 "w" A_GuiFontSize * 5 * thisguiW/(16 * 8) "h" A_GuiFontSize * thisguiH/(16 * 8)
 
 GuiControl, Move, addToLnchPad, % "x" thisguiW/6 "y" 5 * thisguiH/8 "w" A_GuiFontSize * 5 * thisguiW/(16 * 8) "h" A_GuiFontSize * thisguiH/(16 * 8)
@@ -2389,7 +2396,7 @@ tmp := 0
 	if (WinExist())
 	{
 	;if  not maximised
-	WinGetText, strTmp , A
+	WinGetTitle, strTmp , A
 
 		; Too bad if we missed it
 		if (strTmp != "PrgLnch_Help")
