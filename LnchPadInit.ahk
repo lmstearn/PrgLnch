@@ -306,6 +306,13 @@ Gui, +LastFound +%WS_CLIPSIBLINGS% -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_E
 GuiHwnd := WinExist()
 
 
+; This is for  right click help invocation
+DllCall("RegisterShellHookWindow", "UInt", GuiHwnd)
+MsgSH := DllCall( "RegisterWindowMessage", "Str", "SHELLHOOK" )
+OnMessage(MsgSH, "ShellMessage")
+
+
+
 	loop, % maxGames
 	{
 	gameListStr .= gameList[A_Index] . "|"
@@ -1289,6 +1296,11 @@ Return
 
 ~RButton::
 
+goSub chmRButton
+Return
+
+chmRButton:
+
 	While(getKeyState("RButton", "P"))
 	{
 		MouseGetPos, , , mWin, mControl
@@ -1296,11 +1308,14 @@ Return
 		if (InStr(mControl, "Listbox"))
 		{
 		GuiControlGet, tmp, , LnchPadTab
-		{
+
 		strTmp := tabStat . LBEX_ItemFromCursor(PrgIndex%tmp%Hwnd)
 		retVal := RunChm("LnchPad Setup`\LnchPad Setup", strTmp)
-		}
-		
+		;WinActivate, LnchPad Setup
+		WinSet, Top, , % "ahk_id" this._hWnd
+		;WinSet, Redraw, , % "ahk_id" this._hWnd
+		;GuiControl, Show, ahk_id PrgIndex%tmp%Hwnd
+
 /*
 if (ItemHandle = overWriteIniHwnd)
 retVal := RunChm("LnchPad Setup`\LnchPad Setup", "overWriteExisting")
@@ -1317,6 +1332,8 @@ if (retVal) ; error
 		}
 	}
 Return
+
+
 LBEX_ItemFromCursor(HLB)
 {
 ;https://www.autohotkey.com/boards/viewtopic.php?t=13008
@@ -2355,7 +2372,7 @@ if (retVal) ; error
 
 
 }
-RunChm(chmTopic := 0, Anchor := "")
+RunChm(chmTopic := 0, Anchor := "", noActivate := 0)
 {
 x := 0, y := 0, w := 0, h := 0, tmp := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
 
@@ -2370,7 +2387,10 @@ WinGet, tmp, List
 	WinGetTitle, strTmp, % "ahk_id " i
 
 		if (strTmp = "PrgLnch_Help")
+		{
 		WinClose, ahk_id %i%
+		sizeSet := 1
+		}
 	}
 
 Sleep 30
@@ -2383,11 +2403,12 @@ WinGetPos, x, y, w, h, A
 	run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm#%Anchor%,, UseErrorLevel
 	else
 	run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/About%A_Space%PrgLnch.htm,, UseErrorLevel
+
 retVal := A_LastError
 sleep, 120
 
 
-if (!retVal)
+if (!retVal && !sizeSet)
 {
 tmp := 0
 
@@ -2434,6 +2455,17 @@ tmp := 0
 }
 return retVal
 }
+ShellMessage(wParam, lParam)
+{
+WinGetTitle, strTmp, ahk_id %lParam%
+;HSHELL_WINDOWACTIVATED || HSHELL_RUDEAPPACTIVATED
+	if (wParam=4 || 32772)
+	{
+	if (strTmp = "LnchPad Setup")
+	goSub chmRButton
+	}
+}
+
 GetMonWidth(GuiHwnd)
 {
 	SysGet, md, MonitorWorkArea, % GetPrgLnchMonNum(GuiHwnd)

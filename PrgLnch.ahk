@@ -19,7 +19,7 @@ SetWinDelay, 100 ; Default
 SetBatchLines, 20ms ; too fast? A_BatchLines is 10ms
 SetTitleMatchMode, 2 ;window's title can contain WinTitle anywhere inside it to be a match
 
-;https://autohotkey.com/boards/viewtopic.php?p=114554#p114554
+
 OnMessage(0x112, "WM_SYSCOMMAND")
 OnMessage(0x0053, "WM_Help")
 OnMessage(0x201, "WM_LBUTTONDOWN")
@@ -1122,6 +1122,7 @@ Return
 ;LnchPad invocation
 LnchPadConfig:
 FileInstall LnchPadCfg.jpg, LnchPadCfg.jpg
+CloseChm()
 SplashImage, LnchPadCfg.jpg, A B,,, LnchPadCfg
 SetTimer, LnchPadSplashTimer, 200
 
