@@ -3169,6 +3169,8 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 		MsgBox, 8192, PrgLnch Remnants, % "Clean up failed for the following!`n" strTemp2
 	}
 
+CloseChm()
+
 DopowerPlan()
 ExitApp
 
@@ -3455,6 +3457,8 @@ x := 0, y := 0, w := 0, temp := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
 if (!FileExist(A_ScriptDir . "\PrgLnch.chm"))
 return -1
 
+CloseChm()
+
 WinGetPos, x, y, w, , A
 
 if (chmTopic)
@@ -3506,6 +3510,21 @@ WinGetPos, , , , temp
 	}
 
 return A_LastError 
+}
+
+CloseChm()
+{
+;Close existing
+WinGet, temp, List
+	Loop, %temp%
+	{
+	fTemp := temp%A_Index%
+	WinGetTitle, strTemp, % "ahk_id " fTemp
+
+		if (strTemp = "PrgLnch_Help")
+		WinClose, ahk_id %fTemp%
+	}
+Sleep 30
 }
 
 RnChmWelcome:

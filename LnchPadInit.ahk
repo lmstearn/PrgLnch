@@ -2362,6 +2362,20 @@ x := 0, y := 0, w := 0, h := 0, tmp := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
 if (!FileExist(A_ScriptDir . "\PrgLnch.chm"))
 return -1
 
+;Close existing
+WinGet, tmp, List
+	Loop, %tmp%
+	{
+	i := tmp%A_Index%
+	WinGetTitle, strTmp, % "ahk_id " i
+
+		if (strTmp = "PrgLnch_Help")
+		WinClose, ahk_id %i%
+	}
+
+Sleep 30
+
+
 WinGetPos, x, y, w, h, A
 
 
