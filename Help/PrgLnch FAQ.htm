@@ -39,11 +39,11 @@ About <span style="color: #40e0d0;">P</span> <span style="color: #8b4513;">r</sp
   <dd>Possible if target resolutions are less than 1024 pixels wide. A hotkey combination (CTRL-ALT-P) should bring the window to the location of the mouse. Another edge case is if when the screen height is less than 600 pixels, <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a> may clip off the top edge of the display. 
 </dd>
   <dt>Can a Prg exhibit different behaviour when run from an explorer folder or desktop shortcut instead of from within PrgLnch?</dt>
-  <dd>Yes, even when PrgLnch settings for Prg match the "native" environment. See <a href="https://autohotkey.com/boards/viewtopic.php?f=5&amp;t=29200">here</a> for an example. It also helps to check the environment requisites in the Prg's documentation, as it may set its own dedicated resolution mode for execution.<br>
+  <dd>Yes, even when PrgLnch settings for Prg match the "native" environment. See <a href="https://autohotkey.com/boards/viewtopic.php?f=5&amp;t=29200" target="foo">here</a> for an example. It also helps to check the environment requisites in the Prg's documentation, as it may set its own dedicated resolution mode for execution.<br>
 Conversely, there can be unexpected behaviour when a Prg exhibits the <I>same</I> behaviour. For example, when Notepad is temporarily set to run in a non-default monitor through PrgLnch; a later rerun of the Prg outside Prglnch will still launch it in the non-default monitor, because Notepad_from_explorer initialises according to its stored MRU registry settings.
 </dd>
  <dt href="#" id="Limitations">What are the limitations of PrgLnch?</dt>
-  <dd>It can manage up to and including 12 Prgs but no more than 6 can be run through a batch at a time. As AutoHotKey <I>v</I>. 1.x does not <a href="https://autohotkey.com/boards/viewtopic.php?f=5&amp;t=13941">support long paths</a>, so PrgLnch does not.<br>
+  <dd>It can manage up to and including 12 Prgs but no more than 6 can be run through a batch at a time. As AutoHotKey <I>v</I>. 1.x does not <a href="https://autohotkey.com/boards/viewtopic.php?f=5&amp;t=13941" target="foo">support long paths</a>, so PrgLnch does not.<br>
 Another limitation on Prg batching is the rigid start time schedule. There is, for example, no option for a Prg to start as soon as the preceding Prg has become inactive, an important requirement for certain batch runs. Or no option for a Prg to wait until the IO activity of its precedent reaches a given threshold..
 </dd>
  <dt href="#" id="ScreenSavers">Can PrgLnch run Screensavers on other Monitors?</dt>
