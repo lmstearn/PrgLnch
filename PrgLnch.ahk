@@ -3134,6 +3134,7 @@ loop % PrgNo
 		{
 			if (temp) ;IsaPrgLnk
 			strIniChoice := PrgLnkInf[A_Index]
+			
 
 		strRetVal := WorkingDirectory(strIniChoice, 1)
 
@@ -3143,12 +3144,14 @@ loop % PrgNo
 			{
 				if (!InStr(strIniChoice, A_ScriptDir))
 				{
-				fTemp := KleenupPrgLnchFiles(1) ; An old (fixed?) bug where these ended up in wrong directory
-					if (fTemp)
+					if (!temp)
 					{
 					SplitPath, strIniChoice, , strIniChoice
-					strTemp .= "`nFile(s): """ . fTemp . """ found in """ . strIniChoice . """ marked for the Recycle Bin."
+					strIniChoice .= "\"
 					}
+				fTemp := KleenupPrgLnchFiles(strIniChoice) ; An old (fixed?) bug where these ended up in wrong directory
+					if (fTemp)
+					strTemp .= "`nFile(s): """ . fTemp . """ found in """ . strIniChoice . """ marked for the Recycle Bin."
 				}
 			}
 		}
@@ -3211,7 +3214,7 @@ oldSelIniChoiceName := selIniChoiceName
 }
 
 
-KleenupPrgLnchFiles(RecycleNow := 0)
+KleenupPrgLnchFiles(RecycleDir := "")
 {
 namesToDel := ["PrgLnch.ico", "PrgLnchLoading.jpg", "PrgLaunching.jpg", "PrgLnchProperties.jpg", "LnchPadCfg.jpg", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat", "LnchPadInit.exe"]
 
@@ -3224,12 +3227,14 @@ Return
 
 For eachNameToDel in namesToDel
 {
-	if (FileExist(namesToDel[A_Index]))
+strTemp := RecycleDir . namesToDel[A_Index]
+
+	if (FileExist(strTemp))
 	{
-		if (RecycleNow)
+		if (RecycleDir)
 		{
 		KleenupPrgLnchFiles .= temp . namesToDel[A_Index]
-		FileRecycle, % namesToDel[A_Index]
+		FileRecycle, % strTemp
 			if (!temp)
 			temp := ", "
 		}
