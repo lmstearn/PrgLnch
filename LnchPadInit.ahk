@@ -1271,12 +1271,12 @@ GuiDefaultFont()
 {
 ;https://autohotkey.com/board/topic/7984-ahk-functions-incache-cache-list-of-recent-items/://autohotkey.com/board/topic/7984-ahk-functions-incache-cache-list-of-recent-items/page-10?&#entry443622
 hwnd := 0 ; entire screen
-hFont := DllCall( "GetStockObject", "UInt", 17) ; DEFAULT_GUI_FONT
-VarSetCapacity( LF, szLF := 60*((A_IsUnicode)? 2:1))
-DllCall("GetObject", "UInt", hFont, "Int", szLF, "UInt",&LF )
-hDC := DllCall( "GetDC", "UInt", hwnd ), DPI := DllCall( "GetDeviceCaps", "UInt", hDC, "Int", 90 )
-DllCall( "ReleaseDC", "Int", 0, "UInt", hDC ), S := Round(( -NumGet(LF,0, "Int") * 72) / DPI) ; S is fonstsize
-Return DllCall( "MulDiv", "Unt", &LF+28, "Int", 1, "Int", 1, "Str"), DllCall( "SetLastError", "UInt", S ) ; sneaky way of returning a second value without using function parameters
+hFont := DllCall("GetStockObject", "UInt", 17) ; DEFAULT_GUI_FONT
+VarSetCapacity(LF, szLF := 60*((A_IsUnicode)? 2:1))
+DllCall("GetObject", "UInt", hFont, "Int", szLF, "UInt",&LF)
+hDC := DllCall("GetDC", "UInt", hwnd ), DPI := DllCall( "GetDeviceCaps", "UInt", hDC, "Int", 90)
+DllCall( "ReleaseDC", "Int", 0, "UInt", hDC ), S := Round((-NumGet(LF,0, "Int") * 72) / DPI) ; S is fonstsize
+Return DllCall( "MulDiv", "Int", &LF+28, "Int", 1, "Int", 1, "Str"), DllCall( "SetLastError", "UInt", S ) ; sneaky way of returning a second value without using function parameters
 }
 
 

@@ -211,7 +211,7 @@ Class PrgLnch
 
 
 
-(A_PtrSize = 8)? 64bit := 1 : 64bit := 0 ; ONLY checks .exe bitness
+(A_PtrSize = 8)? 64bit := 1: 64bit := 0 ; ONLY checks .exe bitness
 updateStatus := 1
 ;Change display flags
 CDS_TEST := 0x00000002
@@ -1492,11 +1492,7 @@ if (btchPrgPresetSel = temp)
 			else
 			{
 
-				If (PrgProperties.Hwnd)
-				{
-				Gui, PrgProperties: Destroy
-				PrgProperties.Hwnd := 0
-				}
+				PrgPropertiesClose()
 
 
 				loop % currBatchNo
@@ -1544,11 +1540,7 @@ if (btchPrgPresetSel = temp)
 		else
 		{
 
-			If (PrgProperties.Hwnd)
-			{
-			Gui, PrgProperties: Destroy
-			PrgProperties.Hwnd := 0
-			}
+		PrgPropertiesClose()
 
 			loop % currBatchNo
 			{
@@ -1693,11 +1685,7 @@ else
 			else
 			{
 			; Nothing Nothing
-				If (PrgProperties.Hwnd)
-				{
-				Gui, PrgProperties: Destroy
-				PrgProperties.Hwnd := 0
-				}
+			PrgPropertiesClose()
 
 				if (!batchActive)
 				{
@@ -2100,11 +2088,8 @@ else
 	presetNoTest := 0
 
 	PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgListPID%btchPrgPresetSel%, PrgPIDMast, 1)
-		If (PrgProperties.Hwnd)
-		{
-		Gui, PrgProperties: Destroy
-		PrgProperties.Hwnd := 0
-		}
+
+	PrgPropertiesClose()
 
 		if (PrgPID)
 		{
@@ -2400,13 +2385,10 @@ if (DelEntryonly)
 MsgBox, 8196, Ini File Missing, LnchPad Ini file not found in script directory.`nDelete its entry?`n`nYes: Remove "" %SelIniChoiceName% "" from the list `nNo: Retain the entry.
 else
 MsgBox, 8196, Del LnchPad, Really delete the LnchPad?`nThis will also remove the file.
+
 	IfMsgBox, Yes
 	{
-		If (PrgProperties.Hwnd)
-		{
-		Gui, PrgProperties: Destroy
-		PrgProperties.Hwnd := 0
-		}
+	PrgPropertiesClose()
 
 	IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
 	oldSelIniChoiceName := SelIniChoiceName
@@ -2703,6 +2685,9 @@ ERROR_FILE_NOT_FOUND := 0x2
 ERROR_ACCESS_DENIED := 0x5
 ERROR_CANCELLED := 0x4C7
 strTemp := ""
+
+PrgPropertiesClose()
+
 Gui, PrgLnch: +Disabled
 
 
@@ -3297,6 +3282,7 @@ Return strRetVal
 
 WM_HELP(wp_notused, lParam, _msg, _hwnd)
 {
+Global
 local retVal := 0 ;using local this is now a global function
 
 
@@ -3458,14 +3444,23 @@ temp := 0
 }
 RunChm(chmTopic := 0, Anchor := "")
 {
-x := 0, y := 0, w := 0, temp := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
+x := 0, y := 0, w := 0, h := 0, hAdj := 0, temp := 0, retVal := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
 
 if (!FileExist(A_ScriptDir . "\PrgLnch.chm"))
 return -1
 
-CloseChm()
+retVal := CloseChm()
 
-WinGetPos, x, y, w, , A
+	strTmp := A_CoordModeMouse
+	CoordMode, Mouse, Screen
+	WinGetPos, x, y, w, h, A
+	CoordMode, Mouse, % strTmp
+
+
+	if (WinActive("A") = PrgLnchOpt.Hwnd())
+	hAdj := 2 * h
+	else
+	hAdj := floor(3 * h/2)
 
 if (chmTopic)
 run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm#%Anchor%,, UseErrorLevel
@@ -3495,25 +3490,54 @@ temp := 0
 WinGetTitle, strtemp , A
 
 	; Too bad if we missed it
-	if (strtemp != "PrgLnch_Help")
-	Return retVal
-;if  not maximised
-WinGet, temp, MinMax
-;Tablet mode perhaps? https://autohotkey.com/boards/viewtopic.php?f=6&t=15619
-;We are launching as "normal" but just in case this is overidden by user modifying shortcut properties. (probably not)
-	if (!temp)
+	if (strtemp = "PrgLnch_Help")
 	{
-	WinRestore
-	sleep, 60
+		if (!retVal) ; no chm closed!
+		{
+		;if  not maximised
+		WinGet, temp, MinMax
+		;Tablet mode perhaps? https://autohotkey.com/boards/viewtopic.php?f=6&t=15619
+		;We are launching as "normal" but just in case this is overidden by user modifying shortcut properties. (probably not)
+			if (!temp)
+			{
+			WinRestore
+			sleep, 60
+			}
+
+		SysGet, md, MonitorWorkArea, % PrgLnch.Monitor
+
+		scrWd := mdRight - mdleft
+		scrHt := mdBottom - mdTop
+
+		if (y + h >  scrHt)
+		y := scrHt - h
+		else
+		{
+			if (y - hAdj < 0)
+			y += h + hAdj
+		}
+
+		;y -= floor(y/10)
+
+		if (x + w >  scrWd)
+		x := scrWd - w
+		else
+		{
+			if (x < 0)
+			x = 0
+		}		
+
+		WinMove, A, , %x%, % y - hAdj, %w%, %hAdj%
+
+		}
+		; else just use last help co-ords: not covering the case when the gui is moved while the help file is open, and not moved
 	}
-WinGetPos, , , , temp
-	if (y > temp)
-	WinMove, , , %x%, % y - temp, %w%
 	else
-	WinMove, , , %x%, % temp - y, %w%
-
-
+	{
+	retVal := -1
+	Return retVal
 	}
+}
 
 return A_LastError 
 }
@@ -3521,6 +3545,7 @@ return A_LastError
 CloseChm()
 {
 ;Close existing
+retVal := 0
 WinGet, temp, List
 	Loop, %temp%
 	{
@@ -3528,9 +3553,13 @@ WinGet, temp, List
 	WinGetTitle, strTemp, % "ahk_id " fTemp
 
 		if (strTemp = "PrgLnch_Help")
+		{
+		retVal := 1
 		WinClose, ahk_id %fTemp%
+		}
 	}
 Sleep 30
+Return retVal
 }
 
 RnChmWelcome:
@@ -5470,22 +5499,24 @@ SplitPath, prgPath, , , Ext
 	strPrg := prgPath
 	else
 	{
-	RegRead, type, HKCU, Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.%Ext%, Application
+	SetRegView 32
+	RegRead, type, % "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\." Ext, Application
 		If (ErrorLevel)
 		{
 			;Default setting
-		RegRead, type, HKCR, .%Ext%
-		RegRead, act , HKCR, %type%\shell
+		RegRead, type, % "HKCR\." . Ext
+		RegRead, act, % "HKCR\" . type . "\shell"
+
 			If (ErrorLevel)
 			act = open
-		RegRead, strPrg , HKCR, %type%\shell\%act%\command
+		RegRead, strPrg, % "HKCR\" . type . "\shell\" . act . "\command"
 		}
 		else
 		{ ;Current user has overridden default setting
-		RegRead, act, HKCU, Software\Classes\Applications\%type%\shell
+		RegRead, act, % "HKCU\Software\Classes\Applications\" . type . "\shell"
 			If (ErrorLevel)
 			act = open
-		RegRead, strPrg, HKCU, Software\Classes\Applications\%type%\shell\%act%\command
+		RegRead, strPrg, % "HKCU\Software\Classes\Applications\" . type . "\shell\" . act . "\command"
 		}
 		; strip first quote
 	foundpos := InStr(strPrg, """")
@@ -5496,6 +5527,7 @@ SplitPath, prgPath, , , Ext
 
 		if (foundpos)
 		strPrg := SubStr(strPrg, 1, foundpos-1)
+
 	}
 return strPrg
 }
@@ -5582,12 +5614,7 @@ RepositionGuiToMouse(IsOptions := 0)
 ; This repositions the top left of the GUI to mouse cursor
 
 ;Close properties
-	If (PrgProperties.Hwnd)
-	{
-	Gui, PrgProperties: Destroy
-	PrgProperties.Hwnd := 0
-	}
-
+PrgPropertiesClose()
 
 if (IsOptions)
 {
@@ -5649,8 +5676,8 @@ RepositionGuiToMouse()
 Return
 
 Esc::
-Gui, PrgProperties: Destroy
-PrgProperties.Hwnd := 0
+PrgPropertiesClose()
+
 Return
 }
 
@@ -10849,6 +10876,14 @@ Gui, PrgProperties: Show, , Prg Properties (Version 2.x)
 
 }
 
+PrgPropertiesClose()
+{
+	If (PrgProperties.Hwnd)
+	{
+	Gui, PrgProperties: Destroy
+	PrgProperties.Hwnd := 0
+	}
+}
 PrgPropFont(sprHwnd)
 {
 GuiControl, PrgProperties: Move, %sprHwnd%, % "w" PrgLnchOpt.Width()/4
