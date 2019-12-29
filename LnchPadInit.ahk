@@ -172,6 +172,7 @@ lboxSelTol := 0
 multcopiesPrgWrn := 0
 overWriteIniFile := 0
 IniFileShortctSep := "?" ; Change if different in Main!
+SelIniChoiceNamePrgLnchUpdated := 0
 retVal := 0
 
 strTmp := ""
@@ -287,17 +288,15 @@ Khakigrau := "746643"
 
 lnchPadPID := DllCall("GetCurrentProcessId")
 
-	if not A_IsAdmin
-	{
-	msgbox, 8196, Run PrgLnch Elevated?, LnchPad search requires Admin to work properly.`nReply:`n`nYes: Restart PrgLnch as Admin.`nNo: Try it without Admin.`n
-		IfMsgBox, Yes
-		{
-		run *runAs "%A_ScriptFullPath%"  ; Requires v1.0.92.01+
-		ExitApp
-		}
 
+
+	for tmp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
+	{
+		if (tmp = 2)
+		Break
 	}
 
+SelIniChoiceNamePrgLnch := strRetVal
 
 
 ListBoxProps.Init() := PrgNo
@@ -751,12 +750,14 @@ Return
 overWriteIni:
 Gui, Submit, Nohide
 GuiControlGet, overWriteIniFile, , overWriteIni
+GuiControl, Focus, addToLnchPad
 Return
 
 
 UpdateIni:
 Gui, Submit, Nohide
 overWriteIniFile := 0
+GuiControl, Focus, addToLnchPad
 Return
 
 addToLnchPad:
@@ -848,6 +849,7 @@ GuiControlGet, strTmp, , addToLnchPad
 	}
 	else ; Update LnchPad Slots
 	{
+	GoSub StartProgress
 	strRetVal := ""
 	gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 	strTmp := (FileExist(gameIniPath))? gameList[tabStat]:
@@ -866,33 +868,41 @@ GuiControlGet, strTmp, , addToLnchPad
 
 		if (ErrorLevel)
 		strRetVal := "Problem with " . gameList[tabStat] . ".ini. Cannot continue!"
-
+		else
+		{
 		; Clear data in new file
-		if (!strTmp)
-		{
-		loop % maxBatchPrgs
-		IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIni%A_Index%
-
-		IniWrite, %A_Space%, %gameIniPath%, Prgs, PresetNames
-		IniWrite, %A_Space%, %gameIniPath%, Prgs, StartupPrgName
-		IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIniStartup
-
-			loop % PrgNo
+		Progress, 10
+			if (overWriteIniFile)
 			{
-			IniDelete, %gameIniPath%, Prg%A_Index%
+				loop % maxBatchPrgs
+				IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIni%A_Index%
 
-			IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgName
-			IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgPath
-			IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgCmdLine
-			IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgUrl
-			IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgVer
-			strTmp := "1,0,-1,-1,0,0,0"
-			IniWrite, %strTmp%, %gameIniPath%, Prg%A_Index%, PrgMisc
+			IniWrite, %A_Space%, %gameIniPath%, Prgs, PresetNames
+			IniWrite, %A_Space%, %gameIniPath%, Prgs, StartupPrgName
+			IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIniStartup
+			
+			; Get def monitor data via coomand line
+			for tmp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
+				if (tmp = 1)
+				Break
+			
+				loop % PrgNo
+				{
+				IniDelete, %gameIniPath%, Prg%A_Index%
+
+				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgName
+				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgPath
+				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgCmdLine
+				IniWrite, %strRetVal%, %gameIniPath%, Prg%A_Index%, PrgRes
+				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgUrl
+				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgVer
+				strTmp := "1,0,-1,-1,0,0,0"
+				IniWrite, %strTmp%, %gameIniPath%, Prg%A_Index%, PrgMisc
+				if (A_Index = floor(PrgNo/2))
+				Progress, 25
+				}
 			}
-		}
-
-		if (!strRetVal)
-		{
+		Progress, 40
 		strRetVal := AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, prgUrl%tabStat%, IniFileShortctSep)
 		tmp := 0
 			Loop, % PrgNo
@@ -916,7 +926,7 @@ GuiControlGet, strTmp, , addToLnchPad
 					}
 				}
 			}
-
+			Progress, 70
 			if (tmp)
 			; Write updated slots to PrgLnch.ini
 			UpdateAllIni(prgNo, tmp, PrgLnchIniPath, iniNames)
@@ -924,16 +934,29 @@ GuiControlGet, strTmp, , addToLnchPad
 			strRetVal := "LnchPad Slots full! Cannot continue!"
 
 		}
+	sleep, 100
+	Progress, 100
 	overWriteIniFile := 0
 	GuiControl,, UpdateIni, 0
 	GuiControl,, overWriteIni, 0
 	GuiControl, Hide, overWriteIni
 	GuiControl, Hide, UpdateIni
 	guiControl, , addToLnchPad, % "&Locate " gameList[tabStat] " LnchPad Slot"
-		if (strRetVal)
+	Progress, Off
+
+		if (strRetVal && !(InStr(strRetVal, "1")))
 		Tooltip, % strRetVal
 		else
-		Tooltip, Prgs Added!
+		{
+			; PrgLnch restart flag activated
+			if (SelIniChoiceNamePrgLnch = gameList[tabStat])
+			SelIniChoiceNamePrgLnchUpdated := 1
+
+			if (strRetval)
+			Tooltip % Substr(strRetVal, 2)
+			else
+			Tooltip, Prgs Added!
+		}
 	}
 
 Return
@@ -967,6 +990,9 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 			if (tmp)
 			{
 			strRetVal := SubStr(strTmp, tmp + 1)
+				; No lnks etc
+				if (!strRetVal)
+				Continue
 			strTmp := Substr(strTmp, 1, tmp)
 			SplitPath, strRetVal ,,,, SelIniChoiceName
 			}
@@ -989,7 +1015,6 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 					WrittentoSlotArrayCt++
 					PrgPathWrittentoSlotArray[WrittentoSlotArrayCt] := prgPathStr
 					IniWrite, % strTmp . prgPathStr, %gameIniPath%, Prg%tmp%, PrgPath
-
 						if (prgUrltabStat[A_Index])
 						IniWrite, % prgUrltabStat[A_Index], %gameIniPath%, Prg%tmp%, PrgUrl
 						; Else: Policy: existing urls not erased.
@@ -1011,8 +1036,8 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 oldWrittentoSlotArrayCt := WrittentoSlotArrayCt
 
 
-	; Fine - we may want commandline Parms as well- e.g. Wrye Bash.exe -debug
-	AllocatedtoSlotArrayCt := 0
+; Fine - we may want commandline Parms as well- e.g. Wrye Bash.exe -debug
+AllocatedtoSlotArrayCt := 0
 	loop, % PrgNo
 	{
 	tmp := 0
@@ -1020,6 +1045,7 @@ oldWrittentoSlotArrayCt := WrittentoSlotArrayCt
 		{
 			Loop, % PrgNo
 			{
+				
 				if (strTmp = PrgPathWrittentoSlotArray[A_Index])
 				tmp := 1
 			}
@@ -1062,14 +1088,27 @@ oldWrittentoSlotArrayCt := WrittentoSlotArrayCt
 	}
 
 	strRetVal := ""
-	if (oldWrittentoSlotArrayCt < prgPathtabStatCt - AllocatedtoSlotArrayCt)
-	strRetVal := "Not all of the " . (prgPathtabStatCt - AllocatedtoSlotArrayCt) . " Prg entries could be written to the LnchPad Slot!"
+	if (oldWrittentoSlotArrayCt && !AllocatedtoSlotArrayCt)
+	strRetVal := "1All of the " . oldWrittentoSlotArrayCt . " Prg entries were updated!"
 	else
 	{
-		if (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt < AllocatedtoSlotArrayCt)
-		strRetVal := "Only " (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt) " of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the LnchPad Slot!"
+		if (!WrittentoSlotArrayCt && !oldWrittentoSlotArrayCt)
+		strRetVal := "None of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the LnchPad Slot!"
+		else
+		{
+			if (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt < AllocatedtoSlotArrayCt)
+			{
+				if (oldWrittentoSlotArrayCt)
+				strRetVal := "1Existing Prgs updated: " . oldWrittentoSlotArrayCt . "`nOnly "
+				else
+				strRetVal := "1Only "
+			
+			strRetVal .= (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt) . " of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the LnchPad Slot!"
+			}
+			else
+			strRetVal := "Weird_Error: Should never get to this!"
+		}
 	}
-
 
 
 Return strRetVal
@@ -1083,7 +1122,7 @@ UpdateAllIni(PrgNo, iniSel, PrgLnchIni, IniChoiceNames)
 spr := "", strTmp := ""
 IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
-	strTmp := (IniChoiceNames[iniSel])? A_Space: IniChoiceNames[iniSel]
+	strTmp := (IniChoiceNames[iniSel])? IniChoiceNames[iniSel]: A_Space
 
 	Loop % PrgNo
 	{
@@ -1218,7 +1257,10 @@ Progress, off
 Progress, Hide
 W := thisGuiW /2
 H := thisGuiH /8
-Progress, A W%W% H%H% b p0 M,, Getting Headers %currDrive%: ...,
+if (buttonBkdChange = 1)
+Progress, A W%W% H%H% b p0 M,, Getting Headers. %currDrive%: ...,
+else
+Progress, A W%W% H%H% b p0 M,, Updating LnchPad Ini Slot: ...,
 Return
 
 Esc::
@@ -1226,6 +1268,21 @@ Quit:
 GuiClose:
 KleenupLnchPadFiles()
 CtlColors.Free()
+
+	if (SelIniChoiceNamePrgLnchUpdated)
+	{
+	MsgBox, 8192, LnchPad Slot Changed, % "Current LnchPad Slot has changed!`nClick Ok for PrgLnch cold relaunch."
+	; cold  start
+		try
+		{
+		
+		Run, % """" . A_ScriptDir . "\PrgLnch.exe" . """" . " /restart ", %A_ScriptDir%
+		}
+		catch tmp
+		{
+		MsgBox, 8192, ReLaunch, % "PrgLnch could not restart with error " tmp "."
+		}
+	}
 ExitApp
 
 
@@ -1389,31 +1446,40 @@ Global
 				resetSearch(searchStat, tabStat, gameList, maxDrives)
 				}
 			}
-		SetTimer, MouseOffButton, 100
+		SetTimer, MouseOffButton, 10
 		}
 		else
 		{
-			if (InStr(mControl, "SysTabControl"))
+			if (InStr(mControl, "Button")) ; Radio Controls
 			{
-
-				if (searchStat = -1)
-				{
-
-				MsgBox, 8193, , An operation is still active on the current tab.`n`nClick OK to cancel the operation and continue, or,`nCancel to wait until the operation has completed.
-					IfMsgBox, OK
-					{
-					searchStat := -2
-					}
-				gosub LnchPadTab
-
-				}
-
+			buttonBkdChange := 3
+			GuiControl, Focus, addToLnchPad
+			SetTimer, MouseOffButton, 10
 			}
 			else
 			{
-			WinGetClass, class, ahk_id %hWnd%
-				if (class="tooltips_class32")
-				ToolTip
+				if (InStr(mControl, "SysTabControl"))
+				{
+
+					if (searchStat = -1)
+					{
+
+					MsgBox, 8193, , An operation is still active on the current tab.`n`nClick OK to cancel the operation and continue, or,`nCancel to wait until the operation has completed.
+						IfMsgBox, OK
+						{
+						searchStat := -2
+						}
+					gosub LnchPadTab
+
+					}
+
+				}
+				else
+				{
+				WinGetClass, class, ahk_id %hWnd%
+					if (class="tooltips_class32")
+					ToolTip
+				}
 			}
 		}
 	}

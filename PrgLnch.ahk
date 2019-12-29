@@ -1126,7 +1126,7 @@ CloseChm()
 SplashImage, LnchPadCfg.jpg, A B,,, LnchPadCfg
 SetTimer, LnchPadSplashTimer, 200
 
-	if (!LnchLnchPad())
+	if (!LnchLnchPad(SelIniChoiceName, scrWidthDef, scrHeightDef, scrFreqDef))
 	{
 	IniProcIniFileStart()
 	GuiControl, PrgLnch:, IniChoice,
@@ -1149,14 +1149,14 @@ SetTitleMatchMode, 3
 	else
 	{
 	temp++
-		if (temp > 99)
+		if (temp > 199)
 		{
 			; Prompt for Admin
-			if (winactive("Run PrgLnch Elevated?") || winactive("PrgLnch Executable Required!"))
+			if (winactive("LnchPad Setup Elevated?") || winactive("PrgLnch Executable Required!"))
 			temp := 0
 			else
 			{
-				if (temp = 100)
+				if (temp = 200)
 				{
 				MsgBox, 8192, LnchPad Config Delay, There is a problem with the load of LnchPad Config!
 				SetTimer, LnchPadSplashTimer, Delete
@@ -2679,7 +2679,7 @@ ChooseIniChoice(ByRef iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 
 
 ;More Frontend functions
-LnchLnchPad()
+LnchLnchPad(SelIniChoiceName, scrWidthDef, scrHeightDef, scrFreqDef)
 {
 ERROR_FILE_NOT_FOUND := 0x2
 ERROR_ACCESS_DENIED := 0x5
@@ -2690,17 +2690,30 @@ PrgPropertiesClose()
 
 Gui, PrgLnch: +Disabled
 
-
-FileInstall LnchPadInit.exe, LnchPadInit.exe
-
 strRetVal := WorkingDirectory(A_ScriptDir, 1)
+
 
 	If (strRetVal)
 	MsgBox, 8192, Script Directory, % strRetVal "`nCannot load LnchPad file!"
 	else
 	{
+	FileInstall LnchPadInit.exe, LnchPadInit.exe
 	Sleep, 750
-	RunWait, LnchPadInit.exe, , UseErrorLevel:
+
+	strTemp2 := A_ScriptDir . "\LnchPadInit.exe"
+
+		if (!A_IsAdmin)
+		{
+		msgbox, 8196, LnchPad Setup Elevated?, LnchPad Setup requires Admin to work properly.`nReply:`n`nYes: Restart LnchPad Setup as Admin.`nNo: Try it without Admin.`n
+			IfMsgBox, Yes
+			strTemp2 := "*runAs " . strTemp2
+		SplashImage, LnchPadCfg.jpg, A B,,, LnchPadCfg
+		}
+
+
+	strTemp := scrWidthDef . "," . scrHeightDef . "," . scrFreqDef . "," . 0
+
+	RunWait, %strTemp2% %strTemp% %SelIniChoiceName%, , UseErrorLevel:
 
 		if (A_LastError)
 		{
@@ -4379,11 +4392,13 @@ else
 		else
 		{
 		; If by misadventure the values are zero
-		MsgBox, 8192, No Resolution Mode, Monitor parameters for the selected or startup Prg do not exist!`n`nDefaults assumed.`nIt's recommended to save the parameters by reselecting the target monitor from the Monitor List, and, if required, changing the resolution mode.
+			if (LNKFlag(PrgLnkInf[selPrgChoice]) > -1) ; don't want the msgbox  as ResIndex is already disabled
+			MsgBox, 8192, No Resolution Mode, Monitor parameters for the selected or startup Prg do not exist!`n`nDefaults assumed.`nIt's recommended to save the parameters by reselecting the target monitor from the Monitor List, and, if required, changing the resolution mode.
 		GetDisplayData(PrgLnch.Monitor, targMonitorNum, dispMonNamesNo, , , , scrWidth, scrHeight, , scrFreq , -1, 1)
 		scrWidthDef := scrWidth
 		scrHeightDef := scrHeight
 		scrFreqDef := scrFreq
+
 		}
 	}
 
@@ -10267,7 +10282,7 @@ if (!FileExistSelIniChoicePath)
 									{
 										if (PrgChoiceNames[recCount])
 										{
-										spr := % scrWidth . "," . scrHeight . "," . scrFreq . "," 0
+										spr := scrWidth . "," . scrHeight . "," . scrFreq . "," . 0
 										;extra 0 for interlace which might implement later
 										IniWrite, %spr%, %SelIniChoicePath%, Prg%recCount%, PrgRes
 										scrWidthArr[selPrgChoice] := scrWidth
