@@ -5160,7 +5160,7 @@ strTemp2 := ""
 		Return
 		}
 	}
-
+GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 GoSub ProcessNewPrg
 Return
 
@@ -5543,6 +5543,11 @@ SplitPath, prgPath, , , Ext
 		if (foundpos)
 		strPrg := SubStr(strPrg, 1, foundpos-1)
 
+
+	strPrg := ParseEnvVars(strPrg)
+	; Assume coomand line parms like might be %1 added
+		if (temp := Instr(strPrg, "`%"))
+		strPrg := subStr(strPrg, 1, temp - 2)
 	}
 return strPrg
 }
@@ -7942,10 +7947,22 @@ ParseEnvVars(strTemp)
 		strTemp := homeShare . strTemp2
 	
 		}
+		else
+		{
+		strTemp2 := StrReplace(strTemp, "`%SYSTEMROOT`%", , foundPos)
+			if foundpos
+			{
+				if (strTemp2 && !InStr(strTemp2, "\") = 1)
+				strTemp2 := "\" . strTemp2
+			EnvGet, systemroot, SYSTEMROOT
+			strTemp := systemroot . strTemp2
+			}
+		}
 		}
 		}
 
 	}
+
 Return strTemp
 }
 
@@ -9350,7 +9367,6 @@ Return
 	Return
 	else
 	exeStr := AssocQueryApp(exeStr)
-
 
 exeStrOld := exeStr
 SplitPath, exeStrOld, exeStrOld
