@@ -4844,48 +4844,7 @@ if (txtPrgChoice = "")
 	;SelPrgChoice is last selected
 	MsgBox, 8193, , Remove Shortcut?
 	IfMsgBox, Ok
-	{
-	SetTimer, CheckVerPrg, Delete ;vital to do first
-
-	;Remove default
-	IniRead, defPrgStrng, %SelIniChoicePath%, Prgs, StartupPrgName ;Space just in case None is absent
-
-	if (defPrgStrng = PrgChoiceNames[selPrgChoice])
-	{
-	defPrgStrng := "None"
-	IniWrite, None, %SelIniChoicePath%, Prgs, StartupPrgName
-	}
-	GuiControl, PrgLnchOpt: , DefaultPrg, 0
-	GuiControl, PrgLnchOpt: Disable, DefaultPrg
-
-	strRetVal := WorkingDirectory(A_ScriptDir, 1)
-	If (strRetVal)
-	MsgBox, 8192, Prg Path, % strRetVal
-
-	IniProc(selPrgChoice, 1)
-	strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
-	PrgChoiceNames[selPrgChoice] := ""
-	PrgChoicePaths[selPrgChoice] := ""
-	PrgResolveShortcut[selPrgChoice] := 0
-	PrgCmdLine[selPrgChoice] := ""
-	PrgMonToRn[selPrgChoice] := 0
-	PrgRnPriority[selPrgChoice] := -1
-	PrgBordless[selPrgChoice] := 0
-	PrgLnchHide[selPrgChoice] := 0
-	PrgRnMinMax[selPrgChoice] := 0
-	PrgLnkInf[selPrgChoice] := ""
-	PrgUrl[selPrgChoice] := ""
-
-	GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
-	GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
-	GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
-	GuiControl, PrgLnchOpt: Disable, RnPrgLnch
-	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
-	TogglePrgOptCtrls(txtPrgChoice, navShortcut)
-	iDevNum := 1
-	GuiControl, PrgLnchOpt:, Choose, iDevNum
-	GoSub FixMonColours
-	}
+	GoSub zeroPrgVars
 	else
 	{
 	txtPrgChoice := PrgChoiceNames[selPrgChoice]
@@ -5058,17 +5017,7 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 	{
 	MsgBox, 8192, Prg Path, % strTemp2
 	txtPrgChoice := "Prg" . selPrgChoice
-	PrgChoiceNames[selPrgChoice] := ""
-	PrgChoicePaths[selPrgChoice] := ""
-	PrgResolveShortcut[selPrgChoice] := 0
-	PrgCmdLine[selPrgChoice] := ""
-	PrgMonToRn[selPrgChoice] := 0
-	PrgRnPriority[selPrgChoice] := -1
-	PrgBordless[selPrgChoice] := 0
-	PrgLnchHide[selPrgChoice] := 0
-	PrgRnMinMax[selPrgChoice] := 0
-	PrgLnkInf[selPrgChoice] := ""
-	PrgUrl[selPrgChoice] := ""
+	GoSub zeroPrgVars
 	Return
 	}
 	else
@@ -5076,17 +5025,27 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 		if (strRetVal = "*")
 		{
 		strTemp2 := AssocQueryApp(strTemp, strRetVal)
-			; The only case where the association is parsed for storage in Prglnch.ini (there may be more to come!)
-			if (strRetVal)
+			if (strTemp2)
 			{
-			PrgCmdLine[selPrgChoice] := strRetVal
-			PrgChoicePaths[selPrgChoice] := strTemp2
-			strRetVal := "*"
+				if (strRetVal = "*")
+				{
+					if (strTemp = strTemp2)
+					strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
+				}
+				else
+				{
+				; The only case where the association is parsed for storage in Prglnch.ini (there may be more to come!)
+				PrgCmdLine[selPrgChoice] := strRetVal
+				PrgChoicePaths[selPrgChoice] := strTemp2
+				strRetVal := "*"
+				}
 			}
 			else
 			{
-				if (strTemp = strTemp2)
-				strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
+			MsgBox, 8192, No Association, The Prg must have an association before it can be used.
+			txtPrgChoice := "Prg" . selPrgChoice
+			GoSub zeroPrgVars
+			Return
 			}
 			; else: Forget associations
 		}
@@ -5151,6 +5110,50 @@ PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPr
 Return
 
 
+zeroPrgVars:
+	SetTimer, CheckVerPrg, Delete ;vital to do first
+
+	;Remove default
+	IniRead, defPrgStrng, %SelIniChoicePath%, Prgs, StartupPrgName ;Space just in case None is absent
+
+		if (defPrgStrng = PrgChoiceNames[selPrgChoice])
+		{
+		defPrgStrng := "None"
+		IniWrite, None, %SelIniChoicePath%, Prgs, StartupPrgName
+		}
+	GuiControl, PrgLnchOpt: , DefaultPrg, 0
+	GuiControl, PrgLnchOpt: Disable, DefaultPrg
+
+	strRetVal := WorkingDirectory(A_ScriptDir, 1)
+		if (strRetVal)
+		MsgBox, 8192, Prg Path, % strRetVal
+
+	IniProc(selPrgChoice, 1)
+	strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
+	PrgChoiceNames[selPrgChoice] := ""
+	PrgChoicePaths[selPrgChoice] := ""
+	PrgResolveShortcut[selPrgChoice] := 0
+	PrgCmdLine[selPrgChoice] := ""
+	PrgMonToRn[selPrgChoice] := 0
+	PrgRnPriority[selPrgChoice] := -1
+	PrgBordless[selPrgChoice] := 0
+	PrgLnchHide[selPrgChoice] := 0
+	PrgRnMinMax[selPrgChoice] := 0
+	PrgLnkInf[selPrgChoice] := ""
+	PrgUrl[selPrgChoice] := ""
+
+
+	GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
+	GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
+	GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
+	GuiControl, PrgLnchOpt: Disable, RnPrgLnch
+	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
+	TogglePrgOptCtrls(txtPrgChoice, navShortcut)
+	iDevNum := 1
+	GuiControl, PrgLnchOpt:, Choose, iDevNum
+	GoSub FixMonColours
+
+Return
 
 PrgLnchOptGuiDropFiles:
 Gui, PrgLnchOpt: Submit, Nohide
@@ -5538,7 +5541,7 @@ Return -1
 }
 
 ; https://autohotkey.com/board/topic/54927-regread-associated-program-for-a-file-extension/
-AssocQueryApp(prgPath, ByRef cmdLine := 0)
+AssocQueryApp(prgPath, ByRef cmdLine := "*")
 {
 
 SplitPath, prgPath, , , Ext
