@@ -1844,8 +1844,8 @@ if (A_GuiEvent = "DoubleClick")
 
 			if (strRetVal) ;Lnch fail
 			{
-				if (strRetVal = "|*")
-				strTemp .= "Started" . "|"
+				if (strRetVal = "|")
+				strTemp .= "Started" . strRetVal
 				else
 				{
 					if (lnchPrgIndex > 0)
@@ -4946,17 +4946,17 @@ else
 
 	if (temp)
 	{
-	loop % PrgNo
-	{
-		if (A_Index != selPrgChoice)
+		loop % PrgNo
 		{
-			if (txtPrgChoice = PrgChoiceNames[A_Index])
+			if (A_Index != selPrgChoice)
 			{
-			MsgBox, 8192, Duplicate Name, A Prg exists with this name already. Please use another.
-			Return
+				if (txtPrgChoice = PrgChoiceNames[A_Index])
+				{
+				MsgBox, 8192, Duplicate Name, A Prg exists with this name already. Please use another.
+				Return
+				}
 			}
 		}
-	}
 	SetStartupname(SelIniChoicePath, defPrgStrng, PrgChoiceNames, selPrgChoice, txtPrgChoice)
 	PrgChoiceNames[selPrgChoice] := txtPrgChoice
 	IniProc(selPrgChoice)
@@ -4989,12 +4989,13 @@ FileGetAttrib, temp, % strTemp
 	;The following does not affect folder shortcuts
 	If (InStr(temp, "D"))
 	{
-		txtPrgChoice := "Prg" . selPrgChoice
+			if (!PrgChoicePaths[selPrgChoice])
+			txtPrgChoice := "Prg" . selPrgChoice
 		MsgBox, 8192, , Unable to use this Prg!
 		Return
 	}
 
-PrgChoicePaths[selPrgChoice] := strTemp
+
 	if (ChkPrgNames(txtPrgChoice, PrgNo))
 	{
 	; Instead of SplitPath
@@ -5002,8 +5003,8 @@ PrgChoicePaths[selPrgChoice] := strTemp
 	strTemp := SubStr(temp, InStr(temp, "\",, -1) + 1)
 		if (InStr(strTemp, "PrgLnch") || InStr(strTemp, "BadPath"))
 		{
-			PrgChoicePaths[selPrgChoice] := ""
-			txtPrgChoice := "Prg" . selPrgChoice
+				if (!PrgChoicePaths[selPrgChoice])
+				txtPrgChoice := "Prg" . selPrgChoice
 			MsgBox, 8192, Prg Name, Unable to use this Prg Name!
 			Return
 		}
@@ -5012,6 +5013,7 @@ PrgChoicePaths[selPrgChoice] := strTemp
 	else
 	PrgChoiceNames[selPrgChoice] := txtPrgChoice
 
+PrgChoicePaths[selPrgChoice] := strTemp
 
 	;check dup names
 	Loop % PrgNo
@@ -5052,23 +5054,40 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 		strTemp2 := WorkingDirectory(strRetVal)
 		}
 	}
-
 	if (strTemp2)
 	{
 	MsgBox, 8192, Prg Path, % strTemp2
 	txtPrgChoice := "Prg" . selPrgChoice
-	PrgLnkInf[selPrgChoice] := ""
-	PrgChoicePaths[selPrgChoice] := ""
 	PrgChoiceNames[selPrgChoice] := ""
+	PrgChoicePaths[selPrgChoice] := ""
+	PrgResolveShortcut[selPrgChoice] := 0
+	PrgCmdLine[selPrgChoice] := ""
+	PrgMonToRn[selPrgChoice] := 0
+	PrgRnPriority[selPrgChoice] := -1
+	PrgBordless[selPrgChoice] := 0
+	PrgLnchHide[selPrgChoice] := 0
+	PrgRnMinMax[selPrgChoice] := 0
+	PrgLnkInf[selPrgChoice] := ""
+	PrgUrl[selPrgChoice] := ""
 	Return
 	}
 	else
 	{
 		if (strRetVal = "*")
 		{
-		strTemp2 := AssocQueryApp(strTemp)
-			if (strTemp = strTemp2)
-			strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
+		strTemp2 := AssocQueryApp(strTemp, strRetVal)
+			; The only case where the association is parsed for storage in Prglnch.ini (there may be more to come!)
+			if (strRetVal)
+			{
+			PrgCmdLine[selPrgChoice] := strRetVal
+			PrgChoicePaths[selPrgChoice] := strTemp2
+			strRetVal := "*"
+			}
+			else
+			{
+				if (strTemp = strTemp2)
+				strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
+			}
 			; else: Forget associations
 		}
 		else
@@ -5101,12 +5120,12 @@ IniProc(selPrgChoice)
 strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 
 
-
 GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
 GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
 GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
 GuiControl, PrgLnchOpt: Enable, DefaultPrg
 GuiControl, PrgLnchOpt: Enable, RnPrgLnch
+GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 
 
 borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
@@ -5137,6 +5156,7 @@ PrgLnchOptGuiDropFiles:
 Gui, PrgLnchOpt: Submit, Nohide
 strTemp := ""
 strTemp2 := ""
+temp := 0
 ; WS_EX_ACCEPTFILES does not allow GUID links e.g. explorer.exe shell:::{4234d49b-0245-4df3-B780-3893943456e1}
 
 	Loop, Parse, A_GuiEvent, `n
@@ -5149,18 +5169,31 @@ strTemp2 := ""
 	strTemp := A_LoopField
 	}
 
-	if (PrgChoicePaths[selPrgChoice])
-	{
-	MsgBox, 8195, Prg Replacement, % "Replace existing Prg and PrgName info with the following file?`n`n" . """" . strTemp . """" . "`n`nYes: Replace both.`nNo: Replace existing Prg, but keep the current Prg Name.`nCancel: Do nothing."
-		IfMsgBox, Yes
-		SplitPath, strTemp, , , , txtPrgChoice
-		Else
+		if (txtPrgChoice = "None")
 		{
-		IfMsgBox, Cancel
-		Return
+			Loop, % PrgNo
+			{
+				if (!PrgChoicePaths[A_Index])
+				selPrgChoice := A_Index
+			}
+		temp := 1
 		}
+
+		if (PrgChoicePaths[selPrgChoice])
+		{
+			if (temp)
+			MsgBox, 8195, Prg Replacement, % "Replace the entry numbered " . selPrgChoice . " in the list containing the existing PrgName " . """" . PrgChoiceNames[selPrgChoice] . """" . " with the following file?`n`n" . """" . strTemp . """" . "`n`nYes: Replace both.`nNo: Replace existing Prg, but keep the current Prg Name.`nCancel: Do nothing."
+			else
+			MsgBox, 8195, Prg Replacement, % "Replace existing Prg and PrgName info with the following file?`n`n" . """" . strTemp . """" . "`n`nYes: Replace both.`nNo: Replace existing Prg, but keep the current Prg Name.`nCancel: Do nothing."
+
+			IfMsgBox, Yes
+			SplitPath, strTemp, , , , txtPrgChoice
+			else
+			{
+				IfMsgBox, Cancel
+				Return
+			}
 	}
-GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 GoSub ProcessNewPrg
 Return
 
@@ -5262,7 +5295,6 @@ PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLn
 {
 temp := PrgResolveShortcut[selPrgChoice], strTemp := PrgCmdLine[selPrgChoice], strTemp2 := PrgLnkInf[selPrgChoice]
 IsaPrgLnk := LNKFlag(strTemp2)
-
 
 	Switch, IsaPrgLnk
 	{
@@ -5506,8 +5538,9 @@ Return -1
 }
 
 ; https://autohotkey.com/board/topic/54927-regread-associated-program-for-a-file-extension/
-AssocQueryApp(prgPath)
+AssocQueryApp(prgPath, ByRef cmdLine := 0)
 {
+
 SplitPath, prgPath, , , Ext
 ;exe, com ,scr:  "real" executables
 	if (IsRealExecutable(PrgPath))
@@ -5546,8 +5579,11 @@ SplitPath, prgPath, , , Ext
 
 	strPrg := ParseEnvVars(strPrg)
 	; Assume coomand line parms like might be %1 added
-		if (temp := Instr(strPrg, "`%"))
-		strPrg := subStr(strPrg, 1, temp - 2)
+		if (temp := Instr(strPrg, " `%1"))
+		{
+		cmdLine := prgPath
+		strPrg := subStr(strPrg, 1, temp - 1)
+		}
 	}
 return strPrg
 }
@@ -6083,8 +6119,8 @@ loop % ((presetNoTest)? currBatchno: 1)
 	if (strRetVal)
 	{  ;Lnch failed for current Prg
 
-		if (strRetVal = "|*")
-		strTemp .= "Started" . "|"
+		if (strRetVal = "|")
+		strTemp .= "Started" . strRetVal
 		else
 		{
 			if (lnchPrgIndex)
@@ -6160,6 +6196,7 @@ Thread, NoTimers, false
 		}
 		else ;in case something else running
 		{
+
 			loop % PrgNo
 			{
 				if (PrgPIDMast[A_Index])
@@ -6228,7 +6265,6 @@ PrgLnch.Monitor := PrgLnchMon
 if (DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef) < 0)
 Return "Cancelled by User!"
 
-
 if (lnchPrgIndex > 0) ;Running
 {
 	;Fix priority
@@ -6236,7 +6272,6 @@ if (lnchPrgIndex > 0) ;Running
 	(!temp)? PrgPrty := "B": (temp = 1)? PrgPrty := "H": PrgPrty := "N"
 	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
-	
 	if (((IsaPrgLnk > -1)) && (strRetVal := PrgPaths) != AssocQueryApp(PrgPaths)) ; must be an association
 	{
 		if (IsaPrgLnk)
@@ -6298,8 +6333,8 @@ if (lnchPrgIndex > 0) ;Running
 	{
 
 	;WinHide ahk_class Shell_TrayWnd ;Necessary?
-	if (!Instr(PrgLnkInflnchPrgIndex, "|*"))
-		{
+	if (!Instr(PrgLnkInflnchPrgIndex, "|") && !Instr(PrgLnkInflnchPrgIndex, IniFileShortctSep))
+	{
 
 		if (scrWidth + 120 < scrWidthDef) ; 120 pixels might be enough
 			{
@@ -6416,13 +6451,13 @@ if (lnchPrgIndex > 0) ;Running
 		if (Instr(PrgPaths, "DOSBox.exe"))
 		InitDOSBoxGameDir(PrgPaths, 1)
 
-
 	Process, Priority, PrgPIDtmp, % PrgPrty
 	;Add to PID list
 
 	Sleep 200
 	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
 	Sleep 150
+
 
 
 	temp:= 0
@@ -6515,7 +6550,7 @@ if (lnchPrgIndex > 0) ;Running
 	{
 
 
-		if (!Instr(PrgLnkInflnchPrgIndex, "|*") && DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
+		if (!Instr(PrgLnkInflnchPrgIndex, "|") && !Instr(PrgLnkInflnchPrgIndex, IniFileShortctSep) && DefResNoMatchRes(SelIniChoicePath, Fmode, scrWidth, scrHeight, scrWidthDef, scrHeightDef))
 		{
 		strRetVal := ChangeResolution(scrWidth, scrHeight, scrFreq, targMonitorNum)
 			if (strRetVal)
@@ -6698,8 +6733,8 @@ if (lnchPrgIndex > 0) ;Running
 	if (disableRedirect)
 	DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 	; Path links etc cannot be cancelled as they do not return a PID:
-		if (InStr(PrgLnkInflnchPrgIndex, "|*", false))
-		Return "|*"
+		if (InStr(PrgLnkInflnchPrgIndex, "|", false))
+		Return "|"
 
 	;pillarboxing see https://msdn.microsoft.com/en-us/library/windows/desktop/bb530115(v=vs.85).aspx
 	;showhide taskbar

@@ -11,7 +11,6 @@ ListLines, Off
 AutoTrim, Off
 
 
-
 Class ListBoxProps
 {
 
@@ -133,7 +132,10 @@ Class ListBoxProps
 	}
 }
 
+	if (!FileExist("LnchPadCfg.jpg"))
+	FileInstall LnchPadCfg.jpg, LnchPadCfg.jpg
 
+SplashImage, LnchPadCfg.jpg, A B,,, LnchPadCfg
 
 
 OnMessage(0x201, "WM_LBUTTONDOWN")
@@ -476,6 +478,7 @@ GuiControl, Choose, LnchPadTab, %tabStat%
 Gui Show, xCenter yCenter w%thisguiW% h%thisguiH%, LnchPad Setup
 SetTaskBarIcon(GuiHwnd)
 
+SplashImage, LnchPadCfg.jpg, Hide,,, LnchPadCfg
 
 WinSet, Redraw,, ahk_id %GuiHwnd%
 
@@ -944,7 +947,7 @@ GuiControlGet, strTmp, , addToLnchPad
 	guiControl, , addToLnchPad, % "&Locate " gameList[tabStat] " LnchPad Slot"
 	Progress, Off
 
-		if (strRetVal && !(InStr(strRetVal, "1")))
+		if (strRetVal && (!InStr(Substr(strRetVal, 1, 1), "1")))
 		Tooltip, % strRetVal
 		else
 		{
