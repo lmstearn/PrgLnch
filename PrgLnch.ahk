@@ -460,7 +460,7 @@ if (foundpos > 1 && !A_Args[1]) ;  foundpos is no of window IDs found,.No comman
 		{
 			if (ffTemp > 2)
 			{
-			MsgBox, 8192, PrgLnch in Notepad++!, Too msny PrgLnch windows open. Is PrgLnch already active!
+			MsgBox, 8192, PrgLnch in Notepad++!, Too many PrgLnch windows open. Is PrgLnch already active!
 			GoSub PrgLnchButtonQuit_PrgLnch
 			}
 		}
@@ -2678,6 +2678,11 @@ ChooseIniChoice(ByRef iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 
 
 
+
+
+
+
+
 ;More Frontend functions
 LnchLnchPad(SelIniChoiceName, scrWidthDef, scrHeightDef, scrFreqDef)
 {
@@ -3030,151 +3035,6 @@ PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByR
 	}
 }
 
-
-
-PrgLnchButtonQuit_PrgLnch:
-PrgLnchGuiEscape:
-;PrgLnchGuiClose: ; not mandatory
-Gui PrgLnch: +OwnDialogs
-critical
-
-if (PrgTermExit <> 2)
-{
-	if (presetNoTest) ; Quit Button clicked
-	{
-	strTemp2 := ""
-	temp := ""
-	loop % PrgNo
-	{
-		foundpos := PrgPIDMast[A_Index]
-		if (foundpos)
-		{
-			Process, Exist, % foundpos
-			if (ErrorLevel)
-			{
-				
-				if (!(strRetVal := PrgChoicePaths[A_Index]))
-				Continue
-
-				if (strRetVal := GetProcFromPath(strRetVal))
-				{
-				if (temp)
-				strTemp2 .= temp . """" . strRetVal . """"
-				else
-				{
-				temp := ", "
-				strTemp2 := "`[Batched`]: """ . strRetVal . """"
-				}
-			}
-			}
-		}
-	}
-	}
-
-	if (PrgPID)
-	{
-		Process, Exist, %PrgPID%
-		if (ErrorLevel)
-			{
-				if (PrgChoicePaths[selPrgChoice])
-				{
-				strRetVal := PrgChoicePaths[selPrgChoice]
-					if (strRetVal := GetProcFromPath(strRetVal))
-					(strTemp2)? strTemp2 := "`[Test Run`]: """ . strRetVal . """`n" . strTemp2: strTemp2 := "`[Test Run`]: """ . strRetVal . """"
-				}
-			}
-	}
-
-	if (strTemp2)
-	{
-		if (MsgOnceTerminate(SelIniChoicePath, strTemp2, PrgTermExit))
-		Return
-	}
-
-}
-
-
-if (PrgTermExit = 2)
-{ ;cancel Prgs
-
-	loop % PrgNo
-		{
-		temp := PrgPIDMast[A_Index]
-		if (temp)
-		WinClose, ahk_pid%temp%
-		sleep, 200
-		if (temp)
-		KillPrg(temp)
-		}
-	if (PrgPID)
-	{
-	WinClose, ahk_pid%PrgPID%
-	sleep, 200
-	if (PrgPID)
-	KillPrg(PrgPID)
-	}
-}
-
-SetTimer, NewThreadforDownload, Delete ;Cleanup
-
-
-
-strTemp := ""
-strTemp2 := ""
-loop % PrgNo
-{
-	if (PrgChoicePaths[A_Index])
-	{
-	; strIniChoice used as temp!
-	strIniChoice := ExtractPrgPath(A_Index, 0, PrgChoicePaths[A_Index], PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, temp)
-
-		if (strIniChoice && temp > -1) ; Don't care about invalid links etc- (but we do really!)
-		{
-			if (temp) ;IsaPrgLnk
-			strIniChoice := PrgLnkInf[A_Index]
-			
-
-		strRetVal := WorkingDirectory(strIniChoice, 1)
-
-			If (strRetVal)
-			strTemp2 .= "`n" . strRetVal
-			else
-			{
-				if (!InStr(strIniChoice, A_ScriptDir))
-				{
-					if (!temp)
-					{
-					SplitPath, strIniChoice, , strIniChoice
-					strIniChoice .= "\"
-					}
-				fTemp := KleenupPrgLnchFiles(strIniChoice) ; An old (fixed?) bug where these ended up in wrong directory
-					if (fTemp)
-					strTemp .= "`nFile(s): """ . fTemp . """ found in """ . strIniChoice . """ marked for the Recycle Bin."
-				}
-			}
-		}
-	}
-}
-
-strRetVal := WorkingDirectory(A_ScriptDir, 1)
-
-	If (strRetVal)
-	strTemp2 .= "`n" . strRetVal
-	else
-	KleenupPrgLnchFiles()
-
-	if (strTemp)
-	MsgBox, 8192, PrgLnch Remnants, % (strTemp2)? ("Clean up failed for the following!`n" strTemp2 "`n`nAlso, " strTemp): strTemp
-	else
-	{
-		if (strTemp2)
-		MsgBox, 8192, PrgLnch Remnants, % "Clean up failed for the following!`n" strTemp2
-	}
-
-CloseChm()
-
-DopowerPlan()
-ExitApp
 
 IniProcIniFileStart()
 {
@@ -3582,6 +3442,11 @@ RnChmWelcome:
 	SetTimer, RnChmWelcome, Delete
 	}
 Return
+
+
+
+
+
 
 
 
@@ -5022,23 +4887,16 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 	}
 	else
 	{
+	PrgUrl[selPrgChoice] := ""
+	PrgCmdLine[selPrgChoice] := ""
+
 		if (strRetVal = "*")
 		{
-		strTemp2 := AssocQueryApp(strTemp, strRetVal)
+		strTemp2 := AssocQueryApp(strTemp)
 			if (strTemp2)
 			{
-				if (strRetVal = "*")
-				{
-					if (strTemp = strTemp2)
-					strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
-				}
-				else
-				{
-				; The only case where the association is parsed for storage in Prglnch.ini (there may be more to come!)
-				PrgCmdLine[selPrgChoice] := strRetVal
-				PrgChoicePaths[selPrgChoice] := strTemp2
-				strRetVal := "*"
-				}
+				if (strTemp = strTemp2)
+				strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
 			}
 			else
 			{
@@ -5541,7 +5399,7 @@ Return -1
 }
 
 ; https://autohotkey.com/board/topic/54927-regread-associated-program-for-a-file-extension/
-AssocQueryApp(prgPath, ByRef cmdLine := "*")
+AssocQueryApp(prgPath, ByRef cmdLine := "")
 {
 
 SplitPath, prgPath, , , Ext
@@ -5728,7 +5586,7 @@ CoordMode, Mouse, % strTemp
 }
 
 #IfWinActive, Prg Properties (Version 2.x) ahk_class AutoHotkeyGUI
-{
+
 ^!p::
 SetTitleMatchMode, 3
 RepositionGuiToMouse()
@@ -5738,10 +5596,14 @@ Esc::
 PrgPropertiesClose()
 
 Return
-}
+#IfWinActive
 
 #IfWinActive, PrgLnch Options ahk_class AutoHotkeyGUI
-{
+
+Esc::
+goSub BackToPrgLnch
+Return
+
 ^!p::
 SetTitleMatchMode, 3
 RepositionGuiToMouse(1)
@@ -5848,12 +5710,159 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 		} 
 	}
 Return
-}
+#IfWinActive
 
 
 
 #IfWinActive, PrgLnch ahk_class AutoHotkeyGUI
+
+
+PrgLnchButtonQuit_PrgLnch:
+PrgLnchGuiEscape:
+;PrgLnchGuiClose: ; not mandatory
+Gui PrgLnch: +OwnDialogs
+critical
+
+if (PrgTermExit <> 2)
 {
+	if (presetNoTest) ; Quit Button clicked
+	{
+	strTemp2 := ""
+	temp := ""
+	loop % PrgNo
+	{
+		foundpos := PrgPIDMast[A_Index]
+		if (foundpos)
+		{
+			Process, Exist, % foundpos
+			if (ErrorLevel)
+			{
+				
+				if (!(strRetVal := PrgChoicePaths[A_Index]))
+				Continue
+
+				if (strRetVal := GetProcFromPath(strRetVal))
+				{
+				if (temp)
+				strTemp2 .= temp . """" . strRetVal . """"
+				else
+				{
+				temp := ", "
+				strTemp2 := "`[Batched`]: """ . strRetVal . """"
+				}
+			}
+			}
+		}
+	}
+	}
+
+	if (PrgPID)
+	{
+		Process, Exist, %PrgPID%
+		if (ErrorLevel)
+			{
+				if (PrgChoicePaths[selPrgChoice])
+				{
+				strRetVal := PrgChoicePaths[selPrgChoice]
+					if (strRetVal := GetProcFromPath(strRetVal))
+					(strTemp2)? strTemp2 := "`[Test Run`]: """ . strRetVal . """`n" . strTemp2: strTemp2 := "`[Test Run`]: """ . strRetVal . """"
+				}
+			}
+	}
+
+	if (strTemp2)
+	{
+		if (MsgOnceTerminate(SelIniChoicePath, strTemp2, PrgTermExit))
+		Return
+	}
+
+}
+
+
+if (PrgTermExit = 2)
+{ ;cancel Prgs
+
+	loop % PrgNo
+		{
+		temp := PrgPIDMast[A_Index]
+		if (temp)
+		WinClose, ahk_pid%temp%
+		sleep, 200
+		if (temp)
+		KillPrg(temp)
+		}
+	if (PrgPID)
+	{
+	WinClose, ahk_pid%PrgPID%
+	sleep, 200
+	if (PrgPID)
+	KillPrg(PrgPID)
+	}
+}
+
+SetTimer, NewThreadforDownload, Delete ;Cleanup
+
+
+
+strTemp := ""
+strTemp2 := ""
+loop % PrgNo
+{
+	if (PrgChoicePaths[A_Index])
+	{
+	; strIniChoice used as temp!
+	strIniChoice := ExtractPrgPath(A_Index, 0, PrgChoicePaths[A_Index], PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, temp)
+
+		if (strIniChoice && temp > -1) ; Don't care about invalid links etc- (but we do really!)
+		{
+			if (temp) ;IsaPrgLnk
+			strIniChoice := PrgLnkInf[A_Index]
+			
+
+		strRetVal := WorkingDirectory(strIniChoice, 1)
+
+			If (strRetVal)
+			strTemp2 .= "`n" . strRetVal
+			else
+			{
+				if (!InStr(strIniChoice, A_ScriptDir))
+				{
+					if (!temp)
+					{
+					SplitPath, strIniChoice, , strIniChoice
+					strIniChoice .= "\"
+					}
+				fTemp := KleenupPrgLnchFiles(strIniChoice) ; An old (fixed?) bug where these ended up in wrong directory
+					if (fTemp)
+					strTemp .= "`nFile(s): """ . fTemp . """ found in """ . strIniChoice . """ marked for the Recycle Bin."
+				}
+			}
+		}
+	}
+}
+
+strRetVal := WorkingDirectory(A_ScriptDir, 1)
+
+	If (strRetVal)
+	strTemp2 .= "`n" . strRetVal
+	else
+	KleenupPrgLnchFiles()
+
+	if (strTemp)
+	MsgBox, 8192, PrgLnch Remnants, % (strTemp2)? ("Clean up failed for the following!`n" strTemp2 "`n`nAlso, " strTemp): strTemp
+	else
+	{
+		if (strTemp2)
+		MsgBox, 8192, PrgLnch Remnants, % "Clean up failed for the following!`n" strTemp2
+	}
+
+CloseChm()
+
+DopowerPlan()
+ExitApp
+
+
+
 
 ^!p::
 ; This repositions the top left of the GUI to mouse cursor
@@ -5897,7 +5906,7 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 		}
 	}
 Return
-}
+#IfWinActive
 
 SetStartupname(SelIniChoicePath, ByRef defPrgStrng, PrgChoiceNames, selPrgChoice, newName := 0)
 {
@@ -5957,6 +5966,17 @@ WM_HELPMSG := 0x0053
 		ToolTip
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -6242,7 +6262,7 @@ Return
 LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNamesNo, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef scrWidth, ByRef scrHeight, ByRef scrFreq, ByRef scrWidthDef, ByRef scrHeightDef, ByRef scrFreqDef, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, Fmode, btchPowerName)
 {
 PrgLnchMon := 0, primaryMon := 0, disableRedirect := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0, PrgLnkInflnchPrgIndex := PrgLnkInf[lnchPrgIndex]
-temp := 0, fTemp := 0, strRetVal := "", wkDir := ""
+temp := 0, fTemp := 0, strRetVal := "", wkDir := "", PrgPathsAssocCommandLine := ""
 ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
 ERROR_FILE_NOT_FOUND := 0x2
 ERROR_ACCESS_DENIED := 0x5
@@ -6275,7 +6295,7 @@ if (lnchPrgIndex > 0) ;Running
 	(!temp)? PrgPrty := "B": (temp = 1)? PrgPrty := "H": PrgPrty := "N"
 	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
-	if (((IsaPrgLnk > -1)) && (strRetVal := PrgPaths) != AssocQueryApp(PrgPaths)) ; must be an association
+	if ((IsaPrgLnk > -1) && ((strRetVal := PrgPaths) != AssocQueryApp(PrgPaths))) ; must be an association
 	{
 		if (IsaPrgLnk)
 		{
@@ -6294,7 +6314,19 @@ if (lnchPrgIndex > 0) ;Running
 		else
 		{
 		SplitPath, PrgPaths,, wkDir
-		PrgPaths := AssocQueryApp(PrgPaths)
+		PrgPaths := AssocQueryApp(PrgPaths, strRetVal)
+
+			if (PrgPaths)
+			{
+				if (strRetVal)
+				{
+				PrgPathsAssocCommandLine := PrgPaths . A_Space . """" . strRetVal . """"
+				strRetVal := ""
+				}
+			}
+			else
+			Return "Association Removed.`nThe Prg must have an association before it can be used."
+		
 		}
 	}
 
@@ -6328,9 +6360,10 @@ if (lnchPrgIndex > 0) ;Running
 	PrgPaths := "*Config " . PrgPaths
 
 	If (((IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex]) || !IsaPrgLnk) && PrgCmdLine[lnchPrgIndex])
-	PrgPaths := PrgPaths . A_Space . "" . PrgCmdLine[lnchPrgIndex] . ""
+	PrgPaths := PrgPaths . A_Space . """" . PrgCmdLine[lnchPrgIndex] . """"
 
-
+	if (PrgPathsAssocCommandLine)
+	PrgPaths := PrgPathsAssocCommandLine
 
 	if (targMonitorNum = PrgLnchMon)
 	{
@@ -9407,7 +9440,7 @@ Return
 	exeStr := AssocQueryApp(exeStr)
 
 exeStrOld := exeStr
-SplitPath, exeStrOld, exeStrOld
+SplitPath, exeStrOld, exeStrName
 
 ;FileOpen returns an object
 exeStr := FileOpen(exeStr, "rw" "-rwd")
@@ -9472,7 +9505,7 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 					GuiControl, PrgLnchOpt:, PrgLAA, Apply LAA Flag
 					}
 				else
-					MsgBox, 8192, , % "Unable to remove LAA Flag. Is " exeStrOld " opened in an editor?"
+					MsgBox, 8192, , % "Unable to remove LAA Flag. Is " exeStrName " opened in an editor?"
 				}
 				else
 				{
@@ -9480,7 +9513,7 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 				;lAA := lAA | IMAGE_FILE_LARGE_ADDRESS_AWARE
 
 				if (lAA & IMAGE_FILE_LARGE_ADDRESS_AWARE)
-				MsgBox, 8192, , %  exeStrOld " already has the LAA patch!"
+				MsgBox, 8192, , %  exeStrName " already has the LAA patch!"
 				else
 				{
 				; check at least one of the flags exist
@@ -9497,10 +9530,10 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 					GuiControl, PrgLnchOpt:, PrgLAA, Remove LAA Flag
 					}
 				else
-					MsgBox, 8192, , % "Unable to write LAA Flag. Is " exeStrOld " opened in an editor?"
+					MsgBox, 8192, , % "Unable to write LAA Flag. Is " exeStrName " opened in an editor?"
 				}
 				else
-				MsgBox, 8192, , %  exeStrOld "`n`nUnexpected data in Characteristics field. LAA flag cannot not be written!"
+				MsgBox, 8192, , %  exeStrName "`n`nUnexpected data in Characteristics field. LAA flag cannot not be written!"
 				}
 				}
 
@@ -9508,23 +9541,23 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 		}
 		else
 		{
-		MsgBox, 8192, , %  exeStrOld "`n`nBad exe file: no NT Headers"
+		MsgBox, 8192, , %  exeStrName "`n`nBad exe file: no NT Headers"
 		}
 
 	}
 	else
 	{
 		if (e_magic = IMAGE_DOS_SIGNATURE_BIG_ENDIAN)
-		MsgBox, 8192, , %  exeStrOld "`n`nNo can do! This executable runs on a Big_Endian system!"
+		MsgBox, 8192, , %  exeStrName "`n`nNo can do! This executable runs on a Big_Endian system!"
 		else
 		{
-		MsgBox, 8192, , %  exeStrOld "`n`nBad exe file: no DOS sig."
+		MsgBox, 8192, , %  exeStrName "`n`nBad exe file: no DOS sig."
 		;creates empty file if non-existent: Already checked above!
 		exeStr.Close()
-		FileGetSize temp, %exeStrOld%
+		FileGetSize temp, %exeStrName%
 		sleep 20
-			if (!temp && FileExist(exeStrOld))
-			FileDelete, %exeStrOld%
+			if (!temp && FileExist(exeStrName))
+			FileDelete, %exeStrName%
 		Return 0
 		}
 	}
@@ -9532,13 +9565,13 @@ if (e_magic = IMAGE_DOS_SIGNATURE)
 }
 else
 {
-	if (!checkSubSys || (checkSubSys && !Instr(PrgChoicePaths[selPrgChoice], A_WinDir)))
+	if (!checkSubSys || (checkSubSys && !Instr(exeStrOld, A_WinDir) && !Instr(PrgChoicePaths[selPrgChoice], A_WinDir)))
 	{
 		if (A_IsAdmin)
-		msgbox, 8192 , DcmpExecutable: File Open, % exeStrOld " could not be accessed with error " A_LastError "."
+		msgbox, 8192 , DcmpExecutable: File Open, % exeStrName " could not be accessed with error " A_LastError "."
 		else
 		{
-		msgbox, 8196 , DcmpExecutable: File Open, % exeStrOld " could not be accessed with error " A_LastError ".`nIs it opened by another process, or does it have special permissions?`nIt might be possible for PrgLnch to open it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
+		msgbox, 8196 , DcmpExecutable: File Open, % exeStrName " could not be accessed with error " A_LastError ".`nIs it opened by another process, or does it have special permissions?`nIt might be possible for PrgLnch to open it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
 			IfMsgBox, Yes
 			RestartPrgLnch(1)
 		}

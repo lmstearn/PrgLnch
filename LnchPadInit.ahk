@@ -132,12 +132,6 @@ Class ListBoxProps
 	}
 }
 
-	if (!FileExist("LnchPadCfg.jpg"))
-	FileInstall LnchPadCfg.jpg, LnchPadCfg.jpg
-
-SplashImage, LnchPadCfg.jpg, A B,,, LnchPadCfg
-
-
 OnMessage(0x201, "WM_LBUTTONDOWN")
 OnMessage(0x0053, "WM_Help")
 WM_HELPMSG := 0x0053
@@ -477,8 +471,6 @@ GoSub LnchPadTab
 GuiControl, Choose, LnchPadTab, %tabStat%
 Gui Show, xCenter yCenter w%thisguiW% h%thisguiH%, LnchPad Setup
 SetTaskBarIcon(GuiHwnd)
-
-SplashImage, LnchPadCfg.jpg, Hide,,, LnchPadCfg
 
 WinSet, Redraw,, ahk_id %GuiHwnd%
 
