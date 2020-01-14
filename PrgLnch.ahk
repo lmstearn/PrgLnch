@@ -5806,7 +5806,7 @@ if (PrgTermExit = 2)
 }
 
 SetTimer, NewThreadforDownload, Delete ;Cleanup
-
+CloseChm()
 
 
 strTemp := ""
@@ -5861,7 +5861,6 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 		MsgBox, 8192, PrgLnch Remnants, % "Clean up failed for the following!`n" strTemp2
 	}
 
-CloseChm()
 
 DopowerPlan()
 ExitApp
