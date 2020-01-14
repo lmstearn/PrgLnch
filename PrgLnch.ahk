@@ -5035,7 +5035,10 @@ temp := 0
 			Loop, % PrgNo
 			{
 				if (!PrgChoicePaths[A_Index])
+				{
 				selPrgChoice := A_Index
+				break
+				}
 			}
 		temp := 1
 		}
@@ -5054,7 +5057,9 @@ temp := 0
 				IfMsgBox, Cancel
 				Return
 			}
-	}
+		}
+		else
+		SplitPath, strTemp, , , , txtPrgChoice
 GoSub ProcessNewPrg
 Return
 
@@ -7414,7 +7419,7 @@ LR_LOADFROMFILE:=0x10
 IconFile := A_ScriptDir . "\PrgLnch.ico"
 hIcon := DllCall("LoadImage", "uint", 0, "str", IconFile, "uint", 1, "int", 0, "int", 0, "uint", LR_LOADFROMFILE)
 
-	if (!hIcon)
+	if (!hIcon && A_IsCompiled)
 	{
 	MsgBox, 8192, Icon File, Icon file missing or invalid!
 	Return
