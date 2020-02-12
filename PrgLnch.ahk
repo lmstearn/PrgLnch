@@ -319,7 +319,7 @@ PrgPos := [0, 0, 0, 0]
 PrgCmdLine := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgMonToRn := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgChgResonSwitch := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-PrgRnMinMax := [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] ;indetermined values are "normal"
+PrgRnMinMax := [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] ;In line with the Gui control, indetermined values are "Normal". MinMax in WinGet is 0 for Normal
 PrgRnPriority := [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
 PrgBordless := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgLnchHide := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -4006,7 +4006,9 @@ PrgResolveShortcut[selPrgChoice] := resolveShortct
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
 
 	GuiControl, PrgLnchOpt: Enable, PrgMinMax
+	GuiControl, PrgLnchOpt: Enable, Bordless
 	GuiControl, PrgLnchOpt: Enable, PrgLAA
+	borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
 	SetTimer, CheckVerPrg, 5000
 	}
 	else
@@ -4017,8 +4019,10 @@ PrgResolveShortcut[selPrgChoice] := resolveShortct
 		else
 		{
 		GuiControl, PrgLnchOpt: Disable, PrgMinMax
+		GuiControl, PrgLnchOpt: Disable, Bordless
 		GuiControl, PrgLnchOpt: Disable, PrgLAA
 		}
+		
 		PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 	}
 PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
@@ -4776,7 +4780,7 @@ else
 			{
 				if (txtPrgChoice = PrgChoiceNames[A_Index])
 				{
-				MsgBox, 8192, Duplicate Name, A Prg exists with this name already. Please use another.
+				MsgBox, 8192, Duplicate Name, A Prg exists with this name already. `nPlease use another name.
 				Return
 				}
 			}
@@ -4801,7 +4805,11 @@ else
 		Thread, NoTimers, false
 
 		if (!ErrorLevel)
+		{
+			if (txtPrgChoice = "Prg" . selPrgChoice)
+			SplitPath, strTemp, , , , txtPrgChoice
 		GoSub ProcessNewPrg
+		}
 		;else cancelled out of FSF dialog: PrgChoicePaths is made blank
 	}
 }
@@ -4810,6 +4818,7 @@ Return
 
 ProcessNewPrg:
 FileGetAttrib, temp, % strTemp
+
 	;The following does not affect folder shortcuts
 	If (InStr(temp, "D"))
 	{
@@ -4914,7 +4923,7 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 			if (strRetVal != IniFileShortctSep && strRetVal != "|")
 			{
 			;Append resolved path
-			strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1 , 1) ; must get resolved path
+			strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep, 1)
 			PrgChoicePaths[selPrgChoice] .= IniFileShortctSep . strRetVal
 			}
 			else
@@ -4996,7 +5005,7 @@ zeroPrgVars:
 	PrgRnPriority[selPrgChoice] := -1
 	PrgBordless[selPrgChoice] := 0
 	PrgLnchHide[selPrgChoice] := 0
-	PrgRnMinMax[selPrgChoice] := 0
+	PrgRnMinMax[selPrgChoice] := -1
 	PrgLnkInf[selPrgChoice] := ""
 	PrgUrl[selPrgChoice] := ""
 
@@ -6369,6 +6378,17 @@ if (lnchPrgIndex > 0) ;Running
 	if (PrgPathsAssocCommandLine)
 	PrgPaths := PrgPathsAssocCommandLine
 
+
+
+
+
+
+
+
+
+;*************************************************
+; Monitor loop
+
 	if (targMonitorNum = PrgLnchMon)
 	{
 
@@ -6500,26 +6520,27 @@ if (lnchPrgIndex > 0) ;Running
 
 
 
-	temp:= 0
+	temp := 0
 	DetectHiddenWindows, On
-	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
-		if (!w && !h)
-		{
-		sleep 150
-		WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
-			if (w || h)
-			temp := 1
-		}
-		else
-		temp := 1
+	WinGet, temp, MinMax, ahk_pid%PrgPIDtmp%
 
-	fTemp := 0
+	if (temp)
+	WinRestore, ahk_pid%PrgPIDtmp%
+
+
+	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
+		if (w || h)
+		fTemp := -1
+		else
+		fTemp := 0
+
 	; Possible the default window co-ords are in another monitor from a previous run here
-	if (temp && (PrgRnMinMax[lnchPrgIndex] > 0))
+	if (fTemp)
 	{
 	loop % dispMonNamesNo
 	{
 	SysGet, ms, MonitorWorkArea, % A_Index
+
 		if (x >= msLeft && x <= msRight && y >= msTop && y <= msBottom)
 		{
 			;we know targMonitorNum = PrgLnchMon
@@ -6543,6 +6564,7 @@ if (lnchPrgIndex > 0) ;Running
 				try
 				{
 				fTemp := 1
+
 				WinMove, ahk_pid%PrgPIDtmp%, , %dx%, %dy%, %w%, %h%
 				}
 				catch
@@ -6570,15 +6592,22 @@ if (lnchPrgIndex > 0) ;Running
 	}
 
 	; Prevents cursor from reverting to primary if PrgLnchMon not primary
-	if (!fTemp && PrgLnchMon != primaryMon)
+	if ((fTemp < 1) && (PrgLnchMon != primaryMon))
 	{
 
 	dx := Round(x + w/2)
 	dy := Round(y + y/2)
 	DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
 	}
+	; Restore min/max
+	(temp = 1)? (WinMaximize, ahk_pid %PrgPIDtmp%): ((temp = -1)? (WinMinimize, ahk_pid %PrgPIDtmp%): )
+
 		if (borderToggle)
-		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, 0, 0, scrWidth, scrHeight, PrgPIDtmp, 1) ; query
+		{
+		dx := mdLeft
+		dy := mdTop
+		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, dx, dy, scrWidth, scrHeight, PrgPIDtmp, 1) ; query
+		}
 
 
 
@@ -6685,6 +6714,7 @@ if (lnchPrgIndex > 0) ;Running
 	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
 	Sleep 200
 
+	temp := 0
 	DetectHiddenWindows, On
 	WinGet, temp, MinMax, ahk_pid%PrgPIDtmp%
 	if (temp)
@@ -6697,7 +6727,7 @@ if (lnchPrgIndex > 0) ;Running
 
 	SysGet, md, MonitorWorkArea, % targMonitorNum
 
-		if (!(mdLeft - mdRight) && (mdTop - mdBottom))
+		if (!((mdLeft - mdRight) && (mdTop - mdBottom)))
 		{
 		outStr := "Incorrect destination co-ordinates.`nIf the monitor has just been configured, a reboot may resolve the issue."
 			if (disableRedirect)
@@ -6705,12 +6735,23 @@ if (lnchPrgIndex > 0) ;Running
 		return outStr
 		}
 
-	; Possible the default window co-ords are in the other monitor from a previous run here
+	; Possible the default window co-ords are in another monitor from a previous run here
 		if !(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom)
 		{
-		SysGet, ms, MonitorWorkArea, % PrgLnchMon
-		msw := msRight - msLeft, msh := msBottom - msTop
+
+
+
+
+
+			loop % dispMonNamesNo
+			{
+			SysGet, ms, MonitorWorkArea, % A_Index
+				if (x >= msLeft && x <= msRight && y >= msTop && y <= msBottom)
+				Break
+			}
+
 		mdw := mdRight - mdLeft, mdh := mdBottom - mdTop
+		msw := msRight - msLeft, msh := msBottom - msTop
 
 
 		; Calculate new size for new monitor.
@@ -7848,7 +7889,7 @@ VarSetCapacity(monitorInfo, 0)
 GetPrgLnkVal(strTemp, IniFileShortctSep, ProcessLnk := 0, resolveNow := 0)
 {
 ;Gets either working directory or resolved/unresolved shortcut path
-strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
+strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep), initLnk := (InStr(strTemp, ".lnk", False, StrLen(strTemp) - 4))
 	; ATM PrgLnch does not modify the fields of the Wscript shortcut component in any way.
 	;http://superuser.com/questions/392061/how-to-make-a-shortcut-from-cmd
 
@@ -7871,14 +7912,16 @@ strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
 	; Second Pass
 	if (ProcessLnk)
 	{
+
 		if (IsALnk)
 		strTemp2 := SubStr(strTemp, 1, IsALnk - 1)
 		else
 		strTemp2 := strTemp
 
-		if (resolveNow) ; never gets here if symbolic or dir lnk
+		if (resolveNow) ; never gets here if symbolic or dir lnk, or initLnk
 		{
 		FileGetShortcut, %strTemp2%, strRetVal
+
 			if (ErrorLevel)
 			{
 				if (IsALnk)
@@ -7890,6 +7933,7 @@ strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
 			{
 			strTemp2 := SubStr(strTemp, IsALnk + 1)
 				if (strTemp2 != strRetVal)
+				;CreateToolTip("Shortcut target`n" . """" . strRetVal . """" . "`nhas been updated")
 				MsgBox, 8192, , % "Shortcut target`n" strRetVal "`nhas been updated"
 			;FileGetShortcut may not error if not lnk
 			}
@@ -7903,7 +7947,7 @@ strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep)
 			{
 				if (ErrorLevel)
 				{
-					if (IsALnk)
+					if (IsALnk || initLnk)
 					strRetVal := "<>"
 					else
 					strRetVal := "*"
@@ -7974,7 +8018,7 @@ ParseEnvVars(strTemp)
 	}
 	else
 	{
-	;absolutely refuse to parse HOMEDRIVE and HOMEPATH separately
+	;absolutely refuse to parse HOMEDRIVE and HOMEPATH separately: Homepath = \Users\{username}
 	strTemp2 := StrReplace(strTemp, "`%HOMEDRIVE`%`%HOMEPATH`%", , foundPos)
 		if (foundPos)
 		{
@@ -8613,11 +8657,11 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 	else
 	{
 		if (retVal = DISP_CHANGE_BADDUALVIEW) ;-6
-		strRetVal := "Change Settings Failed: (Windows XP & later) The settings change was unsuccessful because system is DualView capable."
+		strRetVal := "Change Settings Failed: (Windows XP & later):`nThe settings change was unsuccessful because system is DualView capable."
 		else
 		{
 			if (retVal = DISP_CHANGE_BADPARAM) ;-5
-			strRetVal := "Change Settings Failed: An invalid parameter was passed in. This can include an invalid flag or combination of flags."
+			strRetVal := "Change Settings Failed: An invalid parameter was passed in.`nThis can include an invalid flag or combination of flags."
 			else
 			{
 			if (retVal = DISP_CHANGE_BADFLAGS) ;-4
@@ -8629,14 +8673,14 @@ ChangeResolution(scrWidth := 1920, scrHeight := 1080, scrFreq := 60, targMonitor
 			else
 			{
 			if (retVal = DISP_CHANGE_BADMODE) ;-2
-			strRetVal := "The graphics mode is not supported. This can be caused by an out of range resolution value."
+			strRetVal := "The graphics mode is not supported.`nThis can be caused by an out of range resolution value."
 			else
 			{
 			if (retVal = DISP_CHANGE_FAILED) ;-1
 			strRetVal := "The display driver failed the specified graphics mode."
 			else
 			if (retVal = DISP_CHANGE_RESTART) ;1
-			strRetVal := "The computer must be restarted in order for the graphics mode to work."
+			strRetVal := "Computer must be restarted in order for the graphics mode to work."
 			}
 			}
 			}
@@ -9703,7 +9747,7 @@ WinMover(Hwnd := 0, position := "hc vc", Width := 0, Height := 0, splashInit := 
 
 }
 
-TogglePrgOptCtrls(txtPrgChoice, navShortcut, borderToggle := 0, selPrgChoice := 0, PrgChgResonSwitch := 0, PrgChoicePaths := 0, PrgLnkInf := 0, PrgRnMinMax := 0, PrgRnPriority := 0, PrgBordless := 0, PrgLnchHide := 0, CtrlsOn := 0)
+TogglePrgOptCtrls(txtPrgChoice, navShortcut, borderToggle := 0, selPrgChoice := 0, PrgChgResonSwitch := 0, PrgChoicePaths := 0, PrgLnkInf := 0, PrgRnMinMax := -1, PrgRnPriority := -1, PrgBordless := 0, PrgLnchHide := 0, CtrlsOn := 0)
 {
 ctlEnable := (LNKFlag(PrgLnkInf[selPrgChoice]) = -1)? "Disable": "Enable"
 if (CtrlsOn)
@@ -9878,8 +9922,8 @@ GuiControl, PrgLnchOpt: Show, PrgLAA
 IniProc(selPrgChoice := 0, removeRec := 0)
 {
 
-Local foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, k := 0, spr := "", reWriteIni := 0, FileExistSelIniChoicePath:= FileExist(SelIniChoicePath)
-Local foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, k := 0, spr := "", reWriteIni := 0, FileExistSelIniChoicePath:= FileExist(SelIniChoicePath)
+Local iDevNumArrayIn := [0, 0, 0, 0, 0, 0, 0, 0, 0], foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, k := 0, spr := "", reWriteIni := 0, FileExistSelIniChoicePath:= FileExist(SelIniChoicePath)
+
 ; Local implies  or assumes global function
 
 IniProcStart:
@@ -10144,18 +10188,45 @@ if (!FileExistSelIniChoicePath)
 							}
 							else  ;reading entire file
 							{
+								temp := 0
 								if (k)
 								{
-								foundPos := 0
-									loop % dispMonNamesNo
+									Loop, parse, k, CSV , %A_Space%%A_Tab%
 									{
-									foundPosOld := foundPos + 1
-									foundPos := InStr(k, ",", , , A_Index)
-										if (!foundPos)
-										Break
-									iDevNumArray[A_Index] := SubStr(k, foundPosOld, foundPos - foundPosOld)
+									iDevNumArrayIn[A_Index] := A_Loopfield
+									temp++
 									}
-									if (!iDevNumArray[1]) ;  cannot handle old ini files
+
+									if (iDevNumArrayIn[1])
+									{
+										if (temp = dispMonNamesNo)
+										{
+										loop % temp
+										{
+											if (iDevNumArray[A_Index] != iDevNumArrayIn[A_Index])
+											{
+											MsgBox, 8196, Different Monitors, % "Informational: The current monitor configuration differs to the one read in the ini file.`n`n`nYes: Continue to write the new configuration. `nNo: Quit Prglnch. `n"
+												IfMsgBox, Yes
+												Break
+												else
+												{
+												KleenupPrgLnchFiles()
+												ExitApp
+												}
+											}
+										}
+										}
+										else
+										{
+										MsgBox, 8196, Different Monitors, % "Informational: The current monitor configuration differs to the one read in the ini file.`n`n`nYes: Continue to write the new configuration. `nNo: Quit Prglnch. `n"
+											IfMsgBox, No
+											{
+											KleenupPrgLnchFiles()
+											ExitApp
+											}
+										}
+									}
+									else ;  cannot handle old ini files
 									{
 										if (k < 111) ; 111 is case when driver is uninstalled and only one monitor!
 										{
@@ -10168,7 +10239,7 @@ if (!FileExistSelIniChoicePath)
 										IniRead, foundpos, %SelIniChoicePath%, General, OnlyOneMonitor
 											if (!foundpos)
 											{
-											MsgBox, 8196, , % "One Monitor, No more than one logical monitor!`nMost likely cause is driver removal.`nInformational only- if driver has just been updated.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
+											MsgBox, 8196, One Monitor, % "No more than one logical monitor in Prglnch.ini!`nMost likely cause is driver removal.`nInformational only- if driver has just been updated.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
 												IfMsgBox, No
 												IniWrite, 1, %SelIniChoicePath%, General, OnlyOneMonitor
 											}
@@ -10572,7 +10643,7 @@ spr := 0
 reWriteIni := 1
 if (wrnPrompt = 1)
 {
-MsgBox, 8195, , Ini file appears to be corrupted.`nThe recommended course of action is to reset it.`n`nYes: Attempt reset to currently stored values. (Recommended) `nNo: Clear settings to their initial state. `nCancel: Continue with errors: `n
+MsgBox, 8195, , Ini file appears to be corrupted.`nThe recommended course of action is to reset it.`n`nYes: Attempt reset to currently stored values. (Recommended) `nNo: Clear settings to their initial state. `nCancel: Continue with errors. `n
 	IfMsgBox, Yes
 	reWriteIni := 2
 	else
