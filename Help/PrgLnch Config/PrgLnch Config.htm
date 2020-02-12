@@ -48,13 +48,13 @@ Numbered list of monitors. The colour of the <a href="#MonitorName">MonitorName<
 </tr>
 <tr href="#" id="ResolveShortcut">
 <td>
-Shortcut Nav. (Dlg.)/Resolve Shortcut:
+Shortcut Nav. (Dlg.) vs. Resolve Shortcut:
 </td>
 <td>
 This check (greyed if Prg is linked directly to an executable) refers to two settings:<br>
 <STRONG>Shortcut Nav. (Dlg.)</STRONG>:
-If checked, all links in the <a href="#ModifyShortcut">Make Shortcut</a> dialog are supposed to be resolved, so all executable files bar <B>*.lnk</B> files are available.
- When unchecked, navigation through links in the <a href="#ModifyShortcut">Make Shortcut</a> dialog is not possible, thus it's possible for the selected Prg to be a file with a <B>*.lnk</B> extension.<br>
+If checked, all links in the <a href="#ModifyShortcut">Make Shortcut</a> File Open dialog are supposed to be resolved, so all launchable files (bar <B>*.lnk</B> files) are available in the dialog.
+ When unchecked, navigation through links in the <a href="#ModifyShortcut">Make Shortcut</a> dialog is not possible, thus it's possible for the selected Prg to be a file with a <B>*.lnk</B> extension. See <a href="https://www.autohotkey.com/boards/viewtopic.php?f=81&t=62481&p=298287#p298287" target="foo">here</a> for further details.<br>
 <STRONG>Resolve Shortcut</STRONG>:
 This is greyed if Prg is not a <B>.lnk</B> file.<br>
 When unchecked, the linked executable file is then launched with the properties specified in the <B>.lnk</B> file (seen through the file explorer) in play. Here, the <a href="PrgLnch FAQ.htm#PrgLnchShortcut">PrgLnch Shortcut</a> command line and URL options are unavailable, and the initial <a href="PrgLnch FAQ.htm#WorkingDirectory">working directory</a>  is set via the <B>.lnk</B> properties. When checked, the <a href="PrgLnch FAQ.htm#WorkingDirectory">working directory</a> changes, <EM>Window Min-Norm-Max  </EM>,command line and URL options are available, as the resolved target is now preferred.
@@ -147,7 +147,7 @@ The <a href="PrgLnch FAQ.htm#BorderlessPoint">Borderless</a> check (available fo
 <STRONG>Ext. Borderless</STRONG>:
 When checked, <a href="https://docs.microsoft.com/en-us/windows/desktop/winmsg/extended-window-styles">extended</a> borderless styles are detected in addition to the commonly used size and caption styles.<br>
 <STRONG>Apply Borderless</STRONG>:
-The regular and optionally extended borderless styles are available for toggle on <a href="PrgLnch Config/PrgLnch Config.htm#TestRunPrg">Test Runs</a> only. Borderless windows are resized to match the dimensions of the target monitor, with a notable exception in the resizing of  console (or command) windows.<br>
+The regular and optionally extended borderless styles are available for toggle only on <a href="PrgLnch Config/PrgLnch Config.htm#TestRunPrg">Test Runs</a> for Prgs which are not <a href="PrgLnch Config/PrgLnch Config.htm#ResolveShortcut">unresolved</a> <B>.lnk</B> files. Borderless windows are resized to match the dimensions of the target monitor, with a notable exception in the resizing of  console (or command) windows.<br>
 <STRONG>Note:</STRONG> Resizing after border adjustments isn't optional, thus there is a possibility of conflict with it and a few legacy 3D engines which may rely on positional screen attributes.
 </td>
  </tr>
