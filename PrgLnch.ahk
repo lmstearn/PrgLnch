@@ -32,7 +32,7 @@ OnMessage(0x201, "WM_LBUTTONDOWN")
 
 if (!(InStr(PrgLnch.Title . ".ahk", A_ScriptName) || InStr(PrgLnch.Title . ".exe", A_ScriptName)))
 {
-MsgBox, 8192, , % "PrgLnch cannot be run from a copy like " """" A_ScriptName """" "!"
+MsgBox, 8208, , % "PrgLnch cannot be run from a copy like " """" A_ScriptName """" "!"
 ExitApp
 }
 
@@ -334,7 +334,7 @@ Class PrgLnch
 	{
 	Process, Exist
 		If (!ErrorLevel)
-		MsgBox, 8192, , Cannot retrieve the PID of PrgLnch!
+		MsgBox, 8208, , Cannot retrieve the PID of PrgLnch!
 	
 	Return ErrorLevel
 	}
@@ -621,14 +621,14 @@ if (foundpos > 1 && !A_Args[1]) ;  foundpos is no of window IDs found,.No comman
 
 		if (ffTemp > 2)
 		{
-		MsgBox, 8192, PrgLnch Running!, An instance of PrgLnch is already in memory!
+		MsgBox, 8208, PrgLnch Running!, An instance of PrgLnch is already in memory!
 		GoSub PrgLnchButtonQuit_PrgLnch
 		}
 		else
 		{
 			if (ffTemp > 2)
 			{
-			MsgBox, 8192, PrgLnch in Notepad++!, Too many PrgLnch windows open. Is PrgLnch already active!
+			MsgBox, 8224, PrgLnch in Notepad++!, Too many PrgLnch windows open. Is PrgLnch already active!
 			GoSub PrgLnchButtonQuit_PrgLnch
 			}
 		}
@@ -881,7 +881,6 @@ else
 
 
 
-
 ;Monitors % Reslist
 
 
@@ -995,6 +994,7 @@ else
 	GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 	borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
 	TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
+
 	GuiControl, PrgLnchOpt: , DefaultPrg, 1
 	}
 
@@ -1331,7 +1331,7 @@ SetTitleMatchMode, 3
 			{
 				if (temp == 200)
 				{
-				MsgBox, 8192, LnchPad Config Delay, There is a problem with the load of LnchPad Config!
+				MsgBox, 8256, LnchPad Config Delay, There is a problem with the load of LnchPad Config!
 				SetTimer, LnchPadSplashTimer, Delete
 				SplashImage, LnchPadCfg.jpg, Hide,,, LnchPadCfg
 				}
@@ -1659,7 +1659,7 @@ if (btchPrgPresetSel == temp)
 		}
 		else
 		{
-		MsgBox, 8196, Active Preset, This Preset contains active Prgs!`n`nReply:`nYes: Continue and remove the Preset (Prgs will not be cancelled).`nNo: Do not remove the Preset.`n
+		MsgBox, 8228, Active Preset, This Preset contains active Prgs!`n`nReply:`nYes: Continue and remove the Preset (Prgs will not be cancelled).`nNo: Do not remove the Preset.`n
 			IfMsgBox, No
 			Return
 			else
@@ -1755,7 +1755,7 @@ else
 	sleep, 150
 		if (temp == "ERROR")
 		{
-		MsgBox, 8196, , Problem reading the Ini file! Try again?
+		MsgBox, 8228, , Problem reading the Ini file! Try again?
 			IfMsgBox, Yes
 			Goto IniReadStart
 		}
@@ -1947,7 +1947,7 @@ if (A_GuiEvent == "DoubleClick")
 		{
 			if (strRetVal == "PrgLnch")
 			{
-			MsgBox, 8192, , Cannot launch this Prg!
+			MsgBox, 8208, , Cannot launch this Prg!
 			Return
 			}
 			if (strRetVal == "BadPath")
@@ -2024,7 +2024,7 @@ if (A_GuiEvent == "DoubleClick")
 					if (lnchPrgIndex > 0)
 					{
 					strTemp .= "Failed" . "|"
-					MsgBox, 8192, , % strRetVal
+					MsgBox, 8208, , % strRetVal
 					}
 				}
 			}
@@ -2205,7 +2205,7 @@ GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 
 	if (IniChoiceNames[iniSel] && IniChoiceNames[iniSel] != "ini" . iniSel)
 	{
-	MsgBox, 8196, , % """" IniChoiceNames[iniSel] """" " is a LnchPad slot already, so replacing it will remove its data.`n`nYes: Overwrite the existing LnchPad with the one just configured.`nNo: Cancel the operation."
+	MsgBox, 8228, , % """" IniChoiceNames[iniSel] """" " is a LnchPad slot already, so replacing it will remove its data.`n`nYes: Overwrite the existing LnchPad with the one just configured.`nNo: Cancel the operation."
 		IfMsgBox, No
 		Return
 	}
@@ -2221,13 +2221,13 @@ ChooseIniChoice(iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 	;Not replacing if exists!
 	if (!FileExist(oldSelIniChoicePath))
 	{
-	MsgBox, 8192, LnchPad File , % oldSelIniChoiceName " LnchPad file could not be found!`nCannot continue."
+	MsgBox, 8208, LnchPad File , % oldSelIniChoiceName " LnchPad file could not be found!`nCannot continue."
 	Return
 	}
 	
 	if (strRetVal := MoveFileUtil(oldSelIniChoicePath, SelIniChoicePath, (oldSelIniChoiceName == "PrgLnch")))
 	{
-	MsgBox, 8192, File Operation, % strRetVal
+	MsgBox, 8256, File Operation, % strRetVal
 	iniTxtPadChoice == oldSelIniChoiceName
 	GuiControl, PrgLnch: Text, IniChoice, %oldSelIniChoiceName%
 	ChooseIniChoice(iniSel, oldSelIniChoiceName, PrgNo, IniChoiceNames)
@@ -5367,6 +5367,40 @@ ChkPrgNames(testName, PrgNo, IniBox := "", forDeletion := 0)
 	else
 	return 0
 }
+
+QuoterizeCommandStringArgs(PrgPaths, inputStr)
+{
+strTemp := strTemp2 := ""
+	; Parms for launched programs should already be quoted, now quote the whole lot
+	if (Instr(PrgPaths, "cmd.exe"))
+	{
+		; note the quoting requirement here: /c "notepad.exe" /w "C:\WINDOWS\win.ini"
+		strTemp2 := SubStr(inputStr, Instr(inputStr, chr(34)))
+		strTemp := SubStr(inputStr, 1, Instr(inputStr, chr(34)) - 1)
+
+			if (RegExMatch(strTemp, A)[""]+) ; check for 2 doublequotes at start
+			strTemp .= strTemp2
+			else
+			strTemp .= chr(34) . strTemp2 . chr(34)
+	}
+	else
+	{
+		if (InStr(inputStr, A_Space))
+		{
+			Loop, Parse, inputStr, %A_Space%
+			{
+			strTemp .= A_Space . A_LoopField
+			strTemp2 := A_LoopField 
+			}
+		strTemp := StrReplace(strTemp, strTemp2, chr(34) . strTemp2 . chr(34))
+		}
+	}
+
+return % (strTemp)? strTemp: inputStr
+
+}
+
+
 ComboBugFix(strPrgChoice, PrgNo)
 {
 strTemp := "", strTemp2 := "", foundpos1 := 0, strRetVal:= "", foundpos := InStr(strPrgChoice, "||")
@@ -6112,6 +6146,10 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 		MsgBox, 8192, PrgLnch Remnants, % "Clean up failed for the following!`n" strTemp2
 	}
 
+
+; Gui, Progrezz: Destroy ; automatic, as with PrgLnchOpt: PrgLnch
+
+
 arrPowerPlanNames = ""
 btchPowerName = ""s
 dispMonNames = ""
@@ -6564,37 +6602,6 @@ Thread, NoTimers, false
 	}
 Return
 
-QuoterizeCommandStringArgs(PrgPaths, inputStr)
-{
-strTemp := strTemp2 := ""
-	; Parms for launched programs should already be quoted, now quote the whole lot
-	if (Instr(PrgPaths, "cmd.exe"))
-	{
-		; note the quoting requirement here: /c "notepad.exe" /w "C:\WINDOWS\win.ini"
-		strTemp2 := SubStr(inputStr, Instr(inputStr, chr(34)))
-		strTemp := SubStr(inputStr, 1, Instr(inputStr, chr(34)) - 1)
-
-			if (RegExMatch(strTemp, A)[""]+) ; check for 2 doublequotes at start
-			strTemp .= strTemp2
-			else
-			strTemp .= chr(34) . strTemp2 . chr(34)
-	}
-	else
-	{
-		if (InStr(inputStr, A_Space))
-		{
-			Loop, Parse, inputStr, %A_Space%
-			{
-			strTemp .= A_Space . A_LoopField
-			strTemp2 := A_LoopField 
-			}
-		strTemp := StrReplace(strTemp, strTemp2, chr(34) . strTemp2 . chr(34))
-		}
-	}
-
-return % (strTemp)? strTemp: inputStr
-
-}
 
 LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, dispMonNamesNo, regoVar, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, btchPowerName)
 {
@@ -9192,8 +9199,8 @@ EnumProc := RegisterCallback("MonitorEnumProc", "", 4)
 ; enumerates monitors in the same order as sysget.
 If (!(DllCall("User32.dll\EnumDisplayMonitors", "ptr", 0, "ptr", 0, "ptr", EnumProc, "ptr", &Monitors)))
 {
-	if (DllCall("GlobalFree", "Ptr", EnumProc, "Ptr"))
-	MsgBox, 8195, Memory Clean up, GlobalFree Failed
+	;if (DllCall("GlobalFree", "Ptr", EnumProc, "Ptr"))
+	;MsgBox, 8195, Memory Clean up, GlobalFree Failed
 retval := PrgLnchOpt.CurrMonStat
 return retVal
 }
@@ -9201,46 +9208,73 @@ return retVal
 
 MonitorEnumProc(hMonitor, hdcMonitor, lprcMonitor, MonitorsObj)
 {
-64bit := 0 , Physical_Monitor := 0, retVal := 0, temp := 0, fTemp := 0, physHand := 0, outStr := "", Monitors := Object(MonitorsObj)
+64bit := 0 , Physical_Monitor := 0, monitorDesc := "", retVal := 0, temp := 0, fTemp := 0, physHand := 0, outStr := "", Monitors := Object(MonitorsObj)
 Monitors.Count++
 MonitorsObj := Monitors
 
 if (Monitors.Count == Monitors.targetMonitorNum)
 {
+/*
+        public enum MC_DISPLAY_TECHNOLOGY_TYPE
+        {
+            MC_SHADOW_MASK_CATHODE_RAY_TUBE,
+
+            MC_APERTURE_GRILL_CATHODE_RAY_TUBE,
+
+            MC_THIN_FILM_TRANSISTOR,
+
+            MC_LIQUID_CRYSTAL_ON_SILICON,
+
+            MC_PLASMA,
+
+            MC_ORGANIC_LIGHT_EMITTING_DIODE,
+
+            MC_ELECTROLUMINESCENT,
+
+            MC_MICROELECTROMECHANICAL,
+
+            MC_FIELD_EMISSION_DEVICE,
+        }
+
+*/
 
 ; Get Physical Monitor(s) from handle
 
-	if (!DllCall("dxva2\GetNumberOfPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint*", nMon))
+	if (!DllCall("dxva2\GetNumberOfPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint*", numberOfPhysicalMonitors))
 	{
 		if (PrgLnchOpt.CurrMonStat)
 		CreateToolTip("GetNumberOfPhysicalMonitorsFromHMONITOR failed with code: " . """" . A_LastError . """")
 		PrgLnchOpt.CurrMonStat := retVal
 	return False
 	}
+	sizeOfmonitorHandleAndDesc := (A_IsUnicode ? 2 : 1) * 128 + (A_PtrSize == 8)? 8 : 4
+	VarSetCapacity(monitorHandleandDesc, sizeOfmonitorHandleandDesc, 0)
+	VarSetCapacity(physicalMonitorArray, numberOfPhysicalMonitors * sizeOfmonitorHandleandDesc, 0)
 
 	; Get Physical Monitor from handle
-	(A_PtrSize == 8)? 64bit := 2 : 64bit := 1
-	OffsetDWORD := 4, OffsetUchar := A_IsUnicode ? 2 : 1
-	Physical_Monitor_size_single:= 64bit * OffsetDWORD + (A_IsUnicode ? 2 : 1)*128
-	VarSetCapacity(Physical_Monitor, nMon*Physical_Monitor_size_single, 0)
-	if (DllCall("dxva2\GetPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint", nMon, "Ptr", &Physical_Monitor))
+	
+
+	OffsetDWORD := 4, OffsetUchar := 1
+
+	;NumPut(Physical_Monitor, Device_Mode, OffsetDWORD + offsetWORDStr, Ushort) ; initialise cbsize member
+	if (DllCall("dxva2\GetPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint", numberOfPhysicalMonitors, "Ptr", &physicalMonitorArray))
 	{
-		Loop %nMon%
+		Loop %numberOfPhysicalMonitors%
 		{
-			if (nMon > 1)
+			if (numberOfPhysicalMonitors > 1)
 			outStr .= "`n"
 
-			physHand := NumGet(Physical_Monitor, (A_Index-1)*Physical_Monitor_size_single)
+			physHand := NumGet(physicalMonitorArray[A_Index - 1], (A_Index - 1) * sizeOfmonitorHandleAndDesc)
 			; 0 value Physical Monitor Handles are valid and common!!!
 			VarSetCapacity(MC_TIMING_REPORT, OffsetUchar + OffsetDWORD + OffsetDWORD)
 			retVal := DllCall("dxva2\GetTimingReport", "Ptr", physHand, "Ptr", &MC_TIMING_REPORT)
-			sleep 5
+			sleep 30
 				if (retVal)
 				{
 				; Get Monitor description
-				temp := &Physical_Monitor + 64bit * OffsetDWORD + (A_Index-1)*(Physical_Monitor_size_single + 64bit * OffsetDWORD)
+				temp := &physicalMonitorArray[A_Index - 1] + sizeOfmonitorHandleAndDesc
 
-				temp := StrGet(temp, Physical_Monitor_size_single)
+				temp := StrGet(temp, sizeOfmonitorHandleAndDesc)
 
 				;Horizontal scan HZ
 				fTemp := NumGet(MC_TIMING_REPORT, 0, "Int")
@@ -9518,7 +9552,7 @@ NewThreadforDownload: ;Timer!
 			IniWrite, %strTemp%, %SelIniChoicePath%, Prg%selPrgChoice%, PrgPath
 			}
 			else
-			MsgBox, 8208, , % "The updated Prg is allocated this folder:`n" strTemp "`nThe original Prg is allocated this folder.`n" strTemp2 "`nGiven the location used for the download of Prg is preferred, for the purposes of housekeeping, consider the manual removal of the old location."
+			MsgBox, 8192, , % "The updated Prg is allocated this folder:`n" strTemp "`nThe original Prg is allocated this folder.`n" strTemp2 "`nGiven the location used for the download of Prg is preferred, for the purposes of housekeeping, consider the manual removal of the old location."
 		}
 		; else Prg is overwritten
 		}
@@ -9538,6 +9572,7 @@ Return
 DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 {
 	X :=0, Y:=0, temp:=0, strTemp := "", fTemp := 0, PercentDone := 0, badFile := "text`/html", timedOut := False, prgWid := PrgLnchOpt.Width()/3, prgHght := PrgLnchOpt.Height()/2
+	global progressVar, progressText
 	;Check if the file already exists + overwrite
 
 	If (updateStatus > 0)
@@ -9613,10 +9648,12 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 
 
 
-		If (!FinalSize || timedOut)
-		MsgBox, 8192, , Timed out
+			If (!FinalSize || timedOut)
+			MsgBox, 8192, , Timed out
 
-		Progress, Hide ,, Downloading...
+			if (!progressVar)
+			Gui, Progrezz: New, +OwnDialogs
+
 
 		SysGet, X, 45 ;Progress bar border B1 corresponds with SM_CXEDGE?
 		SysGet, Y, 4 ;Height of a caption area?
@@ -9626,9 +9663,19 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 
 			if (X < 0) ;form was moved to the left
 			X := PrgLnchOpt.X() + PrgLnchOpt.Width()
-		Progress, X%X% Y%Y% W%prgWid% H%prgHght% M,, Downloading..., %UrlToFile%
-		Progress Show
 
+
+			if (!progressVar)
+			{
+			Gui, Progrezz: Hide
+			prgHght := prgHght/2
+			Gui, Progrezz: Add, Progress, R2 W%prgWid% H%prgHght% vprogressVar cGreen Border
+			Gui, Progrezz: Add, Text, Center W%prgWid% H%prgHght% vprogressText cRed, Downloading...
+			prgHght := 2 * prgHght
+			Gui, Progrezz: Show, X%X% Y%Y% W%prgWid% H%prgHght%, Downloading...
+			;Gui, Progrezz: Show, X%X% Y%Y% W1300 H800, Downloading...
+			msgbox hio
+			}
 
 		SetTimer, __UpdateProgressBar, 200
 
@@ -9636,7 +9683,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 		catch temp
 		{
 		msgbox, 8208, FileDownload, Problem with the URL!`nSpecifically: %temp%
-		Progress, Off
+		Gui, Progrezz: Hide
 		updateStatus := -3
 		SetTimer, __UpdateProgressBar, Delete
 		WebRequest := ""
@@ -9654,7 +9701,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 		msgbox, 8208, FileDownload, Error with the download!`nSpecifically: %temp%
 		PercentDone := 100
 		updateStatus := -1
-		Progress, Off
+		Gui, Progrezz: Hide
 		SetTimer, __UpdateProgressBar, Delete
 		GuiControl, PrgLnchOpt: Hide, UpdtPrgLnch
 		GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Update Prg
@@ -9665,7 +9712,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 	GuiControl, PrgLnchOpt: Hide, UpdtPrgLnch
 	GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Update Prg
 	PercentDone := 100
-	Progress, Off
+	Gui, Progrezz: Hide
 	SetTimer, __UpdateProgressBar, Delete
 	WebRequest := ""
 	Return
@@ -9692,7 +9739,11 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 	PercentDone := Round(CurrentSize/FinalSize*100)
 	}
 	;Update the ProgressBar
-	Progress, %PercentDone%, %PercentDone%`% Done, Downloading...  (%Speed%), Downloading %SaveFileAs% (%PercentDone%`%)
+
+	GuiControl, Progrezz:, progressVar, %PercentDone%
+	msgbox Downloading %SaveFileAs% (%PercentDone%`%) at (%Speed%) speed
+	GuiControl, Progrezz:, progressText, Downloading %SaveFileAs% (%PercentDone%`%) at (%Speed%) speed
+
 	Return
 }
 
