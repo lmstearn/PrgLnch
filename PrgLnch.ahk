@@ -826,7 +826,7 @@ IniRead, fTemp, %SelIniChoicePath%, General, ChangeShortcutMsg
 if (fTemp)
 ChgShortcutVar := "Change Shortcut Name"
 
-Gui, PrgLnchOpt: -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP% +E%WS_EX_ACCEPTFILES%
+Gui, PrgLnchOpt: -DPIScale -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP% +E%WS_EX_ACCEPTFILES%
 
 Gui, PrgLnchOpt: Color, FFFFCC
 Gui, PrgLnchOpt: Add, ComboBox, vPrgChoice gPrgChoice HWNDPrgChoiceHwnd
@@ -839,29 +839,27 @@ GuiControl, PrgLnchOpt: Enable, resolveShortct
 GuiControl, PrgLnchOpt:, resolveShortct, % navShortcut
 
 Gui, PrgLnchOpt: Add, text,, Res Options:  ; Save this control's position and start a new section.
-Gui, PrgLnchOpt: Add, Radio, gTestMode vTest HWNDTestHwnd, TestMode
+Gui, PrgLnchOpt: Add, Radio, -Wrap gTestMode vTest HWNDTestHwnd, TestMode
 GuiControl, PrgLnchOpt: , Test, % Test
-Gui, PrgLnchOpt: Add, Radio, gChangeMode vFMode HWNDFModeHwnd, Change at every mode
+Gui, PrgLnchOpt: Add, Radio, -Wrap gChangeMode vFMode HWNDFModeHwnd, Change at every mode
 GuiControl, PrgLnchOpt: , FMode, % FMode
-Gui, PrgLnchOpt: Add, Radio, gDynamicMode vDynamic HWNDDynamicHwnd, Dynamic (All running Apps)
+Gui, PrgLnchOpt: Add, Radio, -Wrap gDynamicMode vDynamic HWNDDynamicHwnd, Dynamic (All running Apps)
 GuiControl, PrgLnchOpt: , Dynamic, % Dynamic
-Gui, PrgLnchOpt: Add, Radio, gTmpMode vTmp HWNDTmpHwnd, Temporary (recommended)
+Gui, PrgLnchOpt: Add, Radio, -Wrap gTmpMode vTmp HWNDTmpHwnd, Temporary (recommended)
 GuiControl, PrgLnchOpt: , Tmp, % Tmp
 Gui, PrgLnchOpt: Add, Checkbox, vRego gRegoCheck HWNDRegoHwnd, Pull values from registry
+
 ; Save this control's position and start a new section.
 Gui, PrgLnchOpt: Add, Text, ys, % "Default Resolution:   "
 Gui, PrgLnchOpt: Add, Text, vcurrRes HWNDcurrResHwnd wp
 Gui, PrgLnchOpt: Add, Checkbox, vallModes gCheckModes HWNDallModesHwnd, List all 'compatible'
 
-
-;ini section
-
 GuiControl, PrgLnchOpt:, Rego, % regoVar
-
 
 GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
 
 
+; Choose the appropriate dropdown field
 if (defPrgStrng == "None")
 	GuiControl, PrgLnchOpt: Choose, PrgChoice, 1
 else
@@ -897,8 +895,6 @@ Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHwnd
 
 	if (PrgMonToRn[selPrgChoice] && (defPrgStrng != "None"))
 	{
-
-
 	targMonitorNum := PrgMonToRn[selPrgChoice]
 	iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, regoVar, scrWidthArr, scrHeightArr, scrFreqArr)
 	SetResDefaults(targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
@@ -1105,7 +1101,7 @@ IniProc(100) ;initialises scrWidth, scrHeight, scrFreq & Prgmon in ini
 ;Frontend form
 Gui, PrgLnch: New
 Gui, PrgLnch:Default  	;A_DefaultGui is name of default gui
-Gui, PrgLnch: -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP%
+Gui, PrgLnch: -DPIScale -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP%
 Gui, PrgLnch: Color, FFFFCC
 Gui, PrgLnch: Add, Button, cdefault vPresetProp gPresetProp HWNDPresetPropHwnd, Preset Properties
 GuiControlGet, temp, PrgLnch: Pos, %PresetPropHwnd%
@@ -1204,35 +1200,35 @@ Thread, NoTimers
 strRetVal := "|"
 
 
-loop %maxBatchPrgs% ;Preset limit is also Prgs_in_preset limit! 
-{
-	if (PresetNames[A_Index])
+	loop %maxBatchPrgs% ;Preset limit is also Prgs_in_preset limit! 
 	{
-	PresetNamesBak[A_Index] := PresetNames[A_Index]
-	strRetVal := strRetVal . PresetNames[A_Index] . "|"
+		if (PresetNames[A_Index])
+		{
+		PresetNamesBak[A_Index] := PresetNames[A_Index]
+		strRetVal := strRetVal . PresetNames[A_Index] . "|"
+		}
+		else
+		strRetVal := strRetVal . "Preset" . A_Index . "|"
 	}
-	else
-	strRetVal := strRetVal . "Preset" . A_Index . "|"
-}
+
 GuiControl, PrgLnch:, BtchPrgPreset, %strRetVal%
 
-if (btchPrgPresetSel && PrgBatchIni%btchPrgPresetSel%[1])
-{
+	if (btchPrgPresetSel && PrgBatchIni%btchPrgPresetSel%[1])
+	{
 
-EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PwrChoiceHwnd, btchSelPowerIndex, PresetNames)
+	EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PwrChoiceHwnd, btchSelPowerIndex, PresetNames)
 
-GuiControl, PrgLnch: Choose, BtchPrgPreset, % btchPrgPresetSel
+	GuiControl, PrgLnch: Choose, BtchPrgPreset, % btchPrgPresetSel
 
 
-sleep 60
-GuiControl, PrgLnch:, batchPrgStatus, % ReorgBatch(batchPrgNo, maxBatchPrgs, btchPrgPresetSel, PrgMonToRn, PrgBatchIni%btchPrgPresetSel%, currBatchNo, PrgListIndex, PrgBdyBtchTog)
+	sleep 60
+	GuiControl, PrgLnch:, batchPrgStatus, % ReorgBatch(batchPrgNo, maxBatchPrgs, btchPrgPresetSel, PrgMonToRn, PrgBatchIni%btchPrgPresetSel%, currBatchNo, PrgListIndex, PrgBdyBtchTog)
 
-}
-else
-{
-;load "none"
-EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PwrChoiceHwnd, btchSelPowerIndex, PresetNames, 1)
-}
+	}
+	else
+	;load "none"
+	EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PwrChoiceHwnd, btchSelPowerIndex, PresetNames, 1)
+
 
 
 sleep 60
@@ -2228,7 +2224,7 @@ ChooseIniChoice(iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 	if (strRetVal := MoveFileUtil(oldSelIniChoicePath, SelIniChoicePath, (oldSelIniChoiceName == "PrgLnch")))
 	{
 	MsgBox, 8256, File Operation, % strRetVal
-	iniTxtPadChoice == oldSelIniChoiceName
+	iniTxtPadChoice := oldSelIniChoiceName
 	GuiControl, PrgLnch: Text, IniChoice, %oldSelIniChoiceName%
 	ChooseIniChoice(iniSel, oldSelIniChoiceName, PrgNo, IniChoiceNames)
 	Return
@@ -4471,8 +4467,8 @@ Return
 
 iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, ByRef dispMonNamesNo, ByRef iDevNumArray, ByRef dispMonNames, regoVar, scrWidthArr, scrHeightArr, scrFreqArr)
 {
-ENUM_CURRENT_SETTINGS := -1 ; These for GetDisplayData
-ENUM_REGISTRY_SETTINGS := -2
+; These for GetDisplayData
+Static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
 
 	if (txtPrgChoice != "None")
 	{
@@ -4911,7 +4907,7 @@ else
 					else
 					GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 
-				GoSub CheckModes
+				CheckModesFunc(SelIniChoicePath, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
 				TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
 
 			}
@@ -6151,7 +6147,7 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 
 
 arrPowerPlanNames = ""
-btchPowerName = ""s
+btchPowerName = ""
 dispMonNames = ""
 iDevNumArray = ""
 IniChoiceNames = ""
@@ -6195,6 +6191,10 @@ scrHeightDefArr = ""
 scrFreqDefArr = ""
 
 DopowerPlan()
+
+OnMessage(0x112, "WM_SYSCOMMAND", 0)
+OnMessage(0x0053, "WM_Help", 0)
+OnMessage(0x201, "WM_LBUTTONDOWN", 0)
 ExitApp
 
 
@@ -8279,9 +8279,7 @@ strRetVal := "", strTemp2 := "", IsALnk := InStr(strTemp, IniFileShortctSep), in
 		{
 		FileGetShortcut, %strTemp2%, , strRetVal
 			if (strRetVal) ; PrgLnkInf receives the working dir of resolved lnk: Review the terminating backslash!
-			{
 			strRetVal := ParseEnvVars(strRetVal) . "\"
-			}
 			else ; else; Regular Prgs get here. Note use of Errorlevel for the symbolic or dir lnks
 			{
 				if (ErrorLevel)
@@ -9046,6 +9044,7 @@ static checkDefMissingMsg := 0, ENUM_CURRENT_SETTINGS := -1
 ResList := "", Strng := ""
 
 iModeCt := 0, checkDefMissing := 0 iModeval := (stopAtCurrent)? ENUM_CURRENT_SETTINGS: 0
+scrWidth := 0, scrHeight := 0, scrDPI := 0, scrInterlace := 0, scrFreq := 0
 scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, scrFreqlast := 0
 
 
@@ -9197,13 +9196,13 @@ EnumProc := RegisterCallback("MonitorEnumProc", "", 4)
 
 
 ; enumerates monitors in the same order as sysget.
-If (!(DllCall("User32.dll\EnumDisplayMonitors", "ptr", 0, "ptr", 0, "ptr", EnumProc, "ptr", &Monitors)))
-{
-	;if (DllCall("GlobalFree", "Ptr", EnumProc, "Ptr"))
-	;MsgBox, 8195, Memory Clean up, GlobalFree Failed
-retval := PrgLnchOpt.CurrMonStat
-return retVal
-}
+	If (!(DllCall("User32.dll\EnumDisplayMonitors", "ptr", 0, "ptr", 0, "ptr", EnumProc, "ptr", &Monitors)))
+	{
+		;if (DllCall("GlobalFree", "Ptr", EnumProc, "Ptr"))
+		;MsgBox, 8195, Memory Clean up, GlobalFree Failed
+	retval := PrgLnchOpt.CurrMonStat
+	return retVal
+	}
 }
 
 MonitorEnumProc(hMonitor, hdcMonitor, lprcMonitor, MonitorsObj)
@@ -9648,7 +9647,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 
 
 
-			If (!FinalSize || timedOut)
+			if (!FinalSize || timedOut)
 			MsgBox, 8192, , Timed out
 
 			if (!progressVar)
@@ -9673,8 +9672,6 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 			Gui, Progrezz: Add, Text, Center W%prgWid% H%prgHght% vprogressText cRed, Downloading...
 			prgHght := 2 * prgHght
 			Gui, Progrezz: Show, X%X% Y%Y% W%prgWid% H%prgHght%, Downloading...
-			;Gui, Progrezz: Show, X%X% Y%Y% W1300 H800, Downloading...
-			msgbox hio
 			}
 
 		SetTimer, __UpdateProgressBar, 200
@@ -9741,7 +9738,6 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 	;Update the ProgressBar
 
 	GuiControl, Progrezz:, progressVar, %PercentDone%
-	msgbox Downloading %SaveFileAs% (%PercentDone%`%) at (%Speed%) speed
 	GuiControl, Progrezz:, progressText, Downloading %SaveFileAs% (%PercentDone%`%) at (%Speed%) speed
 
 	Return
@@ -10222,7 +10218,7 @@ if (CtrlsOn)
 	GuiControl, PrgLnchOpt: Disable, ChgResonSwitch
 	GuiControl, PrgLnchOpt: Disable, ResIndex
 	GuiControl, PrgLnchOpt: Disable, allModes
-	}                                                                    
+	}
 	else
 	{
 	GuiControl, PrgLnchOpt: Enable, ChgResonSwitch
