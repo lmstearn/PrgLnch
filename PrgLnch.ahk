@@ -538,7 +538,7 @@ iniSel := 0
 selPrgChoice := 1
 selPrgChoiceTimer := 0
 regoVar := 0
-navShortcut := 0
+ResShortcut := 0
 
 
 
@@ -834,9 +834,9 @@ Gui, PrgLnchOpt: Add, Button, gMakeShortcut vMkShortcut HWNDMkShortcutHwnd wp, &
 Gui, PrgLnchOpt: Add, Edit, vCmdLinPrm gCmdLinPrmSub HWNDcmdLinHwnd
 Gui, PrgLnchOpt: Add, Text, vMonitors gMonitorsSub HWNDMonitorsHwnd wp ; wp is width of previous control
 Gui, PrgLnchOpt: Add, DropDownList, AltSubmit viDevNum HWNDDevNumHwnd giDevNo
-Gui, PrgLnchOpt: Add, Checkbox, ys vresolveShortct gresolveShortctChk HWNDresolveShortctHwnd wp, Shortcut Nav. (Dlg)
+Gui, PrgLnchOpt: Add, Checkbox, ys vresolveShortct gresolveShortctChk HWNDresolveShortctHwnd wp, Resolve Shortcut
 GuiControl, PrgLnchOpt: Enable, resolveShortct
-GuiControl, PrgLnchOpt:, resolveShortct, % navShortcut
+GuiControl, PrgLnchOpt:, resolveShortct, % ResShortcut
 
 Gui, PrgLnchOpt: Add, text,, Res Options:  ; Save this control's position and start a new section.
 Gui, PrgLnchOpt: Add, Radio, -Wrap gTestMode vTest HWNDTestHwnd, TestMode
@@ -898,11 +898,11 @@ Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHwnd
 	targMonitorNum := PrgMonToRn[selPrgChoice]
 	iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, regoVar, scrWidthArr, scrHeightArr, scrFreqArr)
 	SetResDefaults(targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
-	CheckModesFunc(SelIniChoicePath, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
+	CheckModesFunc(SelIniChoicePath, defPrgStrng, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
 	}
 	else
 	{
-	CheckModesFunc(SelIniChoicePath, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
+	CheckModesFunc(SelIniChoicePath, defPrgStrng, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
 	PrgLnchOpt.scrWidthDef := PrgLnchOpt.scrWidth
 	PrgLnchOpt.scrHeightDef := PrgLnchOpt.scrHeight
 	PrgLnchOpt.scrFreqDef := PrgLnchOpt.scrFreq
@@ -975,7 +975,7 @@ if (txtPrgChoice == "None")
 	GuiControl, PrgLnchOpt: Disable, DefaultPrg
 	GuiControl, PrgLnchOpt:, MkShortcut, Just Change Res.
 	GuiControl, PrgLnchOpt: Disable, Just Change Res.
-	TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
+	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 	}
 else
@@ -989,7 +989,7 @@ else
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
 	GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 	borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
-	TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
+	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
 
 	GuiControl, PrgLnchOpt: , DefaultPrg, 1
 	}
@@ -4127,7 +4127,7 @@ GuiControlGet, resolveShortct, PrgLnchOpt:, resolveShortct
 
 
 if (!PrgChoiceNames[selPrgChoice] || ChkPrgNames(PrgChoiceNames[selPrgChoice], PrgNo))
-navShortcut := resolveShortct
+ResShortcut := resolveShortct
 else
 {
 strTemp := PrgChoicePaths[selPrgChoice]
@@ -4443,7 +4443,7 @@ GuiControlGet, fTemp, PrgLnchOpt:, iDevNum
 	}
 
 	;Must reset reslist
-	CheckModesFunc(SelIniChoicePath, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
+	CheckModesFunc(SelIniChoicePath, defPrgStrng, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
 	SetResDefaults(targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 
 
@@ -4458,10 +4458,10 @@ GuiControlGet, fTemp, PrgLnchOpt:, iDevNum
 		; A warning is provided, but can be confusing if configured as suppressed
 		if (!FindStoredRes(SelIniChoicePath, ResIndexHwnd))
 		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % (iDevNumArray[targMonitorNum] < 10)? PrgLnchOpt.MonDefResStrng: PrgLnchOpt.MonCurrResStrng
-	TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
+	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
 	}
 	else
-	TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
+	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
 
 Return
 
@@ -4487,7 +4487,6 @@ Static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
 		PrgLnchOpt.scrWidthDef := scrWidth
 		PrgLnchOpt.scrHeightDef := scrHeight
 		PrgLnchOpt.scrFreqDef := scrFreq
-
 		}
 	}
 
@@ -4497,16 +4496,14 @@ Static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
 CheckModes:
 ; Update allModes
 Gui, PrgLnchOpt: Submit, Nohide
-CheckModesFunc(SelIniChoicePath, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
+CheckModesFunc(SelIniChoicePath, defPrgStrng, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
 Tooltip
 Return
 
-CheckModesFunc(SelIniChoicePath, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ByRef ResIndexList, ByRef ResArray, allModes)
+CheckModesFunc(SelIniChoicePath, defPrgStrng, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ByRef ResIndexList, ByRef ResArray, allModes)
 {
 
-
 ResIndexList := GetResList(targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResArray, allModes, 1)
-
 
 strTemp := substr(ResIndexList, 1, StrLen(ResIndexList) - 1)
 
@@ -4536,7 +4533,6 @@ strTemp := substr(ResIndexList, 1, StrLen(ResIndexList) - 1)
 		GuiControl, PrgLnchOpt: Disabled, currRes
 		}
 	}
-
 
 
 	if (PresetPropHwnd)
@@ -4585,40 +4581,35 @@ GuiControl, PrgLnchOpt: Show, ResIndex
 ResListBox:
 Tooltip
 
-
-if (allModes)
-{
-GuiControlGet, strTemp, PrgLnchOpt:, currRes
-GuiControl, PrgLnchOpt: ChooseString, ResIndex, %strTemp%
-}
-else
-{
-fTemp := 0
-GuiControlGet, strTemp, PrgLnchOpt:, ResIndex
-	Loop, Parse, ResIndexList, |
+	if (allModes)
 	{
-		If (strTemp == A_Loopfield)
-		{
-		fTemp := A_Index
-		Break
-		}
-	}
-	if (fTemp)
-	{
-	PrgLnchOpt.scrWidth := ResArray[fTemp - 1, 1]
-	PrgLnchOpt.scrHeight := ResArray[fTemp - 1, 2]
-	PrgLnchOpt.scrFreq := ResArray[fTemp - 1, 3]
-
-		if (PrgChoicePaths[selPrgChoice])
-		IniProc(selPrgChoice)
+	GuiControlGet, strTemp, PrgLnchOpt:, currRes
+	GuiControl, PrgLnchOpt: ChooseString, ResIndex, %strTemp%
 	}
 	else
-	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
-}
+	{
+	fTemp := 0
+	GuiControlGet, strTemp, PrgLnchOpt:, ResIndex
+		Loop, Parse, ResIndexList, |
+		{
+			If (strTemp == A_Loopfield)
+			{
+			fTemp := A_Index
+			Break
+			}
+		}
+		if (fTemp)
+		{
+		PrgLnchOpt.scrWidth := ResArray[fTemp - 1, 1]
+		PrgLnchOpt.scrHeight := ResArray[fTemp - 1, 2]
+		PrgLnchOpt.scrFreq := ResArray[fTemp - 1, 3]
 
-
-
-
+			if (PrgChoicePaths[selPrgChoice])
+			IniProc(selPrgChoice)
+		}
+		else
+		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+	}
 Return
 
 FindStoredRes(SelIniChoicePath, ResIndexHwnd)
@@ -4852,7 +4843,7 @@ else
 						{
 						iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, regoVar, scrWidthArr, scrHeightArr, scrFreqArr)
 						SetResDefaults(targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
-						CheckModesFunc(SelIniChoicePath, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
+						CheckModesFunc(SelIniChoicePath, defPrgStrng, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
 						}
 					}
 					else
@@ -4873,18 +4864,17 @@ else
 					if (!FindStoredRes(SelIniChoicePath, ResIndexHwnd))
 					GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
 
-				TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)					
+				TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)					
 
 
 				}
 				else
 				{
-				GuiControl, PrgLnchOpt: Text, resolveShortct, Shortcut Nav. (Dlg)
 				GuiControl, PrgLnchOpt: Enable, MkShortcut
 				GuiControl, PrgLnchOpt:, MkShortcut, Make Shortcut
 				GuiControl, PrgLnchOpt: Disable, RnPrgLnch
 				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
-				TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
+				TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
 				}
 
 			}
@@ -4895,7 +4885,6 @@ else
 				GuiControl, PrgLnchOpt: Disable, DefaultPrg
 				GuiControl, PrgLnchOpt:, MkShortcut, Just Change Res.
 				GuiControl, PrgLnchOpt: Disable, Just Change Res.
-				GuiControl, PrgLnchOpt: Text, resolveShortct, Shortcut Nav. (Dlg)
 				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 
 				GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
@@ -4907,8 +4896,8 @@ else
 					else
 					GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 
-				CheckModesFunc(SelIniChoicePath, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
-				TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
+				CheckModesFunc(SelIniChoicePath, defPrgStrng, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
+				TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
 
 			}
 
@@ -5034,11 +5023,13 @@ else
 	{
 	;Watch out for TIMERS!
 	Thread, NoTimers
+
 		if (resolveShortct)
-		FileSelectFile, strTemp, 33, % A_StartMenu "\Programs", Open a file`, Shortcuts resolved, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.lnk; *.scr)
+		FileSelectFile, strTemp, 1, % A_StartMenu "\Programs", Open a file or Shortcut, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.scr)
 		else
-		FileSelectFile, strTemp, 1, % A_StartMenu "\Programs", Open a file or Shortcut, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.lnk; *.scr)
-		Thread, NoTimers, false
+		FileSelectFile, strTemp, 33, % A_StartMenu "\Programs", Open a file`, Shortcuts resolved, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.lnk; *.scr)
+
+	Thread, NoTimers, false
 
 		if (!ErrorLevel)
 		{
@@ -5107,7 +5098,6 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 
 
 
-
 	if (strRetVal == "*")
 	; Not a shortcut: check working  directory & strip the last "\"
 	strTemp2 := WorkingDirectory(AssocQueryApp(strTemp))
@@ -5123,6 +5113,7 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 		strTemp2 := WorkingDirectory(strRetVal)
 		}
 	}
+
 	if (strTemp2)
 	{
 	MsgBox, 8192, Prg Path, % strTemp2
@@ -5165,8 +5156,6 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 			else
 			PrgChoicePaths[selPrgChoice] .= IniFileShortctSep
 
-
-		GuiControl, PrgLnchOpt: Text, resolveShortct, Resolve shortcut
 		}
 
 	PrgLnkInf[selPrgChoice] := strRetVal
@@ -5175,9 +5164,8 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 txtPrgChoice := PrgChoiceNames[selPrgChoice]
 PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLnkInf)
 
-
-
 PrgLnchHide[selPrgChoice] := 0
+
 IniProc(selPrgChoice)
 strPrgChoice := ComboBugFix(strPrgChoice, Prgno)
 
@@ -5192,11 +5180,14 @@ GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 
 borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
 
-
 iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, regoVar, scrWidthArr, scrHeightArr, scrFreqArr)
 SetResDefaults(targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
-CheckModesFunc(SelIniChoicePath, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
-TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
+
+;msgbox % "PrgLnch.Monitor " PrgLnch.Monitor " selPrgChoice " selPrgChoice " scrWidthArr[selPrgChoice] " scrWidthArr[selPrgChoice] " scrWidthDefArr[targMonitorNum] " scrWidthDefArr[targMonitorNum] " PrgLnchOpt.scrWidthDef " PrgLnchOpt.scrWidthDef
+;msgbox % " PrgLnchOpt.scrWidth " PrgLnchOpt.scrWidth " PrgLnchOpt.scrWidthDef " PrgLnchOpt.scrWidthDef " PresetPropHwnd " PresetPropHwnd " defPrgStrng " defPrgStrng
+
+CheckModesFunc(SelIniChoicePath, defPrgStrng, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
+TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
 
 GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 
@@ -5211,6 +5202,7 @@ PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPr
 	defPrgStrng := PrgChoiceNames[selPrgChoice]
 	IniWrite, % defPrgStrng, %SelIniChoicePath%, Prgs, StartupPrgName
 	}
+
 Return
 
 
@@ -5254,7 +5246,7 @@ zeroPrgVars:
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 	iDevNum := 1
 	GuiControl, PrgLnchOpt:, Choose, iDevNum
-	TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
+	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
 
 
 Return
@@ -5481,7 +5473,6 @@ IsaPrgLnk := LNKFlag(strTemp2)
 	}
 
 
-GuiControl, PrgLnchOpt: Text, resolveShortct, Resolve Shortcut
 GuiControl, PrgLnchOpt:, resolveShortct, % temp
 }
 
@@ -10172,7 +10163,7 @@ WinMover(Hwnd := 0, position := "hc vc", Width := 0, Height := 0, splashInit := 
 }
 
 ; Enables controls as per prg/monitor specs.
-TogglePrgOptCtrls(txtPrgChoice, navShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle := 0, selPrgChoice := 0, PrgChgResonSwitch := 0, PrgChoicePaths := 0, PrgLnkInf := 0, PrgRnMinMax := -1, PrgRnPriority := -1, PrgBordless := 0, PrgLnchHide := 0, CtrlsOn := 0)
+TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle := 0, selPrgChoice := 0, PrgChgResonSwitch := 0, PrgChoicePaths := 0, PrgLnkInf := 0, PrgRnMinMax := -1, PrgRnPriority := -1, PrgBordless := 0, PrgLnchHide := 0, CtrlsOn := 0)
 {
 
 ctlEnable := (LNKFlag(PrgLnkInf[selPrgChoice]) == -1)? "Disable": "Enable"
@@ -10278,13 +10269,11 @@ else
 	GuiControl, PrgLnchOpt: Disable, Bordless
 	GuiControl, PrgLnchOpt:, PrgLnchHd, 0
 	GuiControl, PrgLnchOpt: Disable, PrgLnchHd
-	GuiControl, PrgLnchOpt:, resolveShortct, 0
 		if (txtPrgChoice == "None")
 		GuiControl, PrgLnchOpt: Disable, resolveShortct
 		else
 		GuiControl, PrgLnchOpt: Enable, resolveShortct
-	GuiControl, PrgLnchOpt:, resolveShortct, % navShortcut
-	GuiControl, PrgLnchOpt: Text, resolveShortct, Shortcut Nav. (Dlg)
+	GuiControl, PrgLnchOpt:, resolveShortct, % ResShortcut
 	GuiControl, PrgLnchOpt: Disable, PrgLAA
 }
 }
@@ -10423,7 +10412,7 @@ if (!FileExistSelIniChoicePath)
 	spr := "0,0,0,1"
 	IniWrite, %spr%, %SelIniChoicePath%, General, ResMode
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, UseReg
-	IniWrite, %A_Space%, %SelIniChoicePath%, General, NavShortcut
+	IniWrite, %A_Space%, %SelIniChoicePath%, General, ResShortcut
  	IniWrite, %A_Space%, %SelIniChoicePath%, General, WarnAlreadyRunning
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, OnlyOneMonitor
 	IniWrite, %A_Space%, %SelIniChoicePath%, General, DefPresetSettings
@@ -10620,11 +10609,11 @@ if (!FileExistSelIniChoicePath)
 						if (sectCount == 15)
 						{
 							if (selPrgChoice)
-							IniWrite, %navShortcut%, %SelIniChoicePath%, General, NavShortcut
+							IniWrite, %ResShortcut%, %SelIniChoicePath%, General, ResShortcut
 							else
 							{
 								if (k)
-								navShortcut := k
+								ResShortcut := k
 							}
 						}
 						; section 15+ : WarnAlreadyRunning: don't show me this again
@@ -11163,6 +11152,10 @@ try
 	FileRead, strRetVal, %IniFile%
 	if (oldVerChg)
 	{
+		
+		if (InStr(strRetVal, "NavShortcut"))
+		strRetVal := StrReplace(strRetVal, "NavShortcut", "ResShortcut")
+
 		if (InStr(strRetVal, "LoseGuiChangeResWrn"))
 		Return
 		else
