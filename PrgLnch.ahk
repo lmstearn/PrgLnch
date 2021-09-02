@@ -628,7 +628,7 @@ if (foundpos > 1 && !A_Args[1]) ;  foundpos is no of window IDs found,.No comman
 		{
 			if (ffTemp > 2)
 			{
-			MsgBox, 8224, PrgLnch in Notepad++!, Too many PrgLnch windows open. Is PrgLnch already active!
+			MsgBox, 8224, PrgLnch in Notepad++!, Too many PrgLnch windows open. Is PrgLnch already active?
 			GoSub PrgLnchButtonQuit_PrgLnch
 			}
 		}
@@ -1297,6 +1297,7 @@ SetTimer, LnchPadSplashTimer, 200
 
 	if (!LnchLnchPad(SelIniChoiceName))
 	{
+	;Problem with script directory
 	IniProcIniFileStart()
 	GuiControl, PrgLnch:, IniChoice,
 	GuiControl, PrgLnch:, IniChoice, %strIniChoice%
@@ -1655,14 +1656,11 @@ if (btchPrgPresetSel == temp)
 		}
 		else
 		{
-		MsgBox, 8228, Active Preset, This Preset contains active Prgs!`n`nReply:`nYes: Continue and remove the Preset (Prgs will not be cancelled).`nNo: Do not remove the Preset.`n
-			IfMsgBox, No
-			Return
-			else
+			retVal := TaskDialog("Prg Presets", "Selected Preset contains active Prgs!", , "If the active Prg is removed, Prglnch will not monitor the Prg unless it is already included in another batch preset.", "", "Continue and remove the Preset (Prgs will not be cancelled)", "Do not remove the Preset")
+			if (retVal == 1)
 			{
 
-				PrgPropertiesClose()
-
+			PrgPropertiesClose()
 
 				loop % currBatchNo
 				{
@@ -1682,6 +1680,8 @@ if (btchPrgPresetSel == temp)
 			DoBatchPower(btchPowerNames, btchSelPowerIndex, SelIniChoicePath, arrPowerPlanNames, btchPrgPresetSel, 1)
 			EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PwrChoiceHwnd, btchSelPowerIndex, PresetNames, 1)
 			}
+			else
+			return
 
 		}
 	}
@@ -1751,9 +1751,20 @@ else
 	sleep, 150
 		if (temp == "ERROR")
 		{
-		MsgBox, 8228, , Problem reading the Ini file! Try again?
-			IfMsgBox, Yes
+		retVal := TaskDialog("Ini file", "File not found!", , "The active ini file cannot be found. Has it been removed or modified in some way?`nIf it cannot be located, PrgLnch will attempt to recreate the file.`nOn continuation, if the Ini file is a LnchPad Slot, Prglnch will instead be restarted, so the file can be recreated.", "", "Try to read the file again", "Continue without the file")
+			if (retVal == 1)
 			Goto IniReadStart
+			else
+			{
+				if (SelIniChoiceName == "PrgLnch")
+				{
+				IniProcIniFileStart()
+				IniProc()
+				}
+				else
+				RestartPrgLnch(0, "PrgLnch")
+			temp := ""
+			}
 		}
 	; No key and defaults to "ERROR"
 		if (temp)
@@ -1952,14 +1963,14 @@ if (A_GuiEvent == "DoubleClick")
 			IniRead, fTemp, %SelIniChoicePath%, General, PrgAlreadyMsg
 			if (!fTemp)
 			{
-			MsgBox, 8195, , Selected Prg matches a process already running with `nthe same name. Might be an issue depending on instance requisites.`n`"%strRetVal%`"`n`nReply:`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `nCancel: Do nothing.
-				IfMsgBox, Cancel
-				Return
-				else
+			retVal := TaskDialog("Prg Process", "Selected Prg matches an existing process with same name", , "Might be an issue depending on instance requisites.`n" . strRetVal . ".", , "Continue Operation", "Abort Operation")
+				if (retVal < 0)
 				{
-					IfMsgBox, No
-					IniWrite, 1, %SelIniChoicePath%, General, PrgAlreadyMsg
+				IniWrite, 1, %SelIniChoicePath%, General, PrgAlreadyMsg
+				retVal := -retVal
 				}
+				if (retVal == 2)
+				Return
 			}
 		}
 
@@ -2201,8 +2212,8 @@ GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 
 	if (IniChoiceNames[iniSel] && IniChoiceNames[iniSel] != "ini" . iniSel)
 	{
-	MsgBox, 8228, , % """" IniChoiceNames[iniSel] """" " is a LnchPad slot already, so replacing it will remove its data.`n`nYes: Overwrite the existing LnchPad with the one just configured.`nNo: Cancel the operation."
-		IfMsgBox, No
+	retVal := TaskDialog("LnchPad Slot", """" . IniChoiceNames[1] . """" . " already exists", , "", "", "Continue, overwriting existing data", "Abort operation")
+		if (retVal == 2)
 		Return
 	}
 
@@ -2214,7 +2225,7 @@ oldSelIniChoicePath := A_ScriptDir . "\" . oldSelIniChoiceName . ".ini"
 
 ChooseIniChoice(iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 
-	;Not replacing if exists!
+	;Not replacing if doesn't exist!
 	if (!FileExist(oldSelIniChoicePath))
 	{
 	MsgBox, 8208, LnchPad File , % oldSelIniChoiceName " LnchPad file could not be found!`nCannot continue."
@@ -2231,7 +2242,8 @@ ChooseIniChoice(iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 	}
 
 
-
+oldSelIniChoiceName := SelIniChoiceName
+oldSelIniChoicePath := SelIniChoicePath
 
 IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 
@@ -2393,7 +2405,14 @@ else
 			}
 			else
 			{
-				if (iniTxtPadChoice)
+				if (iniTxtPadChoice == "")
+				{
+				GoConfigTxt = Prg Config
+				GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
+				ControlFocus, , ahk_id %GoConfigHwnd%
+				Return
+				}
+				else
 				{
 					if (strLen(iniTxtPadChoice) > 1)
 					{
@@ -2426,10 +2445,7 @@ else
 				GoConfigTxt := "Save LnchPad"
 				CreateToolTip("Click `" . GoConfigTxt . """" . " to save.")
 				GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
-				}
-				else
-				{
-				GoSub PrepDelIni
+				UndoTxt := iniTxtPadChoice
 				}
 			}
 		}
@@ -2443,11 +2459,7 @@ else
 				if (iniTxtPadChoice == oldSelIniChoiceName)
 				Return
 			}
-			else ; Del key hit
-			{
-			GoSub PrepDelIni
-			Return
-			}
+			; else ; should never get there
 
 		GoConfigTxt = Prg Config
 		GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
@@ -2457,18 +2469,21 @@ else
 		MsgBox, 8192, Script Directory, % strRetVal "`nCannot load LnchPad file!"
 		else
 		{
-
 		IniRead, fTemp, %PrgLnchIni%, General, DefPresetSettings
+
 			if (ChkPrgNames(iniTxtPadChoice, PrgNo, "Ini"))
 			{
 				; ChkPrgNames negates "PrgLnch" so...
 				if (oldSelIniChoiceName == "PrgLnch")
 				Return
-				if (!ChkPrgNames(oldSelIniChoiceName, PrgNo, "Ini") && fTemp == "")
+				if (!ChkPrgNames(oldSelIniChoiceName, PrgNo, "Ini"))
 				{
-				temp := 0
-				MsgBox, 8195, Current or default settings, A spare LnchPad slot has just been clicked.`nIt can be initialised with either the current or the default LnchPad.`n`nReply:`nYes: Use current (Warn like this next time)`nNo: Do not use current (Recommended: This will not show again)`nCancel: Do not use current (Warn like this next time):`n
-					IfMsgBox, Yes
+					if (!fTemp)
+					fTemp := TaskDialog("LnchPad Slot", "Initialisation Settings", , "A spare LnchPad slot has just been clicked.`nIt can be initialised with either the current or the default LnchPad.`nThe default contains global settings applied either before the first configuration of an item in the LnchPad Slot list, or after deletion of an item in the list.", , "Use current", "Use default (recommended)")
+
+				temp := (fTemp > 0)? 0: -fTemp
+
+					if (abs(fTemp) == 1)
 					{
 					strTemp := SelIniChoicePath
 					SelIniChoiceName .= iniSel
@@ -2476,17 +2491,14 @@ else
 					SelIniChoicePath := A_ScriptDir . "\" . SelIniChoiceName . ".ini"
 
 
-						if (strTemp2 := MoveFileUtil(strTemp, SelIniChoicePath))
+						if (strTemp2 := MoveFileUtil(strTemp, SelIniChoicePath, 1))
 						MsgBox, 8192, File Copy , %strTemp2%
-					IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+					IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, temp)
 					GuiControl, PrgLnch:, IniChoice, %strIniChoice%
 					GuiControl, PrgLnch: ChooseString, IniChoice, % SelIniChoiceName
 					}
 					else
 					{
-						IfMsgBox, No
-						temp := 1
-
 					SelIniChoiceName = PrgLnch
 					; Update all ini files
 					UpdateAllIni(PrgNo, iniSel, PrgLnchIni, SelIniChoiceName, IniChoiceNames, temp)
@@ -2514,52 +2526,21 @@ else
 	}
 Return
 
-PrepDelIni:
-	if (GoConfigTxt == "Del LnchPad")
-	{
-		if (DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPadChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice))
-		RestartPrgLnch(0, oldSelIniChoiceName, SelIniChoiceName)
-		else
-		GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
-	}
-	else
-	{
-		ControlGetText, UndoTxt,,ahk_id %IniChoiceHwnd%
-		ControlSetText,,,ahk_id %IniChoiceHwnd%
-		if (UndoTxt && (SelIniChoiceName == "PrgLnch") && (UndoTxt != "PrgLnch"))
-		{
-		Tooltip
-		GoConfigTxt = Prg Config
-		GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
-		}
-		else
-		{
-			if (!(ChkPrgNames(SelIniChoiceName, PrgNo, "Ini", 1) || SelIniChoiceName == "PrgLnch"))
-			{
-			GoConfigTxt = Del LnchPad
-			CreateToolTip("Click `" . GoConfigTxt . """" . " or hit Del to confirm.")
-			GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
-			}
-		}
-	}
-Return
-
-
 
 DelIniPresetProc(iniSel, ByRef GoConfigTxt, ByRef iniTxtPadChoice, ByRef SelIniChoicePath, ByRef SelIniChoiceName, ByRef oldSelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, DelEntryonly := "")
 {
 ToolTip
 retVal := 0
 if (DelEntryonly)
-MsgBox, 8196, Ini File Missing, LnchPad Ini file not found in script directory.`nDelete its entry?`n`nYes: Remove "" %SelIniChoiceName% "" from the list `nNo: Retain the entry.
+retVal := TaskDialog("LnchPad Slot", "Missing LnchPad Ini file", , "", "", "Remove " . """" . SelIniChoiceName . """" . " from the list", "Retain the entry")
 else
-MsgBox, 8196, Del LnchPad, Really delete the LnchPad?`nThis will also remove the file.
+retVal := TaskDialog("LnchPad Slot", "Deletion", , "", "", "Remove the LnchPad for " . """" . SelIniChoiceName . """", "Keep the LnchPad")
 
-	IfMsgBox, Yes
+	If (retVal == 1)
 	{
 	PrgPropertiesClose()
 
-	IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
+	IniProcIniFile(iniSel, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, , 1)
 	oldSelIniChoiceName := SelIniChoiceName
 	SelIniChoiceName := "Ini" . iniSel
 	GuiControl, PrgLnch:, IniChoice, %strIniChoice%
@@ -2586,7 +2567,7 @@ GoConfigTxt = Prg Config
 Return retVal
 }
 
-UpdateAllIni(PrgNo, iniSel, PrgLnchIni, SelIniChoiceName, IniChoiceNames, DefPresetSettings := 0) ; won't allow A_Space
+UpdateAllIni(PrgNo, iniSel, PrgLnchIni, SelIniChoiceName, IniChoiceNames, DefPresetSettings := 0)
 {
 spr := "", strTemp := ""
 IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
@@ -2600,7 +2581,9 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		{
 		spr .= IniChoiceNames[A_Index] . ","
 		IniChoicePaths[A_Index] := A_ScriptDir . "\" . IniChoiceNames[A_Index] . ".ini"
-			if (FileExist(IniChoicePaths[A_Index]))
+		
+
+		if (FileExist(IniChoicePaths[A_Index]))
 			IniWrite, %strTemp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
 			else
 			{
@@ -2615,7 +2598,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 				IfMsgBox, No
 				Return
 			}
-		sleep, 20
+		sleep, 10
 		}
 	}
 	
@@ -2630,7 +2613,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	MsgBox, 8192, , % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTemp
 	
 	
-	sleep, 20
+	sleep, 10
 	; Trim last ","
 	spr := SubStr(spr, 1, StrLen(spr) - 1)
 	Loop % PrgNo
@@ -2638,26 +2621,28 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		if (IniChoicePaths[A_Index] && FileExist(IniChoicePaths[A_Index]))
 		{
 		IniWrite, %spr%, % IniChoicePaths[A_Index], General, IniChoiceNames
-		sleep, 20
+		sleep, 10
 		}
 	}
 	IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
-	sleep, 20
+	sleep, 10
 
 	Loop % PrgNo
 	{
 		if (IniChoicePaths[A_Index] && FileExist(IniChoicePaths[A_Index]))
 		{
-		IniWrite, % (DefPresetSettings)? 1: A_Space, % IniChoicePaths[A_Index], General, DefPresetSettings
-		sleep, 20
+		if (DefPresetSettings)
+		IniWrite, %DefPresetSettings%, % IniChoicePaths[A_Index], General, DefPresetSettings
+		sleep, 10
 		}
 	}
-	IniWrite, % (DefPresetSettings)? 1: A_Space, %PrgLnchIni%, General, DefPresetSettings
-	sleep, 20
+	if (DefPresetSettings)
+	IniWrite, %DefPresetSettings%, %PrgLnchIni%, General, DefPresetSettings
+	sleep, 10
 }
 
 
-IniProcIniFile(iniSel, ByRef SelIniChoicePath, ByRef SelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, removeIni := 0, forcePrgLnchRead := 0)
+IniProcIniFile(iniSel, ByRef SelIniChoicePath, ByRef SelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, defPresetSettings := 0,removeIni := 0, forcePrgLnchRead := 0)
 {
 strTemp := "", spr := "", strRetVal := "", foundPos := 0
 PrgLnchPath := A_ScriptDir . "\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
@@ -2682,7 +2667,7 @@ if (iniSel)
 	foundPos := InStr(strIniChoice, "|", false, foundPos + 1)
 	strIniChoice := spr . SubStr(strIniChoice, foundPos)
 
-	UpdateAllIni(PrgNo, iniSel, PrgLnchPath, SelIniChoiceName, IniChoiceNames)
+	UpdateAllIni(PrgNo, iniSel, PrgLnchPath, SelIniChoiceName, IniChoiceNames, defPresetSettings)
 }
 else ; Read in names
 {
@@ -3214,7 +3199,7 @@ strRetVal := IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceName
 	msgbox, 8192 , LnchPad Ini File, % strRetVal
 	oldSelIniChoiceName := selIniChoiceName
 	SelIniChoicePath := PrgLnchIni
-	IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, , (SelIniChoicePath == PrgLnchIni))
+	IniProcIniFile(0, SelIniChoicePath, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, , , (SelIniChoicePath == PrgLnchIni))
 		Loop, % PrgNo
 		{
 			if (IniChoiceNames[A_Index] == oldSelIniChoiceName)
@@ -3737,6 +3722,7 @@ if (!oldDesc) ; assume oldDesc memset 0
 
 Loop
 {
+	;Consider GetProcAddress for repeated calls
 	r := Dllcall("powrprof.dll\PowerEnumerate", "Ptr", 0, "Ptr", 0, "Ptr", 0, "Uint", ACCESS_SCHEME, "Uint", A_Index-1, "Ptr", &schemeGUID, "Uint*", szguid) ;DWORD
 		if (r != 0)
 		break
@@ -3927,6 +3913,140 @@ msgbox, 8212, No Power Plan, Error: Power Plan has been removed!`n`nReply:`nYes:
 
 
 
+; Task dialog
+TaskDialog(pageTitle := "Page Title", instructionTitle := "Description of issue", description := "Choose one of the following options:", expandedText := "More Information with a <A HREF=""http://www.some_link.com"">Link</a>", checkText := "Do not show this again", choice1 := "", choice2 := "", choice3 := "", choice4 := "")
+{
+; This function requires A_Unicode and Vista or later.
+Static S_OK = 0x0, E_OUTOFMEMORY = 0x8007000E, E_INVALIDARG  = 0x80070057, E_FAIL = 0x80004005
+
+
+; 0x1	:		TDF_ENABLE_HYPERLINKS
+; 0X0010:		TDF_USE_COMMAND_LINKS
+; 0x1000:		TDF_POSITION_RELATIVE_TO_WINDOW (else the monitor)
+; 0x1000000:	TDF_SIZE_TO_CONTENT
+Static flags = 0x1011
+
+CustomButtons := []
+
+hwndParent := WinExist("A")
+	if (hwndParent != PrgLnch.Hwnd() && hwndParent != PrgLnchOpt.Hwnd())
+	{
+	MsgBox, 8208, Task Dialog, No parent window for dialog.
+	return 0
+	}
+
+	if (!(TDCallback := RegisterCallback("TDCallback", "Fast")))
+	{
+		MsgBox, 8208, Task Dialog, Could not Register Callback. Cannot contine.
+		return 0
+	}
+
+	While (tp := choice%A_Index%)
+	CustomButtons.Push(100 + A_Index, tp)
+
+
+cButtons := CustomButtons.Length()/2
+VarSetCapacity(pButtons, 4 * cButtons + A_PtrSize * cButtons, 0)
+
+	loop %cButtons%
+	{
+	iButtonID := CustomButtons[2 * A_Index -1]
+	iButtonText := &(b%A_Index% := CustomButtons[2 * A_Index])
+	NumPut(iButtonID,   pButtons, (4 + A_PtrSize) * (A_Index - 1), "Int")
+	NumPut(iButtonText, pButtons, (4 + A_PtrSize) * A_Index - A_PtrSize, "Ptr")
+	}
+
+
+; TASKDIALOGCONFIG structure
+	if (A_PtrSize == 8) ; X64
+	{
+	NumPut(VarSetCapacity(TDC, 160, 0), TDC, 0, "UInt") ; cbSize
+	NumPut(hwndParent, TDC, 4, "Ptr") ; hwndParent
+	;  HINSTANCE
+	NumPut(flags, TDC, 20, "Int") ; dwflags
+	NumPut(&pageTitle, TDC, 28, "Ptr") ; pszWindowTitle
+	NumPut(&instructionTitle, TDC, 44, "Ptr") ; pszMainInstruction
+	NumPut(&description, TDC, 52, "Ptr") ; pszContent
+	NumPut(cButtons, TDC, 60, "UInt") ; cButtons
+	NumPut(&pButtons, TDC, 64, "Ptr") ; pButtons
+	NumPut(&checkText, TDC, 92, "Ptr") ; pszVerificationText
+	NumPut(&ExpandedText, TDC, 100, "Ptr") ; pszExpandedInformation
+	; pszFooter
+	NumPut(TDCallback, TDC, 140, "Ptr") ; pfCallback
+	}
+	else
+	{
+	NumPut(VarSetCapacity(TDC, 96, 0), TDC, 0, "UInt") ; cbSize
+	NumPut(hwndParent, TDC, 4, Ptr) ; hwndParent
+	;  HINSTANCE
+	NumPut(flags, TDC, 12, "Int") ; dwflags
+	NumPut(&pageTitle, TDC, 20, "UInt") ; pszWindowTitle
+	NumPut(&instructionTitle, TDC, 28, "UInt") ; pszMainInstruction
+	NumPut(&description, TDC, 32, "UInt") ; pszContent
+	NumPut(cButtons, TDC, 36, "UInt") ; cButtons
+	NumPut(&pButtons, TDC, 40, "UInt") ; pButtons
+	NumPut(&checkText, TDC, 60, "UInt") ; pszVerificationText
+	NumPut(&ExpandedText, TDC, 64, "UInt") ; pszExpandedInformation
+	; pszFooter
+	NumPut(TDCallback, TDC, 84, "UInt") ; pfCallback
+	}
+
+Switch (retVal := DllCall("Comctl32.dll\TaskDialogIndirect", "Ptr", &TDC
+	, "Int*", Button := 0
+	, "Int*", Radio := 0
+	, "Int*", Checked := 0))
+	
+	{
+	Case E_OUTOFMEMORY:
+	retVal := "There is insufficient memory to complete the operation."
+	Case E_INVALIDARG:
+	retVal := "One or more arguments are not valid."
+	Case E_FAIL:
+	retVal := "The operation failed."
+	Default: ; S_OK:
+	}
+
+	if (retVal)
+	{
+	msgbox, 8208, Task Dialog, %retVal%
+	return 0
+	}
+
+	if (DllCall("Kernel32.dll\GlobalFree", "Ptr", TDCallback))
+	MsgBox, 8208, Task Dialog, GlobalFree Failed
+
+Switch (Button)
+	{
+	Case 101:
+	retVal := 1
+	Case 102:
+	retVal := 2
+	Case 103:
+	retVal := 3
+	Case 104:
+	retVal := 4
+	Default:
+		{
+		MsgBox, 8208, Task Dialog, Unexpected return!
+		return 0
+		}
+	}
+
+
+	if (Checked)
+	retVal := -retVal
+
+return retVal
+}
+
+TDCallback(hWnd, Notification, wParam, lParam, RefData)
+{
+    if (Notification == 3)
+	{
+	url := StrGet(lParam, "UTF-16") ; <A HREF="URL">Link</A>
+	Run %url%
+    }
+}
 
 
 
@@ -3939,6 +4059,31 @@ msgbox, 8212, No Power Plan, Error: Power Plan has been removed!`n`nReply:`nYes:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+; Various buttons
 BackToPrgLnch:
 
 Tooltip
@@ -4298,50 +4443,6 @@ IniProc(selPrgChoice)
 Return
 
 
-PrgURLGui(ByRef PrgUrl, ByRef PrgUrlTest, SelPrgChoice, NoSaveURL := 0)
-{
-	GuiControl, PrgLnchOpt:, newVerPrg
-	PrgUrlTest := ""
-	if (NoSaveURL)
-	{
-	ToolTip
-	GuiControl, PrgLnchOpt:, UpdtPrgLnch, % "&Update Prg"
-		if (NoSaveURL == 1)
-		{
-		GuiControl, PrgLnchOpt: Disable, UpdtPrgLnch
-		PrgUrl[selPrgChoice] := ""
-		}
-		else
-		{
-		GuiControl, PrgLnchOpt: Enable, UpdtPrgLnch
-		GuiControl, PrgLnchOpt: Enable, UpdturlPrgLnch
-		GuiControl, PrgLnchOpt:, UpdturlPrgLnch, % PrgUrl[selPrgChoice]
-		}
-
-	}
-	else
-	{
-	GuiControl, PrgLnchOpt:, UpdtPrgLnch, % "&Save URL"
-	CreateToolTip("Type to modify, Del to remove, or click " . """" . "Save URL" . """" . " to save URL.")
-	GuiControl, PrgLnchOpt: Enable, UpdtPrgLnch
-	GuiControlGet, PrgUrlTest, PrgLnchOpt:, UpdturlPrgLnch
-	}
-}
-
-SetEditCueBanner(HWND, Cue, IsCombo := 0)
-{
-; requires AHL_L: JustMe
-Static EM_SETCUEBANNER := (0x1500 + 1)
-Static CB_SETCUEBANNER := (0x1700 + 3)
-if (IsCombo)
-Return DllCall("User32.dll\SendMessageW", "Ptr", HWND, "Uint", CB_SETCUEBANNER, "Ptr", True, "WStr", Cue)
-else
-Return DllCall("User32.dll\SendMessageW", "Ptr", HWND, "Uint", EM_SETCUEBANNER, "Ptr", True, "WStr", Cue)
-}
-MakeLong(LoWord, HiWord) ; courtesy Chris
-{
-return (HiWord << 16) | (LoWord & 0xffff)
-}
 
 
 
@@ -5183,9 +5284,6 @@ borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResol
 iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, regoVar, scrWidthArr, scrHeightArr, scrFreqArr)
 SetResDefaults(targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 
-;msgbox % "PrgLnch.Monitor " PrgLnch.Monitor " selPrgChoice " selPrgChoice " scrWidthArr[selPrgChoice] " scrWidthArr[selPrgChoice] " scrWidthDefArr[targMonitorNum] " scrWidthDefArr[targMonitorNum] " PrgLnchOpt.scrWidthDef " PrgLnchOpt.scrWidthDef
-;msgbox % " PrgLnchOpt.scrWidth " PrgLnchOpt.scrWidth " PrgLnchOpt.scrWidthDef " PrgLnchOpt.scrWidthDef " PresetPropHwnd " PresetPropHwnd " defPrgStrng " defPrgStrng
-
 CheckModesFunc(SelIniChoicePath, defPrgStrng, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
 TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResonSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
 
@@ -5890,25 +5988,55 @@ Return
 ^z::
 
 GuiControlGet, strTemp, PrgLnchOpt: FocusV
+
 	if (strTemp == "CmdLinPrm")
 	{
-	GuiControl, PrgLnchOpt:, CmdLinPrm, % UndoTxt
-	UndoTxt := ""
+	Tooltip
+	ControlGetText, temp,,ahk_id %cmdLinHwnd%
+		if (temp)
+		{
+		UndoTxt := temp
+		GuiControl, PrgLnchOpt:, CmdLinPrm,
+		}
+		else
+		{
+		GuiControl, PrgLnchOpt:, CmdLinPrm, % UndoTxt
+		UndoTxt := ""
+		}
 	}
 	else
 	{
 		if (strTemp == "UpdturlPrgLnch")
 		{
-		GuiControl, PrgLnchOpt:, UpdturlPrgLnch, % UndoTxt
-		UndoTxt := ""
+		ControlGetText, temp,,ahk_id %UpdturlHwnd%
+			if (temp)
+			{
+			ToolTip
+			UndoTxt := temp
+			GuiControl, PrgLnchOpt:, UpdturlPrgLnch,
+			}
+			else
+			{
+			GuiControl, PrgLnchOpt:, UpdturlPrgLnch, % UndoTxt
+			UndoTxt := ""
+			}
 		}
 		else
 		{
 			if (strTemp == "PrgChoice")
 			{
 			ToolTip
-			GuiControl, PrgLnchOpt: Text, PrgChoice, % UndoTxt
-			UndoTxt := ""
+			ControlGetText, temp,,ahk_id %PrgChoiceHwnd%
+				if (temp)
+				{
+				UndoTxt := temp
+				GuiControl, PrgLnchOpt: Text, PrgChoice,
+				}
+				else
+				{
+				GuiControl, PrgLnchOpt: Text, PrgChoice, % UndoTxt
+				UndoTxt := ""
+				}
 			}
 		}
 	}
@@ -5948,7 +6076,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 	}
 	else
 	{
-		if (strTemp="UpdturlPrgLnch")
+		if (strTemp == "UpdturlPrgLnch")
 		{
 			ToolTip
 			GuiControlGet UndoTxt, PrgLnchOpt:, UpdturlPrgLnch
@@ -5960,7 +6088,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 		}
 		else
 		{
-			if (strTemp="CmdLinPrm")
+			if (strTemp == "CmdLinPrm")
 			{
 				ToolTip
 				GuiControlGet UndoTxt, PrgLnchOpt:, CmdLinPrm
@@ -5993,12 +6121,20 @@ Return
 
 #IfWinActive, PrgLnch ahk_class AutoHotkeyGUI
 
-
 PrgLnchButtonQuit_PrgLnch:
 PrgLnchGuiEscape:
 ;PrgLnchGuiClose: ; not mandatory
 Gui PrgLnch: +OwnDialogs
 critical
+
+	if (GoConfigTxt == "Del LnchPad" || GoConfigTxt == "Save LnchPad")
+	{
+	tooltip
+	GoConfigTxt = Prg Config
+	GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
+	return
+	}
+
 
 if (PrgTermExit <> 2)
 {
@@ -6201,21 +6337,53 @@ Return
 GuiControlGet, strTemp, PrgLnch: FocusV
 	if (strTemp == "PresetName")
 	{
-	GuiControl, PrgLnch: Text, PresetName, % UndoTxt
-	UndoTxt := ""
+	Tooltip
+	ControlGetText, temp,,ahk_id %PresetNameHwnd%
+		if (temp)
+		{
+		UndoTxt := temp
+		GuiControl, PrgLnch: Text, PresetName,
+		}
+		else
+		{
+		GuiControl, PrgLnch: Text, PresetName, % UndoTxt
+		UndoTxt := ""
+		}
 	}
 	else
 	{
 		if (strTemp == "IniChoice")
 		{
-		GuiControl, PrgLnch: Text, IniChoice, % UndoTxt
-		UndoTxt := ""
+		Tooltip
+		ControlGetText, temp,,ahk_id %IniChoiceHwnd%
+			if (temp)
+			{
+				if (temp != "ini" . iniSel)
+				{
+				UndoTxt := temp
+				GuiControl, PrgLnch: Text, IniChoice,
+				GoConfigTxt = Prg Config
+				GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
+				}
+			}
+			else
+			{
+				if (UndoTxt != "")
+				{
+				GoConfigTxt := "Save LnchPad"
+				CreateToolTip("Click `" . GoConfigTxt . """" . " to save.")
+				GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+				GuiControl, PrgLnch: Text, IniChoice, % UndoTxt
+				UndoTxt := ""
+				}
+			}
 		}
 	}
 Return
 
 Del::
 GuiControlGet, strTemp, PrgLnch: FocusV
+
 	if (strTemp == "PresetName")
 	{
 		if (ffTemp == 1)
@@ -6228,8 +6396,33 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 	{
 		if (strTemp == "IniChoice")
 		{
-		GuiControlGet, UndoTxt,, IniChoice
-		GoSub PrepDelIni
+			if (GoConfigTxt == "Del LnchPad")
+			{
+				if (DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPadChoice, SelIniChoicePath, SelIniChoiceName, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice))
+				RestartPrgLnch(0, oldSelIniChoiceName, SelIniChoiceName)
+				else
+				GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
+			}
+			else
+			{
+			ControlGetText, UndoTxt,,ahk_id %IniChoiceHwnd%
+			ControlSetText,,,ahk_id %IniChoiceHwnd%
+				if (UndoTxt && (SelIniChoiceName == "PrgLnch") && (UndoTxt != "PrgLnch"))
+				{
+				Tooltip
+				GoConfigTxt = Prg Config
+				GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+				}
+				else
+				{
+					if (!(ChkPrgNames(SelIniChoiceName, PrgNo, "Ini", 1) || SelIniChoiceName == "PrgLnch"))
+					{
+					GoConfigTxt = Del LnchPad
+					CreateToolTip("Click `" . GoConfigTxt . """" . " or hit Del to confirm.")
+					GuiControl, PrgLnch:, GoConfigVar, % GoConfigTxt
+					}
+				}
+			}
 		}
 	}
 Return
@@ -9406,7 +9599,7 @@ else ;interrupted download but wish to continue
 	{
 
 		;;verify URL
-									
+		PrgUrlTest := Trim(PrgUrlTest)							
 		If (!RegExMatch(PrgUrlTest, "^(https?://|www\.)[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(/\S*)?$"))
 		{
 			MsgBox, 8193, , The URL doesn't appear valid. Use it?
@@ -9838,6 +10031,43 @@ Local strTemp2 := ""
 		IniWrite, 1, %SelIniChoicePath%, General, PrgVersionError
 	}
 }
+PrgURLGui(ByRef PrgUrl, ByRef PrgUrlTest, SelPrgChoice, NoSaveURL := 0)
+{
+	GuiControl, PrgLnchOpt:, newVerPrg
+	PrgUrlTest := ""
+	if (NoSaveURL)
+	{
+	ToolTip
+	GuiControl, PrgLnchOpt:, UpdtPrgLnch, % "&Update Prg"
+		if (NoSaveURL == 1)
+		{
+		GuiControl, PrgLnchOpt: Disable, UpdtPrgLnch
+		PrgUrl[selPrgChoice] := ""
+		}
+		else
+		{
+		GuiControl, PrgLnchOpt: Enable, UpdtPrgLnch
+		GuiControl, PrgLnchOpt: Enable, UpdturlPrgLnch
+		GuiControl, PrgLnchOpt:, UpdturlPrgLnch, % PrgUrl[selPrgChoice]
+		}
+
+	}
+	else
+	{
+	GuiControl, PrgLnchOpt:, UpdtPrgLnch, % "&Save URL"
+	CreateToolTip("Type to modify, Del to remove, or click " . """" . "Save URL" . """" . " to save URL.")
+	GuiControl, PrgLnchOpt: Enable, UpdtPrgLnch
+	GuiControlGet, PrgUrlTest, PrgLnchOpt:, UpdturlPrgLnch
+	}
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -9864,6 +10094,22 @@ Local strTemp2 := ""
 
 
 ;Misc functions
+SetEditCueBanner(HWND, Cue, IsCombo := 0)
+{
+; requires AHL_L: JustMe
+Static EM_SETCUEBANNER := (0x1500 + 1)
+Static CB_SETCUEBANNER := (0x1700 + 3)
+if (IsCombo)
+Return DllCall("User32.dll\SendMessageW", "Ptr", HWND, "Uint", CB_SETCUEBANNER, "Ptr", True, "WStr", Cue)
+else
+Return DllCall("User32.dll\SendMessageW", "Ptr", HWND, "Uint", EM_SETCUEBANNER, "Ptr", True, "WStr", Cue)
+}
+
+MakeLong(LoWord, HiWord) ; courtesy Chris
+{
+return (HiWord << 16) | (LoWord & 0xffff)
+}
+
 DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, checkSubSys := 0)
 {
 sizeOfOptionalHeader := 0, e_lfanew := 0, e_magic := 0, ntHeaders32 := 0, temp := 0, IsaPrgLnk := 0
@@ -10385,7 +10631,7 @@ GuiControl, PrgLnchOpt: Show, PrgLAA
 IniProc(selPrgChoice := 0, removeRec := 0)
 {
 
-Local iDevNumArrayIn := [0, 0, 0, 0, 0, 0, 0, 0, 0], foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, k := 0, spr := "", reWriteIni := 0, FileExistSelIniChoicePath:= FileExist(SelIniChoicePath)
+Local iDevNumArrayIn := [0, 0, 0, 0, 0, 0, 0, 0, 0], foundPosOld := 0, recCount := -1, sectCount := 0, c := 0, p := 0, s := 0, k := 0, spr := "", reWriteIni := 0, FileExistSelIniChoicePath := FileExist(SelIniChoicePath)
 
 ; Local implies  or assumes global function
 
@@ -10827,7 +11073,7 @@ if (!FileExistSelIniChoicePath)
 						}
 						else ;reading entire file
 						{
-						If (k)
+						if (k)
 							{
 							strPrgChoice .= k . "|"
 							PrgChoiceNames[recCount] := k
