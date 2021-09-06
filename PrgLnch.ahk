@@ -77,35 +77,35 @@ Class PrgLnchOpt
 	Gui, PrgLnchOpt: +Hwndtemp
 	This.PrgHwnd := temp
 	DetectHiddenWindows, Off
-	Return This.PrgHwnd
+	return This.PrgHwnd
 	}
 	X()
 	{
 	DetectHiddenWindows, On
 	WinGetPos, X, , , , % "ahk_id" This.PrgHwnd
 	DetectHiddenWindows, Off
-	Return X
+	return X
 	}
 	Y()
 	{
 	DetectHiddenWindows, On
 	WinGetPos, , Y, , , % "ahk_id" This.PrgHwnd
 	DetectHiddenWindows, Off
-	Return Y
+	return Y
 	}
 	Width()
 	{
 	DetectHiddenWindows, On
 	WinGetPos, , , Width, , % "ahk_id" This.PrgHwnd
 	DetectHiddenWindows, Off
-	Return Width
+	return Width
 	}
 	Height()
 	{
 	DetectHiddenWindows, On
 	WinGetPos, , , , Height, % "ahk_id" This.PrgHwnd
 	DetectHiddenWindows, Off
-	Return Height
+	return Height
 	}
 	MonDefResStrng
 	{
@@ -291,7 +291,6 @@ Class PrgLnch
 	;static NplusplusClass := "ahk_exe Notepad++.exe"
 	;static NplusplusClass := "ahk_class Notepad++"
 	static ProcScpt := "ahk_exe PrgLnch.exe"
-	;static ProcAHK := "ahk_exe AutoHotkey.exe"
 	static ProcAHK := "ahk_class AutoHotkeyGUI"
 	static PrgHwnd := ""
 	static PrgLnchMonitor := 0
@@ -302,7 +301,7 @@ Class PrgLnch
 	Gui, PrgLnch: +Hwndtemp
 	This.PrgHwnd := temp
 	DetectHiddenWindows, Off
-	Return This.PrgHwnd
+	return This.PrgHwnd
 	}
 
 	Monitor
@@ -323,12 +322,12 @@ Class PrgLnch
 	;temp := This.NplusplusClass
 
 	;WinGetText, text, ahk_class %temp%
-	Return temp
+	return temp
 	}
 	Name()
 	{
 	SplitPath, A_ScriptFullPath,,,, temp
-	Return temp
+	return temp
 	}
 	PID()
 	{
@@ -336,7 +335,7 @@ Class PrgLnch
 		If (!ErrorLevel)
 		MsgBox, 8208, , Cannot retrieve the PID of PrgLnch!
 	
-	Return ErrorLevel
+	return ErrorLevel
 	}
 	Activate() ;Activates window with Title - This.Title
 	{
@@ -356,31 +355,31 @@ Class PrgLnch
 	DetectHiddenWindows, On
 	WinGetPos, , Y, , , % "ahk_id" This.PrgHwnd
 	DetectHiddenWindows, Off
-	Return Y
+	return Y
 	}
 	Width()
 	{
 	DetectHiddenWindows, On
 	WinGetPos, , , Width, , % "ahk_id" This.PrgHwnd
 	DetectHiddenWindows, Off
-	Return Width
+	return Width
 	}
 	Height()
 	{
 	DetectHiddenWindows, On
 	WinGetPos, , , , Height, % "ahk_id" This.PrgHwnd
 	DetectHiddenWindows, Off
-	Return Height
+	return Height
 	}
 	__New()
 	{
 		ObjInsert(this,"",[])
 	}
 	__GET(what){
-			Return this["",what]
+			return this["",what]
 	}
 	__SET(what,value){
-		Return this["",what]:=value
+		return this["",what]:=value
 	}
 
 	}
@@ -543,7 +542,7 @@ ResShortcut := 0
 
 
 ; General temp variables
-;retVal above
+retVal := 0
 strRetval := ""
 verTemp := 0
 timerfTemp := 0
@@ -823,8 +822,9 @@ loop % PrgNo
 
 
 IniRead, fTemp, %SelIniChoicePath%, General, ChangeShortcutMsg
-if (fTemp)
-ChgShortcutVar := "Change Shortcut Name"
+	if (fTemp == 1)
+	ChgShortcutVar := "Change Shortcut Name"
+
 
 Gui, PrgLnchOpt: -DPIScale -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP% +E%WS_EX_ACCEPTFILES%
 
@@ -1283,7 +1283,7 @@ SplashImage, PrgLnchLoading.jpg, Hide,,,LnchSplash
 
 Process, priority, %PrgLnchPID%, B
 
-Return
+return
 
 
 
@@ -1306,7 +1306,7 @@ SetTimer, LnchPadSplashTimer, 200
 	}
 
 temp := 0
-Return
+return
 
 LnchPadSplashTimer:
 SetTitleMatchMode, 3
@@ -1335,7 +1335,7 @@ SetTitleMatchMode, 3
 			}
 		}
 	}
-Return
+return
 
 PwrChoiceSel:
 Gui, PrgLnch: Submit, Nohide
@@ -1360,7 +1360,7 @@ strTemp := join(btchPowerNames)
 IniWrite, %strTemp%, %SelIniChoicePath%, Prgs, BatchPowerNames
 
 
-Return
+return
 
 MovePrgProc:
 
@@ -1370,7 +1370,7 @@ Gui, PrgLnch: Submit, Nohide
 if (btchPrgPresetSel)
 {
 if (IsCurrentBatchRunning(currBatchNo, PrgListPID%btchPrgPresetSel%))
-Return
+return
 }
 
 if (listPrgVar)
@@ -1486,7 +1486,7 @@ GuiControl, PrgLnch: Choose, ListPrg, % listPrgVar
 GuiControl, PrgLnch: Show, ListPrg
 
 }
-Return
+return
 
 ListPrgProc:
 Gui, PrgLnch: Submit, Nohide
@@ -1495,7 +1495,7 @@ Gui, PrgLnch: Submit, Nohide
 if (btchPrgPresetSel)
 {
 if (IsCurrentBatchRunning(currBatchNo, PrgListPID%btchPrgPresetSel%))
-Return
+return
 }
 
 if (!boundListBtchCtl)
@@ -1596,7 +1596,7 @@ sleep, 120
 }
 
 
-Return
+return
 
 
 
@@ -1870,7 +1870,7 @@ else
 				if (!batchActive)
 				{
 				EnableBatchCtrls(PresetNameHwnd, btchPrgPresetSel, PwrChoiceHwnd, btchSelPowerIndex, PresetNames, 1)
-				Return
+				return
 				}
 			}
 		}
@@ -1912,7 +1912,7 @@ else
 
 }
 
-Return
+return
 
 
 DefPresetSub:
@@ -1924,7 +1924,7 @@ else
 PrgBatchIniStartup := 0
 
 IniWrite, %PrgBatchIniStartup%, %SelIniChoicePath%, Prgs, PrgBatchIniStartup
-Return
+return
 
 
 batchPrgStatusSub:
@@ -1941,7 +1941,7 @@ if (A_GuiEvent == "DoubleClick")
 	sleep, 200
 	strTemp := "|"
 		if (!batchPrgStatus)
-		Return
+		return
 
 	; check before launching not cancelling
 	temp := PrgListPID%btchPrgPresetSel%[batchPrgStatus]
@@ -1955,10 +1955,10 @@ if (A_GuiEvent == "DoubleClick")
 			if (strRetVal == "PrgLnch")
 			{
 			MsgBox, 8208, , Cannot launch this Prg!
-			Return
+			return
 			}
 			if (strRetVal == "BadPath")
-			Return
+			return
 
 			IniRead, fTemp, %SelIniChoicePath%, General, PrgAlreadyMsg
 			if (!fTemp)
@@ -1970,7 +1970,7 @@ if (A_GuiEvent == "DoubleClick")
 				retVal := -retVal
 				}
 				if (retVal == 2)
-				Return
+				return
 			}
 		}
 
@@ -2105,11 +2105,11 @@ Thread, NoTimers, false
 	GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 	}
 }
-Return
+return
 
 PresetNameSub:
 	if (ffTemp == 1) ; see ffTemp in decl list
-	Return
+	return
 
 GuiControlGet, temp, PrgLnch: FocusV
 if (temp == "PresetName")
@@ -2168,14 +2168,14 @@ GuiControl, PrgLnch:, BtchPrgPreset, %strRetVal%
 GuiControl, PrgLnch: Enable, PresetName
 ffTemp := 0
 }
-Return
+return
 
 RunBatchPrgSub:
 
 if (btchPrgPresetSel)
 GoSub LnchPrgLnch
 
-Return
+return
 
 
 GoConfig:
@@ -2192,7 +2192,7 @@ GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 	{
 		GuiControl, PrgLnch: Text, IniChoice,
 		SetEditCueBanner(IniChoiceHwnd, "Name too short", 1)
-		Return
+		return
 	}
 	else
 	SetEditCueBanner(IniChoiceHwnd, "LnchPad Slot", 1)
@@ -2203,7 +2203,7 @@ GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 		{
 		GuiControl, PrgLnch: Text, IniChoice,
 		SetEditCueBanner(IniChoiceHwnd, "Name in Use", 1)
-		Return
+		return
 		}
 		else
 		SetEditCueBanner(IniChoiceHwnd, "LnchPad Slot", 1)
@@ -2212,9 +2212,9 @@ GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 
 	if (IniChoiceNames[iniSel] && IniChoiceNames[iniSel] != "ini" . iniSel)
 	{
-	retVal := TaskDialog("LnchPad Slot", """" . IniChoiceNames[1] . """" . " already exists", , "", "", "Continue, overwriting existing data", "Abort operation")
+	retVal := TaskDialog("LnchPad Slot", """" . IniChoiceNames[iniSel] . """" . " already exists", , "", "", "Continue, overwriting existing data", "Abort operation")
 		if (retVal == 2)
-		Return
+		return
 	}
 
 oldSelIniChoiceName := SelIniChoiceName
@@ -2229,7 +2229,7 @@ ChooseIniChoice(iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 	if (!FileExist(oldSelIniChoicePath))
 	{
 	MsgBox, 8208, LnchPad File , % oldSelIniChoiceName " LnchPad file could not be found!`nCannot continue."
-	Return
+	return
 	}
 	
 	if (strRetVal := MoveFileUtil(oldSelIniChoicePath, SelIniChoicePath, (oldSelIniChoiceName == "PrgLnch")))
@@ -2238,7 +2238,7 @@ ChooseIniChoice(iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
 	iniTxtPadChoice := oldSelIniChoiceName
 	GuiControl, PrgLnch: Text, IniChoice, %oldSelIniChoiceName%
 	ChooseIniChoice(iniSel, oldSelIniChoiceName, PrgNo, IniChoiceNames)
-	Return
+	return
 	}
 
 
@@ -2289,7 +2289,7 @@ else
 	SetTaskBarIcon()
 	}
 }
-Return
+return
 
 
 PrgIntervalChk:
@@ -2299,12 +2299,12 @@ PrgIntervalLnch := PrgInterval
 	IniWrite, %PrgIntervalLnch%, %SelIniChoicePath%, Prgs, PrgInterval
 	else
 	IniWrite, %A_Space%, %SelIniChoicePath%, Prgs, PrgInterval
-Return
+return
 
 PresetProp:
 	if (btchPrgPresetSel && currBatchNo)
 	PopPrgProperties(currBatchNo, btchPrgPresetSel, PrgBatchIni%btchPrgPresetSel%, PrgChoiceNames, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
-Return
+return
 
 
 
@@ -2410,7 +2410,7 @@ else
 				GoConfigTxt = Prg Config
 				GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 				ControlFocus, , ahk_id %GoConfigHwnd%
-				Return
+				return
 				}
 				else
 				{
@@ -2425,7 +2425,7 @@ else
 								GoConfigTxt = Prg Config
 								GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 								ControlFocus, , ahk_id %GoConfigHwnd%
-								Return
+								return
 							}
 
 						}
@@ -2457,7 +2457,7 @@ else
 			if (iniTxtPadChoice)
 			{
 				if (iniTxtPadChoice == oldSelIniChoiceName)
-				Return
+				return
 			}
 			; else ; should never get there
 
@@ -2475,7 +2475,7 @@ else
 			{
 				; ChkPrgNames negates "PrgLnch" so...
 				if (oldSelIniChoiceName == "PrgLnch")
-				Return
+				return
 				if (!ChkPrgNames(oldSelIniChoiceName, PrgNo, "Ini"))
 				{
 					if (!fTemp)
@@ -2516,7 +2516,7 @@ else
 				else
 				{
 				DelIniPresetProc(iniSel, GoConfigTxt, iniTxtPadChoice, SelIniChoicePath, iniTxtPadChoice, oldSelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, 1)
-				Return
+				return
 				}			
 			}
 		
@@ -2524,7 +2524,7 @@ else
 		}
 		}
 	}
-Return
+return
 
 
 DelIniPresetProc(iniSel, ByRef GoConfigTxt, ByRef iniTxtPadChoice, ByRef SelIniChoicePath, ByRef SelIniChoiceName, ByRef oldSelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, DelEntryonly := "")
@@ -2564,7 +2564,7 @@ retVal := TaskDialog("LnchPad Slot", "Deletion", , "", "", "Remove the LnchPad f
 	GuiControl, PrgLnch: Text, IniChoice, %iniTxtPadChoice%
 	}
 GoConfigTxt = Prg Config
-Return retVal
+return retVal
 }
 
 UpdateAllIni(PrgNo, iniSel, PrgLnchIni, SelIniChoiceName, IniChoiceNames, DefPresetSettings := 0)
@@ -2587,16 +2587,16 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 			IniWrite, %strTemp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
 			else
 			{
-			MsgBox, 8196, , % "The LnchPad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the LnchPads. `n"
-				IfMsgBox, No
-				Return
+			retVal := TaskDialog("LnchPad Slot File", "LnchPad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " not found", , "", "", "Continue updating the others (Recommended)", "Quit updating the LnchPads")
+				if (retVal == 2)
+				return
 			}
 
 			if (Errorlevel)
 			{
-			MsgBox, 8196, , % "The following LnchPad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the LnchPads. `n"
-				IfMsgBox, No
-				Return
+			retVal := TaskDialog("LnchPad Slot File", "The LnchPad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " cannot be updated", , "", "", "Continue updating the others (Recommended)", "Quit updating the LnchPads")
+				if (retVal == 2)
+				return
 			}
 		sleep, 10
 		}
@@ -2607,7 +2607,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	else
 	{
 	MsgBox, 8208, ,The PrgLnch ini file cannot be written to!
-	Return
+	return
 	}
 	if (Errorlevel)
 	MsgBox, 8192, , % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTemp
@@ -2724,7 +2724,7 @@ if (!strRetVal)
 }
 
 }
-Return strRetVal
+return strRetVal
 }
 WriteIniChoiceNames(IniChoiceNames, PrgNo, ByRef strIniChoice, PrgLnchIni)
 {
@@ -2753,9 +2753,9 @@ FindFreeLnchPadSlot(PrgNo, IniChoiceNames)
 	loop, % PrgNo
 	{
 	if (IniChoiceNames[A_Index] == "Ini" . A_Index)
-	Return A_Index
+	return A_Index
 	}
-Return 0
+return 0
 }				
 
 ChooseIniChoice(ByRef iniSel, selIniChoiceName, PrgNo, IniChoiceNames)
@@ -2863,8 +2863,8 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 
 		if (!A_IsAdmin)
 		{
-		msgbox, 8196, LnchPad Setup Elevated?, LnchPad Setup requires Admin to work properly.`nReply:`n`nYes: Restart LnchPad Setup as Admin.`nNo: Try it without Admin.`n
-			IfMsgBox, Yes
+		retVal := TaskDialog("LnchPad Setup Elevated", "Admin is required for full functionality", , "", "", "Restart LnchPad Setup as Admin", "Try it without Admin")
+			if (retVal == 1)
 			strTemp2 := "*runAs " . strTemp2
 		SplashImage, LnchPadCfg.jpg, A B,,, LnchPadCfg
 		}
@@ -2893,10 +2893,9 @@ Gui, PrgLnch: -Disabled
 DetectHiddenWindows, On
 
 PrgLnch.Activate()
-oldDHW := A_DetectHiddenWindows
 
-DetectHiddenWindows, %oldDHW%
-Return strTemp
+DetectHiddenWindows, Off
+return strTemp
 }
 
 HideShowLnchControls(quitHwnd, GoConfigHwnd, showCtl := 0)
@@ -2941,7 +2940,7 @@ strTemp := 0
 		if (!(strTemp == "NS" || strTemp == "FAILED" || strTemp == "TERM" || strTemp == "ENDED" || !strTemp))
 		return 1
 	}
-Return 0
+return 0
 }
 ReorgBatch(batchPrgNo, maxBatchPrgs, btchPrgPresetSel, PrgMonToRn, PrgBatchInibtchPrgPresetSel, ByRef currBatchNo, ByRef PrgListIndex, ByRef PrgBdyBtchTog)
 {
@@ -3088,50 +3087,7 @@ return strTemp
 MonStr(PrgMonToRn, selPrgChoice)
 ; Rather than worry about multi-select listboxes, we have this to show selection ... - and monitor number!
 {
-Return "*" . PrgMonToRn[selPrgChoice] . "*"
-}
-
-MsgOnceTerminate(SelIniChoicePath, strTemp, ByRef PrgTermExit)
-{
-retVal := 0
-
-	if ((Instr(strTemp, "`n")) || (Instr(strTemp, ",")))
-	{
-	strTemp2 := "Prgs are"
-	strTemp3 := "them"
-	}
-	else
-	{
-	strTemp2 := "A Prg is"
-	strTemp3 := "it"
-	}
-
-
-if (!PrgTermExit)
-	{
-	MsgBox, 8195, Active on Quit, %strTemp2% still running!`n%strTemp%`nDo you wish to close %strTemp3%?`n`nReply:`nYes: Close: (Brings up another dialog)`nNo: Do not close: (Recommended: This will not show again)`nCancel: Do not close: (This will show again): `n
-	IfMsgBox, No
-	{
-	PrgTermExit := 1
-	IniWrite, %PrgTermExit%, %SelIniChoicePath%, Prgs, PrgTermExit
-	}
-	else
-	{
-		IfMsgBox, Yes
-		{
-		MsgBox, 8195, Terminate on Quit, Automatically terminate Prgs when quitting?`n`nYes: Terminate (Not recommended: This will not show again) `nNo: Terminate (The `"Active on Quit`" prompt will show again)`nCancel: Do nothing (The `"Active on Quit`" prompt will show again)
-			IfMsgBox, Cancel
-			RetVal := 1
-			else
-			{
-			PrgTermExit := 2
-				IfMsgBox, Yes
-				IniWrite, %PrgTermExit%, %SelIniChoicePath%, Prgs, PrgTermExit
-			}
-		}
-	}
-	}
-Return retVal
+return "*" . PrgMonToRn[selPrgChoice] . "*"
 }
 
 PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgPIDMast, ToPidMast := 0)
@@ -3235,7 +3191,7 @@ KleenupPrgLnchFiles := ""
 
 ; Keep files if debugging
 if (!A_IsCompiled)
-Return
+return
 
 For eachNameToDel in namesToDel
 {
@@ -3269,7 +3225,7 @@ strRetVal := ""
 	{
 	strRetVal := Src . " could not be copied with error: " . e
 	}
-Return strRetVal
+return strRetVal
 }
 FileMove(Src, Dst, Overwrite := 0)
 {
@@ -3282,7 +3238,7 @@ strRetVal := ""
 	{
 	strRetVal := Dst . " could not be moved with error: " . e
 	}
-Return strRetVal
+return strRetVal
 }
 
 
@@ -3293,8 +3249,8 @@ MoveFileUtil(Src, Dst, CopySrc := 0)
 
 	if (FileExist(Dst))
 	{
-		MsgBox, 1,, % """" . Dst . """" . " already exists. Replace it?"
-			IfMsgBox, Ok
+		retVal := TaskDialog("File Operation", """" . Dst . """" . "`nalready exists", , "", "", "Replace the file", "Do not replace the file")
+			if (retVal == 1)
 			strRetVal := File%Action%(Src, Dst, 1)
 			else
 			strRetVal := "Operation cancelled"
@@ -3302,7 +3258,7 @@ MoveFileUtil(Src, Dst, CopySrc := 0)
 	else
 	strRetVal := File%Action%(Src, Dst)
 
-Return strRetVal
+return strRetVal
 
 
 }
@@ -3310,7 +3266,7 @@ Return strRetVal
 WM_HELP(wp_notused, lParam, _msg, _hwnd)
 {
 Global
-local retVal := 0 ;using local this is now a global function
+retVal := 0
 
 
 local Size         := NumGet(lParam +  0, "uint")
@@ -3506,8 +3462,8 @@ temp := 0
 	temp++
 		if (temp == 1000)
 		{
-		msgbox, 8196, Help Working?, Help has not started.`nReply:`n`nYes: Continue to wait.`nNo: Continue without waiting.
-			IfMsgBox, Yes
+		retVal := TaskDialog("PrgLnch Help", "Help is slow to launch", , "", "", "Wait for help", "Do not wait for help")
+			if (retVal == 1)
 			temp := 0
 			else
 			Break
@@ -3562,7 +3518,7 @@ WinGetTitle, strtemp , A
 	else
 	{
 	retVal := -1
-	Return retVal
+	return retVal
 	}
 }
 
@@ -3586,7 +3542,7 @@ WinGet, temp, List
 		}
 	}
 Sleep 30
-Return retVal
+return retVal
 }
 
 RnChmWelcome:
@@ -3595,7 +3551,7 @@ RnChmWelcome:
 	RunChm("Welcome")
 	SetTimer, RnChmWelcome, Delete
 	}
-Return
+return
 
 
 
@@ -3675,7 +3631,7 @@ if (!planToChangeTo)
 	VarSetCapacity(oldSchemeGUID, 0)
 	VarSetCapacity(currSchemeGUID, 0)
 	arrPowerPlanNames := ""
-	Return
+	return
 	}
 
 }
@@ -3803,7 +3759,7 @@ strTemp := "", strRetVal := "|"
 if (btchSelPowerIndex)
 {
 	if (!btchPrgPresetSel)
-	Return
+	return
 
 	if (toPreset)
 	{
@@ -3873,8 +3829,8 @@ GuiControl, PrgLnch: Choose, PwrChoice, % btchSelPowerIndex
 
 NoPowerPlan(ByRef btchPowerNames, ByRef btchSelPowerIndex, btchPrgPresetSel)
 {
-msgbox, 8212, No Power Plan, Error: Power Plan has been removed!`n`nReply:`nYes: Restart PrgLnch to refresh it. `nNo: Use Default Plan
-	IfMsgBox, Yes
+retVal := TaskDialog("Power Plans", "Power Plan not detected", , "A power plan has been removed or its name has changed, either through Windows Settings or by another program.", "", "Restart PrgLnch to refresh the list", "Use Default Plan instead")
+	if (retVal == 1)
 	RestartPrgLnch(0)
 	else
 	{
@@ -3931,8 +3887,12 @@ CustomButtons := []
 hwndParent := WinExist("A")
 	if (hwndParent != PrgLnch.Hwnd() && hwndParent != PrgLnchOpt.Hwnd())
 	{
-	MsgBox, 8208, Task Dialog, No parent window for dialog.
-	return 0
+	hwndParent := 0
+	WinActivate, PrgLnch Options
+	WinActivate, PrgLnch
+	hwndParent := WinExist("A")
+		if (!hwndParent)
+		MsgBox, 8192, Task Dialog, Informational: PrgLnch form AWOL:`nNo parent window for dialog.
 	}
 
 	if (!(TDCallback := RegisterCallback("TDCallback", "Fast")))
@@ -4128,7 +4088,7 @@ Gosub FrontendInit
 presetNoTest := 2
 GoSub InitBtchStat
 
-Return
+return
 
 
 InitBtchStat:
@@ -4169,7 +4129,7 @@ else
 Gui, PrgLnchOpt: Show, Hide
 WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 61/80, PrgLnchOpt.Height() * 13/10)
 SplashImage, PrgLnchLoading.jpg, Hide,,,LnchSplash
-Return
+return
 
 CheckVerPrg:
 if (selPrgChoiceTimer != selPrgChoice)
@@ -4192,7 +4152,7 @@ verTemp := PrgVer[selPrgChoice]
 
 	SetTimer, CheckVerPrg, Delete
 }
-Return
+return
 
 
 PrgMinMaxChk:
@@ -4222,7 +4182,7 @@ if (PrgPID) ;test only from config
 	}
 }
 
-Return
+return
 
 PrgPriorityChk:
 Gui, PrgLnchOpt: Submit, Nohide
@@ -4234,12 +4194,12 @@ if (PrgPID) ;test only from config
 (!PrgPriority)? temp := "B": (PrgPriority == 1)? temp := "H": temp := "N"
 Process, priority, %PrgPID%, % temp
 }
-Return
+return
 
 BordlessChk:
 GuiControlGet, temp, PrgLnchOpt: FocusV
 	if (!Instr(temp, "Bordless"))
-	Return
+	return
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 
@@ -4251,20 +4211,20 @@ Tooltip
 	IniProc(selPrgChoice)
 	}
 
-Return
+return
 
 PrgLnchHideChk:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 PrgLnchHide[selPrgChoice] := PrgLnchHd
 IniProc(selPrgChoice)
-Return
+return
 
 resolveShortctChk:
 GuiControlGet, temp, PrgLnchOpt: FocusV
 
 if (temp != "resolveShortct")
-Return
+return
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 ;ChkPrgNames better than txtPrgChoice
@@ -4282,7 +4242,7 @@ strTemp2 := GetPrgLnkVal(strTemp, IniFileShortctSep, 1 ,resolveShortct)
 	{
 	MsgBox, 8208, Resolve shortcut, The shortcut is invalid, please replace it.
 	GuiControl, PrgLnchOpt:, resolveShortct, % PrgResolveShortcut[selPrgChoice]
-	Return
+	return
 	}
 
 PrgLnkInf[selPrgChoice] := strTemp2
@@ -4324,19 +4284,19 @@ PrgCmdLineEnable(selPrgChoice, PrgCmdLine, cmdLinHwnd, PrgResolveShortcut, PrgLn
 
 IniProc(selPrgChoice)
 
-Return
+return
 
 
 PrgLAARn:
 Tooltip
 DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep)
-Return
+return
 
 UpdturlPrgLnchText:
 Tooltip
 GuiControlGet, temp, PrgLnchOpt: FocusV
 if (temp == "MkShortcut" || temp == "CmdLinPrm")
-Return
+return
 Gui, PrgLnchOpt: Submit, Nohide
 
 	if (temp == "UpdturlPrgLnch")
@@ -4364,7 +4324,7 @@ Gui, PrgLnchOpt: Submit, Nohide
 			IniProc(selPrgChoice)
 		}
 	}
-Return
+return
 
 
 CheckDefaultPrg:
@@ -4380,18 +4340,18 @@ else
 defPrgStrng := "None"
 IniWrite, None, %SelIniChoicePath%, Prgs, StartupPrgName
 }
-Return
+return
 
 RegoCheck:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 IniProc(selPrgChoice)
-Return
+return
 
 CmdLinPrmSub:
 GuiControlGet, strTemp, PrgLnchOpt: FocusV
 	if (strTemp != "CmdLinPrm")
-	Return
+	return
 
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
@@ -4440,7 +4400,7 @@ if (strTemp)
 
 PrgCmdLine[selPrgChoice] := strTemp
 IniProc(selPrgChoice)
-Return
+return
 
 
 
@@ -4500,35 +4460,35 @@ ToolTip
 	else
 	MDMF_GetMonStatus(targMonitorNum, 1) ; only works for Vista+
 
-Return
+return
 
 TestMode:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 IniProc(selPrgChoice)
-Return
+return
 ChangeMode:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 IniProc(selPrgChoice)
-Return
+return
 DynamicMode:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 IniProc(selPrgChoice)
-Return
+return
 TmpMode:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 IniProc(selPrgChoice)
-Return
+return
 
 ChgResonSwitchChk:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 PrgChgResonSwitch[selPrgChoice] := ChgResonSwitch
 IniProc(selPrgChoice)
-Return
+return
 
 
 iDevNo:
@@ -4564,7 +4524,7 @@ GuiControlGet, fTemp, PrgLnchOpt:, iDevNum
 	else
 	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
 
-Return
+return
 
 iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, ByRef dispMonNamesNo, ByRef iDevNumArray, ByRef dispMonNames, regoVar, scrWidthArr, scrHeightArr, scrFreqArr)
 {
@@ -4599,7 +4559,7 @@ CheckModes:
 Gui, PrgLnchOpt: Submit, Nohide
 CheckModesFunc(SelIniChoicePath, defPrgStrng, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ResIndexList, ResArray, allModes)
 Tooltip
-Return
+return
 
 CheckModesFunc(SelIniChoicePath, defPrgStrng, PresetPropHwnd, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, ByRef ResIndexList, ByRef ResArray, allModes)
 {
@@ -4625,8 +4585,8 @@ strTemp := substr(ResIndexList, 1, StrLen(ResIndexList) - 1)
 			IniRead, strTemp2, %SelIniChoicePath%, General, MonProbMsg
 				if (!strTemp2)
 				{
-				MsgBox, 8196, Monitor Issue, % "There is a problem connecting to the monitor!`n`nThe list of resolution modes will default to the primary monitor.`nIt's still possible to change the monitor's resolution from any supported mode from the list, and launch Prgs in the monitor defined in the virtual screen, however.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
-					IfMsgBox, No
+				retVal := TaskDialog("Monitors", "Monitor connection issue", , "A monitor returns a bad status, possibly because of an unsupported setting on the physical monitor itself.`nThe list of resolution modes will now default to those of the primary monitor.`nIt's still possible to change the monitor's resolution from any supported mode from the list, and launch Prgs in the monitor defined in the virtual screen, however.", , "Continue with resolution checks")
+					if (retVal < 0)
 					IniWrite, 1, %SelIniChoicePath%, General, MonProbMsg
 				}
 			}
@@ -4711,7 +4671,7 @@ Tooltip
 		else
 		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
 	}
-Return
+return
 
 FindStoredRes(SelIniChoicePath, ResIndexHwnd)
 {
@@ -4737,12 +4697,12 @@ ControlGet, strTemp, List,,, % "ahk_id" ResIndexHwnd
 		IniRead, strTemp, %SelIniChoicePath%, General, ResClashMsg
 		if (!strTemp)
 		{
-		MsgBox, 8196, , % "Mismatch detected in desired resolution data for this monitor! This usually involves differing frequency values appertaining to the same resolution preset.`nExcerpt from MSDN: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list.`n`n`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `n"
-			IfMsgBox, No
+		retVal := TaskDialog("Monitors", "Resolution mismatch issue", , "Mismatch detected in desired resolution data for selected monitor! This usually involves differing frequency values appertaining to the same resolution preset.`nExcerpt from <A HREF=""https://support.microsoft.com/en-us/topic/screen-refresh-rate-in-windows-does-not-apply-the-user-selected-settings-on-monitors-tvs-that-report-specific-tv-compatible-timings-0a7a6a38-6c6a-2aec-debc-5183a76b9e1d"">MS Support</a>: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list.", , "Continue resolution checks")
+			if (retval < 0)
 			IniWrite, 1, %SelIniChoicePath%, General, ResClashMsg
 		}
 	}
-Return stat
+return stat
 }
 SetResDefaults(targMonitorNum, ByRef scrWidthDefArr, ByRef scrHeightDefArr, ByRef scrFreqDefArr, SaveVars := 0)
 {
@@ -4889,7 +4849,7 @@ else
 			{
 				if (txtPrgChoice)
 				{
-					if (temp="Make Shortcut")
+					if (temp == "Make Shortcut")
 					CreateToolTip("Click " . """" . temp . """" . " to save.")
 					else
 					{
@@ -4915,7 +4875,7 @@ else
 
 		selPrgChoice := retVal
 		GuiControlGet, txtPrgChoice, PrgLnchOpt:, PrgChoice ;one of the list items
-		if (selPrgChoice)
+			if (selPrgChoice)
 			{
 			GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 				if (PrgChoiceNames[selPrgChoice])
@@ -4979,7 +4939,7 @@ else
 				}
 
 			}
-		else
+			else
 			{
 				selPrgChoice := 1
 				GuiControl, PrgLnchOpt:, RnPrgLnch, Change Res`.
@@ -5009,7 +4969,7 @@ else
 
 	}
 
-Return
+return
 
 
 MakeShortcut:
@@ -5033,12 +4993,12 @@ if (txtPrgChoice == "")
 	GuiControl, PrgLnchOpt:, PrgChoice, %strPrgChoice%
 	GuiControl, PrgLnchOpt: Choose, PrgChoice, % selPrgChoice + 1
 	MsgBox, 8192, , % "Sorry, a Prg cannot be removed if it is active in Batch!"
-	Return
+	return
 	}
 
-	;SelPrgChoice is last selected
-	MsgBox, 8193, , Remove Shortcut?
-	IfMsgBox, Ok
+;SelPrgChoice is last selected
+retVal := TaskDialog("Shortcuts", "Confirm Removal", , "", "", "Remove Shortcut", "Keep Shortcut")
+	if (retVal == 1)
 	GoSub zeroPrgVars
 	else
 	{
@@ -5056,7 +5016,7 @@ else
 		GuiControl, PrgLnchOpt: Text, PrgChoice,
 		txtPrgChoice := "Prg" . selPrgChoice
 		SetEditCueBanner(PrgChoiceHwnd, "Prg Name too short", 1)
-		Return
+		return
 	}
 
 	if (ChkPrgNames(txtPrgChoice, PrgNo))
@@ -5078,19 +5038,30 @@ else
 		{
 			if (PrgChoicePaths[selPrgChoice])
 			{
-			MsgBox, 8195, Name or Path?, Confirm name change of the Prg (if any) or select a new path?`nIf "No," the entry can be later removed with <DEL>.`n`nReply:`nYes: Confirm Prg name change (Warn like this next time) `nNo: Confirm Prg name change (Recommended: This will not show again)`nCancel: Select a new path (Warn like this next time)`n
-				IfMsgBox, Cancel
-				temp := 0
+			retVal := TaskDialog("Shortcuts", "Prg shortcut: How to change", , "Checking the " . """" . " Do not show this again" . """" . " option is to a better effect for experienced users.`nRemoval of the entry (with <DEL> key)`, later`, is always an alternative to modification.", , "Confirm name change (Recommended)", "Assign a new location for Prg", "Do nothing for now")
+
+				if (abs(retVal == 3))
+				return
+
+				if (retVal < 0)
+				{
+				temp := -retVal
+				IniWrite, %temp%, %SelIniChoicePath%, General, ChangeShortcutMsg
+				}
+				
+				if (temp == 1)
+				{
+				ChgShortcutVar := "Change Shortcut Name"
+				}
 				else
 				{
-				temp := 1
-					IfMsgBox, No
-					{
-					IniWrite, 1, %SelIniChoicePath%, General, ChangeShortcutMsg
-					ChgShortcutVar := "Change Shortcut Name"
-					GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
-					}
+				temp := 0
+				ChgShortcutVar := "Change Shortcut"
 				}
+
+				if (retVal < 0)
+				GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
+
 			}
 			else
 			temp := 0
@@ -5107,7 +5078,7 @@ else
 				if (txtPrgChoice == PrgChoiceNames[A_Index])
 				{
 				MsgBox, 8192, Duplicate Name, A Prg exists with this name already. `nPlease use another name.
-				Return
+				return
 				}
 			}
 		}
@@ -5141,7 +5112,7 @@ else
 		;else cancelled out of FSF dialog: PrgChoicePaths is made blank
 	}
 }
-Return
+return
 
 
 ProcessNewPrg:
@@ -5153,7 +5124,7 @@ FileGetAttrib, temp, % strTemp
 			if (!PrgChoicePaths[selPrgChoice])
 			txtPrgChoice := "Prg" . selPrgChoice
 		MsgBox, 8192, , Unable to use this Prg!
-		Return
+		return
 	}
 
 
@@ -5167,7 +5138,7 @@ FileGetAttrib, temp, % strTemp
 				if (!PrgChoicePaths[selPrgChoice])
 				txtPrgChoice := "Prg" . selPrgChoice
 			MsgBox, 8192, Prg Name, Unable to use this Prg Name!
-			Return
+			return
 		}
 	PrgChoiceNames[selPrgChoice] := strTemp
 	}
@@ -5220,7 +5191,7 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 	MsgBox, 8192, Prg Path, % strTemp2
 	txtPrgChoice := "Prg" . selPrgChoice
 	GoSub zeroPrgVars
-	Return
+	return
 	}
 	else
 	{
@@ -5240,7 +5211,7 @@ strRetVal := GetPrgLnkVal(strTemp, IniFileShortctSep)
 			MsgBox, 8192, No Association, The Prg must have an association before it can be used.
 			txtPrgChoice := "Prg" . selPrgChoice
 			GoSub zeroPrgVars
-			Return
+			return
 			}
 			; else: Forget associations
 		}
@@ -5301,7 +5272,7 @@ PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPr
 	IniWrite, % defPrgStrng, %SelIniChoicePath%, Prgs, StartupPrgName
 	}
 
-Return
+return
 
 
 zeroPrgVars:
@@ -5347,7 +5318,7 @@ zeroPrgVars:
 	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
 
 
-Return
+return
 
 PrgLnchOptGuiDropFiles:
 Gui, PrgLnchOpt: Submit, Nohide
@@ -5368,36 +5339,53 @@ temp := 0
 
 		if (txtPrgChoice == "None")
 		{
+		selPrgChoice := 0 ; selPrgChoice is set to 1
 			Loop, % PrgNo
 			{
-				if (!PrgChoicePaths[A_Index])
+			; First available selPrgChoice slot
+			if (!PrgChoicePaths[A_Index])
 				{
 				selPrgChoice := A_Index
 				break
 				}
 			}
+
+			if (!selPrgChoice) ; Slots are full!
+			{
+			MsgBox, 8192, Shortcut Slots, All the Shortcut Slots are in use!`n`nFrom the Shortcut Slot list, please select an item`nacceptable for replacement, and retry the operation.
+			return
+			}
+
 		temp := 1
 		}
 
 		if (PrgChoicePaths[selPrgChoice])
 		{
-			if (temp)
-			MsgBox, 8195, Prg Replacement, % "Replace the entry numbered " . selPrgChoice . " in the list containing the existing PrgName " . """" . PrgChoiceNames[selPrgChoice] . """" . " with the following file?`n`n" . """" . strTemp . """" . "`n`nYes: Replace both.`nNo: Replace existing Prg, but keep the current Prg Name.`nCancel: Do nothing."
-			else
-			MsgBox, 8195, Prg Replacement, % "Replace existing Prg and PrgName info with the following file?`n`n" . """" . strTemp . """" . "`n`nYes: Replace both.`nNo: Replace existing Prg, but keep the current Prg Name.`nCancel: Do nothing."
-
-			IfMsgBox, Yes
-			SplitPath, strTemp, , , , txtPrgChoice
-			else
+			switch (selPrgChoice)
 			{
-				IfMsgBox, Cancel
-				Return
+			case 2:
+			strTemp2 := "nd"
+			case 3:
+			strTemp2 := "rd"
+			default:
+			strTemp2 := "th"
+			}
+
+		retVal := TaskDialog("Drag'n Drop Prg Replacement", "Replace the " . selPrgChoice . strTemp2 . " item in the Shortcut Slot list`ncontaining the existing PrgName " . """" . PrgChoiceNames[selPrgChoice] . """" . "`nwith the following Prg replacement file?`n" . """" . strTemp . """" . "", , "", "", "Replace selected Prg and Prg Name", "Replace selected Prg, but keep current Prg Name.", "Cancel operation")
+
+			switch (retVal)
+			{
+			case 1:
+			SplitPath, strTemp, , , , txtPrgChoice
+			case 3:
+			return
+			default:
 			}
 		}
 		else
 		SplitPath, strTemp, , , , txtPrgChoice
 GoSub ProcessNewPrg
-Return
+return
 
 
 
@@ -5412,27 +5400,27 @@ testStr := RegExReplace(testStr, "[\\\/:*?""<>|,]", , temp)
 if (CmdLine)
 testStr := RegExReplace(testStr, "\s+", , (!temp)? temp: fTemp)
 
-Return % (temp || fTemp)
+return % (temp || fTemp)
 }
 
 IsRealExecutable(PrgPth)
 {
 SplitPath, PrgPth, , , strTemp
 	if (strTemp == "exe" ) || (strTemp == "com" ) || (strTemp == "scr" )
-	Return 1
+	return 1
 	else
 	{
 		if (InStr(strTemp, "bat") || InStr(strTemp, "cmd") || InStr(strTemp, "pif") || InStr(strTemp, "msc") || InStr(strTemp, "ps1"))
-		Return -1
+		return -1
 		else
-		Return 0
+		return 0
 	}
 }
 
 
 ChkPrgNames(testName, PrgNo, IniBox := "", forDeletion := 0)
 {
-; Returns 1 if testName is a spare, bad or default slot name
+; returns 1 if testName is a spare, bad or default slot name
 
 	If (Inibox)
 	spr := IniBox
@@ -5500,7 +5488,7 @@ strTemp := StrReplace(strPrgChoice, "|", "|", foundpos1)
 	If (strRetVal)
 	MsgBox, 8192, ComboBugFix, % strRetVal
 	if (FileExist("PrgLnch.exe"))
-	Return RestartPrgLnch(0)
+	return RestartPrgLnch(0)
 	}
 
 
@@ -5508,17 +5496,17 @@ strTemp := StrReplace(strPrgChoice, "|", "|", foundpos1)
 	{
 		Loop % PrgNo
 		{
-		if (InStr(strPrgChoice, "|",,, A_Index + 1) == foundpos)
-		{
-		strTemp := Substr(strPrgChoice, 1, foundpos) . "Prg" . A_Index
+			if (InStr(strPrgChoice, "|",,, A_Index + 1) == foundpos)
+			{
+			strTemp := Substr(strPrgChoice, 1, foundpos) . "Prg" . A_Index
 
-		strTemp2 := Substr(strPrgChoice, foundpos + 1)
-		foundpos1 := InStr(strTemp2, "||") ;' yikes already checked! Null terminator removed?
-		if (foundpos1)
-		strTemp2 := "|Prg" . A_Index + 1 . Substr(strTemp2, foundpos1 + 1)
+			strTemp2 := Substr(strPrgChoice, foundpos + 1)
+			foundpos1 := InStr(strTemp2, "||") ;' yikes already checked! Null terminator removed?
+				if (foundpos1)
+				strTemp2 := "|Prg" . A_Index + 1 . Substr(strTemp2, foundpos1 + 1)
 
-		Return strTemp . strTemp2
-		}
+			return strTemp . strTemp2
+			}
 		}
 	}
 	else
@@ -5580,22 +5568,22 @@ LNKFlag(PrgLnkInfArg)
 	{
 	Case "":
 	; Should never get here
-	Return -1
+	return -1
 	Case "|":
 	; Directory lnk
-	Return -1
+	return -1
 	Case "<>":
 	; invalid lnk/file
-	Return -1
+	return -1
 	Case "?":
 	; symbolic lnk
-	Return -1
+	return -1
 	Case "*":
 	; no lnk
-	Return 0
+	return 0
 	Default:
 	; typical valid lnk
-	Return 1
+	return 1
 	}
 }
 
@@ -5630,7 +5618,7 @@ IsaPrgLnk := LNKFlag(strTemp)
 	if (!PrgPath)
 	PrgPath := "BadPath"	
 
-Return %prgPath%
+return %prgPath%
 }
 
 PrgURLEnable(ByRef PrgUrlTest, ByRef UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, ByRef selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, ByRef PrgVer, ByRef PrgVerNew, UpdturlHwnd, IniFileShortctSep, UrlDisableGui := 0)
@@ -5652,7 +5640,7 @@ PrgPth := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, PrgResolveS
 		if (IsaPrgLnk)
 		PrgVer[selPrgChoice] := 0
 	PrgURLGui(PrgUrl, PrgUrlTest, SelPrgChoice, 1)
-	Return
+	return
 	}
 }
 
@@ -5751,25 +5739,25 @@ ChkURLPrgExe(TstUrl)
 strTemp := 0, temp := 0
 ;strTemp := SubStr(PrgUrlTest, InStr(PrgUrlTest, ".",, -1) + 1)
 SplitPath, TstUrl,,, strTemp
-If (IsRealExecutable(TstUrl) > -1)
-Return 0
-else
-{
-
-	if (strTemp == "gz") || (strTemp == "Z") || (strTemp == "bz2") || (strTemp == "lzma") || (strTemp == "xz")
-	{
-	SplitPath, strTemp,,, temp
-	if (temp == "tar")
-	Return 1
-	}
+	if (IsRealExecutable(TstUrl) > -1)
+	return 0
 	else
 	{
-	if (strTemp == "tgz") || (strTemp == "tbz2") || (strTemp == "tlz") || (strTemp == "txz") || (strTemp == "xz") || (strTemp == "7z") || (strTemp == "alz") || (strTemp == "arj") || (strTemp == "cab") || (strTemp == "cfs") ||	(strTemp == "jar") || (strTemp == "lzh") || (strTemp == "lha") || (strTemp == "paq6") || (strTemp == "paq7") || (strTemp == "paq8") || (strTemp == "pea") || (strTemp == "rar") || (strTemp == "paq6") || (strTemp == "sit") || (strTemp == "sitx") || (strTemp == "xar") || (strTemp == "zip") || (strTemp == "zipx") || (strTemp == "zpaq") || (strTemp == "zz")
-	Return 1
-	; There are others: apk arc ba b1 car cpt dar dgc dmg ear ha hki ice kgb partimg pim qda rk sen shk sqx  {uc .uc0 .uc2 .ucn .ur2 .ue2} uha war wim xp3 yz1 zoo
-	}
-Return -1
-} 
+
+		if (strTemp == "gz") || (strTemp == "Z") || (strTemp == "bz2") || (strTemp == "lzma") || (strTemp == "xz")
+		{
+		SplitPath, strTemp,,, temp
+		if (temp == "tar")
+		return 1
+		}
+		else
+		{
+		if (strTemp == "tgz") || (strTemp == "tbz2") || (strTemp == "tlz") || (strTemp == "txz") || (strTemp == "xz") || (strTemp == "7z") || (strTemp == "alz") || (strTemp == "arj") || (strTemp == "cab") || (strTemp == "cfs") ||	(strTemp == "jar") || (strTemp == "lzh") || (strTemp == "lha") || (strTemp == "paq6") || (strTemp == "paq7") || (strTemp == "paq8") || (strTemp == "pea") || (strTemp == "rar") || (strTemp == "paq6") || (strTemp == "sit") || (strTemp == "sitx") || (strTemp == "xar") || (strTemp == "zip") || (strTemp == "zipx") || (strTemp == "zpaq") || (strTemp == "zz")
+		return 1
+		; There are others: apk arc ba b1 car cpt dar dgc dmg ear ha hki ice kgb partimg pim qda rk sen shk sqx  {uc .uc0 .uc2 .ucn .ur2 .ue2} uha war wim xp3 yz1 zoo
+		}
+	return -1
+	} 
 
 }
 
@@ -5825,21 +5813,21 @@ return strPrg
 }
 
 ; https://autohotkey.com/boards/viewtopic.php?t=5959
-Util_VersionCompare(other,local)
+Util_VersionCompare(other, local)
 {
-	ver_other:=StrSplit(other,".")
-	ver_local:=StrSplit(local,".")
+	ver_other := StrSplit(other, ".")
+	ver_local := StrSplit(local, ".")
 	for _index, _num in ver_local
-		if ( (ver_other[_index]+0) > (_num+0) )
+		if ((ver_other[_index]+0) > (_num+0) )
 			return 1
-		else if ( (ver_other[_index]+0) < (_num+0) )
+		else if ((ver_other[_index]+0) < (_num+0) )
 			return 0
 	return 0
 }
 
 TooltipTimer:
 CreateToolTip(tooltipText)
-Return
+return
 
 CreateToolTip(tooltipText)
 {
@@ -5853,7 +5841,7 @@ Static OwnerHwnd := 0
 		if (temp == OwnerHwnd)
 		{
 		OwnerHwnd := 0
-		Return
+		return
 		}
 		else
 		{
@@ -5908,18 +5896,18 @@ RepositionGuiToMouse(IsOptions := 0)
 ;Close properties
 PrgPropertiesClose()
 
-if (IsOptions)
-{
-winTitle := PrgLnchOpt.Title
-w := PrgLnchOpt.Width()
-h := PrgLnchOpt.Height()
-}
-else
-{
-winTitle := PrgLnch.Title
-w := PrgLnch.Width()
-h := PrgLnch.Height()
-}
+	if (IsOptions)
+	{
+	winTitle := PrgLnchOpt.Title
+	w := PrgLnchOpt.Width()
+	h := PrgLnchOpt.Height()
+	}
+	else
+	{
+	winTitle := PrgLnch.Title
+	w := PrgLnch.Width()
+	h := PrgLnch.Height()
+	}
 
 
 strTemp := A_CoordModeMouse
@@ -5927,11 +5915,11 @@ CoordMode, Mouse, Screen
 MouseGetPos, x, y
 CoordMode, Mouse, % strTemp
 
-	if (WinExist("PrgLnch.ahk") or WinExist("ahk_class" . PrgLnch.Title) or WinExist ("ahk_class AutoHotkeyGUI"))
+	if (WinExist("PrgLnch.ahk") or WinExist("ahk_class" . PrgLnch.Title) or WinExist (PrgLnch.ProcAHK))
 	{
 	WinActive(winTitle)
 
-		If (WinExist(winTitle))
+		if (WinExist(winTitle))
 		{
 		w := A_ScreenWidth - w
 		h := A_ScreenHeight - h
@@ -5953,8 +5941,8 @@ CoordMode, Mouse, % strTemp
 		}
 		else
 		{
-		MsgBox, 8208, , % "Problem with Finding the " winTitle " window! Quit PrgLnch?"
-			IfMsgBox, Yes
+		retVal := TaskDialog("Reposition Gui To Mouse", "Problem with locating a Prglnch form", , "Not a critical issue, but a sign that something`nin Windows isn't working for PrgLnch right now", "", "Quit Prglnch", "Do not quit PrgLnch")
+			if (retVal == 1)
 			GoSub PrgLnchButtonQuit_PrgLnch
 		}
 	}
@@ -5965,24 +5953,24 @@ CoordMode, Mouse, % strTemp
 ^!p::
 SetTitleMatchMode, 3
 RepositionGuiToMouse()
-Return
+return
 
 Esc::
 PrgPropertiesClose()
 
-Return
+return
 #IfWinActive
 
 #IfWinActive, PrgLnch Options ahk_class AutoHotkeyGUI
 
 Esc::
 goSub BackToPrgLnch
-Return
+return
 
 ^!p::
 SetTitleMatchMode, 3
 RepositionGuiToMouse(1)
-Return
+return
 
 
 ^z::
@@ -6040,7 +6028,7 @@ GuiControlGet, strTemp, PrgLnchOpt: FocusV
 			}
 		}
 	}
-Return
+return
 
 Del::
 
@@ -6058,7 +6046,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 			CreateToolTip("Click " . """" . "Remove Shortcut" . """" . " or hit Del to confirm.")
 			else
 			CreateToolTip("Click " . """" . "Remove Shortcut" . """" . " or hit Del to remove unexpected data from reference.")
-			Return
+			return
 		}
 		else
 		{
@@ -6114,7 +6102,7 @@ GuiControlGet, temp, PrgLnchOpt:, MkShortcut
 			}
 		} 
 	}
-Return
+return
 #IfWinActive
 
 
@@ -6185,8 +6173,29 @@ if (PrgTermExit <> 2)
 
 	if (strTemp2)
 	{
-		if (MsgOnceTerminate(SelIniChoicePath, strTemp2, PrgTermExit))
-		Return
+		if ((Instr(strTemp2, "`n")) || (Instr(strTemp2, ",")))
+		{
+		temp := "Prgs are"
+		strTemp := "them"
+		}
+		else
+		{
+		temp := "A Prg is"
+		strTemp := "it"
+		}
+
+		if (!PrgTermExit)
+		{
+			PrgTermExit := TaskDialog("Active on Quit", temp . " still running!`n" . strTemp2, , "If Prgs in a Batch Preset are not cancelled on Prglnch Quit, they will be automatically re-assigned to the Preset on PrgLnch rerun.`nWhen the " . """" . " Do not show this again" . """" . " option is checked, this dialog can only be restored by manually editing the LnchPad Slot ini file. This tends to happen more when the " . """" . "Close" . """" . " option is clicked", , "Close " . strTemp, "Do not close " . strTemp . " (Recommended)")
+				if (PrgTermExit < 0)
+				{
+				PrgTermExit := -PrgTermExit
+				IniWrite, %PrgTermExit%, %SelIniChoicePath%, Prgs, PrgTermExit
+				}
+		}
+
+		if (PrgTermExit == 2)
+		return
 	}
 
 }
@@ -6330,7 +6339,7 @@ ExitApp
 ^!p::
 ; This repositions the top left of the GUI to mouse cursor
 RepositionGuiToMouse()
-Return
+return
 
 ^z::
 
@@ -6379,7 +6388,7 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 			}
 		}
 	}
-Return
+return
 
 Del::
 GuiControlGet, strTemp, PrgLnch: FocusV
@@ -6387,7 +6396,7 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 	if (strTemp == "PresetName")
 	{
 		if (ffTemp == 1)
-		Return
+		return
 	GuiControlGet, UndoTxt,, %PresetNameHwnd%
 	GuiControl, PrgLnch:, PresetName,
 	;PresetNameSub automatically invoked
@@ -6425,7 +6434,7 @@ GuiControlGet, strTemp, PrgLnch: FocusV
 			}
 		}
 	}
-Return
+return
 #IfWinActive
 
 SetStartupname(SelIniChoicePath, ByRef defPrgStrng, PrgChoiceNames, selPrgChoice, newName := 0)
@@ -6567,22 +6576,22 @@ if ((presetNoTest && strTemp == "&Run Batch") || (!presetNoTest && temp == "&Tes
 		if (strRetVal == "PrgLnch")
 		{
 		MsgBox, 8192, , Cannot launch this Prg!
-		Return
+		return
 		}
 		if (strRetVal == "BadPath")
-		Return
+		return
 
 		IniRead, fTemp, %SelIniChoicePath%, General, PrgAlreadyMsg
 		if (!fTemp)
 		{
-		MsgBox, 8195, , One or more Prgs scheduled for start matches a process running with `nthe same name. Might be an issue depending on instance requisites.`n`"%strRetVal%`"`n`nReply:`nYes: Continue (Warn like this next time) `nNo: Continue (This will not show again) `nCancel: Do nothing.
-			IfMsgBox, Cancel
-			Return
-			else
+		retVal := TaskDialog("Prg Processes", "A Prg set to be launched is already active", , "The name of one or more Prgs scheduled for start is matching the name at least one active process. This is acceptable when Prg can run in more than one instance, otherwise it won't launch on continuation.", , "Continue launching", "Abort the launch")
+			if (retVal < 0)
 			{
-				IfMsgBox, No
-				IniWrite, 1, %SelIniChoicePath%, General, PrgAlreadyMsg
+			retVal := -retVal
+			IniWrite, 1, %SelIniChoicePath%, General, PrgAlreadyMsg
 			}
+			if (retVal == 2)
+			return
 		}
 
 	}
@@ -6784,7 +6793,7 @@ Thread, NoTimers, false
 		GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 		}
 	}
-Return
+return
 
 
 LnchPrgOff(SelIniChoicePath, prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, dispMonNamesNo, regoVar, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, btchPowerName)
@@ -6804,8 +6813,8 @@ if (PrgLnch.Monitor != PrgLnchMon)
 	IniRead, fTemp, %SelIniChoicePath%, General, LnchPrgMonWarn
 	if (!fTemp)
 	{
-	MsgBox, 8196, PrgLnch Moved, PrgLnch has been moved to another monitor %PrgLnchMon%.`nAll messages will be directed there.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `n
-		IfMsgBox, No
+	retVal := TaskDialog("PrgLnch Position", "PrgLnch was moved to another monitor", , "PrgLnch was moved to monitor #" . PrgLnchMon . " either by mouse or another process. All PrgLnch generated messages will be directed there.", , "Continue the launch")
+		if (retVal < 0)
 		IniWrite, 1, %SelIniChoicePath%, General, LnchPrgMonWarn
 
 	WinMover(, , , , "PrgLaunching.jpg")
@@ -6851,7 +6860,7 @@ if (lnchPrgIndex > 0) ;Running
 				}
 			}
 			else
-			Return "Association Removed.`nThe Prg must have an association before it can be used."
+			return "Association Removed.`nThe Prg must have an association before it can be used."
 		
 		}
 	}
@@ -6861,7 +6870,7 @@ if (lnchPrgIndex > 0) ;Running
 	; https://www.autohotkey.com/boards/viewtopic.php?f=76&t=31269
 		if (A_Is64bitOS && A_PtrSize == 4)
 		if (!(disableRedirect := DllCall("Wow64DisableWow64FsRedirection", "Ptr*", oldRedirectionValue)))
-		Return SelIniChoicePath . " does not exist and there is a redirection error!"
+		return SelIniChoicePath . " does not exist and there is a redirection error!"
 	sleep 20
 	}
 
@@ -6877,7 +6886,7 @@ if (lnchPrgIndex > 0) ;Running
 			{
 				if (disableRedirect)
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-			Return % strRetVal
+			return % strRetVal
 			}
 		}
 
@@ -6905,29 +6914,31 @@ if (lnchPrgIndex > 0) ;Running
 	if (targMonitorNum == PrgLnchMon)
 	{
 		if (DefResNoMatchRes(SelIniChoicePath) < 0)
-		Return "Cancelled!"
+		return "Cancelled!"
 
 	;WinHide ahk_class Shell_TrayWnd ;Necessary?
 	if (!Instr(PrgLnkInflnchPrgIndex, "|") && !Instr(PrgLnkInflnchPrgIndex, IniFileShortctSep))
 	{
 
-		if (PrgLnchOpt.scrWidth + 120 < PrgLnchOpt.scrWidthDef) ; 120 pixels might be enough
+		if (PrgLnchOpt.scrWidth + 180 < PrgLnchOpt.scrWidthDef) ; 120 pixels might be enough
 			{
 			IniRead, fTemp, %SelIniChoicePath%, General, LoseGuiChangeResWrn
 				if (!fTemp)
 				{
-				MsgBox, 8195, , In the unlikely situation of the PrgLnch Gui relocating `noff the screen after switching to lower resolutions, `nuse <CTRL-Alt-P> to return the Gui to focus.`n`nReply:`nYes: Continue (Warn like this next time)`nNo: Continue (This will not show again) `nCancel: Do nothing.
-					IfMsgBox, No
-					IniWrite, 1, %SelIniChoicePath%, General, LoseGuiChangeResWrn
-					else
+				retVal := TaskDialog("Switching to lower resolution", "Shortcut key for PrgLnch Positioning", " Click " . """" . "See details" . """" . " on <CTRL-Alt-P> before continuing", "In the rare case of the PrgLnch GUI relocating off screen`nafter switching to a lower screen resolution, the keyboard`nshortcut, <CTRL-Alt-P> returns PrgLnch to focus", , "Continue launch (Recommended)", "Cancel launch")
+					if (retVal < 0)
 					{
-						IfMsgBox, Cancel
-						{
-							if (disableRedirect)
-							DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-						Return "Cancelled!"
-						}
+					retVal := -retVal
+					IniWrite, 1, %SelIniChoicePath%, General, LoseGuiChangeResWrn
 					}
+
+					if (retVal == 2)
+					{
+						if (disableRedirect)
+						DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+					return "Cancelled!"
+					}
+
 				WinMover(, , , , "PrgLaunching.jpg")
 				}
 			}
@@ -6941,7 +6952,7 @@ if (lnchPrgIndex > 0) ;Running
 				{
 					if (disableRedirect)
 					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-				Return "Cancelled!"
+				return "Cancelled!"
 				}
 				else
 				{
@@ -6962,7 +6973,7 @@ if (lnchPrgIndex > 0) ;Running
 			{
 				if (disableRedirect) ; doubt it for DOSBox- just to be sure
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-			Return "No Game selected!"
+			return "No Game selected!"
 			}
 		}
 
@@ -6985,7 +6996,7 @@ if (lnchPrgIndex > 0) ;Running
 			outStr := PrgNames[lnchPrgIndex] . " cannot launch with error " . A_LastError . ".`nIs it a system file, or does it have special permissions?"
 				if (disableRedirect)
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-			Return outStr
+			return outStr
 			}
 			else
 			msgbox, 8196 ,Run Elevated?, % PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nIt might be possible for PrgLnch to run it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
@@ -6994,9 +7005,9 @@ if (lnchPrgIndex > 0) ;Running
 			DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 
 			IfMsgBox, Yes
-			Return RestartPrgLnch(1)
+			return RestartPrgLnch(1)
 			else
-			Return "Prg could not be run with the current credentials."
+			return "Prg could not be run with the current credentials."
 		;Try elevation
 		}
 		else
@@ -7143,7 +7154,7 @@ if (lnchPrgIndex > 0) ;Running
 				{
 					if (disableRedirect)
 					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-				Return "Cancelled!"
+				return "Cancelled!"
 				}
 				else
 				{
@@ -7161,7 +7172,7 @@ if (lnchPrgIndex > 0) ;Running
 			{
 				if (disableRedirect) ; doubt it for DOSBox- just to be sure
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-			Return "No Game selected!"
+			return "No Game selected!"
 			}
 		}
 ;try
@@ -7182,7 +7193,7 @@ if (lnchPrgIndex > 0) ;Running
 				outStr := PrgNames[lnchPrgIndex] . " cannot launch with error " . A_LastError . ".`nIs it a system file, or does it have special permissions?"
 					if (disableRedirect)
 					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-				Return outStr 
+				return outStr 
 				}
 				else
 				msgbox, 8196 ,Run Elevated?, % PrgNames[lnchPrgIndex] " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nIt might be possible for PrgLnch to run it as Admin:`n`nYes: Attempt to restart PrgLnch as Admin.`nNo: Do not restart PrgLnch.`n"
@@ -7191,9 +7202,9 @@ if (lnchPrgIndex > 0) ;Running
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 
 				IfMsgBox, Yes
-				Return RestartPrgLnch(1)
+				return RestartPrgLnch(1)
 				else
-				Return "Prg could not be run with the current credentials."
+				return "Prg could not be run with the current credentials."
 			;Try elevation
 			}
 			else
@@ -7329,7 +7340,7 @@ if (lnchPrgIndex > 0) ;Running
 	DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 	; Path links etc cannot be cancelled as they do not return a PID:
 		if (InStr(PrgLnkInflnchPrgIndex, "|", false))
-		Return "|"
+		return "|"
 
 	;pillarboxing see https://msdn.microsoft.com/en-us/library/windows/desktop/bb530115(v=vs.85).aspx
 	;showhide taskbar
@@ -7361,14 +7372,14 @@ else
 		if ((targMonitorNum != PrgLnchMon) || tmp := DefResNoMatchRes(SelIniChoicePath))
 		{
 			if (!tmp)
-			Return "Failed!"
+			return "Failed!"
 			if (tmp < 0)
-			Return "Cancelled!"
+			return "Cancelled!"
 
 			strRetVal := ChangeResolution(dispMonNames, regoVar, targMonitorNum)
 
 			if (strRetVal)
-			Return % "Requested resolution change did not work. Reason: `n" strRetVal
+			return % "Requested resolution change did not work. Reason: `n" strRetVal
 
 		}
 		
@@ -7448,7 +7459,7 @@ else
 	}
 }
 
-Return 0
+return 0
 }
 
 
@@ -7506,7 +7517,7 @@ if (InitDOSBoxGame)
 	FileGetVersion, DOSBoxVer, % PrgPathNoCmdLine
 
 		if (ErrorLevel)
-		Return
+		return
 
 	temp := Instr(DOSBoxVer, ".0", , strLen(DOSBoxVer) - 1)
 		if (temp)
@@ -7557,10 +7568,10 @@ if (InitDOSBoxGame)
 		{
 		FileSelectFolder, gameDir, % "*" . A_Desktop, 4, Select Folder containing the DOS game
 			if (ErrorLevel)
-			Return
+			return
 		}
 	}
-Return gameDir
+return gameDir
 }
 
 FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, ByRef PrgPID, ByRef PrgListPID)
@@ -7629,7 +7640,7 @@ If (WinActive(PrgLnch.Title) || WinActive(PrgLnchOpt.Title))
 }
 else
 SetTimer, WatchSwitchBack, -1000
-Return
+return
 
 WatchSwitchOut:
 
@@ -7686,7 +7697,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				batchActive := 0
 				CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, regoVar, waitBreak, 1)
 					if (!PrgPID)
-					Return
+					return
 				}
 		}
 		else
@@ -7696,7 +7707,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			{
 			PrgPID := 0
 			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, regoVar, waitBreak)
-			Return
+			return
 			}
 		}
 	}
@@ -7711,7 +7722,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			PrgPID := 0
 			CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, regoVar, waitBreak)
 				if (!batchActive)
-				Return
+				return
 			}
 		}
 		else
@@ -7735,11 +7746,11 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				{
 				batchActive := 0
 				CleanupPID(SelIniChoicePath, currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, PrgNo, PrgPIDMast, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, regoVar, waitBreak, 1)
-				Return
+				return
 				}
 			}
 			else
-			Return
+			return
 		}
 	}
 
@@ -7773,7 +7784,7 @@ If (WinWaiter(presetNoTest, PrgLnch.Title, PrgLnchOpt.Title, waitBreak))
 else
 SetTimer, WatchSwitchOut, -1000
 
-Return
+return
 
 WinWaiter(presetNoTest, PrgLnchText := "", PrgLnchOptText := "", waitBreak := 0, timeOut:= 0)
 {
@@ -7983,7 +7994,7 @@ hIcon := DllCall("LoadImage", "uint", 0, "str", IconFile, "uint", 1, "int", 0, "
 	if (!hIcon && A_IsCompiled)
 	{
 	MsgBox, 8192, Icon File, Icon file missing or invalid!
-	Return
+	return
 	}
 ;hIcon := Format("0x{:x}", hIcon + 0) : ; hIcon does not want hex formatting for ahk_id...
 SendMessage, %WM_SETICON%, 0, %hIcon%,, % "ahk_id " . PrgLnchOpt.Hwnd()
@@ -8046,7 +8057,7 @@ if (strRetVal)
 CreateToolTip("Checking Prg Paths:`n" . strRetVal)
 
 
-Return strRetVal
+return strRetVal
 }
 FindMatchingPID(lnchStat, currBatchNo, PrgListPIDbtchPrgPresetSel, PrgPID)
 {
@@ -8057,17 +8068,17 @@ FindMatchingPID(lnchStat, currBatchNo, PrgListPIDbtchPrgPresetSel, PrgPID)
 	if (lnchStat < 0)
 	{
 		if (temp == PrgPID)
-		Return -1
+		return -1
 	}
 	else
 	{
 		loop % currBatchNo
 		{
 			if (temp == PrgListPIDbtchPrgPresetSel[A_Index])
-			Return A_Index
+			return A_Index
 		}
 	}
-Return 0
+return 0
 }
 
 KillPrg(poorPID)
@@ -8109,7 +8120,7 @@ strRetVal := SubStr(strTemp, InStr(strTemp, "\",, -1) + 1)
 	if (!strRetVal)
 	MsgBox, 8192, ,Invalid path with %strTemp%!`nUnable to continue process check.
 
-Return strRetVal
+return strRetVal
 }
 
 ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgChoicePaths, IniFileShortctSep, btchRun := 0, multiInst := 0)
@@ -8125,9 +8136,9 @@ loop % currBatchNo
 
 	temp := InStr(PrgChoicePaths, ".lnk", false, strLen(PrgChoicePaths) - 4)
 	if (InStr(strTemp, "PrgLnch.exe") || InStr(strTemp, "BadPath"))
-	Return "PrgLnch"
+	return "PrgLnch"
     if (!(strTemp := GetProcFromPath(strTemp, temp)))
-	Return "BadPath"
+	return "BadPath"
 	strTemp2 := ""
 	; Does not work for lnk files. "Select *" means full paths and names and commandlines!
 		for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" . strComputer . "\root\cimv2").ExecQuery("Select Name from Win32_Process")
@@ -8160,10 +8171,10 @@ else
 	strTemp := ExtractPrgPath(temp, PrgChoicePaths, 0, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)
 
 	if (InStr(strTemp, "PrgLnch.exe") || InStr(strTemp, "BadPath"))
-	Return "PrgLnch"
+	return "PrgLnch"
 
     if (!(strTemp := GetProcFromPath(strTemp, strTemp2)))
-	Return "BadPath"
+	return "BadPath"
 	strTemp2 := ""
 	for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" . strComputer . "\root\cimv2").ExecQuery("Select Name from Win32_Process")
 	{
@@ -8178,7 +8189,7 @@ else
 	}
 }
 
-Return duplist
+return duplist
 }
 
 ChkBatchActivePrgs(maxBatchPrgs, PrgBatchIniA_Index, ByRef PrgListPID)
@@ -8234,14 +8245,14 @@ if (oldSelIniChoicePath)
 	}
 ; Not using ChkExistingProcess so not absolutely water-tight
 retVal := 1
-Return retVal
+return retVal
 }
 else
 {
 
 	IniRead, WarnAlreadyRunning, %SelIniChoicePath%, General, WarnAlreadyRunning
 		if (WarnAlreadyRunning == 2)
-		Return retVal
+		return retVal
 
 	Loop % PrgNo
 	{
@@ -8281,7 +8292,7 @@ else
 		IfMsgBox, Cancel
 		IniWrite, 2, %SelIniChoicePath%, General, WarnAlreadyRunning
 
-		Return retVal
+		return retVal
 		}
 	}
 }
@@ -8311,7 +8322,7 @@ foundpos := 0
 
 
 
-Return retVal
+return retVal
 }
 
 GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, ByRef primaryMon, fromMouse := 0)
@@ -8327,7 +8338,7 @@ hWnd := PrgLnchOpt.Hwnd()
 	{
 	MsgBox, 8192, , % "Cannot get handle of Script! Error: " A_LastError
 	VarSetCapacity(monitorInfo, 0)
-	Return -1
+	return -1
 	}
 	;winHandle := WinExist("A") ; LastWindow: The PrgLnch Window if clicked on
 
@@ -8601,7 +8612,7 @@ ParseEnvVars(strTemp)
 
 	}
 
-Return strTemp
+return strTemp
 }
 
 WorkingDirectory(strTemp, SetNow := 0)
@@ -8636,15 +8647,15 @@ retVal := ErrorLevel
 	}
 	; 0 success
 	if (retVal)
-	Return "An error of " retVal " occurred while reading the path for:`n""" strTemp2 . """"
+	return "An error of " retVal " occurred while reading the path for:`n""" strTemp2 . """"
 	else
-	Return ""
+	return ""
 }
 /*
 ===============================================================================
 Function:   wp_IsResizable
     Determine if we should attempt to resize the last found window.
-Returns:
+returns:
     True or False
      
 Author(s):
@@ -8779,10 +8790,10 @@ WinGet, S, Style, ahk_pid%PrgPID%
 	GuiControl, PrgLnchOpt:, Bordless, 0
 	GuiControl, PrgLnchOpt: Text, Bordless, Apply Borderless
 		if (PrgStyleTmp)
-		Return 1
+		return 1
 		else
 		GuiControl, PrgLnchOpt: Disable, Bordless
-	Return 0
+	return 0
 	}
 
 
@@ -8811,11 +8822,11 @@ WinGet, S, Style, ahk_pid%PrgPID%
 		if (!PrgPos[3])
 		PrgPos[1] := x, PrgPos[2] := y, PrgPos[3] := w, PrgPos[4] := h
 	WinMove, ahk_pid%PrgPID%,, % PrgPos[1], % PrgPos[2], % PrgPos[3], % PrgPos[4]
-	; Return to original position & maximize if required
+	; return to original position & maximize if required
 		if (PrgMinMaxVar)
 		WinMaximize, ahk_pid%PrgPID%
 	}
-Return 0
+return 0
 }
 
 
@@ -9074,7 +9085,7 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 	VarSetCapacity(Device_Mode, 0)
 	}
-	Return retVal
+	return retVal
 }
 
 
@@ -9204,7 +9215,7 @@ Static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
 	}
 
 
-Return strRetVal
+return strRetVal
 }
 
 FindResMatch(iModeCt, ResArray)
@@ -9213,10 +9224,10 @@ i := 0
 While (PrgLnchOpt.scrWidthDef == ResArray[iModeCt - i, 1])
 {
 	if (PrgLnchOpt.scrHeightDef == ResArray[iModeCt - i, 2] && PrgLnchOpt.scrFreqDef == ResArray[iModeCt - i, 3])
-	Return 1
+	return 1
 i++
 }
-Return 0
+return 0
 }
 
 
@@ -9275,7 +9286,7 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 				PrgLnchOpt.scrWidthDef := scrWidth
 				PrgLnchOpt.scrHeightDef := scrHeight
 				PrgLnchOpt.scrFreqDef := scrFreq
-				Return Strng
+				return Strng
 				}
 			ResList .= Strng
 			scrHeightlast := scrHeight
@@ -9306,7 +9317,7 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 					PrgLnchOpt.scrWidthDef := scrWidth
 					PrgLnchOpt.scrHeightDef := scrHeight
 					PrgLnchOpt.scrFreqDef := scrFreq
-					Return Strng
+					return Strng
 				}
 				else
 				{
@@ -9316,7 +9327,7 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 		}
 		iModeval += 1
 	}
-Return ResList
+return ResList
 }
 
 DefResNoMatchRes(SelIniChoicePath)
@@ -9327,15 +9338,15 @@ if (PrgLnchOpt.scrWidth == PrgLnchOpt.scrWidthDef && PrgLnchOpt.scrHeight == Prg
 {
 
 if (!(PrgLnchOpt.Fmode()) && !(PrgLnchOpt.DynamicMode())) ;always change
-Return 1
+return 1
 
 IniRead, defResmsg, %SelIniChoicePath%, General, DefResmsg
 	if (defResmsg)
 	{
 		if (defResmsg == 1)
-		Return 0
+		return 0
 		else
-		Return 1
+		return 1
 	}
 	else
 	{
@@ -9344,22 +9355,22 @@ IniRead, defResmsg, %SelIniChoicePath%, General, DefResmsg
 		IfMsgBox, No
 		{
 		IniWrite, 1, %SelIniChoicePath%, General, defResmsg
-		Return 0
+		return 0
 		}
 		else
 		{
 			ifMsgBox, Yes
 			{
 			IniWrite, 2, %SelIniChoicePath%, General, defResmsg
-			Return 1
+			return 1
 			}
 			else
-			Return -1
+			return -1
 		}
 	}
 }
 else
-Return 1
+return 1
 }
 
 
@@ -9504,7 +9515,7 @@ if (Monitors.Count == Monitors.targetMonitorNum)
 return False ;No more iterations required
 }
 else
-Return True
+return True
 }
 
 
@@ -9591,7 +9602,7 @@ GuiControlGet temp, PrgLnchOpt:, % A_GuiControl
 if (temp="&Update Prg")
 {
 	SetTimer, NewThreadforDownload, 200
-	Return
+	return
 }
 else ;interrupted download but wish to continue
 {
@@ -9604,14 +9615,14 @@ else ;interrupted download but wish to continue
 		{
 			MsgBox, 8193, , The URL doesn't appear valid. Use it?
 			IfMsgBox, Cancel
-			Return
+			return
 		}
 		UrlPrgIsCompressed := ChkURLPrgExe(PrgUrlTest)
 		if (UrlPrgIsCompressed < 0)
 		{
 			MsgBox, 8193, , The URL doesn't appear to have an extension for a compressed or executable file.`nUse it?
 			IfMsgBox, Cancel
-			Return
+			return
 		}
 
 		GuiControl, PrgLnchOpt:, UpdtPrgLnch, % "&Update Prg"
@@ -9627,18 +9638,18 @@ else ;interrupted download but wish to continue
 			IfMsgBox, OK
 			{
 				updateStatus := -1
-				Return
+				return
 			}
 			IfMsgBox, Timeout
 			{
 				updateStatus := -1
-				Return	; i.e. Assume "OK" if it timed out
+				return	; i.e. Assume "OK" if it timed out
 			}
 		; Otherwise, continue:
 		}
 	}
 }
-Return
+return
 
 
 NewThreadforDownload: ;Timer!
@@ -9747,7 +9758,7 @@ NewThreadforDownload: ;Timer!
 	updateStatus := 1
 	SetTimer, NewThreadforDownload, Off
 	Sleep, 60 ;Do events
-Return
+return
 
 
 
@@ -9768,7 +9779,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 			else
 			{
 			updateStatus := -2
-			Return
+			return
 			}
 
 			SplitPath, temp, , strTemp
@@ -9787,7 +9798,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 						IfMsgBox, Cancel
 						IniWrite, 1 , %SelIniChoicePath%, General, WinRtDirWrn
 					updateStatus := -2
-					Return
+					return
 					}
 				}
 			}
@@ -9803,7 +9814,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 		MsgBox, 8192, ,Wrong file header, or file not found!
 		updateStatus := -2
 		WebRequest := ""
-		Return
+		return
 		}
 
 	;Check if the user wants a progressbar
@@ -9868,7 +9879,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 		updateStatus := -3
 		SetTimer, __UpdateProgressBar, Delete
 		WebRequest := ""
-		Return
+		return
 		}
 
 	GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Cancel (Esc)
@@ -9887,7 +9898,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 		GuiControl, PrgLnchOpt: Hide, UpdtPrgLnch
 		GuiControl, PrgLnchOpt: , UpdtPrgLnch, &Update Prg
 		WebRequest := ""
-		Return
+		return
 		}
 	;Remove the timer and the progressbar because the download has finished
 	GuiControl, PrgLnchOpt: Hide, UpdtPrgLnch
@@ -9896,7 +9907,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 	Gui, Progrezz: Hide
 	SetTimer, __UpdateProgressBar, Delete
 	WebRequest := ""
-	Return
+	return
 
 
 
@@ -9909,7 +9920,7 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 	else
 	{
 	;Get the current filesize and tick
-	CurrentSize := FileOpen(SaveFileAs, "r").Length ;FileGetSize wouldn't Return reliable results
+	CurrentSize := FileOpen(SaveFileAs, "r").Length ;FileGetSize wouldn't return reliable results
 	CurrentSizeTick := A_TickCount
 	;Calculate the downloadspeed
 	Speed := Round((CurrentSize/1024-LastSize/1024)/((CurrentSizeTick-LastSizeTick)/1000)) . " kB/s"
@@ -9924,14 +9935,14 @@ DownloadFile(SelIniChoicePath, UrlToFile, ByRef SaveFileAs, ByRef updateStatus)
 	GuiControl, Progrezz:, progressVar, %PercentDone%
 	GuiControl, Progrezz:, progressText, Downloading %SaveFileAs% (%PercentDone%`%) at (%Speed%) speed
 
-	Return
+	return
 }
 
 
 ; Modified by GeekDude from http://goo.gl/0a0iJq
 LC_UrlEncode(Url)
 { ; keep ":/;?@,&=+$#."
-	Return LC_UriEncode(Url, "[0-9a-zA-Z:/;?@,&=+$#.]")
+	return LC_UriEncode(Url, "[0-9a-zA-Z:/;?@,&=+$#.]")
 }
 LC_UriEncode(Uri, RE="[0-9A-Za-z]")
 {
@@ -9941,11 +9952,11 @@ LC_UriEncode(Uri, RE="[0-9A-Za-z]")
 
 	Res .= (Chr:=Chr(Code)) ~= RE ? Chr : Format("%{:02X}", Code)
 	VarSetCapacity(Var, 0)
-	Return, Res
+	return, Res
 }
 LC_UrlDecode(url)
 {
-	Return LC_UriDecode(url)
+	return LC_UriDecode(url)
 }
 LC_UriDecode(Uri)
 {
@@ -9968,7 +9979,7 @@ LC_UriDecode(Uri)
 		Pos += StrLen(Decoded)+1
 		VarSetCapacity(Var, 0)
 	}
-	Return, Uri
+	return, Uri
 }
 GetPrgVersion(currPrgUrl, ByRef PrgVerNew := 0)
 {
@@ -9993,13 +10004,13 @@ req.SetTimeouts(1000,1000,1000,1000)
 	req.Send()
 	req.WaitForResponse()
 	PrgVerNew := req.ResponseText
-	;version is never going to exceed 1000 bytes, so Returns junk if version.txt not found
+	;version is never going to exceed 1000 bytes, so returns junk if version.txt not found
 
 	if (!PrgVerNew || StrLen(PrgVerNew)>1000)
 	{
 	PrgVerNew := 0
 	MsgBox, 4112,, % "version.txt not at " verLoctmp
-	Return 1
+	return 1
 	}
 	}
 	Catch err ;http://stackoverflow.com/questions/32616959/winhttprequest-timeouts
@@ -10013,10 +10024,10 @@ req.SetTimeouts(1000,1000,1000,1000)
 		}
 	DoVersionErrorMessage(Results, verLoctmp)
 
-	Return 1
+	return 1
 	}
 
-	Return 0
+	return 0
 }
 
 DoVersionErrorMessage(Results, verLoctmp)
@@ -10100,9 +10111,9 @@ SetEditCueBanner(HWND, Cue, IsCombo := 0)
 Static EM_SETCUEBANNER := (0x1500 + 1)
 Static CB_SETCUEBANNER := (0x1700 + 3)
 if (IsCombo)
-Return DllCall("User32.dll\SendMessageW", "Ptr", HWND, "Uint", CB_SETCUEBANNER, "Ptr", True, "WStr", Cue)
+return DllCall("User32.dll\SendMessageW", "Ptr", HWND, "Uint", CB_SETCUEBANNER, "Ptr", True, "WStr", Cue)
 else
-Return DllCall("User32.dll\SendMessageW", "Ptr", HWND, "Uint", EM_SETCUEBANNER, "Ptr", True, "WStr", Cue)
+return DllCall("User32.dll\SendMessageW", "Ptr", HWND, "Uint", EM_SETCUEBANNER, "Ptr", True, "WStr", Cue)
 }
 
 MakeLong(LoWord, HiWord) ; courtesy Chris
@@ -10141,10 +10152,10 @@ IMAGE_FILE_UP_SYSTEM_ONLY := 0x4000 ; What's an UP machine?
 IMAGE_FILE_BYTES_REVERSED_HI := 0x8000 ;obsolete
 
 if (!(exeStr := ExtractPrgPath(selPrgChoice, PrgChoicePaths, 0, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)))
-Return
+return
 
 	if (!fileExist(exeStr) || InStr(exeStr, "BadPath", True, 1, 7) || (!PrgResolveShortcut[selPrgChoice] && (IsaPrgLnk == 1)) || (IsaPrgLnk == -1) || (IsRealExecutable(exeStr) == -1))
-	Return
+	return
 	else
 	exeStr := AssocQueryApp(exeStr)
 
@@ -10193,7 +10204,7 @@ if (e_magic == IMAGE_DOS_SIGNATURE)
 				else
 				temp := 0
 			exeStr.Close()
-			Return temp
+			return temp
 			}
 
 			else
@@ -10267,7 +10278,7 @@ if (e_magic == IMAGE_DOS_SIGNATURE)
 		sleep 20
 			if (!temp && FileExist(exeStrName))
 			FileDelete, %exeStrName%
-		Return 0
+		return 0
 		}
 	}
 	exeStr.Close()
@@ -10286,9 +10297,9 @@ else
 		}
 	}
 	else
-	Return 1 ;Optimistically
+	return 1 ;Optimistically
 }
-Return 0
+return 0
 }
 ; SeekProc: Seek to absolute offset and read a number of the specified type.
 SeekProc(stream, offset, type, action)
@@ -10777,7 +10788,7 @@ if (!FileExistSelIniChoicePath)
 			if (c="/*")
 			{
 				MsgBox, 8192, , % "Can't handle " c " if not eof!"
-				Return -1
+				return -1
 			}
 
 
@@ -11386,7 +11397,7 @@ MsgBox, 8192, , Ini file will be converted to version 2.x.`nMost settings will b
 	reWriteIni := 0
 	MsgBox, 8208, Ini File Delete, Critical error deleting file! `nSpecifically: %spr%
 	}
-	Return reWriteIni
+	return reWriteIni
 }
 IniSpaceCleaner(IniFile, oldVerChg := 0)
 {
@@ -11403,7 +11414,7 @@ try
 		strRetVal := StrReplace(strRetVal, "NavShortcut", "ResShortcut")
 
 		if (InStr(strRetVal, "LoseGuiChangeResWrn"))
-		Return
+		return
 		else
 		strRetVal := StrReplace(strRetVal, "ResMode=", "LoseGuiChangeResWrn= `nPrgAlreadyLaunchedMsg= `nChangeShortcutMsg= `nResMode= ")
 	}
@@ -11826,7 +11837,7 @@ CRC32(ByRef Buffer, Bytes=0, Start=-1) {
 	VarSetCapacity(CRC32_Init, 0)
 	VarSetCapacity(CRC32, 0)
 	VarSetCapacity(CRC32LookupTable, 0)
-	Return retVal 
+	return retVal 
 }
 
 MCode(ByRef code, hex)
@@ -11880,7 +11891,7 @@ strTemp := % ((A_IsCompiled)? """": """ """) . strTemp . """ """ . chgPreset . "
 }
 
 strTemp2 := (AsAdmin)? "*RunAs ": ""
-full_command_line := DllCall("GetCommandLine", "str") ; no Parms: "str" is Cdecl ReturnType
+full_command_line := DllCall("GetCommandLine", "str") ; no Parms: "str" is Cdecl returnType
 
 	; Is this condition absolutely necessary here?
 	if (!RegExMatch(full_command_line, " /restart(?!\S)") || chgPreset)
@@ -11908,10 +11919,10 @@ full_command_line := DllCall("GetCommandLine", "str") ; no Parms: "str" is Cdecl
 	strTemp2 := % "PrgLnch could not relaunch, as it has already restarted with this command line:`n" full_command_line
 	Thread, NoTimers, false
 	if (AsAdmin)
-	Return %strTemp2%
+	return %strTemp2%
 	else
 	{
 	MsgBox, 8192, ReLaunch, % strTemp2
-	Return 1
+	return 1
 	}
 }
