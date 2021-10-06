@@ -37,7 +37,6 @@ ExitApp
 }
 
 
-
 PrgLnchPID := DllCall("GetCurrentProcessId")
 Process, priority, %PrgLnchPID%, A
 ;Issues:
@@ -504,7 +503,7 @@ btchSelPowerIndex := 0 ; Active power name for batch preset
 maxBatchPrgs := 6
 batchActive := 0 ; (1) Batch is Active for current Preset (-1) flagged for Not Active (0) Not active (2) Batch active at start
 lnchPrgIndex := 0 ; (PrgIndex) Run, (0) Change Res or -(PrgIndex) Cancel
-lnchStat := 0 ; (-1) Test Run; (1) Batch Run; (0) BatchPrgStatus Select
+lnchStat := 0 ; (-1) Test Run; (1) Batch Run; (0) BatchPrgStatus Select (not used)
 lastMonitorUsedInBatch := 0
 listPrgVar := 0 ; copy of BatchPrgs listbox id
 presetNoTest := 2 ; 0: config screen 2: return to or load of batch screen: 1: else e.g. Not click on preset 1: preset clicked
@@ -615,6 +614,11 @@ w := 0
 h := 0
 dx := 0
 dy := 0
+
+
+	if (!A_IsUnicode)
+	msgbox, 8192 , Task Dialogs, Chinese Characters in ANSI Task Dialogs!
+
 
 ;Done here, else complications with PrgLnch.Monitor
 Gui, PrgLnchOpt: New
@@ -2040,7 +2044,7 @@ if (A_GuiEvent == "DoubleClick")
 	targMonitorNum := PrgMonToRn[-lnchPrgIndex]
 	}
 
-	lnchStat := 0
+	lnchStat := 1
 
 
 	strRetVal := LnchPrgOff(batchPrgStatus, lnchStat, PrgChoiceNames, temp, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, dispMonNamesNo, regoVar, PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, btchPowerNames[btchPrgPresetSel])
@@ -2114,27 +2118,28 @@ GuiControl, PrgLnch:, batchPrgStatus, %strTemp%
 Thread, NoTimers, false
 
 	if (IsCurrentBatchRunning(currBatchNo, PrgListPID%btchPrgPresetSel%))
+	{
 	batchActive := 1
+	GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
+	waitBreak := 0
+	}
 	else
 	batchActive := 0
 
-	if (batchActive)
+	if (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, (lnchPrgIndex > 0)? 1: 0))
 	{
-	GuiControl, PrgLnch:, RunBatchPrg, &Cancel Batch
-	waitBreak := 0
-
-	if (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, (lnchPrgIndex > 0)? 0: 1))
-	{
-		if (DefResNoMatchRes())
+		if (PrgChgResPrgOnClose[abs(lnchPrgIndex)] && DefResNoMatchRes())
 		{
+			if (lnchPrgIndex < 0)
+			RevertResdefaults()
 		ChangeResolution(dispMonNames, regoVar, temp)
 		sleep, 1000
 		}
 	}
 
 
+	if (batchActive)
 	SetTimer, WatchSwitchOut, %timWatchSwitch%
-	}
 	else
 	{
 	CleanupPID(currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, regoVar, waitBreak, 1)
@@ -6807,9 +6812,19 @@ loop % ((presetNoTest)? currBatchno: 1)
 			else
 			{
 			; Cancelling the lot!
+				strTemp .= "Not Active" . "|"
 				if (lnchPrgIndex < 0)
 				{
-				strTemp .= "Not Active" . "|"
+					if (PrgChgResPrgOnClose[abs(lnchPrgIndex)] && (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID)))
+					{
+						if (DefResNoMatchRes())
+						{
+						RevertResdefaults()
+						ChangeResolution(dispMonNames, regoVar, temp)
+						sleep, 1000
+						}
+					}
+
 					if (currBatchno == A_Index)
 					CleanupPID(currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, regoVar, waitBreak, 1)
 				}
@@ -6886,15 +6901,11 @@ Thread, NoTimers, false
 			}
 		GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
 		}
-	}
 
-	if (lnchPrgIndex && (lnchStat == 1) && (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, (lnchPrgIndex > 0)? 0: 1)))
-	{
-		if (DefResNoMatchRes())
-		{
-		ChangeResolution(dispMonNames, regoVar, temp)
-		sleep, 1000
-		}
+	; Update PrgMonBak
+	if (lnchStat == 1)
+	RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, 1)
+
 	}
 
 
@@ -7147,7 +7158,6 @@ if (lnchPrgIndex > 0) ;Running
 
 		if (lnchStat == 1)
 		PrgMonPID[PrgPIDtmp] := targMonitorNum
-
 
 	temp := 0
 	DetectHiddenWindows, On
@@ -7505,10 +7515,11 @@ else
 		PrgPIDtmp := PrgListPID[prgIndex]
 		PrgMonPID.Delete(PrgPIDtmp)
 		PrgListPID[prgIndex] := 0
+
 		;do not set PrgPID to 0 as it may be running in the frontend.
 		}
 
-		if (PrgPIDtmp && !(PrgPIDtmp == "FAILED") && !(PrgPIDtmp == "NS") && !(PrgPIDtmp == "TERM") && !(PrgPIDtmp == "ENDED"))
+		if (PrgPIDtmp && (PrgPIDtmp != "FAILED") && (PrgPIDtmp != "NS") && (PrgPIDtmp != "TERM") && (PrgPIDtmp != "ENDED"))
 		{
 		temp := GetProcFromPath(PrgPaths)
 		Process, Exist, %PrgPIDtmp%
@@ -7784,17 +7795,16 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 						if (timerfTemp)
 						{
 						Process, Exist, % timerfTemp
+						timerBtch := PrgBatchIni%btchPrgPresetSel%[A_Index]
 							if (ErrorLevel)
 							{
 							timerTemp .= "Active" . "|"
-							timerBtch := PrgBatchIni%btchPrgPresetSel%[A_Index]
 							lastMonitorUsedInBatch := PrgMontoRn[timerBtch]
 							}
 							else
 							{
-								if (!PrgMonPID.delete(timerfTemp))
+								if (PrgChgResPrgOnClose[timerBtch] && !PrgMonPID.delete(timerfTemp))
 								{
-								timerBtch := PrgBatchIni%btchPrgPresetSel%[A_Index]
 								MsgBox, 8192, PID Check, % "PID for " . PrgChoiceNames[timerBtch] . " never existed!"
 								}
 							PrgListPID%btchPrgPresetSel%[A_Index] := "ENDED"
@@ -7852,7 +7862,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				loop % currBatchNo
 				{
 				timerfTemp := PrgListPID%btchPrgPresetSel%[A_Index]
-						Process, Exist, % timerfTemp
+				Process, Exist, % timerfTemp
 					if (ErrorLevel)
 					{
 					timerBtch := PrgBatchIni%btchPrgPresetSel%[A_Index]
@@ -7860,7 +7870,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 					}
 					else
 					{
-						if (!PrgMonPID.delete(timerfTemp))
+						if (PrgChgResPrgOnClose[timerBtch] && !PrgMonPID.delete(timerfTemp))
 						{
 						MsgBox, 8192, PID Check, % "PID for " . PrgChoiceNames[timerBtch] . " never existed!"
 						timerBtch := PrgBatchIni%btchPrgPresetSel%[A_Index]
@@ -7882,6 +7892,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 	{
 		if (DefResNoMatchRes())
 		{
+		RevertResdefaults()
 		ChangeResolution(dispMonNames, regoVar, temp)
 		sleep, 1000
 		}
@@ -7950,42 +7961,30 @@ Static PrgMonPIDBak := {}
 
 retVal := 0
 
-	if PrgMonPIDBak.Count() != PrgMonPID.Count()
+	if (Init)
 	{
-		if (Init)
+		; Deep copy
+		for PID, monitor in PrgMonPID
+		PrgMonPIDBak[PID] := PrgMonPID[PID]
+	}
+	else
+	{
+		if PrgMonPIDBak.Count() != PrgMonPID.Count()
 		{
-			; Deep copy
-			for PID, monitor in PrgMonPID
-			PrgMonPIDBak[A_Index] := PrgMonPID[A_Index]
-		}
-		else
-		{
-		retVal := 0
 			for PID, monitor in PrgMonPIDBak
 			{
-			temp := PrgMonPIDBak[PID]
-				if (temp != PrgMonPID[PID])
+			retVal := PrgMonPIDBak[PID]
+				if (retVal && (retVal != PrgMonPID[PID]))
 				{
 				PrgMonPIDBak.Delete(PID)
-				retVal := 1
 				break
 				}
 			}
-
-			if (!retVal)
-			return 0
-
-			retVal := 0
-			for PID, monitor in PrgMonPID
-			{
-				if (monitor == temp)
-				retVal := temp
-			}
+			; retVal == 0: an impossibility
 		}
 	}
 return retVal
 }
-
 
 CleanupPID(currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgBordless, PrgLnchHide, ByRef PrgPID, selPrgChoice, dispMonNames, regoVar, waitBreak, batchWasActive := 0)
 {
@@ -8009,8 +8008,13 @@ if (presetNoTest) ; Batch screen
 	{
 		Loop % currBatchNo
 		{
-			if (PrgListPIDbtchPrgPresetSel[A_Index])
-			MsgBox, 8192, PID Error, A PID wasn't cleared!
+		temp := PrgListPIDbtchPrgPresetSel[A_Index]
+			if (temp)
+			{
+				if ((temp != "FAILED") && (temp != "NS") && (temp != "TERM") && (temp != "ENDED"))
+				MsgBox, 8192, PrgLnch PID Error, PID now cleared!
+			PrgListPIDbtchPrgPresetSel[A_Index] := 0
+			}
 		}
 
 	GuiControl, PrgLnch:, RunBatchPrg, &Run Batch
@@ -9483,6 +9487,13 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 		iModeval += 1
 	}
 return ResList
+}
+
+RevertResdefaults()
+{
+PrgLnchOpt.scrWidth := PrgLnchOpt.scrWidthDef
+PrgLnchOpt.scrHeight := PrgLnchOpt.scrHeightDef
+PrgLnchOpt.scrFreq := PrgLnchOpt.scrFreqDef
 }
 
 DefResNoMatchRes()
