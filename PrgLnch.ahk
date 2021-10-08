@@ -337,7 +337,6 @@ Class PrgLnch
 		}
 	}
 
-
 	Class()
 	{
 	(A_IsCompiled)? temp := This.ProcScpt: temp := This.ProcAHK
@@ -499,6 +498,7 @@ currBatchNo := 0 ;no of Prgs in selected preset limited by maxBatchPrgs
 boundListBtchCtl := 0 ; PrgList sel or Updown toggle
 btchPrgPresetSel := 0 ;What preset is currently selected- 0 for none
 PrgBatchIniStartup := 0 ;Batch Preset read from Startup
+btchPIDUserClose := 0 ; Save a PID just closed by user
 btchSelPowerIndex := 0 ; Active power name for batch preset
 maxBatchPrgs := 6
 batchActive := 0 ; (1) Batch is Active for current Preset (-1) flagged for Not Active (0) Not active (2) Batch active at start
@@ -2126,7 +2126,7 @@ Thread, NoTimers, false
 	else
 	batchActive := 0
 
-	if (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, (lnchPrgIndex > 0)? 1: 0))
+	if (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, , (lnchPrgIndex > 0)? 1: 0))
 	{
 		if (PrgChgResPrgOnClose[abs(lnchPrgIndex)] && DefResNoMatchRes())
 		{
@@ -3164,7 +3164,7 @@ PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByR
 		temp := PrgPIDMast[A_Index]
 		if (temp)
 		{
-			ifWinNotExist, ahk_pid%temp%
+			if (!WinExist("ahk_pid" . temp))
 			PrgPIDMast[A_Index] := 0
 		}
 	}
@@ -3180,7 +3180,7 @@ PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByR
 		temp := PrgPIDMast[A_Index]
 		if (temp)
 		{
-			ifWinNotExist, ahk_pid%temp%
+			if (!WinExist("ahk_pid" . temp))
 			PrgPIDMast[A_Index] := 0
 		}
 	}
@@ -6903,9 +6903,8 @@ Thread, NoTimers, false
 		}
 
 	; Update PrgMonBak
-	if (lnchStat == 1)
-	RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, 1)
-
+	if (lnchStat == 1 && lnchPrgIndex > 0)
+	RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, , 1)
 	}
 
 
@@ -7807,6 +7806,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 								{
 								MsgBox, 8192, PID Check, % "PID for " . PrgChoiceNames[timerBtch] . " never existed!"
 								}
+							btchPIDUserClose := timerfTemp
 							PrgListPID%btchPrgPresetSel%[A_Index] := "ENDED"
 							timerTemp .= "Not Active" . "|"
 							}
@@ -7815,6 +7815,16 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 						timerTemp .= "Not Active" . "|"
 					}
 				}
+				; Update for each prg in batch
+					if (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, btchPIDUserClose))
+					{
+						if (DefResNoMatchRes())
+						{
+						RevertResdefaults()
+						ChangeResolution(dispMonNames, regoVar, temp)
+						sleep, 1000
+						}
+					}
 			}
 
 		GuiControl, PrgLnch:, batchPrgStatus, %timerTemp%
@@ -7870,12 +7880,27 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 					}
 					else
 					{
-						if (PrgChgResPrgOnClose[timerBtch] && !PrgMonPID.delete(timerfTemp))
+					; Do not modify PrgBatchIni%btchPrgPresetSel%[A_Index] until return to Batch Screen
+					btchPIDUserClose := timerfTemp
+						if (PrgChgResPrgOnClose[timerBtch])
 						{
-						MsgBox, 8192, PID Check, % "PID for " . PrgChoiceNames[timerBtch] . " never existed!"
-						timerBtch := PrgBatchIni%btchPrgPresetSel%[A_Index]
+							if PrgMonPID.delete(timerfTemp)
+							{
+								if (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, btchPIDUserClose))
+								{
+									if (DefResNoMatchRes())
+									{
+									RevertResdefaults()
+									ChangeResolution(dispMonNames, regoVar, temp)
+									sleep, 1000
+									}
+								}
+							}
+							else
+							MsgBox, 8192, PID Check, % "PID for " . PrgChoiceNames[timerBtch] . " never existed!"
 						}
 					}
+
 				}
 
 				if(!timerBtch)
@@ -7888,15 +7913,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 		}
 	}
 
-	if (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID))
-	{
-		if (DefResNoMatchRes())
-		{
-		RevertResdefaults()
-		ChangeResolution(dispMonNames, regoVar, temp)
-		sleep, 1000
-		}
-	}
+
 
 SetTitleMatchMode, 3
 If (WinWaiter(presetNoTest, PrgLnch.Title, PrgLnchOpt.Title, waitBreak))
@@ -7951,13 +7968,14 @@ winText := (presetNoTest)? PrgLnchText: PrgLnchOptText
 	return state
 }
 
-RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, Init := 0)
+RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, ByRef btchPIDUserClose := 0, Init := 0)
 {
 Static PrgMonPIDBak := {}
 ; PrgMonPID has PID keys for ALL batch presets with active Prgs.
 ; This function only handles one Prg at a time:
 ; If two Prgs happen to terminate simultaneously,
-; the second Prg waits for the next timed call.
+; the second Prg either gets processed in the calling
+; loop, or waits for the next timer call.
 
 retVal := 0
 
@@ -7969,18 +7987,33 @@ retVal := 0
 	}
 	else
 	{
-		if PrgMonPIDBak.Count() != PrgMonPID.Count()
+		if (PrgMonPIDBak.Count() != PrgMonPID.Count())
 		{
-			for PID, monitor in PrgMonPIDBak
+			if (btchPIDUserClose)
 			{
-			retVal := PrgMonPIDBak[PID]
-				if (retVal && (retVal != PrgMonPID[PID]))
+			retVal := PrgMonPIDBak[btchPIDUserClose]
+			msgbox % " btchPIDUserClose " btchPIDUserClose " retVal " retVal " PrgMonPIDBak[btchPIDUserClose] " PrgMonPIDBak[btchPIDUserClose] " PrgMonPID.Count() " PrgMonPID.Count() " PrgMonPIDBak.Count() " PrgMonPIDBak.Count()
+				if (retVal && (retVal != PrgMonPID[btchPIDUserClose]))
 				{
 				PrgMonPIDBak.Delete(PID)
-				break
+				btchPIDUserClose := 0
 				}
 			}
-			; retVal == 0: an impossibility
+			else
+			{
+				; From the Lnch button where we are assured Thread, Notimers
+				; makes only the cancelled prg the one that is handled here.
+				for PID, monitor in PrgMonPIDBak
+				{
+				retVal := PrgMonPIDBak[PID]
+					if (retVal && (retVal != PrgMonPID[PID]))
+					{
+					PrgMonPIDBak.Delete(PID)
+					break
+					}
+				}
+				; retVal == 0: an impossibility
+			}
 		}
 	}
 return retVal
@@ -8259,26 +8292,34 @@ return 0
 KillPrg(poorPID)
 {
 strTemp := "" , strRetVal := ""
-Process, Close, ahk_pid %poorPID%
+Process, Close, %poorPID%
+strRetVal := ErrorLevel
 sleep, 200
 
-if (poorPID)
+	if (!strRetVal)
 	{
-	strRetVal := WorkingDirectory(A_ScriptDir, 1)
-	If (strRetVal)
-	MsgBox, 8192, Cancel Prg, % strRetVal
-	if (FileExist("taskkillPrg.bat"))
+		; When in program files, and running without elevation,
+		; full paths are required for file processing in any case.
+		if (strRetVal := WorkingDirectory(A_ScriptDir, 1))
+		MsgBox, 8192, Cancel Prg, % strRetVal
+
+		if (FileExist(A_ScriptDir  . "taskkillPrg.bat"))
 		{
-		FileDelete, taskkillPrg.bat
+		FileDelete, % A_ScriptDir  . "\taskkillPrg.bat"
 		sleep, 200
 		}
-	strTemp := "taskkill /pid "
-	strTemp .= poorPID . " /f /t"
-	FileAppend, %strTemp%, taskkillPrg.bat
+
+	strTemp := A_ScriptDir "\taskkillPrg.bat"
+	FileAppend,
+	(
+	taskkill /pid %poorPID% /f /t
+	Exit
+	), %strTemp%
+
 	sleep, 200
-	Run, taskkillPrg.bat,, Hide UseErrorLevel
+	Run, *RunAs "%strTemp%",, Hide UseErrorLevel
 	sleep, 200
-	FileDelete, taskkillPrg.bat
+	FileDelete, % A_ScriptDir  . "\taskkillPrg.bat"
 	}
 }
 
