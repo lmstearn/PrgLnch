@@ -10548,7 +10548,10 @@ else
 			retVal := TaskDialog("Decompile Executable", "Problem opening the Prg file", ,"While seeking information from the file headers, the Prg`n" . """" . exeStrName . """" . "`ncould not be accessed with error " . A_LastError . ".`nIs it opened by another process, or does it have special permissions?`nEven though it is possible for the Prg to be launched and monitored,`nthere may be other issues if PrgLnch is not run as elevated Admin.", "Do not show again (No restart as Admin)", "Do not restart PrgLnch", "Restart PrgLnch as Admin")
 
 			if (retVal < 0)
+			{
 			IniWrite, 1, % PrgLnch.SelIniChoicePath, General, DcmpExecutableWrn
+			retVal := -retVal
+			}
 
 			if (retVal == 2)
 			RestartPrgLnch(1)
