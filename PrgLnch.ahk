@@ -3904,7 +3904,7 @@ TaskDialog(pageTitle := "Page Title", instructionTitle := "Description of issue"
 ; This function requires A_Unicode and Vista or later.
 Static FooterText := ""
 ; Error Flags
-Static S_OK = 0x0, E_OUTOFMEMORY = 0x8007000E, E_INVALIDARG = 0x80070057, E_FAIL = 0x80004005
+Static S_OK = 0x0, E_OUTOFMEMORY = 0x8007000E, E_INVALIDARG = 0x80070057, E_FAIL = 0x80004005, E_ACCESSDENIED = 0x80070005
 
 ;General Flags
 Static flags = 0x1011, TDF_VERIFICATION_FLAG_CHECKED = 0x0100, TDF_CALLBACK_TIMER := 0X0800
@@ -4009,10 +4009,12 @@ Switch (retVal := DllCall("Comctl32.dll\TaskDialogIndirect", "Ptr", &TDC
 	retVal := "One or more arguments are not valid."
 	Case E_FAIL:
 	retVal := "The operation failed."
+	Case E_ACCESSDENIED:
+	retVal := "A general access denied error."
 	Default:
 		if (retVal)
 		{
-		retVal := "Com`/shell emitted a system resource error: " . Format("0x{1:x}", %retVal%)
+		retVal := "Com`/shell emitted a system resource error: " . Format("0x{1:x}", retVal)
 		}
 	; else: S_OK:
 	}
@@ -9464,25 +9466,26 @@ scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, s
 	if (getCurrentRes)
 	{
 	;imodeVal == 0 caches the data for EnumSettings
-	if (!GetDisplayData(targMonitorNum, , , , , , , , , iModeval, (PrgLnch.Monitor != targMonitorNum)))
-	MsgBox, 8192, Display Data, Display data could not be cached!
-	if (!GetDisplayData(targMonitorNum, , , , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, (PrgLnch.regoVar)? ENUM_REGISTRY_SETTINGS: ENUM_CURRENT_SETTINGS, (PrgLnch.Monitor != targMonitorNum)))
-	MsgBox, 8192, Display Data, PrgLnch could not retrieve information on the monitor from which it was launched!
+		if (!GetDisplayData(targMonitorNum, , , , , , , , , iModeval, (PrgLnch.Monitor != targMonitorNum)))
+		MsgBox, 8192, Display Data, Display data could not be cached!
+		if (!GetDisplayData(targMonitorNum, , , , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, (PrgLnch.regoVar)? ENUM_REGISTRY_SETTINGS: ENUM_CURRENT_SETTINGS, (PrgLnch.Monitor != targMonitorNum)))
+		MsgBox, 8192, Display Data, PrgLnch could not retrieve information on the monitor from which it was launched!
 
 	SysGet, mt, Monitor, %targMonitorNum%
-	if (mtRight - mtLeft != scrWidth)
-	fTemp := 1
-	else
-	{
-		if (mtBottom - mtTop != scrHeight)
+
+		if (mtRight - mtLeft != scrWidth)
 		fTemp := 1
-	}
+		else
+		{
+			if (mtBottom - mtTop != scrHeight)
+			fTemp := 1
+		}
 
 		if (fTemp)
-		MsgBox, 8192, Monitor Setup, The default screen resolution for the current monitor is not correct.`nCould be an issue with initial monitor setup.
+		MsgBox, 8192, Monitor Setup, The default screen resolution for the current monitor is not correct,`nand its default refresh rate (frequency Hz) may not be reliable.`nCould be an issue with the initial monitor setup.
 
-	PrgLnchOpt.scrWidthDef := scrWidth
-	PrgLnchOpt.scrHeightDef := scrHeight
+	PrgLnchOpt.scrWidthDef := mtRight - mtLeft
+	PrgLnchOpt.scrHeightDef := mtBottom - mtTop
 	PrgLnchOpt.scrFreqDef := scrFreq
 
 	ResList := PrgLnchOpt.scrWidthDef . " `, " . PrgLnchOpt.scrHeightDef . " @ " . PrgLnchOpt.scrFreqDef . "Hz |"
