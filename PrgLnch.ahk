@@ -139,6 +139,17 @@ Class PrgLnchOpt
 		return this._CurrMonStat
 		}
 	}
+	dispMonNamesNo
+	{
+		set
+		{
+		this._dispMonNamesNo := value
+		}
+		get
+		{
+		return this._dispMonNamesNo
+		}
+	}
 	scrWidth
 	{
 		set
@@ -602,18 +613,18 @@ selIniNameSprIniSlot := ""
 oldSelIniChoiceName := ""
 oldSelIniChoicePath := "" ; Previously loaded preset: in many cases the path of oldSelIniChoiceName above
 dispMonNames := ["", "", "", "", "", "", "", "", ""]
-ResArray := [[],[],[]]
+ResArray := []
 iDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 ; Defaults per monitor
 scrWidthDefArr := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 scrHeightDefArr := [0, 0, 0, 0, 0, 0, 0, 0, 0]
-scrFreqDefArr := [0, 0, 0, 0, 0, 0, 0, 0, 0]
+scrFreqDefArr := [0, 0, 0, 0, 0, 0, 0, 0, 0] ; frequencies == vertical refresh rates
 ; settings per Prg
 scrWidthArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 scrHeightArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 scrFreqArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-dispMonNamesNo := 9 ;No more than 9 displays!?
 PrgLnchMon := 0 ; Device PrgLnch is run from
+PrgLnchOpt.dispMonNamesNo := 9 ;No more than 9 displays!?
 targMonitorNum := 1
 primaryMon := 1
 ResIndexList := ""
@@ -633,9 +644,10 @@ dy := 0
 Gui, PrgLnchOpt: New
 
 ;Get def. mon list...
-GetDisplayData(, dispMonNamesNo, iDevNumArray, dispMonNames, , , , , , -3)
 
-PrgLnch.Monitor := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, primaryMon, 1)
+GetDisplayData(, iDevNumArray, dispMonNames, , , , , , -3)
+
+PrgLnch.Monitor := GetPrgLnchMonNum(iDevNumArray, primaryMon, 1)
 
 WinMover(, , , , "PrgLnchLoading.jpg")
 
@@ -936,7 +948,7 @@ Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHwnd
 	if (PrgMonToRn[selPrgChoice] && (defPrgStrng != "None"))
 	{
 	targMonitorNum := PrgMonToRn[selPrgChoice]
-	iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
+	iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
 	SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 	CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, ResArray, allModes)
 	}
@@ -950,7 +962,7 @@ Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHwnd
 GuiControl, PrgLnchOpt:, Monitors, % dispMonNames[targMonitorNum]
 ;Build monitor list: the results shown in TogglePrgOptCtrls()below
 
-Loop % dispMonNamesNo
+Loop % PrgLnchOpt.dispMonNamesNo
 {
 	if (iDevNumArray[A_Index] < 10) ;dec masks
 	GuiControl, PrgLnchOpt:, iDevNum, % SubStr(iDevNumArray[A_Index], 1, 1) " |"
@@ -2053,7 +2065,7 @@ if (A_GuiEvent == "DoubleClick")
 	lnchStat := 1
 
 
-	strRetVal := LnchPrgOff(batchPrgStatus, lnchStat, PrgChoiceNames, temp, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, dispMonNamesNo, PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, btchPowerNames[btchPrgPresetSel])
+	strRetVal := LnchPrgOff(batchPrgStatus, lnchStat, PrgChoiceNames, temp, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, btchPowerNames[btchPrgPresetSel])
 
 
 	loop % currBatchNo
@@ -3943,7 +3955,7 @@ hwndParent := WinExist("A")
 
 	if (!(TDCallback := RegisterCallback("TDCallback", "Fast")))
 	{
-		MsgBox, 8208, Task Dialog, Could not Register Callback. Cannot contine.
+		MsgBox, 8208, Task Dialog, Could not Register Callback for the Task dialog.
 		return 0
 	}
 
@@ -4604,7 +4616,7 @@ SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr
 
 return
 
-iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, ByRef dispMonNamesNo, ByRef iDevNumArray, ByRef dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
+iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, ByRef iDevNumArray, ByRef dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
 {
 ; These for GetDisplayData
 Static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
@@ -4622,7 +4634,7 @@ Static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
 		; If by misadventure the values are zero
 			if (LNKFlag(PrgLnkInf[selPrgChoice]) > -1) ; don't want the msgbox as ResIndex is already disabled
 			MsgBox, 8192, No Resolution Mode, Monitor parameters for the selected or startup Prg do not exist!`n`nDefaults assumed.`nIt's recommended to save the parameters by reselecting the target monitor from the Monitor List, and, if required, changing the resolution mode.
-		GetDisplayData(targMonitorNum, , , , scrWidth, scrHeight, scrFreq, , , (PrgLnch.regoVar)? ENUM_REGISTRY_SETTINGS: ENUM_CURRENT_SETTINGS, 1)
+		GetDisplayData(targMonitorNum, , , scrWidth, scrHeight, scrFreq, , , (PrgLnch.regoVar)? ENUM_REGISTRY_SETTINGS: ENUM_CURRENT_SETTINGS, 1)
 		CopyToFromResdefaults(1)
 		}
 	}
@@ -4640,69 +4652,78 @@ return
 CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ByRef ResIndexList, ByRef ResArray, allModes)
 {
 
-ResIndexList := GetResList(targMonitorNum, ResArray, allModes, 1)
 
-strTemp := substr(ResIndexList, 1, StrLen(ResIndexList) - 1)
-
-	if (PrgLnch.Monitor == targMonitorNum)
-	{
-	PrgLnchOpt.MonDefResStrng := strTemp
-	PrgLnchOpt.MonCurrResStrng := strTemp
-	PrgLnchOpt.CurrMonStat := 1 ; Assume the PrgLnch monitor is always ok
-	}
-	else
-	{
-		if ((iDevNumArray[targMonitorNum] > 9) && (!(MDMF_GetMonStatus(targMonitorNum))))
-		{
-		GuiControlGet, strTemp2, PrgLnchOpt: FocusV
-
-			if (strTemp2 == "iDevNum")
-			{
-			IniRead, strTemp2, % PrgLnch.SelIniChoicePath, General, MonProbMsg
-				if (!strTemp2)
-				{
-				retVal := TaskDialog("Monitors", "Monitor connection issue", "", "A monitor returns a bad status, possibly because of an unsupported setting on the physical monitor itself.`nThe list of resolution modes will now default to those of the primary monitor.`nIt's still possible to change the monitor's resolution from any supported mode from the list, and launch Prgs in the monitor defined in the virtual screen, however.", , "Continue with resolution checks")
-					if (retVal < 0)
-					IniWrite, 1, % PrgLnch.SelIniChoicePath, General, MonProbMsg
-				}
-			}
-
-		GuiControl, PrgLnchOpt: Disabled, currRes
-		}
-	}
-
-
-	if (PresetPropHwnd)
-	{
-		if ((PrgLnch.Monitor != targMonitorNum) || PrgLnchOpt.Fmode() || PrgLnchOpt.DynamicMode())
-		GuiControl, PrgLnchOpt:, currRes, %strTemp%
-		else
-		GuiControl, PrgLnchOpt:, currRes, % PrgLnchOpt.MonCurrResStrng
-	}
-	else  ;Update all at Load
-	{
-		GuiControl, PrgLnchOpt:, currRes, %strTemp%
-
-		if (defPrgStrng == "None")
-		CopyToFromResdefaults()
-	}
-
-
-ResIndexList := "|" . GetResList(targMonitorNum, ResArray, allModes)
+ResIndexList := "|" . GetResList(targMonitorNum, ResArray, allModes, iDevNumArray)
 
 
 ;Not the g-label ResListBox!
 GuiControl, PrgLnchOpt:, ResIndex, %ResIndexList%
 
-GuiControlGet, strTemp, PrgLnchOpt:, currRes
-PrgLnchOpt.MonCurrResStrng := strTemp
+
 
 	if (allModes)
 	Gui, PrgLnchOpt: Font, Bold CA96915, Verdana
 	else
 	Gui, PrgLnchOpt: Font
 GuiControl, PrgLnchOpt: Font, ResIndex
-GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+
+
+; Now process default res
+
+	if (strTemp := GetResList(targMonitorNum, ResArray, allModes, , 1))
+	{
+	strTemp := substr(strTemp, 1, StrLen(strTemp) - 1)
+
+		if (PrgLnch.Monitor == targMonitorNum)
+		{
+		PrgLnchOpt.MonDefResStrng := strTemp
+		PrgLnchOpt.MonCurrResStrng := strTemp
+		PrgLnchOpt.CurrMonStat := 1 ; Assume the PrgLnch monitor is always ok
+		}
+		else
+		{
+			if ((iDevNumArray[targMonitorNum] > 9) && (!(MDMF_GetMonStatus(targMonitorNum))))
+			{
+			GuiControlGet, strTemp2, PrgLnchOpt: FocusV
+
+				if (strTemp2 == "iDevNum")
+				{
+				IniRead, strTemp2, % PrgLnch.SelIniChoicePath, General, MonProbMsg
+					if (!strTemp2)
+					{
+					retVal := TaskDialog("Monitors", "Monitor connection issue", "", "A monitor returns a bad status, possibly because of an unsupported setting on the physical monitor itself.`nThe list of resolution modes will now default to those of the primary monitor.`nIt's still possible to change the monitor's resolution from any supported mode from the list, and launch Prgs in the monitor defined in the virtual screen, however.", , "Continue with resolution checks")
+						if (retVal < 0)
+						IniWrite, 1, % PrgLnch.SelIniChoicePath, General, MonProbMsg
+					}
+				}
+
+			GuiControl, PrgLnchOpt: Disabled, currRes
+			}
+			else
+			PrgLnchOpt.MonCurrResStrng := strTemp
+		}
+
+
+		if (PresetPropHwnd)
+		{
+			if ((PrgLnch.Monitor != targMonitorNum) || PrgLnchOpt.Fmode() || PrgLnchOpt.DynamicMode())
+			GuiControl, PrgLnchOpt:, currRes, %strTemp%
+			else
+			GuiControl, PrgLnchOpt:, currRes, % PrgLnchOpt.MonCurrResStrng
+		}
+		else  ;Update all at Load
+		{
+			GuiControl, PrgLnchOpt:, currRes, %strTemp%
+
+			if (defPrgStrng == "None")
+			CopyToFromResdefaults()
+		}
+
+
+	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+	}
+	else
+	MsgBox, 8192, Monitor %targMonitorNum%, There is a critical error with the dimensions of the target monitor!
 
 
 GuiControl, PrgLnchOpt: Show, ResIndex
@@ -4731,11 +4752,13 @@ Tooltip
 			Break
 			}
 		}
+
 		if (fTemp)
 		{
-		PrgLnchOpt.scrWidth := ResArray[fTemp - 1, 1]
-		PrgLnchOpt.scrHeight := ResArray[fTemp - 1, 2]
-		PrgLnchOpt.scrFreq := ResArray[fTemp - 1, 3]
+		fTemp -= 1
+		PrgLnchOpt.scrWidth := ResArray[1, fTemp]
+		PrgLnchOpt.scrHeight := ResArray[2, fTemp]
+		PrgLnchOpt.scrFreq := ResArray[3, fTemp]
 
 			if (PrgChoicePaths[selPrgChoice])
 			IniProc(selPrgChoice)
@@ -4980,7 +5003,7 @@ else
 						}
 						else
 						{
-						iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
+						iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
 						SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 						CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, ResArray, allModes)
 						}
@@ -4995,7 +5018,7 @@ else
 						}
 
 					targMonitorNum := PrgMonToRn[selPrgChoice]
-					iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
+					iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
 					SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 					GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 					}
@@ -5330,7 +5353,7 @@ GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 
 borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
 
-iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, dispMonNamesNo, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
+iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
 SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 
 CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, ResArray, allModes)
@@ -6350,32 +6373,34 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 	else
 	{
 	KleenupPrgLnchFiles() ; PrgLnch files removed from PrgLnch Directory only
-		if Instr(strTemp2, "`n")
+		if FileExist(PrgLnch.SelIniChoicePath)
 		{
-			if (Instr(strTemp2, "`n", , 2))
-			strTemp2 := "The following directories could not be scanned" . strTemp2
-			else
-			strTemp2 := "The following directory could not be scanned" . strTemp2
-		}
-		if (strTemp)
-		strTemp := "`nAlso`," . strTemp
+			if Instr(strTemp2, "`n")
+			{
+				if (Instr(strTemp2, "`n", , 2))
+				strTemp2 := "The following directories could not be scanned" . strTemp2
+				else
+				strTemp2 := "The following directory could not be scanned" . strTemp2
+			}
+			if (strTemp)
+			strTemp := "`nAlso`," . strTemp
 
-	IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
-		; Versioning: this code would want to be in IniProc
-		if (fTemp = "ERROR")
-		{
-		IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
-		fTemp := 0
-		}
+		IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
+			; Versioning: this code would want to be in IniProc
+			if (fTemp = "ERROR")
+			{
+			IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
+			fTemp := 0
+			}
 
-		if (!fTemp && (strTemp2 || strTemp))
-		{
-		retVal := TaskDialog("PrgLnch Remnants", strTemp2 .  strTemp, "", ((strTemp2)? "The typical reason for the scan error is Prg removal`\relocation,`nor that the PrgLnch ini file originates from another device.`n": "") . ((strTemp)? "The file recycle notification is a problem with PrgLnch.": ""), , "Continue")
-			if (retVal < 1)
-			IniWrite, 1, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
+			if (!fTemp && (strTemp2 || strTemp))
+			{
+			retVal := TaskDialog("PrgLnch Remnants", strTemp2 .  strTemp, "", ((strTemp2)? "The typical reason for the scan error is Prg removal`\relocation,`nor that the PrgLnch ini file originates from another device.`n": "") . ((strTemp)? "The file recycle notification is a problem with PrgLnch.": ""), , "Continue")
+				if (retVal < 1)
+				IniWrite, 1, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
+			}
 		}
 	}
-
 
 ; Gui, Progrezz: Destroy ; automatic, as with PrgLnchOpt: PrgLnch
 
@@ -6766,7 +6791,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 		}
 	}
 
-	strRetVal := LnchPrgOff(A_Index, lnchStat, PrgChoiceNames, (presetNoTest)? temp: strTemp2, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, dispMonNamesNo, PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, btchPowerNames[btchPrgPresetSel])
+	strRetVal := LnchPrgOff(A_Index, lnchStat, PrgChoiceNames, (presetNoTest)? temp: strTemp2, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, btchPowerNames[btchPrgPresetSel])
 
 	if (strRetVal)
 	{  ;Lnch failed for current Prg
@@ -6926,7 +6951,7 @@ Thread, NoTimers, false
 return
 
 
-LnchPrgOff(prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, dispMonNamesNo, ByRef PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, btchPowerName)
+LnchPrgOff(prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, ByRef PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, btchPowerName)
 {
 PrgLnchMon := 0, primaryMon := 0, disableRedirect := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0, PrgLnkInflnchPrgIndex := PrgLnkInf[lnchPrgIndex]
 temp := 0, fTemp := 0, strRetVal := "", wkDir := "", PrgPathsAssocCommandLine := ""
@@ -6934,7 +6959,7 @@ ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, mdRight := 0, mdLeft :
 Static ERROR_FILE_NOT_FOUND := 0x2, ERROR_ACCESS_DENIED := 0x5, ERROR_CANCELLED := 0x4C7
 
 
-PrgLnchMon := GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, primaryMon)
+PrgLnchMon := GetPrgLnchMonNum(iDevNumArray, primaryMon)
 
 if (PrgLnch.Monitor != PrgLnchMon)
 {
@@ -7188,7 +7213,7 @@ if (lnchPrgIndex > 0) ;Running
 	; Possible the default window co-ords are in another monitor from a previous run here
 	if (fTemp)
 	{
-	loop % dispMonNamesNo
+	loop % PrgLnchOpt.dispMonNamesNo
 	{
 	SysGet, ms, MonitorWorkArea, % A_Index
 
@@ -7395,7 +7420,7 @@ if (lnchPrgIndex > 0) ;Running
 
 
 
-			loop % dispMonNamesNo
+			loop % PrgLnchOpt.dispMonNamesNo
 			{
 			SysGet, ms, MonitorWorkArea, % A_Index
 				if (x >= msLeft && x <= msRight && y >= msTop && y <= msBottom)
@@ -7535,6 +7560,7 @@ else
 		{
 			if PrgPIDtmp is digit
 			{
+			PrgPaths := ExtractPrgPath(-lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 			temp := GetProcFromPath(PrgPaths)
 			Process, Exist, %PrgPIDtmp%
 				if (ErrorLevel)
@@ -8564,7 +8590,7 @@ foundpos := 0
 return retVal
 }
 
-GetPrgLnchMonNum(iDevNumArray, dispMonNamesNo, ByRef primaryMon, fromMouse := 0)
+GetPrgLnchMonNum(iDevNumArray, ByRef primaryMon, fromMouse := 0)
 {
 iDevNumb := 0, monitorHandle := 0,  MONITOR_DEFAULTTONULL := 0, strTemp := ""
 
@@ -8582,7 +8608,7 @@ hWnd := PrgLnchOpt.Hwnd()
 	}
 	;winHandle := WinExist("A") ; LastWindow: The PrgLnch Window if clicked on
 
-	loop %dispMonNamesNo%
+	loop % PrgLnchOpt.dispMonNamesNo
 	{
 		if (iDevNumArray[A_Index] > 9)
 		{
@@ -9173,53 +9199,54 @@ return 0
 
 
 ;Monitor routines
-GetDisplayData(targMonitorNum := 1, ByRef dispMonNamesNo := 9, ByRef iDevNumArray := 0, ByRef dispMonNames := 0, ByRef scrWidth := 0, ByRef scrHeight := 0, ByRef scrFreq := 0, ByRef scrInterlace := 0, ByRef scrDPI := 0, iMode := -2, iChange := 0)
+GetDisplayData(targMonitorNum := 1, ByRef iDevNumArray := 0, ByRef dispMonNames := 0, ByRef scrWidth := 0, ByRef scrHeight := 0, ByRef scrFreq := 0, ByRef scrInterlace := 0, ByRef scrDPI := 0, iMode := -2, iChange := 0)
 {
-Device_Mode := 0, iDevNumb := 0, ftemp := 0, temp := 0, retVal := 0, devFlags := 0, devKey := 0, OffsetDWORD := 4
-static dispMonNamesSaved := {}
+Static OffsetDWORD := 4
+
 ; devFlags
 Static DISPLAY_DEVICE_ATTACHED_TO_DESKTOP := 0x00000001, DISPLAY_DEVICE_PRIMARY_DEVICE:= 0x00000004, DISPLAY_DEVICE_MIRRORING_DRIVER := 0x00000008, DISPLAY_DEVICE_VGA_COMPATIBLE := 0x00000010
-; devKey:	Path to the device's registry key relative to HKEY_LOCAL_MACHINE. (not required)
-iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 	if (iMode == -3) ; program load
 	{
+	iDevNumb := 0, ftemp := 0, temp := 0, devFlags := 0, devKey := 0
+	; devKey:	Path to the device's registry key relative to HKEY_LOCAL_MACHINE. (not required)
+	iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+	static dispMonNamesSaved := {}
+		if (A_IsUnicode)
+		{
+		offsetWORDStr := 64
+		OffsetLongStr := 256
+		; Note Union in Devmode structure is either/or printer stuff screen stuff
+
+		}
+		else
+		{
+		offsetWORDStr := 32
+		OffsetLongStr := 128
+		}
 
 
-			if (A_IsUnicode)
-			{
-			offsetWORDStr := 64
-			OffsetLongStr := 256
-			; Note Union in Devmode structure is either/or printer stuff screen stuff
 
-			}
-			else
-			{
-			offsetWORDStr := 32
-			OffsetLongStr := 128
-			}
-
-
-
-		loop % dispMonNamesNo
+		loop % PrgLnchOpt.dispMonNamesNo
 		{
 
 		cbDISPDEV := OffsetDWORD + OffsetDWORD + offsetWORDStr + 3 * OffsetLongStr
 		VarSetCapacity(DISPLAY_DEVICE, cbDISPDEV, 0)
 		NumPut(cbDISPDEV, DISPLAY_DEVICE, 0) ; initialising cb (byte counts) or size member
 
-		if (!DllCall("EnumDisplayDevices" . (A_IsUnicode? "W": "A"), "PTR", 0, "UInt", iDevNumb, "PTR", &DISPLAY_DEVICE, "UInt", 0))
-		{
-		dispMonNamesNo := iDevNumb
-		break
-		}
+			if (!DllCall("EnumDisplayDevices" . (A_IsUnicode? "W": "A"), "PTR", 0, "UInt", iDevNumb, "PTR", &DISPLAY_DEVICE, "UInt", 0))
+			{
+			PrgLnchOpt.dispMonNamesNo := iDevNumb
+			break
+			}
 
 
 
 		devFlags := NumGet(DISPLAY_DEVICE, OffsetDWORD + offsetWORDStr + OffsetLongStr, "UInt")
 		devKey := StrGet(&DISPLAY_DEVICE + OffsetDWORD + OffsetDWORD + offsetWORDStr + OffsetLongStr + OffsetLongStr, OffsetLongStr)
 
-		If (devFlags & DISPLAY_DEVICE_MIRRORING_DRIVER)
+		if (devFlags & DISPLAY_DEVICE_MIRRORING_DRIVER)
 		temp += 1
 		else
 		{
@@ -9227,31 +9254,34 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 		iDevNumb := iDevNumb + 1
 
 			;How do we differentiate between ....
-			If (devFlags & DISPLAY_DEVICE_PRIMARY_DEVICE)
+			if (devFlags & DISPLAY_DEVICE_PRIMARY_DEVICE)
+			{
+				if (devFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)
+				iLocDevNumArray[iDevNumb] := iDevNumb + 110
+				else
 				{
-					If (devFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)
-					iLocDevNumArray[iDevNumb] := iDevNumb + 110
-					else
-					iLocDevNumArray[iDevNumb] := iDevNumb + 100 ; Impossible
+				iLocDevNumArray[iDevNumb] := iDevNumb + 100 ; Impossible
+				MsgBox, 8208, Monitors, The primary monitor is not attached to the desktop somehow!
 				}
+			}
 			else
-				{
-					If (devFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)
-					iLocDevNumArray[iDevNumb] := iDevNumb + 10
-					else
-					iLocDevNumArray[iDevNumb] := iDevNumb
-				}
+			{
+				if (devFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)
+				iLocDevNumArray[iDevNumb] := iDevNumb + 10
+				else
+				iLocDevNumArray[iDevNumb] := iDevNumb
+			}
 
 			if (iDevNumArray[iDevNumb])
 			{
-			if (iDevNumArray[iDevNumb] != iLocDevNumArray[iDevNumb])
-			{
-				if (!ftemp)
+				if (iDevNumArray[iDevNumb] != iLocDevNumArray[iDevNumb])
 				{
-				MsgBox, 8192, Monitors, A configurational change in the monitor setup is detected.`nThis may affect how some Prgs run.
-				ftemp := 1
+					if (!ftemp)
+					{
+					MsgBox, 8192, Monitors, A configurational change in the monitor setup is detected.`nThis may affect how some Prgs run.
+					ftemp := 1
+					}
 				}
-			}
 			}
 			else
 			iDevNumArray[iDevNumb] := iLocDevNumArray[iDevNumb]
@@ -9261,22 +9291,22 @@ iLocDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 			if (!dispMonNames[iDevNumb])
 			{
 			; happens on XP
-			dispMonNamesNo := iDevNumb
-			MsgBox, 8192, Monitors, " GetDisplay breaks at: dispMonNamesNo: " dispMonNamesNo
+			PrgLnchOpt.dispMonNamesNo := iDevNumb
+			MsgBox, 8192, Monitors, " GetDisplay breaks at: dispMonNamesNo: " PrgLnchOpt.dispMonNamesNo
 			break
 			}
 
 		}
 		VarSetCapacity(DISPLAY_DEVICE, 0)
 		}
-	dispMonNamesNo := dispMonNamesNo - temp
+	
+	PrgLnchOpt.dispMonNamesNo -= temp
 	dispMonNamesSaved := dispMonNames
-
 	}
-	else ; iMode is either an enumeration counter {0 ... dispMonNamesNo} or -1 or -2
+	else ; iMode is either an enumeration counter {0 ... PrgLnchOpt.dispMonNamesNo} or -1 or -2
 	{
 
-
+	retVal := 0
 		;devMode Struct contains dmDeviceName[CCHDEVICENAME] and dmFormName[CCHFORMNAME]
 		; where the CCH indexes == 32, (names get truncated when > 32 chars). This explains OffsetdevMode
 		;devMode also has 5 words, 5 short, 17 Dwords, 2 longs (POINTL:="x,y")... 5 * 2 + 5 * 2 + 16 * 4  + 2 * 4 = 92 structure has TWO Unions
@@ -9359,7 +9389,7 @@ Static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
 	NumPut(cbSize, Device_Mode, OffsetDWORD + 32, "Ushort")
 	}
 
-	GetDisplayData(targMonitorNum, , , , , , , scrInterlace, scrDPI ,(PrgLnch.regoVar)? ENUM_REGISTRY_SETTINGS: ENUM_CURRENT_SETTINGS, 1)
+	GetDisplayData(targMonitorNum, , , , , , scrInterlace, scrDPI ,(PrgLnch.regoVar)? ENUM_REGISTRY_SETTINGS: ENUM_CURRENT_SETTINGS, 1)
 
 
 	;The following values should never change, but just in case!
@@ -9441,132 +9471,402 @@ return strRetVal
 FindResMatch(iModeCt, ResArray)
 {
 i := 0
-While (PrgLnchOpt.scrWidthDef == ResArray[iModeCt - i, 1])
+While (PrgLnchOpt.scrWidthDef == ResArray[1, iModeCt - i])
 {
-	if (PrgLnchOpt.scrHeightDef == ResArray[iModeCt - i, 2] && PrgLnchOpt.scrFreqDef == ResArray[iModeCt - i, 3])
+	if (PrgLnchOpt.scrHeightDef == ResArray[2, iModeCt - i] && PrgLnchOpt.scrFreqDef == ResArray[3, iModeCt - i])
 	return 1
 i++
 }
 return 0
 }
 
-
-
-GetResList(targMonitorNum, ByRef ResArray, allModes, getCurrentRes := 0)
+CheckResolutions(targMonitorNum, iDevNumArray, allModes, ByRef ResArray)
 {
-; From Checkmodes, getCurrentRes is first -1 then (default) 0
+Static checkedRegister := [0, 0, 0, 0, 0, 0, 0, 0, 0]
+; each element -1 if taken, else test for best fit
+
+
+Static ResArrayStored := [[], [], []], activeDispMonNamesNo := 0
+Static modes := []
+Static noOfSourceModes := []
+fTemp := 0
+
+	if (!initResArrayStored)
+	{
+	resArrayInit := []
+	fTemp := 3 ; arbitrary number
+	ResArrayInit[1, fTemp] := 0
+	ResArrayInit[2, fTemp] := 0
+	ResArrayInit[3, fTemp] := 0
+	
+		loop % PrgLnchOpt.dispMonNamesNo
+		{
+			if (iDevNumArray[A_Index] > 9)
+			{
+			activeDispMonNamesNo += 1
+			}
+			else
+			Continue
+		}
+		;Trim last comma (also use RTrim(resArrayInit, ",")
+		if (activeDispMonNamesNo)
+		{
+			Loop, %activeDispMonNamesNo%
+			ResArrayStored[A_Index] := ResArrayInit
+		}
+		else
+		{
+		MsgBox, 8208, Resolutions Check, Cannot locate active monitors!
+		return
+		if (!activeDispMonNamesNo)
+		MsgBox, 8208, Resolutions Check, Cannot locate active monitors!
+		}
+	}
+
+
+
+
+;First populate res tables:
+
+	if (!initResArrayStored)
+	{
+		loop % activeDispMonNamesNo
+		{
+
+		iModeCt := 0, iModeVal := 0
+		scrWidthLast := 0, scrHeightLast := 0, scrFreqLast := 0
+		dispMon := A_Index
+		modes[dispMon] := ""
+
+			while GetDisplayData(dispMon, , , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, iModeVal, (PrgLnch.Monitor != dispMon))
+			{
+
+				if (scrWidthLast == scrWidth)
+				{
+					;many iModeCts here are equivalent for the above params. scrFreq & scrHeight may vary for a subset of those
+					if (scrHeightLast != scrHeight || scrFreqLast != scrFreq)
+					{
+					iModeCt += 1
+					ResArrayStored[dispMon, 1, iModeCt] := scrWidth
+					ResArrayStored[dispMon, 2, iModeCt] := scrHeight
+					ResArrayStored[dispMon, 3, iModeCt] := scrFreq
+
+					scrHeightLast := scrHeight
+					scrFreqLast := scrFreq
+					scrDPILast := scrDPI
+					scrInterlaceLast := scrInterlace
+					modes[dispMon] .= scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
+					}
+				}
+				else
+				{
+					if (scrHeightLast != scrHeight || scrFreqLast != scrFreq && !scrWidthLast)
+					{
+					iModeCt += 1
+					ResArrayStored[dispMon, 1, iModeCt] := scrWidth
+					ResArrayStored[dispMon, 2, iModeCt] := scrHeight
+					ResArrayStored[dispMon, 3, iModeCt] := scrFreq
+
+					scrWidthLast := scrWidth
+					scrHeightLast := scrHeight
+					scrFreqLast := scrFreq
+					scrDPILast := scrDPI
+					scrInterlaceLast := scrInterlace
+					modes[dispMon] .= scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
+					}
+				}
+			iModeVal += 1
+			}
+		}
+	initResArrayStored := 1
+	}
+
+	if (!checkedRegister[targMonitorNum])
+	{
+	ResArrayTracked := []
+		; Clone useless for MD arrays
+		loop % activeDispMonNamesNo
+		{
+		dispMon := A_Index
+			loop % ResArrayStored[A_Index, 1].Length()
+			{
+			ResArrayTracked[dispMon, 1, A_Index] := ResArrayStored[dispMon, 1, A_Index]
+			ResArrayTracked[dispMon, 2, A_Index] := ResArrayStored[dispMon, 2, A_Index]
+			ResArrayTracked[dispMon, 3, A_Index] := ResArrayStored[dispMon, 3, A_Index]
+			}
+		}
+
+	Enabled := ComObjError(1)
+	dispMon := 0
+	wmi := ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" A_ComputerName "\root\wmi")
+		for monitor in wmi.ExecQuery("SELECT NumOfMonitorSourceModes, MonitorSourceModes FROM WmiMonitorListedSupportedSourceModes WHERE Active=TRUE",,wbemFlagForwardOnly := 32)
+		{
+
+		dispMon += 1
+		scrWidthLast := 0, scrHeightLast := 0, scrFreqLast := 0
+
+			if (!checkedRegister[dispMon])
+			{
+			noOfSourceModes[dispMon] := monitor.NumOfMonitorSourceModes
+			; Essentially a resource allocation or best fit problem when there are no exact matches
+
+			;fName := monitor.PreferredMonitorSourceModeIndex
+			; NumOfMonitorSourceModes is *supported* modes
+				Loop, % noOfSourceModes[dispMon]
+				{
+				sourceIndex := A_Index - 1
+
+				scrWidth := monitor.MonitorSourceModes[sourceIndex].HorizontalActivePixels
+
+				While % (scrWidthTest := ResArrayTracked[targMonitorNum, 1, A_Index])
+				{
+					if (scrWidth == scrWidthTest)
+					{
+					scrHeight := monitor.MonitorSourceModes[sourceIndex].VerticalActivePixels
+					scrHeightTest := ResArrayTracked[targMonitorNum, 2, A_Index]
+						if (scrHeight == scrHeightTest)
+						{
+						scrFreq := Round((monitor.MonitorSourceModes[sourceIndex].VerticalRefreshRateNumerator)/(monitor.MonitorSourceModes[sourceIndex].VerticalRefreshRateDenominator))
+						scrFreqTest := ResArrayTracked[targMonitorNum, 3, A_Index]
+							if (scrFreq == scrFreqTest)
+							{
+								if (scrWidthLast != scrWidthTest || scrHeightLast != scrHeightTest !! scrFreqLast != scrFreqTest)
+								{
+									for each, array in ResArrayTracked[dispMon]
+									array.RemoveAt(A_Index)
+								scrWidthLast := scrWidthTest
+								scrHeightLast := scrHeightTest
+								scrFreqLast := scrFreqTest
+								}
+							}
+						}
+
+					}
+
+				}
+				}
+
+				if (!(checkedRegister[dispMon] := ResArrayTracked[dispMon, 1].Length()))
+				{
+				; Perfect match!
+
+					Loop, % noOfSourceModes[dispMon]
+					{
+					ResArray[1, A_Index] := ResArrayStored[dispMon, 1, A_Index]
+					ResArray[2, A_Index] := ResArrayStored[dispMon, 2, A_Index]
+					ResArray[3, A_Index] := ResArrayStored[dispMon, 3, A_Index]
+					}
+				checkedRegister[dispMon] := -1
+				return % modes[dispMon]
+				}
+			}
+		}
+
+	; Get here when no perfect match, so find best match
+	fTemp := 1000
+		for dispMon in checkedRegister
+		{
+			each := checkedRegister[dispMon]
+			if (each > 0)
+			{
+				if (each <= fTemp)
+				{
+				fTemp := each
+				sourceIndex := dispMon
+msgbox % "sourceIndex " sourceIndex " A_Index " A_Index " dispMon " dispMon " targMonitorNum " targMonitorNum "`neach " each " fTemp " fTemp " checkedRegister[dispMon] " checkedRegister[dispMon] "`n`nmodes[dispMon] " modes[dispMon] "`n`nscrWidth " scrWidth " scrWidthTest " scrWidthTest " scrHeight " scrHeight " scrHeightTest " scrHeightTest "`n`nResArrayTracked[dispMon, 1].Length() " ResArrayTracked[dispMon, 1].Length() " ResArrayStored[dispMon, 1].Length() " ResArrayStored[dispMon, 1].Length() "`nnoOfSourceModes[dispMon] " noOfSourceModes[dispMon] "`n`nResArray[1, A_Index] " ResArray[1, A_Index] " ResArrayStored[dispMon, 1, A_Index] " ResArrayStored[dispMon, 1, A_Index]
+				}
+			}
+		}
+
+		if (sourceIndex)
+		{
+
+		; Now reset CheckedRegister for next time
+			for dispMon in checkedRegister
+			{
+				if (dispMon > 0)
+				checkedRegister[dispMon] := 0
+			}
+			Loop, % ResArrayStored[sourceIndex, 1].Length()
+			{
+			ResArray[1, A_Index] := ResArrayStored[sourceIndex, 1, A_Index]
+			ResArray[2, A_Index] := ResArrayStored[sourceIndex, 2, A_Index]
+			ResArray[3, A_Index] := ResArrayStored[sourceIndex, 3, A_Index]
+			}
+		; This one taken
+		checkedRegister[sourceIndex] := -1
+
+
+		return % modes[sourceIndex]
+		}
+		else
+		{
+		MsgBox, 8192, Resolution Check, Critical error with Monitor
+		return
+		}
+		
+	}
+}
+
+
+GetResList(targMonitorNum, ByRef ResArray, allModes, iDevNumArray := 0, getCurrentRes := 0)
+{
+; From Checkmodes, getCurrentRes is 0: get all, 1: get default, 2: check default
 
 static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
 ResList := "", Strng := ""
 
 fTemp := 0, iModeCt := 0, checkDefMissing := 0, iModeval := 0
 scrWidth := 0, scrHeight := 0, scrDPI := 0, scrInterlace := 0, scrFreq := 0
-scrWidthlast := 0, scrHeightlast := 0, scrDPIlast := 0, scrInterlacelast := 0, scrFreqlast := 0
+scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, scrFreqLast := 0
 
-	if (getCurrentRes)
+	switch (getCurrentRes)
 	{
-	;imodeVal == 0 caches the data for EnumSettings
-		if (!GetDisplayData(targMonitorNum, , , , , , , , , iModeval, (PrgLnch.Monitor != targMonitorNum)))
-		MsgBox, 8192, Display Data, Display data could not be cached!
-		if (!GetDisplayData(targMonitorNum, , , , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, (PrgLnch.regoVar)? ENUM_REGISTRY_SETTINGS: ENUM_CURRENT_SETTINGS, (PrgLnch.Monitor != targMonitorNum)))
-		MsgBox, 8192, Display Data, PrgLnch could not retrieve information on the monitor from which it was launched!
-
-	SysGet, mt, Monitor, %targMonitorNum%
-
-		if (mtRight - mtLeft != scrWidth)
-		fTemp := 1
-		else
+		case 1:
 		{
-			if (mtBottom - mtTop != scrHeight)
-			fTemp := 1
+		;imodeVal == 0 caches the data for EnumSettings
+			if (!GetDisplayData(targMonitorNum, , , , , , , , iModeval, (PrgLnch.Monitor != targMonitorNum)))
+			MsgBox, 8192, Display Data, Display data could not be cached!
+			if (!GetDisplayData(targMonitorNum, , , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, (PrgLnch.regoVar)? ENUM_REGISTRY_SETTINGS: ENUM_CURRENT_SETTINGS, (PrgLnch.Monitor != targMonitorNum)))
+			MsgBox, 8192, Display Data, PrgLnch could not retrieve information on the monitor from which it was launched!
+
+		; Compare & check defaults (hope frequencies tally)
+		SysGet, mt, Monitor, %targMonitorNum%
+
+			if (mtRight - mtLeft)
+			{
+				if (mtRight - mtLeft != scrWidth)
+				fTemp := 1
+				else
+				{
+					if (mtBottom - mtTop != scrHeight)
+					fTemp := 1
+				}
+
+				if (fTemp)
+				MsgBox, 8192, Monitor Setup, The default screen resolution for the current monitor is not correct,`nand its default refresh rate (frequency Hz) may not be reliable.`nCould be an issue with the initial monitor setup.
+
+			PrgLnchOpt.scrWidthDef := mtRight - mtLeft
+			PrgLnchOpt.scrHeightDef := mtBottom - mtTop
+			PrgLnchOpt.scrFreqDef := scrFreq
+			ResList := PrgLnchOpt.scrWidthDef . " `, " . PrgLnchOpt.scrHeightDef . " @ " . PrgLnchOpt.scrFreqDef . "Hz |"
+			}
 		}
-
-		if (fTemp)
-		MsgBox, 8192, Monitor Setup, The default screen resolution for the current monitor is not correct,`nand its default refresh rate (frequency Hz) may not be reliable.`nCould be an issue with the initial monitor setup.
-
-	PrgLnchOpt.scrWidthDef := mtRight - mtLeft
-	PrgLnchOpt.scrHeightDef := mtBottom - mtTop
-	PrgLnchOpt.scrFreqDef := scrFreq
-
-	ResList := PrgLnchOpt.scrWidthDef . " `, " . PrgLnchOpt.scrHeightDef . " @ " . PrgLnchOpt.scrFreqDef . "Hz |"
-	}
-	else
-	{
-	while GetDisplayData(targMonitorNum, , , , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, iModeval, (PrgLnch.Monitor != targMonitorNum))
+		case 2: ; check default
 		{
+		iModeCt := 1
 
-			;For "Incompatible" resolution detection,: first check if the current settings are missing from the list and replace it .
-			if (!checkDefMissing && PrgLnchOpt.scrWidthDef && (scrWidth > PrgLnchOpt.scrWidthDef))
+			while (scrWidth := ResArray[1, iModeCt])
 			{
-				if ((!FindResMatch(iModeCt, ResArray)) || (scrWidthLast != PrgLnchOpt.scrWidthDef))
-				{
-				iModeCt +=1
-				ResArray[iModeCt, 1] := PrgLnchOpt.scrWidthDef
-				ResArray[iModeCt, 2] := PrgLnchOpt.scrHeightDef
-				ResArray[iModeCt, 3] := PrgLnchOpt.scrFreqDef
-				Strng := PrgLnchOpt.scrWidthDef . " `, " . PrgLnchOpt.scrHeightDef . " @ " . PrgLnchOpt.scrFreqDef . "Hz |"
-				ResList .= Strng
+				scrHeight := ResArray[2, iModeCt]
+				scrFreq := ResArray[3, iModeCt]
 
-				IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
-					; Versioning: this code would want to be in IniProc
-					if (fTemp = "ERROR")
+				;For "Incompatible" resolution detection: check if the current settings are missing from the list and replace it .
+				if (!checkDefMissing && PrgLnchOpt.scrWidthDef && (scrWidth > PrgLnchOpt.scrWidthDef))
+				{
+					if ((!FindResMatch(iModeCt, ResArray)) || (scrWidthLast != PrgLnchOpt.scrWidthDef))
 					{
-					IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
-					fTemp := 0
-					}
+					iModeCt += 1
+					ResArray[1, iModeCt] := PrgLnchOpt.scrWidthDef
+					ResArray[2, iModeCt] := PrgLnchOpt.scrHeightDef
+					ResArray[3, iModeCt] := PrgLnchOpt.scrFreqDef
+					Strng := PrgLnchOpt.scrWidthDef . " `, " . PrgLnchOpt.scrHeightDef . " @ " . PrgLnchOpt.scrFreqDef . "Hz |"
+					ResList .= Strng
 
-					if (!fTemp)
+					IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
+						; Versioning: this code would want to be in IniProc
+						if (fTemp = "ERROR")
+						{
+						IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
+						fTemp := 0
+						}
+
+						if (!fTemp)
+						{
+						;note-msgbox isn't modal if called from function
+						retVal := TaskDialog("Default Resolution", "Unsupported Resolution?", "", "The current desktop resolution of " PrgLnchOpt.scrWidthDef " X " PrgLnchOpt.scrHeightDef " does not belong to the list of resolution modes the firmware of the current monitor has flagged as operable. If the OEM wddm driver asserts the resolution mode is actually compatible, the mode will appear in the Windows Setting's list of resolution, there is no issue other than PrgLnch using an older technology from that of the driver. Else, the options of an out-dated or imported PrgLnch ini file, driver inconsistency or error in multi-monitor setup cannot be discounted.`n`nThe mode has been inserted to the PrgLnch Resolution Mode list, however changes to this, or any other resolution mode in this PrgLnch instance may not work properly.`n`nTo use PrgLnch, it's recommended the current desktop resolution be permanently changed to one which is more " . """" . "compatible" . """" . " with the driver.`nTo do so, from PrgLnch Options, select " . """" . "None" . """" . " in Shortcut slots, and choose " . """" . "Dynamic" . """" . " in the Res Options, and then select an alternative resolution mode from the list. Be sure to return the selection in Res Options to " . """" . "Temporary" . """" . ", if that is the preference.", , "Continue with the resolution checks")
+							if (retVal < 0)
+							IniWrite, 1, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
+						}
+					}
+				checkDefMissing := 1
+				}
+
+				if (scrWidthLast == scrWidth)
+				{
+					;many iModeCts here are equivalent for the above params. scrFreq & scrHeight may vary for a subset of those
+					if ((allModes && (scrHeightLast == scrHeight || scrFreqLast == scrFreq)) || (scrHeightLast != scrHeight || scrFreqLast != scrFreq))
 					{
-					;note-msgbox isn't modal if called from function
-					retVal := TaskDialog("Default Resolution", "Unsupported Resolution?", "", "The current desktop resolution of " PrgLnchOpt.scrWidthDef " X " PrgLnchOpt.scrHeightDef " does not belong to the list of resolution modes the firmware of the current monitor has flagged as operable. If the OEM wddm driver asserts the resolution mode is actually compatible, the mode will appear in the Windows Setting's list of resolution, there is no issue other than PrgLnch using an older technology from that of the driver. Else, the options of an out-dated or imported PrgLnch ini file, driver inconsistency or error in multi-monitor setup cannot be discounted.`n`nThe mode has been inserted to the PrgLnch Resolution Mode list, however changes to this, or any other resolution mode in this PrgLnch instance may not work properly.`n`nTo use PrgLnch, it's recommended the current desktop resolution be permanently changed to one which is more " . """" . "compatible" . """" . " with the driver.`nTo do so, from PrgLnch Options, select " . """" . "None" . """" . " in Shortcut slots, and choose " . """" . "Dynamic" . """" . " in the Res Options, and then select an alternative resolution mode from the list. Be sure to return the selection in Res Options to " . """" . "Temporary" . """" . ", if that is the preference.", , "Continue with the resolution checks")
-						if (retVal < 0)
-						IniWrite, 1, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
+					iModeCt += 1
+					scrHeightLast := scrHeight
+					scrFreqLast := scrFreq
+					Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
+					ResList .= Strng
 					}
 				}
-			checkDefMissing := 1
-			}
-
-
-
-			if (scrWidthlast == scrWidth)
-			{
-				;many iModeCts here are equivalent for the above params. scrFreq & scrHeight may vary for a subset of those
-				if ((allModes && (scrHeightlast == scrHeight || scrFreqlast == scrFreq)) || (scrHeightlast != scrHeight || scrFreqlast != scrFreq))
+				else
 				{
-				iModeCt += 1
-				ResArray[iModeCt, 1] := scrWidth
-				ResArray[iModeCt, 2] := scrHeight
-				ResArray[iModeCt, 3] := scrFreq
+					if ((AllModes && scrHeightLast == scrHeight && scrFreqLast == scrFreq) || ((scrHeightLast != scrHeight || scrFreqLast != scrFreq)))
+					{
+					iModeCt += 1
+					scrWidthLast := scrWidth
+					scrHeightLast := scrHeight
+					scrFreqLast := scrFreq
 
-				scrHeightlast := scrHeight
-				scrFreqlast := scrFreq
-				scrDPIlast := scrDPI
-				scrInterlacelast := scrInterlace
-				Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq . "Hz |"
-				ResList .= Strng
+					;https://autohotkey.com/boards/viewtopic.php?f=5&t=23021&p=108567#p108567
+					Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
+					ResList .= Strng
+					}
 				}
 			}
-			else
+		}
+		Default: ; 0: populate list
+		{
+			while GetDisplayData(targMonitorNum, iDevNumArray, , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, iModeval, (PrgLnch.Monitor != targMonitorNum))
 			{
-				if ((AllModes && scrHeightlast == scrHeight && scrFreqlast == scrFreq) || ((scrHeightlast != scrHeight || scrFreqlast != scrFreq)))
+
+				if (scrWidthLast == scrWidth)
 				{
-				iModeCt += 1
-				ResArray[iModeCt, 1] := scrWidth
-				ResArray[iModeCt, 2] := scrHeight
-				ResArray[iModeCt, 3] := scrFreq
+					;many iModeCts here are equivalent for the above params. scrFreq & scrHeight may vary for a subset of those
+					if ((allModes && (scrHeightLast == scrHeight || scrFreqLast == scrFreq)) || (scrHeightLast != scrHeight || scrFreqLast != scrFreq))
+					{
+					iModeCt += 1
+					ResArray[1, iModeCt] := scrWidth
+					ResArray[2, iModeCt] := scrHeight
+					ResArray[3, iModeCt] := scrFreq
 
-				scrWidthlast := scrWidth
-				scrHeightlast := scrHeight
-				scrDPIlast := scrDPI
-				scrInterlacelast := scrInterlace
-				scrFreqlast := scrFreq
-
-				;https://autohotkey.com/boards/viewtopic.php?f=5&t=23021&p=108567#p108567
-				Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
-				ResList .= Strng
+					scrHeightLast := scrHeight
+					scrFreqLast := scrFreq
+					scrDPILast := scrDPI
+					scrInterlaceLast := scrInterlace
+					Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq . "Hz |"
+					ResList .= Strng
+					}
 				}
+				else
+				{
+					if ((AllModes && scrHeightLast == scrHeight && scrFreqLast == scrFreq) || ((scrHeightLast != scrHeight || scrFreqLast != scrFreq)))
+					{
+					iModeCt += 1
+					ResArray[1, iModeCt] := scrWidth
+					ResArray[2, iModeCt] := scrHeight
+					ResArray[3, iModeCt] := scrFreq
+
+					scrWidthLast := scrWidth
+					scrHeightLast := scrHeight
+					scrFreqLast := scrFreq
+					scrDPILast := scrDPI
+					scrInterlaceLast := scrInterlace
+
+					;https://autohotkey.com/boards/viewtopic.php?f=5&t=23021&p=108567#p108567
+					Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
+					ResList .= Strng
+					}
+				}
+				iModeval += 1
 			}
-			iModeval += 1
+			if (Strng := CheckResolutions(targMonitorNum, iDevNumArray, allModes, ResArray))
+			ResList := Strng
 		}
 	}
 return ResList
@@ -9643,7 +9943,7 @@ EnumProc := RegisterCallback("MonitorEnumProc", "", 4)
 
 
 ; enumerates monitors in the same order as sysget.
-	If (!(DllCall("User32.dll\EnumDisplayMonitors", "ptr", 0, "ptr", 0, "ptr", EnumProc, "ptr", &Monitors)))
+	if (!(DllCall("User32.dll\EnumDisplayMonitors", "ptr", 0, "ptr", 0, "ptr", EnumProc, "ptr", &Monitors)))
 	{
 		;if (DllCall("GlobalFree", "Ptr", EnumProc, "Ptr"))
 		;MsgBox, 8195, Memory Clean up, GlobalFree Failed
@@ -9728,15 +10028,40 @@ if (Monitors.Count == Monitors.targetMonitorNum)
 				}
 				else
 				{
-					if (A_LastError == -1071241854)
+					switch (A_LastError)
+					{
+					case 31:
+					strRetVal := "ERROR_GEN_FAILURE"
+					case -1071241847:
+					{
+					strRetVal := "ERROR_GRAPHICS_DDCCI_INVALID_MESSAGE_COMMAND"
+					retVal := 1 ; monitor still good to go???
+					}
+					case -1071241856:
+					{
+					strRetVal := "ERROR_GRAPHICS_I2C_NOT_SUPPORTED"
+					retVal := 1 ; monitor still good to go
+					}
+					case -1071241854:
 					{
 					strRetVal := "ERROR_GRAPHICS_I2C_ERROR_TRANSMITTING_DATA"
 					retVal := 1 ; monitor still good to go
 					}
-					else
+					case -1071241853:
 					{
-						if (A_LastError == 31)
-						strRetVal := "ERROR_GEN_FAILURE"
+					strRetVal := "ERROR_GRAPHICS_I2C_ERROR_RECEIVING_DATA"
+					retVal := 1 ; monitor still good to go
+					}
+					case -1071241852:
+					{
+					strRetVal := "ERROR_GRAPHICS_DDCCI_VCP_NOT_SUPPORTED"
+					retVal := 1 ; monitor still good to go
+					}
+					case -1071241844:
+					strRetVal := "ERROR_GRAPHICS_INVALID_PHYSICAL_MONITOR_HANDLE"
+					Default:
+					{
+					}
 					}
 				outStr .= "GetTimingReport failed with code: " . ((strRetVal)? strRetVal: A_LastError) . " ."
 				}
@@ -11180,11 +11505,11 @@ IniProcStart:
 							if (selPrgChoice == 100) ;write record at init
 							{
 							spr := ""
-								loop % dispMonNamesNo - 1
-								{
+							temp := PrgLnchOpt.dispMonNamesNo
+								loop % temp - 1
 								spr .= iDevNumArray[A_Index] . ","
-								}
-							spr .= iDevNumArray[dispMonNamesNo]
+
+							spr .= iDevNumArray[temp]
 
 							IniWrite, %spr%, % PrgLnch.SelIniChoicePath, Prgs, PrgMon
 							}
@@ -11203,7 +11528,7 @@ IniProcStart:
 
 								if (iDevNumArrayIn[1])
 								{
-									if (temp == dispMonNamesNo)
+									if (temp == PrgLnchOpt.dispMonNamesNo)
 									{
 									loop % temp
 									{
