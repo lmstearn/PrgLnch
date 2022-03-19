@@ -43,6 +43,2831 @@ Process, priority, %PrgLnchPID%, A
 
 ; Virtual screen: https://msdn.microsoft.com/en-us/library/vs/alm/dd145136(v=vs.85).aspx
 
+Class Splashy
+{
+
+	spr := 0
+	spr1 := 0
+	spr2 := 0
+
+	; HTML Colours (RGB- no particular order)
+	STATIC HTML := {CYAN: "0X00FFFF", AQUAMARINE : "0X7FFFD4", BLACK: "0X000000", BLUE: "0X0000FF", FUCHSIA: "0XFF00FF", GRAY: "0X808080", AUBURN: "0X2A2AA5"
+	 , LIME: "0X00FF00", MAROON: "0X800000", NAVY: "0X000080", OLIVE: "0X808000", PURPLE: "0X800080", INDIGO: "0X4B0082", LAVENDER: "0XE6E6FA", DKSALMON: "0X7A96E9"
+	 , SILVER: "0XC0C0C0", TEAL: "0X008080", WHITE: "0XFFFFFF", YELLOW: "0XFFFF00", WHEAT: "0xF5DEB3", ORANGE: "0XFFA500", BEIGE: "0XF5F5DC", CELADON: "0XACE1AF"
+	 , CHESTNUT: "0X954535", TAN: "0xD2B48C", CHOCOLATE: "0X7B3F00", TAUPE: "0X483C32", SALMON: "0XFA8072", VIOLET: "0X7F00FF", GRAPE: "0X6F2DA8", STEINGRAU: "0X485555"
+	 , PEACH: "0XFFE5B4", CORAL: "0XFF7F50", CRIMSON: "0XDC143C", VERMILION: "0XE34234", CERULEAN: "0X007BA7", TURQUOISE: "0X40E0D0", VIRIDIAN: "0X40826D", RED: "0XFF0000"
+	 , PLUM: "0X8E4585", MAGENTA: "0XF653A6", GOLD: "0XFFD700", GOLDENROD: "0XDAA520", GREEN: "0X008000", ONYX: "0X353839", KHAKIGRAU: "0X746643", FELDGRAU: "0X3D5D5D"}
+
+	Static MaxGuis := 1000	; arbitrary limit
+	Static parentHWnd := 0
+	Static updateFlag := -1
+	Static procEnd := 0
+	Static pToken := 0
+	Static hGDIPLUS := 0
+
+	Static parentClip := 0
+	Static downloadedPathNames := []
+	Static downloadedUrlNames := []
+	Static NewWndObj := {}
+	Static vImgType := 0
+	Static hWndSaved := []
+	Static parent := 0
+	Static release := 0
+	Static hDCWin := 0
+	Static instance := 1
+	Static oldInstance := 1
+	Static hBitmap := 0
+	Static hIcon := 0
+	Static vImgTxtSize := 0
+	Static vPosX := "c"
+	Static vPosY := "c"
+	Static vMgnX := 0
+	Static vMgnY := 0
+	Static vImgX := 0
+	Static vImgY := 0
+	Static inputVImgW := ""
+	Static inputVImgH := ""
+	Static vImgW := 0
+	Static vImgH := 0
+	Static oldVImgW := 0
+	Static oldVImgH := 0
+	Static actualVImgW := 0
+	Static actualVImgH := 0
+	Static oldPicInScript := 0
+	Static picInScript := 0
+
+	Static ImageName := ""
+	Static oldImagePath := ""
+	Static imageUrl := ""
+	Static oldImageUrl := ""
+	Static bkgdColour := ""
+	Static transCol := 0
+	Static vHide := 0
+	Static noHWndActivate := ""
+	Static vBorder := 0
+	Static voldBorder := 0
+	Static vOnTop := 0
+
+
+	Static mainTextHWnd := []
+	Static mainText := ""
+	Static mainBkgdColour := ""
+	Static mainFontName := ""
+	Static mainFontSize := 0
+	Static mainFontWeight := 0
+	Static mainFontColour := ""
+	Static mainFontQuality := 0
+	Static mainFontItalic := ""
+	Static mainFontStrike := ""
+	Static mainFontUnderline := ""
+	Static mainMarquee := 0
+
+	Static subTextHWnd := []
+	Static subText := ""
+	Static subBkgdColour := ""
+	Static subFontName := ""
+	Static subFontSize := 0
+	Static subFontWeight := 0
+	Static subFontColour := ""
+	Static subFontQuality := 0
+	Static subFontItalic := ""
+	Static subFontStrike := ""
+	Static subFontUnderline := ""
+	Static subMarquee := 0
+
+	Class NewWndProc
+	{
+	Static clbk := []
+	Static wndProcOld := 0
+	Static WM_PAINT := 0x000F
+	Static WM_NCHITTEST := 0x84
+	Static WM_ERASEBKGND := 0x0014
+	Static WM_CTLCOLORSTATIC := 0x0138
+	Static WM_ENTERSIZEMOVE := 0x0231
+	Static WM_EXITSIZEMOVE := 0x0232
+
+		__New(instance)
+		{
+		Static SetWindowLong := A_PtrSize == 8 ? "SetWindowLongPtr" : "SetWindowLong"
+		Static wndProcNew := 0
+
+			if (!(wndProcNew := This.clbk[instance].addr)) ; called once only from the caller- this is extra security
+			{
+			This.clbk[instance] := new This.BoundFuncCallback( ObjBindMethod(This, "WndProc"), 4 )
+			wndProcNew := This.clbk[instance].addr
+				if (wndProcNew)
+				{
+					if (!(This.wndProcOld := DllCall(SetWindowLong, "Ptr", Splashy.hWnd(), "Int", GWL_WNDPROC := -4, "Ptr", wndProcNew, "Ptr")))
+					msgbox, 8208, WndProc, Bad return!		
+				}
+				else
+				msgbox, 8208, WndProc, No address!
+			}
+		}
+
+		__Delete(instance)
+		{
+			This.clbk[instance] := "" ; triggers clbk.__Delete()
+		}
+
+		class BoundFuncCallback
+		{
+		; https://www.autohotkey.com/boards/viewtopic.php?f=76&t=88704&p=390706
+			__New(BoundFuncObj, paramCount, options := "")
+			{
+			This.pInfo := Object( {BoundObj: BoundFuncObj, paramCount: paramCount} )
+			This.addr := RegisterCallback(This.__Class . "._Callback", options, paramCount, This.pInfo)
+			}
+			__Delete()
+			{
+			ObjRelease(This.pInfo)
+			if (DllCall("GlobalFree", "Ptr", This.addr, "Ptr"))
+			msgbox, 8208, GlobalFree, Memory could not be released!
+			}
+			_Callback(Params*)
+			{
+			Info := Object(A_EventInfo), Args := []
+			Loop % Info.paramCount
+			Args.Push( NumGet(Params + A_PtrSize*(A_Index - 2)) )
+			Return Info.BoundObj.Call(Args*)
+			}
+		}
+
+		WndProc(hwnd, uMsg, wParam, lParam)
+		{
+		;Critical 
+			Switch uMsg
+			{
+				case % This.WM_CTLCOLORSTATIC:
+				{
+				return This.CtlColorStaticProc(wParam, lParam)
+				}
+				case % This.WM_PAINT:
+				{
+				This.PaintProc()
+				return 0
+				}
+				case % This.WM_ENTERSIZEMOVE:
+				{
+				; For WM_Move: revert the parent for the window move
+				Splashy.CheckParentStat()
+				return 0
+				}
+				case % This.WM_EXITSIZEMOVE:
+				{
+				; Revert to Splashy
+				Splashy.CheckParentStat(1)
+				This.PaintProc()
+				return 0
+				}
+				case % This.WM_NCHITTEST:
+				{
+				return This.NcHitTestProc(hWnd, uMsg, wParam, lParam)
+				}
+				Default:
+				return DllCall("CallWindowProc", "Ptr", This.wndProcOld, "Ptr", hWnd, "UInt", uMsg, "Ptr", wParam, "Ptr", lParam)
+			}
+			
+		}
+
+		NcHitTestProc(hWnd, uMsg, wParam, lParam)
+		{
+			Static HTCLIENT := 1, HTCAPTION := 2
+			; Makes form movable
+
+			if (Splashy.vMovable)
+			{
+
+			lResult := DllCall("DefWindowProc", "Ptr", hWnd, "UInt", uMsg, "UPtr", wParam, "Ptr", lParam)
+
+				if (lResult == HTCLIENT)
+				lResult := HTCAPTION
+			return % lResult
+			}
+			else
+			return % HTCLIENT
+		}
+
+		CtlColorStaticProc(wParam, lParam)
+		{
+		static DC_BRUSH := 0x12
+ 
+			if (lparam == Splashy.subTextHWnd[Splashy.instance]) ; && This.hDCWin == wParam)
+			This.SetColour(wParam, Splashy.subBkgdColour, Splashy.subFontColour)
+			else
+			{
+				if (lParam == Splashy.mainTextHWnd[Splashy.instance])
+				This.SetColour(wParam, Splashy.mainBkgdColour, Splashy.mainFontColour)
+			}
+
+		return DllCall("Gdi32.dll\GetStockObject", "UInt", DC_BRUSH, "UPtr")
+		}
+
+		SetColour(textDC, bkgdColour, fontColour) 
+		{
+			static NULL_BRUSH := 0x5, TRANSPARENT := 0X1, OPAQUE := 0X2, CLR_INVALID := 0xFFFFFFFF
+
+			DllCall("Gdi32.dll\SetBkMode", "Ptr", textDC, "UInt", (Splashy.transCol)? TRANSPARENT: OPAQUE)
+			if (DllCall("Gdi32.dll\SetBkColor", "Ptr", textDC, "UInt", bkgdColour) == CLR_INVALID)
+			msgbox, 8208, SetBkColor, Cannot set background colour for text!
+			if (DllCall("Gdi32.dll\SetTextColor", "Ptr", textDC, "UInt", fontColour) == CLR_INVALID)
+			msgbox, 8208, SetTextColor, Cannot set colour for text!
+
+			if (DllCall("SetDCBrushColor", "Ptr", textDC, "UInt", bkgdColour) == CLR_INVALID)
+			msgbox, 8208, SetDCBrushColor, Cannot set colour for brush!
+		}
+
+
+		PaintProc(hWnd := 0)
+		{
+		spr := 0	
+			if (VarSetCapacity(PAINTSTRUCT, A_PtrSize + A_PtrSize + 56, 0)) ; hdc, rcPaint are pointers
+			{
+					if (!hWnd)
+					{
+					hWnd := Splashy.hWnd()
+						if (!Splashy.procEnd)
+						spr := 1
+					}
+				; DC validated
+					if (DllCall("User32.dll\BeginPaint", "Ptr", hWnd, "Ptr", &PAINTSTRUCT, "UPtr"))
+					{
+						if (!spr)
+						{
+						static vDoDrawImg := 1 ;set This to 0 and the image won't be redrawn
+						static vDoDrawBgd := 1 ;set This to 0 and the background won't be redrawn
+						;return ;uncomment This line and the window will be blank
+
+							if (vDoDrawImg)
+							Splashy.PaintDC()
+
+							if (vDoDrawBgd)
+							Splashy.DrawBackground()
+						}
+					}
+				DllCall("User32.dll\EndPaint", "Ptr", hWnd, "Ptr", &PAINTSTRUCT, "UPtr")
+			}
+			else
+			msgbox, 8208, PAINTSTRUCT, Cannot paint!
+		}
+
+		SubClassTextCtl(ctlHWnd, release := 0)
+		{
+		Static SubProcFunc := 0
+			if (release)
+			{
+			This.subClbk := "" ; triggers subClbk.__Delete()
+			SubProcFunc := 0
+			}
+			else
+			{
+				if (!ctlHWnd)
+				return
+				if (!SubProcFunc)
+				{
+				This.subClbk := new This.BoundFuncCallback(ObjBindMethod(This, "SubClassTextProc"), 6)
+				SubProcFunc := This.subClbk.addr
+				}
+
+				if !DllCall("Comctl32.dll\SetWindowSubclass", "Ptr", ctlHWnd, "Ptr", SubProcFunc, "Ptr", ctlHWnd, "Ptr", 0)
+				msgbox, 8208, Text Control, SubClassing failed!
+
+			}
+		}
+		SubClassTextProc(hWnd, uMsg, wParam, lParam, IdSubclass, RefData)
+		{
+		;THis subclass for marquee code
+		; WM_PAINT is required to paint the scrolled text.
+		; BeginPaint in WM_PAINT will erase the content already set in the DC of the control.
+		;
+		;To prevent, temporarily modify AHK's own hbrBackground in its WNDCLASSEX
+		; hbrBackground := DllCall(GetStockObject(NULL_BRUSH))
+		;
+		;Which means we have to create our own class and window for the control anyway,
+		; Then use Pens & Brushes & DrawTextEx et al.
+
+		Critical
+		static DC_BRUSH := 0x12
+		/*
+
+
+
+			if (uMsg == This.WM_ERASEBKGND)
+			{
+			return 1
+			}
+			if (uMsg == This.WM_PAINT)
+			{
+			VarSetCapacity(PAINTSTRUCT, A_PtrSize + A_PtrSize + 56, 0)
+				if (!(hDC := DllCall("User32.dll\BeginPaint", "Ptr", hWnd, "Ptr", &PAINTSTRUCT, "UPtr")))
+				return 0
+			spr := This.ToBase(hWnd, 16)
+			spr1 := InStr(spr, This.mainTextHWnd[This.instance])
+			spr2 := InStr(spr, This.subTextHWnd[This.instance])
+
+
+				if (spr1 || spr2)
+				{
+
+				if (This.mainMarquee && spr1)
+				{
+				}
+				else
+					{
+						if (This.mainMarquee && spr1)
+						{
+						}
+						else
+						{
+							if (spr1)
+							This.SetColour(This.mainBkgdColour, hDC)
+							else
+							This.SetColour(This.subBkgdColour, hDC)
+						}
+					}
+				}
+
+			DllCall("User32.dll\EndPaint", "Ptr", hWnd, "Ptr", &PAINTSTRUCT, "UPtr")
+			return 0
+			}
+
+	;Marquee code in an outside function
+				;RECT rectControls := {wd + xCurrentScroll, yCurrentScroll, xNewSize + xCurrentScroll, yNewSize + yCurrentScroll};
+				;if (!ScrollDC(hdcWinCl, -xDelta, 0, (CONST RECT*) &rectControls, (CONST RECT*) &rectControls, (HRGN)NULL, (RECT*) &rectControls))
+					;ReportErr(L"HORZ_SCROLL: ScrollD Failed!");
+
+	*/
+
+		Return DllCall("Comctl32.dll\DefSubclassProc", "Ptr", hWnd, "UInt", uMsg, "Ptr", wParam, "Ptr", lParam)
+		}
+
+	}
+
+
+	SplashImg(argList*)
+	{
+	parentOut := ""
+	imagePathOut := ""
+	imageUrlOut := ""
+	bkgdColourOut := ""
+	transColOut := ""
+	vHideOut := 0
+	noHWndActivateOut := ""
+	vImgTxtSizeOut := 0
+	vMovableOut := 0
+	vBorderOut := ""
+	vOnTopOut := 0
+	vPosXOut := ""
+	vPosYOut := ""
+	vMgnXOut := 0
+	vMgnYOut := 0
+	vImgWOut := 0
+	vImgHOut := 0
+	mainTextOut := ""
+	mainBkgdColourOut := ""
+	mainFontNameOut := ""
+	mainFontSizeOut := 0
+	mainFontWeightOut := 0
+	mainFontColourOut := -1
+	mainFontQualityOut := -1
+	mainFontItalicOut := 0
+	mainFontStrikeOut := 0
+	mainFontUnderlineOut := 0
+	subTextOut := ""
+	subBkgdColourOut := ""
+	subFontNameOut := ""
+	subFontSizeOut := 0
+	subFontWeightOut := 0
+	subFontColourOut := -1
+	subFontQualityOut := -1
+	subFontItalicOut := 0
+	subFontStrikeOut := 0
+	subFontUnderlineOut := 0
+
+	This.SaveRestoreUserParms()
+
+	StringCaseSense, Off
+	SetWorkingDir %A_ScriptDir%
+
+		if (argList["release"])
+		{
+			This.Destroy()
+			return
+		}
+
+		if (argList.HasKey("instance"))
+		{
+			key := argList["instance"]
+			if ((key := Floor(key))) ; 0 is invalid
+			{
+				if (This.hWndSaved[key])
+				{
+				This.instance := key
+
+					if (This.instance != This.oldInstance)
+					{
+					; Ensures current postion is not reset
+						This.vPosX := ""
+						This.vPosY := ""
+					}
+				}
+				else
+				{
+					if (key < 0)
+					{
+					key := -key
+						if (This.hWndSaved[key])
+						{
+						;WinClose, % "ahk_id " This.hWndSaved[This.instance]
+						This.hWndSaved[key] := 0
+						This.mainTextHWnd[key] := 0
+						This.subTextHWnd[key] := 0
+						spr := "Splashy" . key
+						Gui, %spr%: Destroy
+						Splashy.NewWndProc.clbk[key] := ""
+
+						;Now reset This.instance for next call
+							if (This.hWndSaved.Length() == 1)
+							This.instance := 1
+							else
+							{
+								if (This.hWndSaved.Length() == key)
+								This.instance -= 1
+								else
+								This.instance := This.hWndSaved.MaxIndex()
+							}
+						This.oldInstance := This.instance
+						}
+					This.SaveRestoreUserParms(1)
+					return
+					}
+					else
+					{
+						if (key > This.MaxGuis)
+						{
+						This.SaveRestoreUserParms(1)
+						return
+						}
+						else
+						This.instance := key
+					}
+				}
+			}
+			else
+			{
+			This.SaveRestoreUserParms(1)
+			return
+			}
+		}
+
+		if (This.hWndSaved[This.instance])
+		{
+			if (argList.HasKey("initSplash"))
+			{
+				if (argList["initSplash"])
+				This.updateFlag := 0
+				else
+				This.updateFlag := 1
+			}
+			else
+			This.updateFlag := 1
+		}
+		else
+		{
+		; init the parent hWnd
+			if (!This.parentHWnd)
+			{
+				This.parentHWnd := This.SetParentFlag()
+				if (This.parentHWnd == "Error")
+				{
+				;msgbox, 8192, Parent Script, Warning: Parent script is not AHK, or the window handle cannot be obtained!
+				This.parentHWnd := 0
+				}
+			}
+		}
+
+
+		For key, value in argList
+		{
+
+		; An alternative: https://www.autohotkey.com/boards/viewtopic.php?f=6&t=9656
+			if (key)
+			{
+			; Validate values
+				Switch key
+				{
+
+				Case "parent":
+				{
+					if (This.updateFlag > 0)
+					This.parent := value
+					else
+					parentOut := value
+				}
+
+				Case "imagePath":
+				{
+					if (This.updateFlag > 0)
+					This.imagePath := This.ValidateText(value)
+					else
+					imagePathOut := value
+
+					if ((InStr(This.imagePath, "*")))
+					This.picInScript := 1
+					else
+					This.picInScript := 0
+				}
+
+				Case "imageUrl":
+				{
+				value := Trim(Value)
+
+					if (This.updateFlag > 0)
+					{
+					This.imageUrl := This.ValidateText(value)
+						if (This.imagePath == A_AhkPath)
+						This.imagePath := ""
+					}
+					else
+					imageUrlOut := value
+				}
+				Case "bkgdColour":
+				{
+					if (This.updateFlag > 0)
+					This.bkgdColour := (value == "")?This.GetDefaultGUIColour():This.ValidateColour(value)
+					else
+					bkgdColourOut := value
+				}
+				Case "transCol":
+				{
+					if (This.transCol)
+					{
+						if (!value && This.hWndSaved[This.instance])
+						{
+						WinSet, TransColor, Off, % "ahk_id" . This.hWndSaved[This.instance]
+							if (This.subTextHWnd[This.instance])
+							WinSet, TransColor, Off, % "ahk_id" . This.subTextHWnd[This.instance]
+							if (This.mainTextHWnd[This.instance])
+							WinSet, TransColor, Off, % "ahk_id" . This.mainTextHWnd[This.instance]
+						}
+					}
+
+					if (This.updateFlag > 0)
+					This.transCol := value
+					else
+					transColOut := value
+				}
+				Case "vHide":
+				{
+					if (This.updateFlag > 0)
+					This.vHide := value
+					else
+					vHideOut := value
+				}
+				Case "noHWndActivate":
+				{
+					if (This.updateFlag > 0)
+					This.noHWndActivate := (value)? "NoActivate ": ""
+					else
+					noHWndActivateOut := value
+				}
+				Case "vOnTop":
+				{
+					if (This.updateFlag > 0)
+					This.vOnTop := value
+					else
+					vOnTopOut := value
+				}
+				Case "vMovable":
+				{
+					if (This.updateFlag > 0)
+					This.vMovable := value
+					else
+					vMovableOut := value
+				}
+				Case "vBorder":
+				{
+					if (InStr(value, "b"))
+					spr := "b"
+					else
+					{
+					spr := ""
+						if (InStr(value, "w"))
+						spr .= "w"
+						if (InStr(value, "s"))
+						spr .= "s"
+						if (InStr(value, "c"))
+						spr .= "c"
+						if (InStr(value, "d"))
+						spr .= "d"
+						if (value && !spr)
+						spr := "dlgframe"
+					}
+					if (This.updateFlag > 0)
+					This.vBorder := spr
+					else
+					vBorderOut := spr
+				}
+				Case "vImgTxtSize":
+				{
+					if (This.updateFlag > 0)
+					This.vImgTxtSize := value
+					else
+					vImgTxtSizeOut := value
+				}
+				Case "vPosX":
+				{
+					if value is number
+					{
+						if (value)
+						spr := Floor(value)
+						else
+						spr := "zero"
+					}
+					else
+					spr := (Instr(value, "c"))? "c": ""
+
+					if (This.updateFlag > 0)
+					This.vPosX := spr
+					else
+					vPosXOut := spr
+				}
+
+				Case "vPosY":
+				{
+					if value is number
+					{
+						if (value)
+						spr := Floor(value)
+						else
+						spr := "zero"
+					}
+					else
+					spr := (Instr(value, "c"))? "c": ""
+
+					if (This.updateFlag > 0)
+					This.vPosY := spr
+					else
+					vPosYOut := spr
+				}
+
+				Case "vMgnX":
+				{
+					if (value >= 0)
+					{
+					spr := Instr(value, "d")? "d": Floor(value)
+						if (This.updateFlag > 0)
+						This.vMgnX := spr
+						else
+						vMgnXOut := spr
+					}
+				}
+				Case "vMgnY":
+				{
+					if (value >= 0)
+					{
+					spr := Instr(value, "d")? "d": Floor(value)
+						if (This.updateFlag > 0)
+						This.vMgnY := spr
+						else
+						vMgnYOut := spr
+					}
+				}
+
+				Case "vImgW":
+				{
+				spr := (This.actualVImgW)?This.ProcImgWHVal(value):value
+
+					if (This.updateFlag > 0)
+					This.inputVImgW := spr
+					else
+					vImgWOut := spr
+				}
+
+				Case "vImgH":
+				{
+				spr := (This.actualVImgH)?This.ProcImgWHVal(value, 1):value
+
+					if (This.updateFlag > 0)
+					This.inputVImgH := spr
+					else
+					vImgHOut := spr
+				}
+
+
+				Case "mainText":
+				{
+					if (This.updateFlag > 0)
+					This.mainText := This.ValidateText(value)
+					else
+					mainTextOut := value
+				}
+				Case "mainBkgdColour":
+				{
+					if (This.updateFlag > 0)
+					This.mainBkgdColour := (value == "")?This.GetDefaultGUIColour():This.ValidateColour(value, 1)
+					else
+					mainBkgdColourOut := value
+				}
+				Case "mainFontName":
+				{
+					if (This.updateFlag > 0)
+					This.mainFontName := (value)?This.ValidateText(value):"Verdana"
+					else
+					mainFontNameOut := value
+				}
+
+				Case "mainFontSize":
+				{
+				value := abs(value)  ; 200 arbitrary limit
+					if (This.updateFlag > 0)
+					This.mainFontSize := (0 < value <= 200)?Floor(value):10
+					else
+					mainFontSizeOut := value
+				}
+				Case "mainFontWeight":
+				{
+				value := abs(value)
+					if (This.updateFlag > 0)
+					This.mainFontWeight := (0 < value <= 1000)?Floor(value):400
+					else
+					mainFontWeightOut := value
+				}
+				Case "mainFontColour":
+				{
+					if (value != -1)
+					{
+						if (This.updateFlag > 0)
+						This.mainFontColour := This.ValidateColour(value, 1)
+						else
+						mainFontColourOut := value
+					}
+				}
+				Case "mainFontQuality":
+				{
+				value := abs(value) ; 0 :=  DEFAULT_QUALITY
+					if (This.updateFlag > 0)
+					This.mainFontQuality := (0 <= value <= 5)?Floor(value):1
+					else
+					mainFontQualityOut := value
+				}
+				Case "mainFontItalic":
+				{
+					if (This.updateFlag > 0)
+					This.mainFontItalic := (value)? " Italic": ""
+					else
+					mainFontItalicOut := value
+				}
+				Case "mainFontStrike":
+				{
+					if (This.updateFlag > 0)
+					This.mainFontStrike := (value)? " Strike": ""
+					else
+					mainFontStrikeOut := value
+				}
+				Case "mainFontUnderline":
+				{
+					if (This.updateFlag > 0)
+					This.mainFontUnderline := (value)? " Underline": ""
+					else
+					mainFontUnderlineOut := value
+				}
+
+
+
+
+				Case "subText":
+				{
+					if (This.updateFlag > 0)
+					This.subText := This.ValidateText(value)
+					else
+					subTextOut := value
+				}
+				Case "subBkgdColour":
+				{
+					if (This.updateFlag > 0)
+					This.subBkgdColour := (value == "")?This.GetDefaultGUIColour():This.ValidateColour(value, 1)
+					else
+					subBkgdColourOut := value
+				}
+
+				Case "subFontName":
+				{
+					if (This.updateFlag > 0)
+					This.subFontName := (value)?This.ValidateText(value):"Verdana"
+					else
+					subFontNameOut := value
+				}
+				Case "subFontSize":
+				{
+				value := abs(value)  ; 200 arbitrary limit
+					if (This.updateFlag > 0)
+					This.subFontSize := (0 < value <= 200)?Floor(value):10
+					else
+					subFontSizeOut := value
+				}
+				Case "subFontWeight":
+				{
+				value := abs(value)
+					if (This.updateFlag > 0)
+					This.subFontWeight := (0 < value <= 1000)?Floor(value):400
+					else
+					subFontWeightOut := value
+				}
+				Case "subFontColour":
+				{
+					if (value != -1)
+					{
+						if (This.updateFlag > 0)
+						This.subFontColour := This.ValidateColour(value, 1)
+						else
+						subFontColourOut := value
+					}
+				}
+				Case "subFontQuality":
+				{
+				value := abs(value)
+					if (This.updateFlag > 0)
+					This.subFontQuality := (0 <= value <= 5)?Floor(value):1
+					else
+					subFontQualityOut := value
+				}
+				Case "subFontItalic":
+				{
+					if (This.updateFlag > 0)
+					This.subFontItalic := (value)? " Italic": ""
+					else
+					subFontItalicOut := value
+				}
+				Case "subFontStrike":
+				{
+					if (This.updateFlag > 0)
+					This.subFontStrike := (value)? " Strike": ""
+					else
+					subFontStrikeOut := value
+				}
+				Case "subFontUnderline":
+				{
+					if (This.updateFlag > 0)
+					This.subFontUnderline := (value)? " Underline": ""
+					else
+					subFontUnderlineOut := value
+				}
+
+
+				}
+				
+			}
+		}
+
+	This.SplashImgInit(parentOut, imagePathOut, imageUrlOut
+	, bkgdColourOut, transColOut, vHideOut, noHWndActivateOut
+	, vOnTopOut, vMovableOut, vBorderOut, vImgTxtSizeOut
+	, vPosXOut, vPosYOut, vMgnXOut, vMgnYOut, vImgWOut, vImgHOut
+	, mainTextOut, mainBkgdColourOut
+	, mainFontNameOut, mainFontSizeOut, mainFontWeightOut, mainFontColourOut
+	, mainFontQualityOut, mainFontItalicOut, mainFontStrikeOut, mainFontUnderlineOut
+	, subTextOut, subBkgdColourOut
+	, subFontNameOut, subFontSizeOut, subFontWeightOut, subFontColourOut
+	, subFontQualityOut, subFontItalicOut, subFontStrikeOut, subFontUnderlineOut)
+	
+	}
+
+	SplashImgInit(parentIn, imagePathIn, imageUrlIn
+	, bkgdColourIn, transColIn, vHideIn, noHWndActivateIn
+	, vOnTopIn, vMovableIn, vBorderIn, vImgTxtSizeIn
+	, vPosXIn, vPosYIn, vMgnXIn, vMgnYIn, vImgWIn, vImgHIn
+	, mainTextIn, mainBkgdColourIn
+	, mainFontNameIn, mainFontSizeIn, mainFontWeightIn, mainFontColourIn
+	, mainFontQualityIn, mainFontItalicIn, mainFontStrikeIn, mainFontUnderlineIn
+	, subTextIn, subBkgdColourIn
+	, subFontNameIn, subFontSizeIn, subFontWeightIn, subFontColourIn
+	, subFontQualityIn, subFontItalicIn, subFontStrikeIn, subFontUnderlineIn)
+	/*
+	; Future expansion for vertical text:
+	, rightText := "", rightFontNameIn := "", rightFontSizeIn := 0, rightFontWeightIn := 0, rightFontColourIn := -1
+	, leftText := "", leftFontNameIn := "", leftFontSizeIn := 0, leftFontWeightIn := 0, leftFontColourIn := -1
+	; also consider transparency
+	*/
+	{
+	vWinW := 0, vWinH := 0, parentW := 0, parentH := 0, init := 0
+	mainTextSize := [0, 0], subTextSize := [0, 0]
+	currVPos := {x: "", y: ""}
+	static splashyInst := ""
+	; Border constants
+	Static WS_DLGFRAME := 0x400000, WS_CAPTION := 0xC00000, WS_POPUP := 0x80000000, WS_CHILD := 0x40000000, WS_EX_COMPOSITED := 0X2000000
+	Static WS_EX_WINDOWEDGE := 0x100, WS_EX_STATICEDGE := 0x20000, WS_EX_CLIENTEDGE := 0x200, WS_EX_DLGMODALFRAME := 0x1
+
+	; Determines redraw of Splashy window (placeholder)
+	diffPicOrDiffDims := 0
+
+
+	This.procEnd := 0
+
+		if (This.updateFlag <= 0)
+		{
+		;Set defaults
+
+		This.parent := parentIn
+
+			if (imagePathIn == "")
+			{
+				if (!This.imagePath && imageUrlIn == "")
+				This.imagePath := A_AhkPath ; default icon. Ist of 5
+			}
+			else
+			This.imagePath := imagePathIn
+
+			if (imageUrlIn == "")
+			{
+				if (!This.imageUrl)
+				This.imageUrl := "https://www.autohotkey.com/assets/images/features-why.png"
+			}
+			else
+			This.imageUrl := imageUrlIn
+
+			if (bkgdColourIn == "")
+			This.bkgdColour := This.GetDefaultGUIColour()
+			else
+			This.bkgdColour := This.ValidateColour(bkgdColourIn)
+
+		This.transCol := transColIn
+
+		This.vHide := vHideIn
+
+			if (noHWndActivateIn)
+			This.noHWndActivate := "NoActivate "
+			else
+			This.noHWndActivate := ""
+
+		This.vOnTop := vOnTopIn
+		This.vMovable := vMovableIn
+		This.vBorder := vBorderIn
+		This.vImgTxtSize := vImgTxtSizeIn
+
+		This.vPosX := (vPosXIn == "")? This.vPosX: vPosXIn
+		This.vPosY := (vPosYIn == "")? This.vPosY: vPosYIn
+		This.vMgnX := (vMgnXIn == "")? This.vMgnX: vMgnXIn
+		This.vMgnY := (vMgnYIn == "")? This.vMgnY: vMgnYIn
+
+			if (vImgWIn > 0)
+			This.inputVImgW := vImgWIn
+			else
+			{
+				if (vImgWin <= -10)
+				This.inputVImgW := 0
+				else
+				This.inputVImgW := vImgWIn
+				; a zero default can be Floor(A_ScreenWidth/3)
+			}
+			if (vImgHIn > 0)
+			This.inputVImgH := vImgHIn
+			else
+			{
+				if (vImgHin <= -10)
+				This.inputVImgH := 0
+				else
+				This.inputVImgH := vImgHIn
+				; a zero default can be Floor(A_ScreenHeight/3)
+			}
+
+
+
+
+			if (mainTextIn == "")
+			This.mainText := ""
+			else
+			This.mainText := This.ValidateText(mainTextIn)
+
+			if (mainBkgdColourIn == "")
+			This.mainBkgdColour := This.GetDefaultGUIColour()
+			else
+			This.mainBkgdColour := This.ValidateColour(mainBkgdColourIn, 1)
+
+			if (mainFontNameIn == "")
+			This.mainFontName := "Verdana"
+			else
+			This.mainFontName := This.ValidateText(mainFontNameIn)
+
+		This.mainFontSize := (0 < mainFontSizeIn < 200)?Floor(mainFontSizeIn):12
+		This.mainFontWeight := (0 < mainFontWeightIn < 1000)?Floor(mainFontWeightIn):600
+
+
+			if (mainFontColourIn == -1)
+			{
+				if (This.mainFontColour == "")
+				This.mainFontColour := This.GetDefaultGUIColour(1)
+			}
+			else
+			This.mainFontColour := This.ValidateColour(mainFontColourIn, 1)
+
+			if (mainFontQualityIn == "")
+			This.mainFontQuality := 1
+			else
+			; NONANTIALIASED_QUALITY for better performance
+			; https://stackoverflow.com/questions/8283631/graphics-drawstring-vs-textrenderer-drawtextwhich-can-deliver-better-quality/23230570#23230570
+			This.mainFontQuality := (0 <= mainFontQualityIn <= 5)?Floor(mainFontQualityIn):1
+
+		This.mainFontItalic := (mainFontItalicIn)? " Italic": ""
+
+		This.mainFontStrike := (mainFontStrikeIn)? " Strike": ""
+
+		This.mainFontUnderline := (mainFontUnderlineIn)? " Underline": ""
+
+
+
+			if (subTextIn =="")
+			This.subText := ""
+			else
+			This.subText :=  This.ValidateText(subTextIn)
+
+			if (subBkgdColourIn == "")
+			This.subBkgdColour := This.GetDefaultGUIColour()
+			else
+			This.subBkgdColour := This.ValidateColour(subBkgdColourIn, 1)
+
+
+			if (subFontNameIn == "")
+			This.subFontName := "Verdana"
+			else
+			This.subFontName := This.ValidateText(subFontNameIn)
+
+		This.subFontSize := (0 < subFontSizeIn < 200)?Floor(subFontSizeIn):10
+		This.subFontWeight := (0 < subFontWeightIn < 1000)?Floor(subFontWeightIn):400
+
+			if (subFontColourIn == -1)
+			{
+				if (This.subFontColour == "")
+				This.subFontColour := This.GetDefaultGUIColour(1)
+			}
+			else
+			This.subFontColour := This.ValidateColour(subFontColourIn, 1)
+
+			if (subFontQualityIn == "")
+			This.subFontQuality := 1
+			else
+			This.subFontQuality := (0 <= subFontQualityIn <= 5)?Floor(subFontQualityIn):1
+
+		This.subFontItalic := (subFontItalicIn)? " Italic": ""
+
+		This.subFontStrike := (subFontStrikeIn)? " Strike": ""
+
+		This.subFontUnderline := (subFontUnderlineIn)? " Underline": ""
+
+			if (This.updateFlag == -1) ; init
+			{
+			This.updateFlag := 1
+			init := 1
+			}
+		}
+
+		if (diffPicOrDiffDims := This.GetPicWH())
+		{
+			if (diffPicOrDiffDims) == "error"
+			return
+			else
+			{
+				if (This.DisplayToggle() == "error")
+				return
+			}
+		}
+
+	DetectHiddenWindows On
+	splashyInst := "Splashy" . (This.instance)
+
+		if (!This.hWndSaved[This.instance])
+		{
+			if (!This.hGDIPLUS)
+			{
+				if (This.hGDIPLUS := DllCall("LoadLibrary", "Str", "GdiPlus.dll", "Ptr"))
+				{
+				VarSetCapacity(SI, (A_PtrSize = 8 ? 24 : 16), 0), Numput(1, SI, 0, "Int")
+				DllCall("GdiPlus.dll\GdiplusStartup", "UPtr*", spr, "Ptr", &SI, "Ptr", 0)
+				; for return value see status enumeration in  gdiplustypes.h 
+				This.pToken := spr
+				}
+				else
+				msgbox, 8208, LoadLibrary, Critical GDIPLUS error!
+			}
+
+		;Create Splashy window
+
+		Gui, %splashyInst%: New, +OwnDialogs +ToolWindow -Caption -DPIScale +E%WS_EX_COMPOSITED% ;  WS_POPUP active since default
+
+		This.NewWndObj := new Splashy.NewWndProc(This.instance)
+		}
+
+		; Set borders:
+		if (This.voldBorder || This.vBorder) ; null or zero
+		{
+			if (This.instance != This.oldInstance || This.voldBorder != This.vBorder)
+			{
+			; -0x800000 is not sufficient to remove the standard borders.
+			Gui, %splashyInst%: -%WS_CAPTION% -E%WS_EX_WINDOWEDGE% -E%WS_EX_STATICEDGE% -E%WS_EX_CLIENTEDGE% -E%WS_EX_DLGMODALFRAME%
+				if (This.vBorder)
+				{
+					if (This.vBorder == "b")
+					Gui, %splashyInst%: +Border
+					else
+					{
+						if (This.vBorder == "dlgframe")
+						Gui, %splashyInst%: +WS_DLGFRAME
+						else
+						{
+							Loop, Parse, % This.vBorder
+							{
+								Switch (A_Loopfield)
+								{
+									Case "w":
+									Gui, %splashyInst%: +E%WS_EX_WINDOWEDGE%
+									Case "s":
+									Gui, %splashyInst%: +E%WS_EX_STATICEDGE%
+									Case "c":
+									Gui, %splashyInst%: +E%WS_EX_CLIENTEDGE%
+									Case "d":
+									Gui, %splashyInst%: +E%WS_EX_DLGMODALFRAME%
+								}
+							}
+						}
+					}
+				}
+
+			This.voldBorder := This.vBorder
+			}
+		}
+
+		if (spr := This.parentHWnd)
+		{
+			if (This.parent)
+			{
+
+			; Somehow co-ordinates go wrong if the position is not obtained here
+				if (!init)
+				currVPos := This.GuiGetPos(This.hWnd(), 1)
+
+			Gui, %splashyInst%: -%WS_POPUP% +%WS_CHILD%
+			Gui, %splashyInst%: +parent%spr%
+
+			point := This.GuiGetPos(spr)
+
+			parentW := point.w
+			parentH := point.h
+
+				if (This.parentClip)
+				Winset, Style, % -This.parentClip , % "ahk_id" This.parentHWnd
+			point := ""
+
+			vWinW := This.vImgW
+			vWinH := This.vImgH
+			}
+			else
+			{
+			Gui, %splashyInst%: -parent%spr%
+			Gui, %splashyInst%: +%WS_CHILD% +%WS_POPUP%
+			parentW := A_ScreenWidth
+			parentH := A_ScreenHeight
+				if (This.parentClip)
+				Winset, Style, % This.parentClip , % "ahk_id" This.parentHWnd
+			}
+		}
+		else
+		{
+		parentW := A_ScreenWidth
+		parentH := A_ScreenHeight
+		}
+
+
+		if (!This.parent)
+		{
+
+			if (This.vMgnX == "d")
+			{
+			SM_CXEDGE := 45
+			sysget, spr, %SM_CXEDGE%
+			This.vMgnX := spr
+			}
+
+			if (This.vMgnX == "d")
+			{
+			SM_CYEDGE := 46
+			sysget, spr, %SM_CYEDGE%
+			This.vMgnY := spr
+			}
+
+		This.vImgX := This.vMgnX, This.vImgY := This.vMgnY
+		vWinW := This.vImgW + 2 * This.vMgnX
+		vWinH := This.vImgH + This.vMgnY
+		}
+
+	Gui, %splashyInst%: Color, % This.bkgdColour
+
+
+
+		This.vImgY := This.DoText(splashyInst, This.mainTextHWnd[This.instance], This.mainText, currVPos, parentW, parentH, vWinW, vWinH, init)
+		vWinH += This.vImgY
+
+		if (spr := This.DoText(splashyInst, This.subTextHWnd[This.instance], This.subText, currVPos, parentW, parentH, vWinW, vWinH, init, 1))
+		vWinH += spr + (This.parent?0:This.vMgnY)
+
+
+	Gui, %splashyInst%: Font
+
+		; now set hWndSaved[This.instance] in hWnd()
+		if (This.vHide)
+		WinHide % "ahk_id" This.hWnd()
+		else
+		{
+		spr1 := 0
+		spr := A_Space
+
+			if (!(This.Parent && (This.mainText || This.subText)))
+			{
+			currVPos := This.GetPosVal(This.vPosX, This.vPosY, currVPos, parentW, parentH, vWinW, vWinH, (This.parent?This.parentHWnd:0))
+			currVPos := This.GetPosProc(splashyInst, currVPos, init)
+			}
+
+			if (This.parent)
+			Gui, %splashyInst%: Show, % This.noHWndActivate . Format("X{} Y{} W{} H{}", currVPos.x, currVPos.y, vWinW, vWinH)
+			else
+			{
+			; Also consider cloaking (DWMWA_CLOAK)
+			Gui, %splashyInst%: Show, % "Hide " . Format(" W{} H{}", vWinW, vWinH)
+
+			;WinGetPos, point.x, point.y,,, % "ahk_id" . This.hWnd(); fail
+
+			; Supposed to prevent form visibility without picture while loading. Want another approach?
+			Gui, %splashyInst%: Show, % "Hide " . Format("X{} Y{}", -30000, -30000)
+			sleep 20
+			;WinMove, % "ahk_id" . This.hWnd(),, % point.x, % point.y ; fails here whether 30000 or 0, as well as SetWindowPos. SetWindowPlacement?
+
+			Gui, %splashyInst%: Show, % This.noHWndActivate . Format("X{} Y{}", currVPos.x, currVPos.y)
+			}
+
+
+		WinSet, AlwaysOnTop, % (This.vOnTop)? 1 : 0, % "ahk_id" . This.hWnd()
+			if (This.transCol && !This.vBorder)
+			WinSet, TransColor, % This.bkgdColour, % "ahk_id" . This.hWndSaved[This.instance]
+		Splashy.NewWndProc.PaintProc(This.hWndSaved[This.instance])
+		}
+
+	This.procEnd := 1
+	This.oldInstance := This.instance
+	SetWorkingDir % This.userWorkingDir
+	DetectHiddenWindows Off
+
+	; Sleep -1 is critical, else PaintDC gets out of sync
+	Sleep, -1
+
+	}
+	;==========================================================================================================
+	;==========================================================================================================
+
+
+	ValidateText(string)
+	{
+		if (string != "")
+		{
+			if (StrLen(string) > 20000) ;length?
+			string := SubStr(string, 1, 20000)
+		}
+	return string
+	}
+
+	ValidateColour(keyOrVal, toBGR := 0)
+	{
+
+
+		if (This.HTML.HasKey(keyOrVal))
+		{
+		keyOrVal := This.ToBase(This.HTML[keyOrVal], 16)
+		spr1 := StrLen(keyOrVal)
+		}
+		else
+		{
+		spr := ""
+
+		spr1 := StrLen(keyOrVal)
+
+		; If "0X" found, remove it. Will be added later. Remove other X's
+		
+		if (InStr(SubStr(keyOrVal, 1, 2), "0X"))
+		keyOrVal := StrReplace(SubStr(keyOrVal, 3, spr1 - 2), "X", "0")
+		else
+		keyOrVal := StrReplace(SubStr(keyOrVal, 1, spr1), "X", "0")			; filter out numerics 
+
+			if keyOrVal is not xdigit
+			{
+				; Filter out all but numerics
+				loop, Parse, keyOrVal, , %A_Space%%A_Tab% `,
+				{
+					if A_Loopfield is xdigit
+					spr .= A_Loopfield
+				}
+
+				if (spr)
+				keyOrVal := spr
+				else
+				keyOrVal := 0
+			}
+
+			if (spr1 != 6 && keyOrVal is digit) ;  assume decimal,
+			; which may not be desired if they were digits in above loop
+			keyOrVal := This.ToBase(keyOrVal, 16)
+
+		spr1 := StrLen(keyOrVal)
+
+			if (spr1 > 8)
+			spr1 := 8
+			else
+			{
+				if (spr1 < 3)
+				return "0X0"
+			}
+
+		}
+
+	; pad zeroes
+	spr2 := ""
+
+		loop, % (6 - spr1)
+		spr2 := spr2 . "0"
+
+	spr := "0X" . spr2 . keyOrVal
+
+
+		if (toBGR) ; for the GDI functions (ColorRef)
+		spr := This.ReverseColour(spr)
+		else
+		{
+			if (InStr(spr, "0X"))
+			spr := SubStr(spr, 3, 6) ; "0X" prefix not required for AHK gui functions
+		}
+
+	return spr
+	}
+
+	ReverseColour(colour)
+	{
+
+		colour := ((colour & 0x0000FF) << 16 ) | (colour & 0x00FF00) | ((colour & 0xFF0000) >> 16)
+
+		if colour is digit
+		{
+		spr := This.ToBase(colour, 16)
+		; possible to return spr here
+		; The following just pads the zeroes.
+		spr1 := StrLen(spr)
+
+		spr2 := ""
+
+		loop, % (6 - spr1)
+		spr2 := spr2 . "0"
+
+		colour := "0X" . spr2 . spr
+
+		}
+		return colour
+	}
+
+	ToBase(n, b)
+	{
+	; Hex numbers n must be in quoted "0Xn" format
+		Loop
+		{
+		r := mod(n, b)
+		d := floor(n/b)
+
+			if (b == 16)
+			r := (r > 9)? chr(0x37 + r): r
+
+		m := r . m
+		n := d
+			if (n < 1)
+			Break
+		}
+	; returns without "0X"
+	Return m
+	}
+
+	BinToHex(P, Bytes := 4, Prefix := "")
+	{ 
+	spr := ""
+	Loop % (Bytes)
+	   spr .= Format( "{:02X}", *(P + A_Index-1))
+	Return ( Prefix . spr )
+	}
+
+	GetDefaultGUIColour(font := 0)
+	{
+		static COLOR_WINDOWTEXT := 8, COLOR_3DFACE := 15 ;(more white than grey these days)
+
+		spr := DllCall("User32.dll\GetSysColor", "Int", (font)? 8: 15, "UInt")
+		;BGR +> RGB
+		spr := This.ReverseColour(spr)
+
+		return spr
+	}
+
+	DownloadFile(URL, fName)
+	{
+			try
+			{
+;https://webapps.stackexchange.com/questions/162310/url-image-filtering-url-suffixes-and-wikimedia
+			;SplitPath,d,name
+			;UrlDownloadToFile,%d%,%name%
+				UrlDownloadToFile, %URL%, %fName%
+			}
+			catch spr
+			{
+			msgbox, 8208, FileDownload, Error with the bitmap download!`nSpecifically: %spr%
+			}		
+		FileGetSize, spr , % A_ScriptDir . "`\" . fName
+			if spr < 50 ; some very small image
+			{
+			msgbox, 8208, FileDownload, File size is incorrect!
+			return 0
+			}
+			sleep 50
+			return 1
+
+
+			return fName
+
+	}
+
+
+	DisplayToggle()
+	{
+	static vToggle := 1
+	spr := 0, spr1 := 0
+	; This function uses LoadPicture to populate hBitmap and hIcon
+	; and sets the image type for the painting routines accordingly
+	; Now that the image dimensions are determined from GetPicWH,
+	; adjust the images with the extra possible input from vImgW and vImgW.
+
+	vToggle := !vToggle
+	; If the image is the same between calls, this routine is never called, 
+	; so vToggle will not update.
+
+	; This.inputVImgW == "" is valid for This.vImgTxtSize
+	if (This.inputVImgW == "")
+	This.vImgW := (This.vImgW? This.vImgW: This.actualVImgW)
+	else
+	{
+		; In case vImgW is specified in the first call of the image,
+		if (This.vImgW)
+		This.vImgW := (This.inputVImgW? This.inputVImgW: This.actualVImgW)
+		else
+		This.vImgW := This.ProcImgWHVal((This.inputVImgW)?This.inputVImgW:This.actualVImgW)
+	}
+
+	if (This.inputVImgH == "")
+	This.vImgH := (This.vImgH? This.vImgH: This.actualVImgH)
+	else
+	{
+		if (This.vImgH)
+		This.vImgH := (This.inputVImgH? This.inputVImgH: This.actualVImgH)
+		else
+		This.vImgH := This.ProcImgWHVal((This.inputVImgH)?This.inputVImgH:This.actualVImgH, 1)
+	}
+
+
+
+
+
+
+
+
+	spr1 := Format("W{} H{}", spr, spr1)
+
+		if (This.imagePath)
+		{
+			if (This.hWndSaved[This.instance])
+			{
+				This.oldImagePath := This.imagePath
+
+				if (This.hBitmap)
+				{
+					This.DeleteHandles()
+					This.oldPicInScript := 0
+				}
+				else
+				{
+					if (This.hIcon)
+					{
+						if (This.picInScript)
+						This.oldPicInScript := 1
+						else
+						This.DeleteHandles()
+					}
+				}
+			}
+		SplitPath % This.imagePath,,, spr
+
+			if (spr == "")
+			This.vImgType := 0 ; assume image
+			else
+			This.vImgType := ((spr == "cur")? 2: (spr == "exe" || spr == "ico")? 1: 0)
+
+
+			if (InStr(This.imagePath, "*"))
+			{
+			This.vImgType := 1
+			return
+			}
+			else
+			{
+				if (fileExist(This.imagePath))
+				{
+
+				spr := This.imagePath
+
+					if (This.vImgType)
+					{
+						if (This.imagePath == A_AhkPath)
+						{
+						This.hIcon := LoadPicture(A_AhkPath, ((vToggle)? "Icon2": "") . spr1, spr)
+						return
+						}
+						else
+						{
+							if (This.hIcon := LoadPicture(spr, spr1, spr)) ; must use 3rd parm or bitmap handle returned!
+							return
+						}
+					}
+					else
+					{
+
+						if (This.hBitmap := LoadPicture(spr, spr1))
+						return
+					}
+				}
+				else
+				{
+					if (!fileExist(This.ImageName) && !This.hIcon)
+					{
+					msgbox, 8208, DisplayToggle, Unknown Error!
+					return "error"
+					}
+				}
+			}
+		SplitPath % This.imagePath, spr
+		This.ImageName := spr
+		}
+		else
+		This.oldImagePath := ""
+
+		; Fail, so download
+
+			if (This.imageUrl && RegExMatch(This.imageUrl, "^(https?://|www\.)[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(/\S*)?$"))
+			{
+				if (!(This.ImageName))
+				{
+				SplitPath % This.imageUrl, spr
+				This.ImageName := spr
+				}
+				;  check if file D/L'd previously
+				for key, value in % This.downloadedUrlNames
+				{
+					if (This.imageUrl == value)
+					{
+						if (fileExist(key))
+						{
+							Try
+							{
+								if (key != This.ImageName)
+								FileCopy, %key%, % This.ImageName
+							Break
+							}
+							Catch e
+							{
+							msgbox, 8208, FileCopy, % key . " could not be copied with error: " . e
+							}
+						}
+					}
+				}
+
+
+				if (!fileExist(This.ImageName))
+				{
+					if (!(This.DownloadFile(This.imageUrl, This.ImageName)))
+					return "error"
+				}
+
+				if (This.hBitmap := LoadPicture(This.ImageName, spr1))
+				{
+				This.oldImageUrl := This.imageUrl
+				This.vImgType := 0
+				spr := This.ImageName
+
+				This.downloadedPathNames.Push(spr) 
+				This.downloadedUrlNames(spr) := This.oldImageUrl
+				return
+				}
+				else
+				{
+				msgbox, 8208, LoadPicture, Format not recognized!
+				FileDelete, % This.ImageName
+				return "error"
+				}
+
+			}
+			else
+			spr := 1		
+
+		; "Neverfail" default 
+		This.hIcon := LoadPicture(A_AhkPath, ((vToggle)? "Icon2 ": "") . spr1, spr)
+		This.vImgType := 1
+		
+	}
+
+	GetPicWH()
+	{
+	Static oldParent := This.Parent, vToggle := 1
+
+	vToggle := !vToggle
+	/*
+	typedef struct tagBITMAP {
+	  LONG   bmType;
+	  LONG   bmWidth;
+	  LONG   bmHeight;
+	  LONG   bmWidthBytes;
+	  WORD   bmPlanes; // Short
+	  WORD   bmBitsPixel; // Short
+	  LPVOID bmBits; // FAR ptr to void
+	} BITMAP, *PBITMAP, *NPBITMAP, *LPBITMAP; ==> Extra pointer reference
+	*/
+
+	if (This.imagePath)
+	{
+		if (This.hWndSaved[This.instance])
+		{
+			if (This.oldImagePath == This.imagePath)
+			{
+			; No need to reload if the parent has not changed
+				if (oldParent == This.Parent)
+				{
+					if (This.inputVImgW && This.inputVImgH)
+					{
+						if (This.oldVImgW == This.inputVImgW && This.oldVImgH == This.inputVImgH)
+						return 0
+					}
+					else
+					{
+						if ((This.picInScript && This.oldPicInScript) || (!This.picInScript && !This.oldPicInScript))
+						{
+							if (This.vImgTxtSize)
+							{
+								if (This.oldVImgW == This.vImgW)
+								{
+									; check for height
+									if (This.oldVImgH == This.inputVImgH)
+									return 0
+									else
+									This.oldVImgH := This.inputVImgH
+								}
+								else
+								This.oldVImgW := This.vImgW
+							}
+							else
+							{
+								if (This.inputVImgW != "") ; else just switched off vImgTxtSize
+								{
+									if (This.oldVImgW == This.inputVImgW) && (This.oldVImgH == This.inputVImgH)
+									return 0
+									else
+									{
+										if (This.oldVImgW != This.inputVImgW && This.oldVImgH == This.inputVImgH)
+										{
+										This.oldVImgW := This.inputVImgW
+										This.oldVImgH := This.inputVImgH
+										}
+										else
+										{
+											if (This.oldVImgW != This.inputVImgW)
+											This.oldVImgW := This.inputVImgW
+											else
+											This.oldVImgH := This.inputVImgH
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				else
+				oldParent := This.Parent
+			}
+			This.DeleteHandles()
+		}
+
+	SplitPath % This.imagePath,,, spr
+
+		if (spr == "")
+		This.vImgType := 0 ; assume image
+		else
+		This.vImgType := ((spr == "cur")? 2: (spr == "exe" || spr == "ico")? 1: 0)
+
+
+		if (InStr(This.imagePath, "*"))
+		{
+		This.PicInScript := {}      
+
+		VarSetCapacity(This.PicInScript, 348 << !!A_IsUnicode)
+		This.PicInScript := "iVBORw0KGgoAAAANSUhEUgAAAH0AAAB9CAIAAAAA4vtyAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAt0lEQVR42u3QAQkAAAgDMLV/59tCELYI6yTFuVHg3TvevePdO96949073r17x7t3vHvHu3e8e8e7d+94945373j3jnfvePeOd+/e8e4d797x7h3v3vHu3TvevePdO96949073r17x7t3vHvHu3e8e8e7d7x7945373j3jnfvePeOd+/e8e4d797x7h3v3vHu3TvevePdO96949073r3j3bt3vHvHu3e8e8e7d7x7945373j3jvenFh1/A/fWM3mhAAAAAElFTkSuQmCC"
+
+			if ((This.hIcon := This.b64Decode(This.PicInScript))) ; Reqires "HICON:*" for Gui, Add, Picture
+			This.vImgType := 1
+			else
+			{
+			; Then try the fallback
+			This.imagePath := ""
+			This.vImgType := 0
+			}
+		}
+		else
+		{
+			if (fileExist(This.imagePath))
+			{
+			spr := This.imagePath
+
+				if (This.vImgType)
+				{
+					if (This.imagePath == A_AhkPath)
+					{
+						if (!(This.hIcon := LoadPicture(A_AhkPath, ((vToggle)? "Icon2 ": ""), spr)))
+						{
+						msgbox, 8208, LoadPicture, Problem loading AHK icon!
+						return "error"
+						}
+					}
+					else
+					{
+						if (!(This.hIcon := LoadPicture(spr, , spr))) ; must use 3rd parm or bitmap handle returned!
+						{
+						msgbox, 8208, LoadPicture, Problem loading icon!
+						return "error"
+						}
+					}
+				}
+				else
+				{
+					if (!(This.hBitmap := LoadPicture(spr)))
+					{
+					msgbox, 8208, LoadPicture, Problem loading picture!
+					return "error"
+					}
+				}
+			}
+			else
+			This.imagePath := ""
+		}
+	}
+	else
+	This.DeleteHandles()
+
+	if (!(This.hBitmap || This.hIcon))
+	{
+		if (This.ImageName)
+		{
+		SplitPath % This.imagePath, spr
+		This.ImageName := spr
+		}
+
+		if (This.imageUrl && RegExMatch(This.imageUrl, "^(https?://|www\.)[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(/\S*)?$"))
+		{
+			if (!(This.ImageName))
+			{
+			SplitPath % This.imageUrl, spr
+				if (InStr(spr, ":"))
+				{
+				msgbox, 8208, Image Url, Name contains a colon, thus not a valid image target!
+				return "error"
+				}
+				else
+				This.ImageName := spr
+			}
+			;  check if file D/L'd previously
+			for key, value in % This.downloadedUrlNames
+			{
+				if (This.imageUrl == value)
+				{
+					if (fileExist(key))
+					{
+						Try
+						{
+							if (key != This.ImageName)
+							FileCopy, %key%, % This.ImageName
+						Break
+						}
+						Catch e
+						{
+						msgbox, 8208, FileCopy, % key . " could not be copied with error: " . e
+						return "error"
+						}
+					}
+				}
+			}
+
+		; Proceed to download
+			if (!fileExist(This.ImageName))
+			{
+				if (!(This.DownloadFile(This.imageUrl, This.ImageName)))
+				return "error"
+			}
+
+			if (This.hBitmap := LoadPicture(This.ImageName))
+			{
+			This.vImgType := 0
+			spr := This.ImageName
+
+			This.downloadedPathNames.Push(spr) 
+			This.downloadedUrlNames(spr) := This.imageUrl
+			}
+			else
+			{
+			msgbox, 8208, LoadPicture, Format of bitmap not recognized!
+			FileDelete, % This.ImageName
+			return "error"
+			}
+
+		}
+		else
+		spr := 1		
+
+
+	; "Neverfail" default 
+		if (!This.hBitmap)
+		{
+			if (This.hIcon := LoadPicture(A_AhkPath, ((vToggle)? "Icon2 ": ""), spr))
+			This.vImgType := 1
+			else
+			{
+			msgbox, 8208, LoadPicture, Format of icon/cursor not recognized!
+			return "error"
+			}
+		}
+	}
+
+	Switch This.vImgType
+	{
+		case 0:
+		{
+		bm := []
+		spr := (A_PtrSize == 8)? 32: 24
+		VarSetCapacity(bm, spr, 0) ;tagBitmap (24: 20) PLUS pointer ref to pBitmap 
+
+			if (!(DllCall("GetObject", "Ptr", This.hBitmap, "uInt", spr, "Ptr", &bm)))
+			{
+			msgbox, 8208, GetObject hBitmap, Object could not be retrieved!
+			VarSetCapacity(bm, 0)
+			return "error"
+			}
+
+		spr := NumGet(bm, 4, "Int")
+		spr1 := NumGet(bm, 8, "Int")
+		}
+		case 1, 2:
+		{
+			if (InStr(This.imagePath, "*"))
+			{
+			; Just get header info
+			bm := subStr(This.PicInScript, 1, 100)
+			;https://www.autohotkey.com/boards/viewtopic.php?f=6&t=36455&p=168124#p168124
+
+			; CRYPT_STRING_BASE64 := 0x00000001
+				if !DllCall("Crypt32.dll\CryptStringToBinary", "Ptr", &bm, "UInt", 0, "UInt", 0x00000001, "Ptr", 0, "UInt*", DecLen, "Ptr", 0, "Ptr", 0)
+				return "error"
+			VarSetCapacity(spr1, 128), VarSetCapacity(spr1, 0), VarSetCapacity(spr1, DecLen, 0)
+				If !DllCall("Crypt32.dll\CryptStringToBinary", "Ptr", &bm, "UInt", 0, "UInt", 0x01, "Ptr", &spr1, "UInt*", DecLen, "Ptr", 0, "Ptr", 0)
+				return "error"
+
+			FileAppend , , spr.bin
+			tmp := FileOpen("spr.bin", "w")
+				if (tmp == 0)
+				return "error"
+				if (!tmp.RawWrite(&spr1, Declen))
+				return "error"
+			tmp.Close
+			tmp := FileOpen("spr.bin", "r")
+			bm := ""
+			VarSetCapacity(bm, 24)
+				if (!tmp.RawRead(bm, 24))
+				return "error"
+
+			VarSetCapacity(spr1, 0)
+			tmp.Close
+			FileDelete, spr.bin
+
+			spr := This.BinToHex(&bm + 16, 4, "0x")
+			spr1 := This.BinToHex(&bm + 20, 4, "0x")
+
+			spr := This.ToBase(spr, 10)
+			spr1 := This.ToBase(spr1, 10)
+			}
+			else
+			{
+			tmp := (A_PtrSize == 8)? 104: 84, 0
+			Ptr := A_PtrSize ? "Ptr" : "UInt"
+			; https://www.autohotkey.com/boards/viewtopic.php?t=36733
+			; easier way to get icon dimensions is use default SM_CXICON, SM_CYICON
+
+			; 16 NOT 12 because of the 64 bit boundaries- thus there is padding.
+			VarSetCapacity(ICONINFO, 16 + 2 * A_PtrSize, 0) ; ICONINFO Structure
+
+				if (DllCall("GetIconInfo", Ptr, This.hIcon, Ptr, &ICONINFO))
+				{
+					if (ICONINFOhbmMask := NumGet(ICONINFO, 8 + A_PtrSize, Ptr))
+					{
+					VarSetCapacity(bm, tmp, 0) ; hbmMask dibsection
+
+					DllCall("GetObject", Ptr, ICONINFOhbmMask, "Int", tmp, Ptr, &bm)
+					spr := NumGet(bm, 4, "UInt")
+
+						; Check for the hbmColor colour plane
+						if (ICONINFOhbmColor := NumGet(ICONINFO, 8 + 2 * A_PtrSize, Ptr))
+						spr1 := NumGet(bm, 8, "UInt")
+						else ; The following has the effect of reducing the icon size by exactly half- is that wanted?
+						spr1 := NumGet(bm, 8, "UInt")/2
+
+					This.deleteObject(ICONINFOhbmMask)
+
+						if (ICONINFOhbmColor)
+						This.deleteObject(ICONINFOhbmColor)
+					}
+					else
+					{
+					msgbox, 8208, hbmMask, Icon info could not be retrieved!
+					VarSetCapacity(bm, 0)
+					return "error"
+					}
+
+				}
+				else
+				; The fastest way to convert a hBITMAP to hICON is to add it to a hIML and retrieve it back as a hICON with COMCTL32\ImageList_GetIcon()
+				{
+				msgbox, 8208, GetIconInfo, Icon info could not be retrieved!
+				VarSetCapacity(bm, 0)
+				return "error"
+				}
+				
+			VarSetCapacity(ICONINFO, 0)
+			}
+		VarSetCapacity(bm, 0)
+		}
+	}
+
+	This.actualVImgW := spr
+	This.actualVImgH := spr1
+	return 1
+	}
+
+	PaintDC()
+	{
+	;===============
+	static IMAGE_BITMAP := 0, SRCCOPY = 0x00CC0020
+	hBitmapOld := 0
+	;draw bitmap/icon onto GUI & call GetDC every paint
+
+	This.hDCWin := DllCall("user32\GetDC", "Ptr", This.hWndSaved[This.instance], "Ptr")
+		Switch This.vImgType
+		{
+			case 0:
+			{
+				if (!(hDCCompat := DllCall("gdi32\CreateCompatibleDC", "Ptr", This.hDCWin, "Ptr")))
+				msgbox, 8208, Compat DC, DC could not be created!
+				if (hBitmapOld := This.SelectObject(hDCCompat, This.hBitmap, "Bitmap"))
+				{
+					if (This.oldVImgW || This.oldVImgH || (This.actualVImgW != This.vImgW) || (This.actualVImgH != This.vImgH))
+					{
+						if (!DllCall("gdi32\StretchBlt", "Ptr", This.hDCWin, "Int", This.vImgX, "Int", This.vImgY, "Int", This.vImgW, "Int", This.vImgH, "Ptr", hDCCompat, "Int", 0, "Int", 0, "Int", This.actualVImgW, "Int", This.actualVImgH, "UInt", SRCCOPY))
+						msgbox, 8208, PaintDC, BitBlt Failed!
+					}
+					else
+					{
+						if (!DllCall("gdi32\BitBlt", "Ptr", This.hDCWin, "Int", This.vImgX, "Int", This.vImgY, "Int", This.vImgW, "Int", This.vImgH, "Ptr", hDCCompat, "Int", 0, "Int", 0, "UInt", SRCCOPY))
+						msgbox, 8208, PaintDC, BitBlt Failed!
+					}
+
+				This.SelectObject(hDCCompat, hBitmapOld, "Old Bitmap")
+				}
+
+				if (!(DllCall("gdi32\DeleteDC", "Ptr", hDCCompat)))
+				msgbox, 8208, Compat DC, DC could not be deleted!
+
+			}
+			case 1, 2: ;IMAGE_ICON := 1, IMAGE_CURSOR := 1
+			{
+			DllCall("user32\DrawIconEx", "Ptr", This.hDCWin, "Int", This.vImgX, "Int", This.vImgY, "Ptr", This.hIcon, "Int", This.vImgW, "Int", This.vImgH, "UInt", 0, "Ptr", 0, "UInt", 0x3) ;DI_NORMAL := 0x3
+				/*
+				; DllCall("gdi32\DestroyIcon", "Ptr", This.hIcon) fails for AHK executable
+				; AHK LoadImage does not use LR_SHARED
+				; Consider above only if creating or copying an icon- whereas the following is ignored
+				if (!(DllCall("gdi32\DeleteObject", "Ptr", This.hIcon)))
+				msgbox, 8208, Icon Handle, Handle could not be deleted!
+				*/
+			}
+		}
+		This.releaseDC(This.hWndSaved[This.instance], This.hDCWin)
+	}
+
+	DrawBackground()
+	{
+		; for custom see  https://docs.microsoft.com/en-us/windows/win32/gdi/drawing-a-custom-window-background
+		DllCall("gdi32\ExcludeClipRect", "Ptr", This.hDCWin, "Int", This.vImgX, "Int", This.vImgY, "Int", This.vImgX+This.vImgW, "Int", This.vImgY+This.vImgH)
+
+		;SelectClipRgn not required
+		; one pixel region
+		hRgn := []
+		hRgn := DllCall("gdi32\CreateRectRgn", "Int", 0, "Int", 0, "Int", 1, "Int", 1, "Ptr")
+		; Updates hRgn to define the clipping region in This.hDCWin: turns out to be everything except the margins.
+		DllCall("gdi32\GetClipRgn", "Ptr", This.hDCWin, "Ptr", hRgn)
+		hBrush := DllCall("user32\GetSysColorBrush", "Int", 15, "Ptr") ;COLOR_BTNFACE := 15
+		DllCall("gdi32\FillRgn", "Ptr", This.hDCWin, "Ptr", hRgn, "Ptr", hBrush)
+		This.deleteObject(hRgn)
+	}	
+
+	ProcImgWHVal(value, height := 0)
+	{
+	retval := 0
+		if (height)
+		{
+		dim := This.vImgH
+		screenDim := A_ScreenHeight
+		actualDim := This.actualVImgH
+		}
+		else
+		{
+		dim := This.vImgW
+		screenDim := A_ScreenWidth
+		actualDim := This.actualVImgW
+		}
+
+		if value is number
+		{
+			if (value > 10)
+			{
+			oldDim := dim
+			retval := Floor(value)
+			}
+			else
+			{
+
+				if (value > 0)
+				{
+				oldDim := dim
+				retval := Floor(value * actualDim)
+				}
+				else
+				{
+					if (value < 0 && value > -10)
+					{
+					oldDim := dim
+					retval := -Floor(value * screenDim)
+					}
+					else
+					retval := 0
+				}
+			}
+		}
+
+		if (height)
+		This.oldVImgH := oldDim
+		else
+		This.oldVImgW := oldDim
+
+	return retVal
+	}
+
+
+	GetPosProc(splashyInst, currVPos, init)
+	{
+		if (init)
+		{
+		; Init only! Position is never preserved, so rely on GuiGetPos
+			if (This.vPosX == "c")
+			This.vPosX := ""
+			if (This.vPosY == "c")
+			This.vPosY := ""
+		}
+		else
+		{
+		pointGet := This.GuiGetPos(This.hWnd(), 1)
+
+			if (currVPos.x == "")
+			{
+			; arguably faster than type check
+			if (This.vPosX == "" || This.vPosX == "l" || This.vPosX == "c"|| This.vPosX == "zero")
+				currVPos.x := pointGet.x
+				else
+				currVPos.x := This.vPosX
+			}
+
+			if (currVPos.y == "")
+			{
+				if (This.vPosY == "" || This.vPosY == "l" || This.vPosY == "c" || This.vPosY == "zero")
+				currVPos.y := pointGet.y
+				else
+				currVPos.y := This.vPosY
+			}
+
+		pointGet := ""
+		}
+	return currVPos
+	}
+
+
+	GuiGetPos(thisHWnd, hWndPos := 0)
+	{
+	static HWND_DESKTOP := 0, parentStat := 0
+
+		if (hWndPos)
+		{
+			if (This.parent)
+			parentHWnd := This.parentHWnd
+			else
+			parentHWnd := HWND_DESKTOP
+		}
+
+	VarSetCapacity(rect, 16, 0)
+
+		if (DllCall("GetWindowRect", "Ptr", thisHWnd, "Ptr", &rect))
+		{
+
+		x := NumGet(rect, 0, "int")
+		y := NumGet(rect, 4, "int")
+
+			if (!hWndPos)
+			{
+			w := NumGet(rect, 8, "int")
+			w := w - x
+
+			h := NumGet(rect, 12, "int")
+			h := h - y
+
+			VarSetCapacity(rect, 0)
+			return {w: w, h: h}
+			}
+
+		VarSetCapacity(point, 8, 0)
+
+		NumPut(x, point, 0, "Int"), NumPut(y, point, 4, "Int")
+
+			if (parentHWnd)
+			{
+				if (!DllCall("user32\ScreenToClient", "Ptr", parentHWnd, "Ptr", &point, "int"))
+				return 0
+
+				;if (!(DllCall("User32.dll\MapWindowPoints", "Ptr", HWND_DESKTOP, "Ptr", parentHWnd, "Ptr", &point, "UInt", 1)))
+				;return 0
+			}
+			else
+			{
+				if (parentStat != parentHWnd)
+				{
+				if !DllCall("user32\ClientToScreen", "Ptr", parentStat, "Ptr", &point, "int")
+				return 0
+				}
+			}
+			
+		x := NumGet(point, 0, "Int"), y := NumGet(point, 4, "Int")
+
+		VarSetCapacity(point, 0)
+		}
+		else
+		return 0
+
+	VarSetCapacity(rect, 0)
+	parentStat := parentHWnd
+
+	return {x: x, y: y}
+	}
+
+
+	TransPosVal(vPos, parentDim, winDim)
+	{
+		if (vPos == "c")
+		{
+			if (winDim < parentDim)
+			vPos := (parentDim - winDim)/2
+			else
+			vPos := 0
+		}
+		else
+		{
+			if (vPos == "zero")
+			vPos := 0
+			else
+			if (vPos == "l")
+			vPos := ""
+		}
+	return vPos
+	}
+
+	GetPosVal(vPosX, vPosY, currVPos, parentDimW, parentDimH, winDimW, winDimH, parentHWnd)
+	{
+
+	vPosXIn := vPosX
+	vPosYIn := vPosY
+	vPosX := This.TransPosVal(vPosX, parentDimW, winDimW)
+	vPosY := This.TransPosVal(vPosY, parentDimH, winDimH)
+
+		if (vPosX == "")
+		{
+			if (vPosY == "")
+			return {x: currVPos.x, y: currVPos.y}
+			else
+			vPosXNew := (currVPos.x)?currVPos.x:0
+		}
+		else
+		vPosXNew := vPosX
+
+		if (vPosY == "")
+		vPosYNew := (currVPos.y)?currVPos.y:0
+		else
+		vPosYNew := vPosY
+	
+		if (parentHWnd)
+		{
+		VarSetCapacity(point, 8, 0)
+		NumPut(vPosXNew, point, 0, "Int")
+		NumPut(vPosYNew, point, 4, "Int")
+
+			if !DllCall("user32\ScreenToClient", "Ptr", parentHWnd, "Ptr", &point, "int")
+			return 0
+
+			if (vPosXIn == "c")
+			{
+			parentPoint := This.GuiGetPos(parentHWnd, 1)
+			vPosXNew := vPosX + parentPoint.x
+			}
+			else
+			vPosXNew := NumGet(point, 0, "Int")
+
+			if (vPosYIn == "c")
+			{
+				if (parentPoint.x == "")
+				parentPoint := This.GuiGetPos(parentHWnd, 1)
+			vPosYNew := vPosY + parentPoint.y
+			}
+			else
+			vPosYNew := NumGet(point, 4, "Int")
+
+		VarSetCapacity(point, 0)
+
+			if (vPosXNew < 0)
+			vPosXNew := 0
+			else
+			{
+				if (vPosXNew > parentDimW)
+				vPosXNew := parentDimW - winDimW
+			}
+			if (vPosYNew < 0)
+			vPosYNew := 0
+			else
+			{
+				if (vPosYNew > parentDimH)
+				vPosYNew := parentDimH - winDimH
+			}
+		}
+
+	return {x: (vPosX == "")? currVPos.x: vPosXNew, y: (vPosY == "")? currVPos.y : vPosYNew}
+
+	}
+
+
+	DoText(splashyInst, hWnd, text, ByRef currVPos, parentW, parentH, ByRef currSplashyInstW, currSplashyInstH, init, sub := 0)
+	{
+	static SS_Center := 0X1, SWP_SHOWWINDOW := 0x0040, mainTextSize := [], subTextSize := []
+	static oldSubBkgdColour := 0, oldMainBkgdColour := 0
+	init := 0
+		if (text != "")
+		{
+		; Note default font styles for main & sub differ
+			if (sub)
+			Gui, %splashyInst%: Font, % "norm s" . This.subFontSize . " w" . This.subFontWeight . " q" . This.subFontQuality . This.subFontItalic . This.subFontStrike . This.subFontUnderline, % This.subFontName
+			else
+			Gui, %splashyInst%: Font, % "norm s" . This.mainFontSize . " w" . This.mainFontWeight . " q" . This.mainFontQuality . This.mainFontItalic . This.mainFontStrike . This.mainFontUnderline, % This.mainFontName
+
+			if (hWnd)
+			{
+			GuiControl, %splashyInst%: Text, %hWnd%, % text
+			GuiControl, %splashyInst%: Font, %hWnd%
+			}
+			else
+			{
+			init := 1
+			Gui, %splashyInst%: Add, Text, % "X0 W" . This.vImgW . " Y" . (sub?currSplashyInstH:This.vMgnY) . " HWND" . "hWnd", % text
+
+				if (sub)
+				This.subTextHWnd[This.instance] := hWnd
+				else
+				This.mainTextHWnd[This.instance] := hWnd
+			}
+
+
+			if (sub)
+			subTextSize := This.Text_Dims(text, hWnd)
+			else
+			mainTextSize := This.Text_Dims(text, hWnd)
+
+
+
+			if (This.vImgTxtSize)
+			{
+				; Not so precise- otherwise very fiddly
+				if (sub)
+				{
+					if (!(This.mainTextHWnd[This.instance] && mainTextSize[1] > subTextSize[1]))
+					{
+					currSplashyInstW += subTextSize[1] - This.vImgW
+					This.vImgW := subTextSize[1]
+					This.inputVImgW := ""
+					}
+				}
+				else
+				{
+					if (!(This.subTextHWnd[This.instance] && subTextSize[1] > mainTextSize[1]))
+					{
+					currSplashyInstW += mainTextSize[1] - This.vImgW
+					This.vImgW := mainTextSize[1]
+					This.inputVImgW := ""
+					}
+				}
+			}
+
+			if (This.transCol)
+			{
+				if (sub)
+				{
+				oldSubBkgdColour := This.subBkgdColour
+				This.subBkgdColour := This.bkgdColour
+				}
+				else
+				{
+				oldMainBkgdColour := This.MainBkgdColour
+				This.MainBkgdColour := This.bkgdColour
+				}
+			}
+			else
+			{
+				if (sub && oldSubBkgdColour)
+				{
+				This.subBkgdColour := oldSubBkgdColour
+				oldSubBkgdColour := 0
+				}
+				else
+				{
+					if (!sub && oldMainBkgdColour)
+					{
+					This.MainBkgdColour := oldMainBkgdColour
+					oldMainBkgdColour := 0
+					}
+				}
+			}
+
+			if (This.Parent)
+			{
+			; vMgnx, vMgnY not applicable here
+ 			This.Setparent(1, (sub?"":hWnd), (sub?hWnd:""))
+
+				if (currVPos.x == "")
+				{
+				currVPos := This.GetPosVal(This.vPosX, This.vPosY, currVPos, parentW, parentH, currSplashyInstW, currSplashyInstH, This.parentHWnd)
+
+				; Init only! Position is never preserved, so rely on GuiGetPos
+					if (init)
+					currVPos := This.GetPosProc(splashyInst, currVPos, 1)
+				}
+
+;			;Margins not required!
+			WinSet, Style, +%SS_Center%, ahk_id %hWnd%
+
+			WinMove ahk_id %hWnd%, , % currVPos.x + This.vMgnX, % currVPos.y + (sub?currSplashyInstH:0), % This.vImgW, % sub?subTextSize[2]:mainTextSize[2]
+			;DllCall("SetWindowPos", "UInt", hWnd, "UInt", 0, "Int", This.currVPos.x, "Int", This.currVPos.y, "Int", This.vImgW, "Int", mainTextSize[2], "UInt", 0x0004)
+
+			WinSet, AlwaysOnTop, 1, ahk_id %hWnd%
+
+			WinShow, ahk_id %hWnd%
+			}
+			else
+			{
+			; Remove and set the style first- done so the text can be centred within the margins.
+			WinSet, Style, -%SS_Center%, ahk_id %hWnd%
+			DllCall("SetWindowPos", "Ptr", hWnd, "Ptr", 0, "Int", 0, "Int", 0,"Int", 0,"Int", 0,"UInt", SWP_SHOWWINDOW)
+
+				if (sub)
+				{
+				This.Setparent(0, , hWnd)
+					if (This.subBkgdColour == This.bkgdColour)
+					{
+					spr := This.vImgW - subTextSize[1] + 2 * This.vMgnX
+					spr := (spr > 0)?((This.vImgTxtSize)? 0: spr)/2: 0
+					}
+					else	; colours won't cover all the region after the move
+					spr := This.vMgnX
+
+				GuiControl, %splashyInst%: Move, %hWnd%, % "X" . spr . " Y" . currSplashyInstH . " W" . This.vImgW . " H" . subTextSize[2]
+				}
+				else
+				{
+				This.Setparent(0, hWnd)
+
+					if (This.mainBkgdColour == This.bkgdColour)
+					{
+					spr := This.vImgW - mainTextSize[1] + 2 * This.vMgnX
+					spr := (spr > 0)?((This.vImgTxtSize)? 0: spr/2): 0
+					}
+					else
+					spr := This.vMgnX
+
+				GuiControl, %splashyInst%: Move, %hWnd%, % "X" . spr . " Y0" . " W" . This.vImgW . " H" . mainTextSize[2]
+				}
+			GuiControl, %splashyInst%: Show, %hWnd% ; in case of previously hidden
+			}
+
+			GuiControl, %splashyInst%: Font, %hWnd%
+
+			
+
+			;ControlSetText, , %mainText%, % "ahk_id" . hWnd
+			; This sends more paint messages to parent
+			;ControlMove, , % This.vMgnX, % This.vMgnY, This.vImgW , Text_Dims(mainText, hWnd), % "ahk_id" . hWnd
+
+
+		This.SubClassTextCtl(hWnd)
+		return % (sub)?subTextSize[2]:mainTextSize[2]
+		}
+		else
+		{
+			if (hWnd)
+			{
+			GuiControl, %splashyInst%: Hide, %hWnd%
+
+				if (sub)
+				subTextSize := ""
+				else
+				mainTextSize := ""
+			}
+
+		return 0
+		}
+	}
+
+
+	CheckParentStat(exiting := 0)
+	{
+	Static parentChangedSub := 0, parentChangedMain := 0, SWP_SHOWWINDOW := 0x0040, SWP_ASYNCWINDOWPOS := 0x4000
+
+		if (This.parent)
+		{
+			if (This.mainText != "")
+			{
+				if (parentChangedMain <= 0)
+				{
+
+				This.SetParent(exiting, 0)
+				spr := This.mainTextHWnd[This.Instance]
+				; All positional changes and paints to the window are not processed during the modal loop
+				; Only hope is for a timer.
+
+				; DllCall("SetWindowPos", "Ptr", spr, "Ptr", 2 * This.vMgnX, "Int", 0, "Int", This.vImgw + 2 * This.vMgnX, "Int", 40, "Int", 0, "UInt", SWP_SHOWWINDOW & SWP_ASYNCWINDOWPOS)
+				; WinShow, ahk_id . %spr%
+					if (exiting)
+					{
+					WinSet, Style, -%SS_Center%, "ahk_id" . %spr%
+					parentChangedMain := 1
+					;WinSet, Redraw ,, ahk_id %spr%
+					}
+					else
+					{
+					WinSet, Style, +%SS_Center%, "ahk_id" %spr%
+					parentChangedMain := -1
+					}
+				}
+			}
+			if (This.subText != "")
+			{
+				if (parentChangedSub <= 0)
+				{
+
+				This.SetParent(exiting, , 0)
+				spr := This.subTextHWnd[This.Instance]
+
+					if (exiting)
+					{
+					WinSet, Style, -%SS_Center%, "ahk_id" . %spr%
+					parentChangedSub := 1
+					;WinSet, Redraw ,, ahk_id %spr%
+					}
+					else
+					{
+					WinSet, Style, +%SS_Center%, "ahk_id" %spr%
+					parentChangedSub := -1
+					}
+				}
+
+			}
+
+		}
+		else
+		{
+		parentChangedSub := 0
+		parentChangedMain := 0
+		}
+	}
+
+
+	SetParent(parentSetStatus, mainHWndIn := "", subHWndIn := "")
+	{
+	Static lastParentStatusMain := 0, lastParentStatusSub := 0, mainHWnd := 0, subHWnd := 0
+
+		if (mainHWndIn != "")
+		{
+			if (lastParentStatusMain == parentSetStatus)
+			return
+		}
+		else
+		{
+			if (subHWndIn != "")
+			{
+				if (lastParentStatusSub == parentSetStatus)
+				return
+			}
+		}
+
+		if (mainHWndIn)
+		hWnd := mainHWnd := mainHWndIn
+		else
+		{
+			if (subHWndIn)
+			hWnd := subHWnd := subHWndIn
+			else
+			{
+				if (mainHWndIn == 0)
+				hWnd := mainHWnd
+				else
+				hWnd := subHWnd
+			}
+		}
+
+		if (parentSetStatus)
+		{
+			if (DllCall("SetParent", "Ptr", hWnd, "Ptr", This.parentHWnd) != This.hWnd())
+			msgbox, 8192, SetParent, Cannot set parent for control!
+		}
+		else
+		{
+			if (DllCall("SetParent", "Ptr", hWnd, "Ptr", This.hWnd()) != This.parentHWnd)
+			msgbox, 8192, SetParent, Cannot set Splashy as parent for control!
+		}
+
+		if (mainHWndIn != "")
+		lastParentStatusMain := parentSetStatus
+		else
+		{
+			if (subHWndIn != "")
+			lastParentStatusSub := parentSetStatus
+		}
+
+	}
+
+	SetParentFlag()
+	{
+	Static WS_CLIPCHILDREN := 0x02000000
+	DetectHiddenWindows, On
+
+	spr := WinExist()
+	; AutoHotkeyGui when SplashyTest launches this from a gui thread
+	WinGet, WindowList, List , ahk_class AutoHotkeyGUI
+
+	DetectHiddenWindows, Off
+
+		Loop %WindowList%
+		{
+			if (spr == WindowList%A_Index%)
+			{
+			; Get clip style
+			Winget, spr1, Style, ahk_id %spr%
+				if (spr1 & WS_CLIPCHILDREN)
+				This.parentClip := WS_CLIPCHILDREN
+				else
+				This.parentClip := 0
+			return spr
+			}
+		}
+	return "Error"
+	}
+
+	Text_Dims(Text, hWnd)
+	{
+	Static WM_GETFONT := 0x0031
+	FontSize := [], hDCScreen := 0, outSize := [0, 0]
+	;https://www.autohotkey.com/boards/viewtopic.php?f=76&t=9130&p=50713#p50713
+
+	StrReplace(Text, "`r`n", "`r`n", spr1)
+	StrReplace(Text, "`n", "`n", spr2)
+	spr1 += spr2 + 1
+
+	spr2 := "" ; get longest of multiline
+		loop, Parse, Text, `n, `r
+		{
+		if (StrLen(A_Loopfield)) > StrLen(spr2)
+		spr2 := A_Loopfield
+		}
+
+	HFONT := DllCall("User32.dll\SendMessage", "Ptr", hWnd, "Int", WM_GETFONT, "Ptr", 0, "Ptr", 0)
+
+	hDCScreen := DllCall("user32\GetDC", "Ptr", 0, "Ptr")
+
+		if (HFONT_OLD := This.SelectObject(hDCScreen, HFONT, "Font"))
+		{
+
+		VarSetCapacity(FontSize, 8)
+		DllCall("GetTextExtentPoint32", "UPtr", hDCScreen, "Str", spr2, "Int", StrLen(spr2), "UPtr", &FontSize)
+		outSize[1] := NumGet(FontSize, 0, "UInt")
+		DllCall("GetTextExtentPoint32", "UPtr", hDCScreen, "Str", Text, "Int", StrLen(Text), "UPtr", &FontSize)
+		outSize[2] := NumGet(FontSize, 4, "UInt") * spr1
+
+		; clean up
+
+		This.SelectObject(hDCScreen, HFONT_OLD, "Old Font")
+		; If not created, DeleteObject NOT required for This HFONT
+
+		This.releaseDC(0, hDCScreen)
+		VarSetCapacity(FontSize, 0)
+		return outSize
+		}
+		else
+		{
+		This.releaseDC(0, hDCScreen)
+		return 0
+		}
+	}
+
+	B64Decode(B64, nBytes := "", W := 0, H := 0)
+	{
+	Static CRYPT_STRING_BASE64 := 0x00000001
+	Bin = {}, BLen := 0, hICON := 0
+
+		if !nBytes
+		nBytes := floor(strlen(RTrim(B64, "=")) * 3/4)
+
+	VarSetCapacity( Bin, nBytes, 0 ), BLen := StrLen(B64)
+		if DllCall( "Crypt32.dll\CryptStringToBinary", "Ptr", &B64, "UInt", BLen, "UInt", CRYPT_STRING_BASE64
+		, "Ptr", &Bin, "UInt*", nBytes, "Int", 0, "Int", 0)
+
+		hICON := DllCall( "CreateIconFromResourceEx", "Ptr", &Bin, "UInt", nBytes, "Int", True
+		, "UInt", 0x30000, "Int", W, "Int", H, "UInt", 0, "UPtr")
+		; 0X30000: version number of the icon or cursor format for the resource bits pointed to by the pbIconBits 
+	Return hICON
+	}
+
+	vMovable
+	{
+		set
+		{
+		This._vMovable := value
+		}
+		get
+		{
+		return This._vMovable
+		}
+	}
+
+	hWnd()
+	{
+		if (!(spr := This.hWndSaved[This.instance]))
+		{
+		spr := "Splashy" . (This.instance)
+		Gui, %spr%: +HWNDspr
+		This.hWndSaved[This.instance] := spr
+		}
+	return spr
+	}
+
+	SelectObject(hDC, hgdiobj, type)
+	{
+	static HGDI_ERROR := 0xFFFFFFFF
+
+	hRet := DllCall("Gdi32.dll\SelectObject", "Ptr", hDC, "Ptr", hgdiobj, "Ptr")
+
+		if (!hRet || hRet == HGDI_ERROR)
+		{
+		msgbox, 8208, GDI Object, % "Selection failed for " type "`nError code is: " . ((hRet == HGDI_ERROR)? "HGDI_ERROR: ": "Unknown: ") . "The errorLevel is " ErrorLevel ": " . A_LastError
+		return 0
+		}
+		else
+		return hRet
+	}
+
+	deleteObject(hDC, hgdiobj)
+	{
+		if !DllCall("Gdi32.dll\DeleteObject", "Ptr", hObject)
+		msgbox, 8208, GDI Object, % "Deletion failed `nError code is: " . "ErrorLevel " ErrorLevel ": " . A_LastError
+	}
+		releaseDC(hWnd, hDC)
+	{
+		if !DllCall("ReleaseDC", "Ptr", hWnd, "UPtr", hDC)
+		msgbox, 8208, Device Context, % "Release failed `nError code is: " . "ErrorLevel " ErrorLevel ": " . A_LastError
+	}
+
+	SaveRestoreUserParms(Restore := 0)
+	{
+	Static userWorkingDir := "", userStringCaseSense := "", userDHW := ""
+
+		if (Restore)
+		{
+			SetWorkingDir %userWorkingDir%
+			StringCaseSense, %userStringCaseSense%
+			DetectHiddenWindows %userDHW%
+		}
+		else
+		{
+			userDHW := A_DetectHiddenWindows
+			userWorkingDir := A_WorkingDir
+			userStringCaseSense := A_StringCaseSense
+		}
+	}
+
+	Destroy()
+	{
+	SetWorkingDir %A_ScriptDir%
+		for key, value in % This.downloadedPathNames
+		{
+			if (FileExist(value))
+			FileDelete, % value
+		}
+
+	This.SaveRestoreUserParms(1)
+
+	This.DeleteHandles()
+
+	This.SetCapacity(downloadedPathNames, 0)
+	This.SetCapacity(downloadedUrlNames, 0)
+		for key in This.hWndSaved
+		{
+		value := "Splashy" . key
+		Gui, %value%: Destroy
+		Splashy.NewWndProc.clbk[key] := "" ; should invoke __Delete
+		This.hWndSaved[key] := 0
+		This.mainTextHWnd[key] := 0
+		This.subTextHWnd[key] := 0
+		}
+	This.updateFlag := 0
+	This.NewWndObj := ""
+	This.SubClassTextCtl(0, 1)
+
+	if (This.pToken)
+	DllCall("GdiPlus.dll\GdiplusShutdown", "Ptr", This.pToken)
+	if (This.hGDIPLUS)
+	DllCall("FreeLibrary", "Ptr", This.hGDIPLUS)
+
+	;This.Delete("", chr(255))
+	This.SetCapacity(0)
+	This.base := ""
+	}
+
+	DeleteHandles()
+	{
+		if (This.hBitmap)
+		{
+		; This.vImgType == 0 or IMAGE_BITMAP (0)
+			if (DllCall("DeleteObject", "Ptr", This.hBitmap))
+			This.hBitmap := 0
+			else
+			msgbox, 8208, DeleteObject, DeleteObject for hBitmap failed!
+		}
+		else
+		{
+			if (This.hIcon)
+			{
+				if (This.vImgType == 1)  ; IMAGE_ICON
+				{
+				if (DllCall("DestroyIcon", "Ptr", This.hIcon))
+				This.hIcon := 0
+				else
+				msgbox, 8208, DestroyIcon, DestroyIcon for hIcon failed with error %A_LastError%
+				}
+				else
+				{
+					if (This.vImgType == 2)  ; IMAGE_CURSOR
+					{
+						if (DllCall("DestroyCursor", "Ptr", This.hIcon))
+						This.hIcon := 0
+						else
+						msgbox, 8208, DestroyCursor, DestroyCursor for hIcon failed with error %A_LastError%
+					}
+				}
+			}
+		}
+	}
+	; ##################################################################################
+}
+;=====================================================================================
+
+;=====================================================================================
+
 Class PrgProperties
 	{
 	static propsHwnd := 0
@@ -148,6 +2973,17 @@ Class PrgLnchOpt
 		get
 		{
 		return this._dispMonNamesNo
+		}
+	}
+	activeDispMonNamesNo
+	{
+		set
+		{
+		this._activeDispMonNamesNo := value
+		}
+		get
+		{
+		return this._activeDispMonNamesNo
 		}
 	}
 	scrWidth
@@ -531,7 +3367,6 @@ presetNoTest := 2 ; 0: config screen 2: return to or load of batch screen: 1: el
 prgSwitchIndex := 0 ; saves index of Prg switched to when active
 timWatchSwitch := 1000 ; Constant time interval for checking PrgLnch switch in/out
 waitBreak := 0 ; Switch to break the Prg watch
-PrgPos := [0, 0, 0, 0]
 PrgCmdLine := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgMonToRn := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgChgResPrgOnClose := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -613,7 +3448,6 @@ selIniNameSprIniSlot := ""
 oldSelIniChoiceName := ""
 oldSelIniChoicePath := "" ; Previously loaded preset: in many cases the path of oldSelIniChoiceName above
 dispMonNames := ["", "", "", "", "", "", "", "", ""]
-ResArray := []
 iDevNumArray := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 ; Defaults per monitor
 scrWidthDefArr := [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -626,14 +3460,12 @@ scrFreqArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgLnchMon := 0 ; Device PrgLnch is run from
 PrgLnchOpt.dispMonNamesNo := 9 ;No more than 9 displays!?
 targMonitorNum := 1
-primaryMon := 1
+primaryMon := 1 ; placeholder
 ResIndexList := ""
 x := 0
 y := 0
 w := 0
 h := 0
-dx := 0
-dy := 0
 
 
 	if (!A_IsUnicode)
@@ -647,7 +3479,10 @@ Gui, PrgLnchOpt: New
 
 GetDisplayData(, iDevNumArray, dispMonNames, , , , , , -3)
 
+; Can change
+
 PrgLnch.Monitor := GetPrgLnchMonNum(iDevNumArray, primaryMon, 1)
+
 
 WinMover(, , , , "PrgLnchLoading.jpg")
 
@@ -937,6 +3772,7 @@ else
 Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHwnd
 
 
+	; reject unattached monitors, replace with default
 	loop %PrgNo% 
 	{
 	foundpos := PrgMonToRn[A_Index]
@@ -948,13 +3784,13 @@ Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHwnd
 	if (PrgMonToRn[selPrgChoice] && (defPrgStrng != "None"))
 	{
 	targMonitorNum := PrgMonToRn[selPrgChoice]
-	iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
+	iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
 	SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
-	CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, ResArray, allModes)
+	CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 	}
 	else
 	{
-	CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, ResArray, allModes)
+	CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 	CopyToFromResdefaults(1)
 	}
 
@@ -965,7 +3801,7 @@ GuiControl, PrgLnchOpt:, Monitors, % dispMonNames[targMonitorNum]
 Loop % PrgLnchOpt.dispMonNamesNo
 {
 	if (iDevNumArray[A_Index] < 10) ;dec masks
-	GuiControl, PrgLnchOpt:, iDevNum, % SubStr(iDevNumArray[A_Index], 1, 1) " |"
+	GuiControl, PrgLnchOpt:, iDevNum, % A_Index . " |"
 	else
 	{
 		if (iDevNumArray[A_Index] > 99)
@@ -1020,7 +3856,7 @@ if (ChkPrgNames(txtPrgChoice, PrgNo)) ;shouldn't happen on load
 	GuiControl, PrgLnchOpt: Choose, PrgChoice, 1
 }
 
-if (txtPrgChoice == "None")
+	if (txtPrgChoice == "None")
 	{
 	GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 	GuiControl, PrgLnchOpt:, RnPrgLnch, Change Res`.
@@ -1030,7 +3866,7 @@ if (txtPrgChoice == "None")
 	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep, 1)
 	}
-else
+	else
 	{
 
 	GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
@@ -1064,7 +3900,7 @@ WinMover(PrgLnchOpt.Hwnd(), "d r")   ; "dr" means "down, right"
 	SetTimer, WatchSwitchOut, -%timWatchSwitch%
 	}
 
-IniProc(100) ;initialises scrWidth, scrHeight, scrFreq & Prgmon in ini
+IniProc(100) ;initialises scrWidth, scrHeight, scrFreq & saves iDevNumArray (Prgmon) in ini
 
 
 
@@ -2065,7 +4901,7 @@ if (A_GuiEvent == "DoubleClick")
 	lnchStat := 1
 
 
-	strRetVal := LnchPrgOff(batchPrgStatus, lnchStat, PrgChoiceNames, temp, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, btchPowerNames[btchPrgPresetSel])
+	strRetVal := LnchPrgOff(batchPrgStatus, lnchStat, PrgChoiceNames, temp, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgMinMaxVar, PrgStyle, btchPowerNames[btchPrgPresetSel])
 
 
 	loop % currBatchNo
@@ -2164,7 +5000,7 @@ Thread, NoTimers, false
 	SetTimer, WatchSwitchOut, %timWatchSwitch%
 	else
 	{
-	CleanupPID(currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak, 1)
+	CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak, 1)
 
 		if (PrgPID)
 		{
@@ -3766,10 +6602,6 @@ Loop
 	strTemp .= "`nError in Power Plan Enumeration: " . r
 
 
-;Msgbox Available power schemes:`n%plan%`nCurrent GUID: %oldSchemeGUID%
-
-
-
 
 VarSetCapacity(schemeGUID, 0)
 VarSetCapacity(desc, 0)
@@ -4066,16 +6898,26 @@ return retVal
 
 TDCallback(hWnd, Notification, wParam, lParam, RefData)
 {
+Static tdYpos := 0
 Static TDE_FOOTER = 0X0002, TDM_UPDATE_ELEMENT_TEXT := 0x400 + 114, TDM_CLICK_BUTTON := 0x400 + 102, timeOut := 10
+Static TDN_CREATED := 0, TDN_HYPERLINK_CLICKED := 3, TDN_TIMER := 4, TDN_EXPANDO_BUTTON_CLICKED := 10
     switch (Notification)
 	{
-		Case 3:
+		Case TDN_CREATED:
+		{
+		VarSetCapacity(rect, 16, 0)
+
+			if (DllCall("GetWindowRect", "Ptr", hWnd, "Ptr", &rect))
+			tdYpos := NumGet(rect, 4, "int")
+
+		VarSetCapacity(rect, 0)
+		}
+		Case TDN_HYPERLINK_CLICKED:
 		{
 		url := StrGet(lParam, "UTF-16") ; <A HREF="URL">Link</A>
 		Run %url%
 		}
-		 ;Check for TDN_TIMER
-		Case 4:
+		Case TDN_TIMER:
 		{
 		;Translate time elapsed to UTF-16
 		sElapsed := timeOut - Round(wParam / 1000)
@@ -4086,10 +6928,59 @@ Static TDE_FOOTER = 0X0002, TDM_UPDATE_ELEMENT_TEXT := 0x400 + 114, TDM_CLICK_BU
 		;Send a TDM_UPDATE_ELEMENT_TEXT message
 		SendMessage, %TDM_UPDATE_ELEMENT_TEXT%, %TDE_FOOTER%, &sElapsed,, ahk_id %hwnd%
 		}
+		; moves the form so (most of) the expanded text is visible:
+		; https://stackoverflow.com/questions/71497916/lower-part-of-expanded-taskdialog-form-goes-offscreen/71497917
+		Case TDN_EXPANDO_BUTTON_CLICKED:
+		{
+			if (WinExist("ahk_id" . PrgLnch.Hwnd()) || WinExist("ahk_id" . PrgLnchOpt.Hwnd()))
+			{
+				if (wParam)
+				tdYposOut := 0
+				else
+				tdYposOut := tdYpos
+
+			hWndObj := {hWnd:hWnd, tdYpos:tdYposOut}
+
+			MoveTDN(hWndObj)
+
+			hWndObj := ""
+			}
+		}
 		Default:
 	}
 }
+MoveTDN(hWndObj)
+{
+	Timer := Func("TDNTimer").Bind(A_ThisFunc, hWndObj)
 
+	SetTimer % Timer, -15
+	Return
+}
+
+TDNTimer(FuncName, hWndObj)
+{
+
+	VarSetCapacity(rect, 16, 0)
+
+		if (!DllCall("GetWindowRect", "Ptr", hWndObj.hWnd, "Ptr", &rect))
+		return
+	tdxpos := NumGet(rect, 0, "int")
+
+		if (hWndObj.tdYpos)
+		hWndNewObj := hWndObj
+		else
+		{
+		WinGetPos,,,, h, ahk_class Shell_TrayWnd
+			if (h > A_ScreenHeight - 100) ; vert taskbar
+			h := 0
+		tdYposIn := A_ScreenHeight - h - (NumGet(rect, 12, "int") - NumGet(rect, 4, "int"))
+		hWndNewObj := {hWnd:hWndObj.hWnd, tdYpos:tdYposIn}
+		VarSetCapacity(rect, 0)
+		}
+
+	DllCall("SetWindowPos", "uint", hWndNewObj.hWnd, "uint", hwnd_prev
+	, "int", tdxpos, "int", hWndNewObj.tdYpos, "int", 0, "int", 0, "uint", 0)
+}
 
 
 
@@ -4285,7 +7176,7 @@ Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 
 	if (PrgPID) ;test only from config
-	BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, selPrgChoice, dx, dy, scrWidth, scrHeight, PrgPID)
+	BordlessProc(targMonitorNum, PrgMinMaxVar, PrgStyle, PrgBordless, selPrgChoice, dx, dy, PrgPID)
 	else
 	{
 	PrgBordless[selPrgChoice] := Bordless
@@ -4594,7 +7485,7 @@ GuiControlGet, fTemp, PrgLnchOpt:, iDevNum
 	}
 
 ;Must reset reslist
-CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, ResArray, allModes)
+CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 
 
@@ -4616,7 +7507,7 @@ SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr
 
 return
 
-iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, ByRef iDevNumArray, ByRef dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
+iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
 {
 ; These for GetDisplayData
 Static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
@@ -4645,88 +7536,118 @@ Static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
 CheckModes:
 ; Update allModes
 Gui, PrgLnchOpt: Submit, Nohide
-CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, ResArray, allModes)
+CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 Tooltip
 return
 
-CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ByRef ResIndexList, ByRef ResArray, allModes)
+CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, ByRef iDevNumArray, ByRef ResIndexList, allModes, setPrgLnchOptDefs := 0)
 {
+static oldTargMonitorNum := 0, ResArray := []
+; resArray and all others are one-based now
+static monitorOrder := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-
-ResIndexList := "|" . GetResList(targMonitorNum, ResArray, allModes, iDevNumArray)
-
-
-;Not the g-label ResListBox!
-GuiControl, PrgLnchOpt:, ResIndex, %ResIndexList%
-
-
-
-	if (allModes)
-	Gui, PrgLnchOpt: Font, Bold CA96915, Verdana
-	else
-	Gui, PrgLnchOpt: Font
-GuiControl, PrgLnchOpt: Font, ResIndex
-
-
-; Now process default res
-
-	if (strTemp := GetResList(targMonitorNum, ResArray, allModes, , 1))
+	if (setPrgLnchOptDefs)
 	{
-	strTemp := substr(strTemp, 1, StrLen(strTemp) - 1)
-
-		if (PrgLnch.Monitor == targMonitorNum)
-		{
-		PrgLnchOpt.MonDefResStrng := strTemp
-		PrgLnchOpt.MonCurrResStrng := strTemp
-		PrgLnchOpt.CurrMonStat := 1 ; Assume the PrgLnch monitor is always ok
-		}
-		else
-		{
-			if ((iDevNumArray[targMonitorNum] > 9) && (!(MDMF_GetMonStatus(targMonitorNum))))
-			{
-			GuiControlGet, strTemp2, PrgLnchOpt: FocusV
-
-				if (strTemp2 == "iDevNum")
-				{
-				IniRead, strTemp2, % PrgLnch.SelIniChoicePath, General, MonProbMsg
-					if (!strTemp2)
-					{
-					retVal := TaskDialog("Monitors", "Monitor connection issue", "", "A monitor returns a bad status, possibly because of an unsupported setting on the physical monitor itself.`nThe list of resolution modes will now default to those of the primary monitor.`nIt's still possible to change the monitor's resolution from any supported mode from the list, and launch Prgs in the monitor defined in the virtual screen, however.", , "Continue with resolution checks")
-						if (retVal < 0)
-						IniWrite, 1, % PrgLnch.SelIniChoicePath, General, MonProbMsg
-					}
-				}
-
-			GuiControl, PrgLnchOpt: Disabled, currRes
-			}
-			else
-			PrgLnchOpt.MonCurrResStrng := strTemp
-		}
-
-
-		if (PresetPropHwnd)
-		{
-			if ((PrgLnch.Monitor != targMonitorNum) || PrgLnchOpt.Fmode() || PrgLnchOpt.DynamicMode())
-			GuiControl, PrgLnchOpt:, currRes, %strTemp%
-			else
-			GuiControl, PrgLnchOpt:, currRes, % PrgLnchOpt.MonCurrResStrng
-		}
-		else  ;Update all at Load
-		{
-			GuiControl, PrgLnchOpt:, currRes, %strTemp%
-
-			if (defPrgStrng == "None")
-			CopyToFromResdefaults()
-		}
-
-
-	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+	PrgLnchOpt.scrWidth := ResArray[1, setPrgLnchOptDefs]
+	PrgLnchOpt.scrHeight := ResArray[2, setPrgLnchOptDefs]
+	PrgLnchOpt.scrFreq := ResArray[3, setPrgLnchOptDefs]
 	}
 	else
-	MsgBox, 8192, Monitor %targMonitorNum%, There is a critical error with the dimensions of the target monitor!
+	{
+		if (oldTargMonitorNum == targMonitorNum)
+		ResIndexList := "|" . GetResInfo(targMonitorNum, ResArray, 1, allModes, monitorOrder)
+		else
+		{
+		ResIndexList := "|" . GetResInfo(targMonitorNum, ResArray, 1, allModes, monitorOrder)
+
+		if (!allModes)
+		ResIndexList := "|" . GetResInfo(targMonitorNum, ResArray, 2, allModes)
+
+		oldTargMonitorNum := targMonitorNum
+
+		}
 
 
-GuiControl, PrgLnchOpt: Show, ResIndex
+	;Not the g-label ResListBox!
+	GuiControl, PrgLnchOpt:, ResIndex, %ResIndexList%
+
+
+
+		if (allModes)
+		Gui, PrgLnchOpt: Font, Bold CA96915, Verdana
+		else
+		Gui, PrgLnchOpt: Font
+	GuiControl, PrgLnchOpt: Font, ResIndex
+
+
+	; Now process default res
+
+		if (strTemp := GetResInfo(targMonitorNum, ResArray))
+		{
+		strTemp := substr(strTemp, 1, StrLen(strTemp) - 1)
+
+			if (PrgLnch.Monitor == targMonitorNum)
+			{
+			PrgLnchOpt.MonDefResStrng := strTemp
+			PrgLnchOpt.MonCurrResStrng := strTemp
+			PrgLnchOpt.CurrMonStat := 1 ; Assume the PrgLnch monitor is always ok
+			}
+			else
+			{
+				if ((iDevNumArray[monitorOrder[targMonitorNum]] > 9) && (!(MDMF_GetMonStatus(monitorOrder[targMonitorNum]))))
+				{
+				GuiControlGet, strTemp2, PrgLnchOpt: FocusV
+
+					if (strTemp2 == "iDevNum")
+					{
+					IniRead, strTemp2, % PrgLnch.SelIniChoicePath, General, MonProbMsg
+
+						if (strTemp2 = "ERROR")
+						{
+						; Versioning:  IniSpaceCleaner moves this before ResMode
+						IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
+						strTemp2 := 0
+						}
+					
+						if (!strTemp2)
+						{
+						retVal := TaskDialog("Monitors", "Monitor connection issue", "", "A monitor returns a bad status, possibly because of an unsupported setting on the physical monitor itself.`nThe list of resolution modes will now default to those of the primary monitor.`nIt's still possible to change the monitor's resolution from any supported mode from the list, and launch Prgs in the monitor defined in the virtual screen, however.", , "Continue with resolution checks")
+							if (retVal < 0)
+							IniWrite, 1, % PrgLnch.SelIniChoicePath, General, MonProbMsg
+						}
+					}
+
+				GuiControl, PrgLnchOpt: Disabled, currRes
+				}
+				else
+				PrgLnchOpt.MonCurrResStrng := strTemp
+			}
+
+
+			if (PresetPropHwnd)
+			{
+				if ((PrgLnch.Monitor != targMonitorNum) || PrgLnchOpt.Fmode() || PrgLnchOpt.DynamicMode())
+				GuiControl, PrgLnchOpt:, currRes, %strTemp%
+				else
+				GuiControl, PrgLnchOpt:, currRes, % PrgLnchOpt.MonCurrResStrng
+			}
+			else  ;Update all at Load
+			{
+				GuiControl, PrgLnchOpt:, currRes, %strTemp%
+
+				if (defPrgStrng == "None")
+				CopyToFromResdefaults()
+			}
+
+
+		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+		}
+		else
+		MsgBox, 8192, Monitor %targMonitorNum%, There is a critical error with the dimensions of the target monitor!
+
+
+	GuiControl, PrgLnchOpt: Show, ResIndex
+	}
 }
 
 
@@ -4752,13 +7673,10 @@ Tooltip
 			Break
 			}
 		}
-
 		if (fTemp)
 		{
-		fTemp -= 1
-		PrgLnchOpt.scrWidth := ResArray[1, fTemp]
-		PrgLnchOpt.scrHeight := ResArray[2, fTemp]
-		PrgLnchOpt.scrFreq := ResArray[3, fTemp]
+		fTemp += 1
+		CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes, fTemp)
 
 			if (PrgChoicePaths[selPrgChoice])
 			IniProc(selPrgChoice)
@@ -5003,9 +7921,9 @@ else
 						}
 						else
 						{
-						iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
+						iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
 						SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
-						CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, ResArray, allModes)
+						CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 						}
 					}
 					else
@@ -5018,7 +7936,7 @@ else
 						}
 
 					targMonitorNum := PrgMonToRn[selPrgChoice]
-					iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
+					iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
 					SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 					GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 					}
@@ -5058,7 +7976,7 @@ else
 					else
 					GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 
-				CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, ResArray, allModes)
+				CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 				TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum)
 
 			}
@@ -5149,19 +8067,18 @@ else
 				temp := -retVal
 				IniWrite, %temp%, % PrgLnch.SelIniChoicePath, General, ChangeShortcutMsg
 				}
+				else
+				temp := retVal
 				
 				if (temp == 1)
-				{
 				ChgShortcutVar := "Change Shortcut Name"
-				}
 				else
 				{
 				temp := 0
 				ChgShortcutVar := "Change Shortcut"
 				}
 
-				if (retVal < 0)
-				GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
+			GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
 
 			}
 			else
@@ -5353,10 +8270,10 @@ GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 
 borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
 
-iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, iDevNumArray, dispMonNames, scrWidthArr, scrHeightArr, scrFreqArr)
+iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
 SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 
-CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, ResArray, allModes)
+CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 TogglePrgOptCtrls(txtPrgChoice, ResShortcut, dispMonNames, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResPrgOnClose, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
 
 GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
@@ -5996,19 +8913,21 @@ RepositionGuiToMouse(IsOptions := 0)
 
 ;Close properties
 PrgPropertiesClose()
+id := "ahk_id"
 
 	if (IsOptions)
 	{
-	winTitle := PrgLnchOpt.Title
+	id .= PrgLnchOpt.Hwnd()
 	w := PrgLnchOpt.Width()
 	h := PrgLnchOpt.Height()
 	}
 	else
 	{
-	winTitle := PrgLnch.Title
+	id .= PrgLnch.Hwnd()
 	w := PrgLnch.Width()
 	h := PrgLnch.Height()
 	}
+
 
 
 strTemp := A_CoordModeMouse
@@ -6016,29 +8935,29 @@ CoordMode, Mouse, Screen
 MouseGetPos, x, y
 CoordMode, Mouse, % strTemp
 
-	if (WinExist("PrgLnch.ahk") or WinExist("ahk_class" . PrgLnch.Title) or WinExist (PrgLnch.ProcAHK))
+	if (WinExist("PrgLnch.ahk") or WinExist("ahk_id" . PrgLnchOpt.Hwnd()) or WinExist("ahk_class" . PrgLnch.Title) or WinExist (PrgLnch.ProcAHK))
 	{
-	WinActive(winTitle)
-
-		if (WinExist(winTitle))
+		if (WinExist(%id%))
 		{
+		WinShow	%id%
 		w := A_ScreenWidth - w
 		h := A_ScreenHeight - h
-
+			
 			if ((x > w) && (y > h))
-			WinMove, ,%winTitle%, %w%, %h%
+			WinMove, %id%,, %w%, %h%
 			else
 			{
 				if (x > w)
-				WinMove, ,%winTitle%, %w%, %y%
+				WinMove, %id%,, %w%, %y%
 				else
 				{
 					if (y > h)
-					WinMove, ,%winTitle%, %x%, %h%
+					WinMove, %id%,, %x%, %h%
 					else
-					WinMove, ,%winTitle%, %x%, %y%		
+					WinMove, %id%,, %x%, %y%		
 				}
 			}
+
 		}
 		else
 		{
@@ -6052,7 +8971,6 @@ CoordMode, Mouse, % strTemp
 #IfWinActive, Prg Properties (Version 2.x) ahk_class AutoHotkeyGUI
 
 ^!p::
-SetTitleMatchMode, 3
 RepositionGuiToMouse()
 return
 
@@ -6062,14 +8980,13 @@ PrgPropertiesClose()
 return
 #IfWinActive
 
-#IfWinActive, PrgLnch Options ahk_class AutoHotkeyGUI
+#If WinActive(PrgLnchOpt.Title) and WinActive("ahk_class AutoHotkeyGUI")
 
 Esc::
 goSub BackToPrgLnch
 return
 
 ^!p::
-SetTitleMatchMode, 3
 RepositionGuiToMouse(1)
 return
 
@@ -6386,7 +9303,7 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 			strTemp := "`nAlso`," . strTemp
 
 		IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
-			; Versioning: this code would want to be in IniProc
+			; Versioning:  IniSpaceCleaner moves this before ResMode
 			if (fTemp = "ERROR")
 			{
 			IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
@@ -6433,15 +9350,11 @@ PrgLnchHide = ""
 PrgLnkInf = ""
 PrgMonToRn = ""
 PrgPIDMast = ""
-PrgPos = ""
 PrgResolveShortcut = ""
 PrgRnMinMax = ""
 PrgRnPriority = ""
 PrgUrl = ""
 PrgVer = ""
-
-; Multidimensional, this should suffice
-ResArray = ""
 
 scrWidthArr = ""
 scrHeightArr = ""
@@ -6694,7 +9607,6 @@ if ((presetNoTest && strTemp == "&Run Batch") || (!presetNoTest && temp == "&Tes
 	lnchPrgIndex := selPrgChoice ; changes in next loop
 	strRetVal := ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni%btchPrgPresetSel%, PrgChoicePaths, IniFileShortctSep, 1)
 
-;msgbox % "test run " strRetVal
 	if (strRetVal)
 	{
 		if (strRetVal == "PrgLnch")
@@ -6791,7 +9703,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 		}
 	}
 
-	strRetVal := LnchPrgOff(A_Index, lnchStat, PrgChoiceNames, (presetNoTest)? temp: strTemp2, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgPos, PrgMinMaxVar, PrgStyle, x, y, w, h, dx, dy, btchPowerNames[btchPrgPresetSel])
+	strRetVal := LnchPrgOff(A_Index, lnchStat, PrgChoiceNames, (presetNoTest)? temp: strTemp2, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, PrgMinMaxVar, PrgStyle, btchPowerNames[btchPrgPresetSel])
 
 	if (strRetVal)
 	{  ;Lnch failed for current Prg
@@ -6835,7 +9747,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 			{
 				if (lnchPrgIndex)
 				;just cancelled- but not from a hidden form!
-				CleanupPID(currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak)
+				CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak)
 				; else Change res
 			}
 		}
@@ -6866,7 +9778,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 					}
 
 					if (currBatchno == A_Index)
-					CleanupPID(currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak, 1)
+					CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak, 1)
 				}
 			}
 			; Update Master
@@ -6912,7 +9824,7 @@ Thread, NoTimers, false
 
 			if (lnchPrgIndex && !batchActive)
 			{
-			CleanupPID(currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak)
+			CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak)
 			return
 			}
 		}
@@ -6951,11 +9863,10 @@ Thread, NoTimers, false
 return
 
 
-LnchPrgOff(prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, ByRef PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, ByRef x, ByRef y, ByRef w, ByRef h, ByRef dx, ByRef dy, btchPowerName)
+LnchPrgOff(prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, dispMonNames, ByRef PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgMinMaxVar, ByRef PrgStyle, btchPowerName)
 {
 PrgLnchMon := 0, primaryMon := 0, disableRedirect := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0, PrgLnkInflnchPrgIndex := PrgLnkInf[lnchPrgIndex]
 temp := 0, fTemp := 0, strRetVal := "", wkDir := "", PrgPathsAssocCommandLine := ""
-ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
 Static ERROR_FILE_NOT_FOUND := 0x2, ERROR_ACCESS_DENIED := 0x5, ERROR_CANCELLED := 0x4C7
 
 
@@ -7043,56 +9954,53 @@ if (lnchPrgIndex > 0) ;Running
 			}
 		}
 
-	;Special case for scr
-	If (IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex] && Instr(PrgPaths, ".scr", , Strlen(PrgPaths) - 4), Strlen(PrgPaths))
-	PrgPaths := "*Config " . PrgPaths
+		;Special case for scr
+		if (IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex] && Instr(PrgPaths, ".scr", , Strlen(PrgPaths) - 4), Strlen(PrgPaths))
+		PrgPaths := "*Config " . PrgPaths
 
 	
 
-	If (((IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex]) || !IsaPrgLnk) && PrgCmdLine[lnchPrgIndex])
-	PrgPaths := PrgPaths . A_Space . QuoterizeCommandStringArgs(PrgPaths, PrgCmdLine[lnchPrgIndex])
+		if (((IsaPrgLnk && PrgResolveShortcut[lnchPrgIndex]) || !IsaPrgLnk) && PrgCmdLine[lnchPrgIndex])
+		PrgPaths := PrgPaths . A_Space . QuoterizeCommandStringArgs(PrgPaths, PrgCmdLine[lnchPrgIndex])
 
-	if (PrgPathsAssocCommandLine)
-	PrgPaths := PrgPathsAssocCommandLine
-
-
+		if (PrgPathsAssocCommandLine)
+		PrgPaths := PrgPathsAssocCommandLine
 
 
 
-
-
-;*************************************************
-; Monitor loop
-
-	if (targMonitorNum == PrgLnchMon)
-	{
-
-		;WinHide ahk_class Shell_TrayWnd ;Necessary?
+	;WinHide ahk_class Shell_TrayWnd ;Necessary?
 		if (!Instr(PrgLnkInflnchPrgIndex, "|") && !Instr(PrgLnkInflnchPrgIndex, IniFileShortctSep))
 		{
-
-			if (PrgLnchOpt.scrWidth + 180 < PrgLnchOpt.scrWidthDef) ; 180 pixels might be enough?
+			; Problems with showing the PrgLnch gui?
+			if (targMonitorNum == PrgLnchMon)
 			{
-			IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, LoseGuiChangeResWrn
-				if (!fTemp)
+
+				if (PrgLnchOpt.scrWidth + 180 < PrgLnchOpt.scrWidthDef) ; 180 pixels might be enough?
 				{
-				retVal := TaskDialog("Switching to lower resolution", "Shortcut key for PrgLnch Positioning", " Click " . """" . "See details" . """" . " on <CTRL-Alt-P> before continuing", "In the rare case of the PrgLnch GUI relocating off screen`nafter switching to a lower screen resolution, the keyboard`nshortcut, <CTRL-Alt-P> returns PrgLnch to focus", , "Continue launch (Recommended)", "Cancel launch")
-					if (retVal < 0)
+				IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, LoseGuiChangeResWrn
+					if (!fTemp)
 					{
-					retVal := -retVal
-					IniWrite, %retVal%, % PrgLnch.SelIniChoicePath, General, LoseGuiChangeResWrn
-					}
+					retVal := TaskDialog("Switching to lower resolution", "Shortcut key for PrgLnch Positioning", " Click " . """" . "See details" . """" . " on <CTRL-Alt-P> before continuing", "In the rare case of the PrgLnch GUI relocating off screen`nafter switching to a lower screen resolution, the keyboard`nshortcut, <CTRL-Alt-P> returns PrgLnch to focus", , "Continue launch (Recommended)", "Cancel launch")
+						if (retVal < 0)
+						{
+						retVal := -retVal
+						IniWrite, %retVal%, % PrgLnch.SelIniChoicePath, General, LoseGuiChangeResWrn
+						}
 
-					if (retVal == 2)
-					{
-						if (disableRedirect)
-						DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-					return "Cancelled!"
-					}
+						if (retVal == 2)
+						{
+							if (disableRedirect)
+							DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+						return "Cancelled!"
+						}
 
-				WinMover(, , , , "PrgLaunching.jpg")
+					WinMover(, , , , "PrgLaunching.jpg")
+					}
 				}
 			}
+
+			;*************************************************
+			; Monitor Checks
 
 			if (DefResNoMatchRes())
 			{
@@ -7129,211 +10037,14 @@ if (lnchPrgIndex > 0) ;Running
 		}
 
 
-;try
-;{
+	;try
+	;{
 	Run, %PrgPaths%, % (IsaPrgLnk)? PrgLnkInflnchPrgIndex: wkDir, % "UseErrorLevel" ((IsaPrgLnk == -1)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
 
-;}
-;catch temp
-;{
+	;}
+	;catch temp
+	;{
 
-	if (A_LastError)
-	{
-	sleep, 120
-		if (A_LastError == ERROR_FILE_NOT_FOUND || A_LastError == ERROR_ACCESS_DENIED || A_LastError == ERROR_CANCELLED)
-		{
-			if (A_IsAdmin)
-			{
-			outStr := PrgNames[lnchPrgIndex] . " cannot launch with error " . A_LastError . ".`nIs it a system file, or does it have special permissions?"
-				if (disableRedirect)
-				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-			return outStr
-			}
-			else
-			retVal := TaskDialog("Prg Launch", "Prg Launch failed: Retry elevated?", , PrgNames[lnchPrgIndex] . " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nPrgLnch might be able to launch it with Admin privileges.", "", "Attempt to restart PrgLnch as Admin", "Do not restart PrgLnch")
-
-			;Try elevation?
-			if (disableRedirect)
-			DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-
-			if (retVal == 1)
-			return RestartPrgLnch(1)
-			else
-			return "Prg could not be run with the current credentials."
-		}
-		else
-		{
-			;Add to PID list
-			PrgPIDtmp := "TERM"
-			FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
-				;WinShow ahk_class Shell_TrayWnd
-				if (DefResNoMatchRes())
-				{
-					if (!ChangeResolution(dispMonNames, targMonitorNum))
-					{
-					sleep, 500
-					CopyToFromResdefaults()
-					}
-				}
-			outStr := PrgNames[lnchPrgIndex] . " could not launch with error " . A_LastError
-				if (disableRedirect)
-				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-			return outStr
-		}
-	}
-
-
-		if (Instr(PrgPaths, "DOSBox.exe"))
-		InitDOSBoxGameDir(PrgPaths, 1)
-
-	Process, Priority, PrgPIDtmp, % PrgPrty
-	;Add to PID list
-
-	Sleep 200
-	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
-	Sleep 150
-
-		if (lnchStat == 1)
-		PrgMonPID[PrgPIDtmp] := targMonitorNum
-
-	temp := 0
-	DetectHiddenWindows, On
-	WinGet, temp, MinMax, ahk_pid%PrgPIDtmp%
-
-	if (temp)
-	WinRestore, ahk_pid%PrgPIDtmp%
-
-
-	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
-		if (w || h)
-		fTemp := -1
-		else
-		fTemp := 0
-
-	; Possible the default window co-ords are in another monitor from a previous run here
-	if (fTemp)
-	{
-	loop % PrgLnchOpt.dispMonNamesNo
-	{
-	SysGet, ms, MonitorWorkArea, % A_Index
-
-		if (x >= msLeft && x <= msRight && y >= msTop && y <= msBottom)
-		{
-			;we know targMonitorNum = PrgLnchMon
-			if (PrgLnchMon != A_Index)
-			{
-				SysGet, md, MonitorWorkArea, % PrgLnchMon
-				mdw := mdRight - mdLeft, mdh := mdBottom - mdTop
-				msw := msRight - msLeft, msh := msBottom - msTop
-
-				; Calculate new size for new monitor.
-				dx := mdLeft + (x-msLeft)*(mdw/msw)
-				dy := mdTop + (y-msTop)*(mdh/msh)
-
-				if (wp_IsResizable())
-				{
-				w := Round(w*(mdw/msw))
-				h := Round(h*(mdh/msh))
-				}
-
-				; Move window, using resolution difference to scale co-ordinates.
-				try
-				{
-				fTemp := 1
-
-				WinMove, ahk_pid%PrgPIDtmp%, , %dx%, %dy%, %w%, %h%
-				}
-				catch
-				{
-				sleep, 20
-				WinGetPos, x, y, , , % "ahk_pid" PrgPIDtmp
-					if (x == dx && y == dy)
-					{
-					MsgBox, 8192, Moving Prg, % " Move Window failed for " PrgNames[lnchPrgIndex]
-					fTemp := 0
-					}
-				}
-
-				dx := Round(dx + w/2)
-				dy := Round(dy + h/2)
-
-					if (fTemp)
-					DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
-					else
-					fTemp := 1
-			}
-			Break
-		}
-	}
-	}
-
-	; Prevents cursor from reverting to primary if PrgLnchMon not primary
-	if ((fTemp < 1) && (PrgLnchMon != primaryMon))
-	{
-
-	dx := Round(x + w/2)
-	dy := Round(y + y/2)
-	DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
-	}
-	; Restore min/max
-	(temp == 1)? (WinMaximize, ahk_pid %PrgPIDtmp%): ((temp == -1)? (WinMinimize, ahk_pid %PrgPIDtmp%): )
-
-		if (borderToggle)
-		{
-		dx := mdLeft
-		dy := mdTop
-		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, dx, dy, scrWidth, scrHeight, PrgPIDtmp, 1) ; query
-		}
-
-
-
-
-
-	;WinShow ahk_class Shell_TrayWnd
-	}
-	else ; monitor other than current
-	{
-
-		if (!Instr(PrgLnkInflnchPrgIndex, "|") && !Instr(PrgLnkInflnchPrgIndex, IniFileShortctSep) && DefResNoMatchRes())
-		{
-		strRetVal := ChangeResolution(dispMonNames, targMonitorNum)
-			if (strRetVal)
-			{
-			retVal := TaskDialog("Screen Resolution", "Resolution change failed", , "Res. change reported an error when launching " . PrgNames[lnchPrgIndex] . ".`nPrg's saved resolution data is: " . PrgLnchOpt.scrWidth . " width, " . PrgLnchOpt.scrHeight . " height, at " . PrgLnchOpt.scrFreq . " Hz.`nReason for failure: `n" . """" . strRetVal . "." . """" . "`nUpon continuation of the launch, the Prg should (but is not guaranteed) to become visible in the primary (or default) monitor at its current resolution.", "", "Continue launching " . PrgNames[lnchPrgIndex], "Cancel launch")
-				if (retVal == 1)
-				{
-				WinMover(, , , , "PrgLaunching.jpg")
-				Sleep 200
-				}
-				else
-				{
-					if (disableRedirect)
-					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-				return "Cancelled!"
-				}
-
-			}
-			else
-			Sleep 600
-		}
-
-		if (Instr(PrgPaths, "DOSBox.exe"))
-		{
-			if (!(InitDOSBoxGameDir(PrgPaths)))
-			{
-				if (disableRedirect) ; doubt it for DOSBox- just to be sure
-				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-			return "No Game selected!"
-			}
-		}
-;try
-;{
-
-	Run, %PrgPaths%, % (IsaPrgLnk)? PrgLnkInflnchPrgIndex: wkDir, % "UseErrorLevel" ((IsaPrgLnk == -1)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp
-
-;}
-;catch temp
-;{
 		if (A_LastError)
 		{
 		sleep, 120
@@ -7344,7 +10055,7 @@ if (lnchPrgIndex > 0) ;Running
 				outStr := PrgNames[lnchPrgIndex] . " cannot launch with error " . A_LastError . ".`nIs it a system file, or does it have special permissions?"
 					if (disableRedirect)
 					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-				return outStr 
+				return outStr
 				}
 				else
 				retVal := TaskDialog("Prg Launch", "Prg Launch failed: Retry elevated?", , PrgNames[lnchPrgIndex] . " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nPrgLnch might be able to launch it with Admin privileges.", "", "Attempt to restart PrgLnch as Admin", "Do not restart PrgLnch")
@@ -7379,117 +10090,33 @@ if (lnchPrgIndex > 0) ;Running
 			}
 		}
 
+
 		if (Instr(PrgPaths, "DOSBox.exe"))
 		InitDOSBoxGameDir(PrgPaths, 1)
 
 	Process, Priority, PrgPIDtmp, % PrgPrty
+	;Add to PID list
 
 	Sleep 200
 	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
-	Sleep 200
+	Sleep 150
 
 		if (lnchStat == 1)
 		PrgMonPID[PrgPIDtmp] := targMonitorNum
 
-	temp := 0
-	DetectHiddenWindows, On
-	WinGet, temp, MinMax, ahk_pid%PrgPIDtmp%
-	if (temp)
-	WinRestore, ahk_pid%PrgPIDtmp%
+	if (outStr := MovePrgToMonitor(targMonitorNum, PrgPIDtmp, PrgMinMaxVar, PrgStyle, PrgBordless, disableRedirect, oldRedirectionValue, PrgNames, lnchPrgIndex))
+	return outStr
+	;WinShow ahk_class Shell_TrayWnd
 
-	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
-
-	;change res, launch Prg, move window of Prg 
-	; Get source and destination work areas (excludes taskbar-reserved space.)
-
-	SysGet, md, MonitorWorkArea, % targMonitorNum
-
-		if (!((mdLeft - mdRight) && (mdTop - mdBottom)))
-		{
-		outStr := "Incorrect destination co-ordinates.`nIf the monitor has just been configured, a reboot may resolve the issue."
-			if (disableRedirect)
-			DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-		return outStr
-		}
-
-	; Possible the default window co-ords are in another monitor from a previous run here
-		if !(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom)
-		{
-
-
-
-
-
-			loop % PrgLnchOpt.dispMonNamesNo
-			{
-			SysGet, ms, MonitorWorkArea, % A_Index
-				if (x >= msLeft && x <= msRight && y >= msTop && y <= msBottom)
-				Break
-			}
-
-		mdw := mdRight - mdLeft, mdh := mdBottom - mdTop
-		msw := msRight - msLeft, msh := msBottom - msTop
-
-
-		; Calculate new size for new monitor.
-		dx := mdLeft + (x-msLeft)*(mdw/msw)
-		dy := mdTop + (y-msTop)*(mdh/msh)
-
-			if (wp_IsResizable())
-			{
-			w := Round(w*(mdw/msw))
-			h := Round(h*(mdh/msh))
-			}
-
-		; Move window, using resolution difference to scale co-ordinates.
-
-			try
-			{
-			WinMove, ahk_pid%PrgPIDtmp%, , %dx%, %dy%, %w%, %h%
-			}
-			catch
-			{
-			sleep, 20
-			WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
-				if (w || h)
-					if (x == dx && y == dy)
-					MsgBox, 8192, Moving Prg, % " Move Window failed for " PrgNames[lnchPrgIndex]
-			}
-
-			if (w || h)
-			{
-			dx := Round(dx + w/2)
-			dy := Round(dy + h/2)
-			DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
-			}
-		}
-
-
-	; Restore min/max
-	(temp == 1)? (WinMaximize, ahk_pid %PrgPIDtmp%): ((temp == -1)? (WinMinimize, ahk_pid %PrgPIDtmp%): )
-
-		if (borderToggle)
-		{
-		dx := mdLeft
-		dy := mdTop
-		BordlessProc(PrgPos, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, dx, dy, scrWidth, scrHeight, PrgPIDtmp, 1) ; query
-		}
-		;Then we can Move window
-		;WinGetPos,,, W, H, A
-		;WinMove, A ,, mswLeft + (mswRight - mswLeft) // 2 - W // 2, mswTop + (mswBottom - mswTop) // 2 - H // 2
-
-	}
-
-	DetectHiddenWindows, Off
 	; Set power here rather than at the beginning
-	if (currBatchno == 1 & lnchStat == 1)
-	{
-		if (btchPowerName)
-		DopowerPlan(btchPowerName)
-	}
+		if (currBatchno == 1 & lnchStat == 1)
+		{
+			if (btchPowerName)
+			DopowerPlan(btchPowerName)
+		}
 
-	if (disableRedirect)
-	DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+		if (disableRedirect)
+		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 	; Path links etc cannot be cancelled as they do not return a PID:
 		if (InStr(PrgLnkInflnchPrgIndex, "|", false))
 		return "|"
@@ -7620,6 +10247,125 @@ else
 	}
 }
 
+return 0
+}
+
+MovePrgToMonitor(targMonitorNum, PrgPIDtmp, ByRef PrgMinMaxVar, ByRef PrgStyle, PrgBordless, disableRedirect, oldRedirectionValue, PrgNames, lnchPrgIndex, targHWnd := 0)
+{
+ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
+DetectHiddenWindows, On
+
+	if (targHWnd)
+	WinGetPos, x, y, w, h, % "ahk_id" targHWnd
+	else
+	{
+	WinGet, temp, MinMax, ahk_pid%PrgPIDtmp%
+
+		if (temp)
+		WinRestore, ahk_pid%PrgPIDtmp%
+
+
+	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
+	}
+
+	if (w || h)
+	fTemp := -1
+	else
+	fTemp := 0
+
+SysGet, md, MonitorWorkArea, % targMonitorNum
+
+	if (!((mdLeft - mdRight) && (mdTop - mdBottom)))
+	{
+	outStr := "Incorrect destination co-ordinates.`nIf the monitor has just been configured, a reboot may resolve the issue."
+		if (disableRedirect)
+		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+	return outStr
+	}
+; Consider the (default) window co-ords in another monitor from a previous run here
+; don't bother moving if the window is already located in the destination monitor
+	if (fTemp && !(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom))
+	{
+		loop % PrgLnchOpt.dispMonNamesNo
+		{
+			; no need to check source monitor if same as dest monitor
+			; in which case this would never be reached
+			if (targMonitorNum != A_Index)
+			{
+			SysGet, ms, MonitorWorkArea, % A_Index
+				if (x >= msLeft && x <= msRight && y >= msTop && y <= msBottom)
+				Break
+			}
+		}
+
+	mdw := mdRight - mdLeft, mdh := mdBottom - mdTop
+	msw := msRight - msLeft, msh := msBottom - msTop
+
+	; Calculate new size for new monitor.
+	dx := mdLeft + (x-msLeft)*(mdw/msw)
+	dy := mdTop + (y-msTop)*(mdh/msh)
+
+		if (wp_IsResizable())
+		{
+		w := Round(w*(mdw/msw))
+		h := Round(h*(mdh/msh))
+		}
+
+	; Move window, using resolution difference to scale co-ordinates.
+
+		try
+		{
+		fTemp := 1
+		WinMove, % (targHWnd)? "ahk_id" . targHWnd: "ahk_pid" . PrgPIDtmp, , %dx%, %dy%, %w%, %h%
+		}
+		catch
+		{
+		sleep, 20
+		WinGetPos, x, y, w, h, % (targHWnd)? "ahk_id" . targHWnd: "ahk_pid" . PrgPIDtmp
+			if (w || h)
+			{
+				if (x == dx && y == dy)
+				{
+				MsgBox, 8192, Moving Prg, % " Move Window failed for " (targHWnd)? targHWnd: PrgNames[lnchPrgIndex]
+				fTemp := 0
+				}
+			}
+		}
+
+		if (w || h)
+		{
+		dx := Round(dx + w/2)
+		dy := Round(dy + h/2)
+			if (fTemp)
+			DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
+			else
+			fTemp := 1
+		}
+	}
+
+; If fTemp == 0, anything goes !!??
+
+
+	; Restore min/max
+	if (temp == 1)
+	WinMaximize, % (targHWnd)? "ahk_id" . targHWnd: "ahk_pid" . PrgPIDtmp
+	else
+	{
+		if (temp == -1)
+		WinMinimize, % (targHWnd)? "ahk_id" . targHWnd: "ahk_pid" . PrgPIDtmp
+	}
+
+	if (fTemp && borderToggle)
+	{
+	dx := mdLeft
+	dy := mdTop
+	BordlessProc(targMonitorNum, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, PrgPIDtmp, 1, dx, dy) ; query
+	}
+	;Then we can Move window
+	;WinGetPos,,, W, H, A
+	;WinMove, A ,, mswLeft + (mswRight - mswLeft) // 2 - W // 2, mswTop + (mswBottom - mswTop) // 2 - H // 2
+
+DetectHiddenWindows, Off
 return 0
 }
 
@@ -7781,7 +10527,7 @@ Thread, Priority, -536870911
 ;Problem is, this only deals with switching to and from Prglnch ATM . Not other apps.
 SetTitleMatchMode, 3
 
-If (WinActive(PrgLnch.Title) || WinActive(PrgLnchOpt.Title))
+if (WinActive(PrgLnch.Title) || WinActive(PrgLnchOpt.Title))
 {
 		if ((prgSwitchIndex)? PrgChgResOnSwitch[prgSwitchIndex]: PrgChgResOnSwitch[selPrgChoice])
 		{
@@ -7873,7 +10619,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			if (!lastMonitorUsedInBatch)
 			{
 			batchActive := 0
-			CleanupPID(currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak, 1)
+			CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak, 1)
 				if (!PrgPID)
 				return
 			}
@@ -7886,7 +10632,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				if (!ErrorLevel)
 				{
  				PrgPID := 0
-				CleanupPID(currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak)
+				CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak)
 				return
 				}
 			}
@@ -7900,7 +10646,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			if (!ErrorLevel)
 			{
 			PrgPID := 0
-			CleanupPID(currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak)
+			CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak)
 				if (!batchActive)
 				return
 			}
@@ -7951,7 +10697,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				if(!timerBtch)
 				{
 				batchActive := 0
-				CleanupPID(currBatchNo, PrgLnch.Monitor, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, dx, dy, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak, 1)
+				CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, selPrgChoice, dispMonNames, waitBreak, 1)
 				return
 				}
 			}
@@ -8064,7 +10810,7 @@ retVal := 0
 return retVal
 }
 
-CleanupPID(currBatchNo, PrgLnchMon, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, ByRef dx, ByRef dy, PrgBordless, PrgLnchHide, ByRef PrgPID, selPrgChoice, dispMonNames, waitBreak, batchWasActive := 0)
+CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, PrgBordless, PrgLnchHide, ByRef PrgPID, selPrgChoice, dispMonNames, waitBreak, batchWasActive := 0)
 {
 temp := 0, strRetVal := "", PrgStyle := 0, dx := 0, dy:= 0
 
@@ -8133,9 +10879,9 @@ else ;Config screen
 	{
 	HideShowTestRunCtrls(1)
 	GuiControl, PrgLnchOpt:, Bordless, % PrgBordless[selPrgChoice]
-		if (DefResNoMatchRes() && (PrgMonToRn[selPrgChoice] == PrgLnchMon))
+		if (DefResNoMatchRes() && (PrgMonToRn[selPrgChoice] == PrgLnch.Monitor))
 		{
-		ChangeResolution(dispMonNames, PrgLnchMon)
+		ChangeResolution(dispMonNames, PrgLnch.Monitor)
 		sleep, 500
 		}
 	SetTimer, WatchSwitchBack, Delete
@@ -8152,7 +10898,7 @@ WinMover(PrgLnchOpt.Hwnd(), "d r")
 
 	if (!waitBreak && presetNoTest == 1)
 	{
-	SysGet, md, MonitorWorkArea, % PrgLnchMon
+	SysGet, md, MonitorWorkArea, % PrgLnch.Monitor
 	dx := Round(mdleft + (mdRight- mdleft)/2)
 	dy := Round(mdTop + (mdBottom - mdTop)/2)
 	DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
@@ -8937,8 +11683,10 @@ WinGetClass, Class
 	WinGet, CurrStyle, Style
 	return (CurrStyle & WS_SIZEBOX)
 }
-BordlessProc(ByRef PrgPos, ByRef PrgMinMaxVar, ByRef PrgStyle, PrgBordless, selPrgChoice, dx, dy, scrWidth, scrHeight, PrgPID, queryOnly := 0)
+
+BordlessProc(targMonitorNum, ByRef PrgMinMaxVar, ByRef PrgStyle, PrgBordless, selPrgChoice, PrgPID, queryOnly := 0, dxVal := 0, dyVal:= 0)
 {
+Static PrgPos := [0, 0, 0, 0], monitorPID := targMonitorNum, dx := 0, dy := 0
 WS_BORDER := 0x00800000 ;Window has a thin-line border.
 WS_CAPTION := 0x00C00000 ; Window has a title bar (includes the WS_BORDER style: i.e. anding Hex C = 1100 8 = 1000 ): 
 WS_THICKFRAME := 0x00040000 ; Window has a sizing border. aka WS_SIZEBOX
@@ -9066,6 +11814,11 @@ WinGet, S, Style, ahk_pid%PrgPID%
 
 	if (PrgStyleTmp) ;check flags not Borderless
 	{
+		if (dxVal)
+		dx := dxVal
+		if (dyVal)
+		dy := dyVal
+	
 	; Store existing style
 	WinGet, IsMaxed, MinMax, ahk_pid%PrgPID%
 	; Get/store whether the window is maximized
@@ -9085,12 +11838,13 @@ WinGet, S, Style, ahk_pid%PrgPID%
 	; If borderless, reapply borders
 	WinSet, Style, % "+" PrgStyle, ahk_pid%PrgPID%
 	WinGetPos, x, y, w, h, ahk_pid%PrgPID%
-		if (!PrgPos[3])
+		if (!PrgPos[3] || monitorPID != targMonitorNum)
 		PrgPos[1] := x, PrgPos[2] := y, PrgPos[3] := w, PrgPos[4] := h
 	WinMove, ahk_pid%PrgPID%,, % PrgPos[1], % PrgPos[2], % PrgPos[3], % PrgPos[4]
 	; return to original position & maximize if required
 		if (PrgMinMaxVar)
 		WinMaximize, ahk_pid%PrgPID%
+	monitorPID := targMonitorNum
 	}
 return 0
 }
@@ -9302,6 +12056,18 @@ Static DISPLAY_DEVICE_ATTACHED_TO_DESKTOP := 0x00000001, DISPLAY_DEVICE_PRIMARY_
 	
 	PrgLnchOpt.dispMonNamesNo -= temp
 	dispMonNamesSaved := dispMonNames
+
+	fTemp := 0
+		loop % PrgLnchOpt.dispMonNamesNo
+		{
+			if (iDevNumArray[A_Index] > 9)
+			fTemp += 1
+			else
+			Continue
+		}
+
+	PrgLnchOpt.activeDispMonNamesNo := fTemp
+
 	}
 	else ; iMode is either an enumeration counter {0 ... PrgLnchOpt.dispMonNamesNo} or -1 or -2
 	{
@@ -9347,8 +12113,9 @@ Static DISPLAY_DEVICE_ATTACHED_TO_DESKTOP := 0x00000001, DISPLAY_DEVICE_PRIMARY_
 	scrInterlace := NumGet(Device_Mode, 116 + OffsetdevMode,"UInt") ; DM_GRAYSCALE, DM_INTERLACED (non interlaced if not specified)
 	scrFreq := NumGet(Device_Mode, 120 + OffsetdevMode,"UInt") ; Do not change 
 	;https://support.microsoft.com/en-au/kb/2006076
-	if (PrgLnchOpt.scrFreq == 59)
-	PrgLnchOpt.scrFreq := PrgLnchOpt.scrFreq + 1
+		if (PrgLnchOpt.scrFreq == 59)
+		PrgLnchOpt.scrFreq := PrgLnchOpt.scrFreq + 1
+
 	;Do not touch 148 dmPanningWidth or 152 dmPanningHeight
 
 	VarSetCapacity(Device_Mode, 0)
@@ -9480,63 +12247,169 @@ i++
 return 0
 }
 
-CheckResolutions(targMonitorNum, iDevNumArray, allModes, ByRef ResArray)
+
+MonitorSelectProc(ByRef resultResolutionMons, canonicalMonitorListIn)
 {
-Static checkedRegister := [0, 0, 0, 0, 0, 0, 0, 0, 0]
-; each element -1 if taken, else test for best fit
+	static acceptDlg := 0, trackMonNames := [], monitors := [], canonicalMonitorListOut := []
 
 
-Static ResArrayStored := [[], [], []], activeDispMonNamesNo := 0
-Static modes := []
-Static noOfSourceModes := []
-fTemp := 0
+	Static SplashRef := Splashy.SplashImg
+	;https://autohotkey.com/board/topic/72109-ahk-fonts/
+	; gui variables in function must be global
+	Global guiMonitorSelect1, guiMonitorSelect2, guiMonitorSelect3, guiMonitorSelect4, guiMonitorSelect5, guiMonitorSelect6, guiMonitorSelect7, guiMonitorSelect8, guiMonitorSelect9, outputText
+
+	if (!acceptDlg)
+	{
+	height := A_ScreenHeight/20
+
+		loop % PrgLnchOpt.activeDispMonNamesNo
+		trackMonNames[A_Index] := A_Index
+
+	gui, MonitorSelectDlg: +resize -MaximizeBox -MinimizeBox HWNDhWndMonitorSelectDlg
+	Gui, MonitorSelectDlg: Font, cTeal Bold, s10
+
+	gui, MonitorSelectDlg: add, text, % "w" . 3 * height . " h" . height/2, Arrange Monitors
+	GuiControl, MonitorSelectDlg: +Center, Arrange Monitors
+
+	gui, MonitorSelectDlg: Font
+
+	Gui, MonitorSelectDlg: Font, cA96915, s10
+	gui, MonitorSelectDlg: add, text, % "w" . 3 * height . " h" . height/2, Click buttons to correct 
+	GuiControl, MonitorSelectDlg: +Center, Click buttons to correct
+	gui, MonitorSelectDlg: Font
+
+	Gui, MonitorSelectDlg: Font, cTeal
+	Gui, MonitorSelectDlg: Add, GroupBox, % "Section W" . 3 * height . " H" . height * PrgLnchOpt.activeDispMonNamesNo + height/2, Monitor List
+
+	;monitor names
+	wmi := ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" A_ComputerName "\root\wmi")
+
+		for monitor in wmi.ExecQuery("Select * from WmiMonitorID") ;extract names
+		{	
+		fname := ""
+			for char in monitor.UserFriendlyName
+			fname .= chr(char)
+		monitors.push(fname)
+		}
+
+		loop % PrgLnchOpt.activeDispMonNamesNo
+		{
+		canonicalMonitorListOut[A_Index] := canonicalMonitorListIn[A_Index]
+		gui, MonitorSelectDlg: add, button, % "xs+" . height/2 . " ys+" . (A_Index - 1) * height + height/2 . " W" . 2 * height . " H" . height/2 . " gGuiMonitorSelect" . " vguiMonitorSelect" . A_Index, % "Monitor" . resultResolutionMons[A_Index]
+		%SplashRef%(Splashy, {imagePath: "*", instance: A_Index, mainText: resultResolutionMons[A_Index], subText: monitors[resultResolutionMons[A_Index]], mainFontSize: 100, subFontSize: 30, vImgW: A_ScreenWidth/4, vImgH: A_ScreenHeight/3, vMovable: 1}*)
+		resultResolutionMons[A_Index] := A_Index
+		MovePrgToMonitor(A_Index, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[A_Index])
+		}
+
+	gui, MonitorSelectDlg: add, button, % "Section xp w" . 2 * height . " ys" . height * (PrgLnchOpt.activeDispMonNamesNo + 1) . " gGuiMonitorSelectDlgAccept", Accept
+
+	gui, MonitorSelectDlg: show, % "x" . A_ScreenWidth/4, Verify Monitors
+
+	WinWaitClose, ahk_id %hWndMonitorSelectDlg%
+	}
+
+		if (acceptDlg)
+		return canonicalMonitorListOut
+		else
+		return 0
+
+
+	MonitorSelectDlgGuiClose:
+	acceptDlg := 0
+	gui, MonitorSelectDlg: Destroy
+	%SplashRef%(Splashy, {release: 1}*)
+	return 0
+
+
+	GuiMonitorSelectDlgAccept:
+	acceptDlg := 1
+
+	%SplashRef%(Splashy, {release: 1}*)
+		loop % PrgLnchOpt.activeDispMonNamesNo
+		{
+		canonicalMonitorListOut[trackMonNames[A_Index]] := monitors[A_Index]
+		resultResolutionMons[A_Index] := trackMonNames[A_Index]
+		}
+
+	gui, MonitorSelectDlg: Destroy
+	return canonicalMonitorListOut
+
+
+	GuiMonitorSelect:
+	gui, MonitorSelectDlg: submit, nohide
+	fTemp := subStr(A_GuiControl, 0)
+
+		if (trackMonNames[fTemp] < PrgLnchOpt.activeDispMonNamesNo)
+		trackMonNames[fTemp] += 1
+		else
+		trackMonNames[fTemp] := 1
+	%SplashRef%(Splashy, {instance: fTemp, mainText: trackMonNames[fTemp], subText: monitors[trackMonNames[fTemp]]}*)	
+
+		loop % PrgLnchOpt.activeDispMonNamesNo
+		{
+		fTemp := A_Index
+			loop % PrgLnchOpt.activeDispMonNamesNo
+			{
+				if (A_Index > fTemp)
+				{
+					if (trackMonNames[fTemp] == trackMonNames[A_Index])
+					{
+					GuiControl, MonitorSelectDlg: Disabled, Accept
+					return
+					}
+				}
+			}
+		}
+	GuiControl, MonitorSelectDlg: Enabled, Accept
+	return
+
+}
+
+
+CheckResolutions(targMonitorNum, ByRef monitorOrder, allModes, ByRef ResArrayWMI)
+{
+
+Static ResArrayStored := [[], [], []]
+
+; List of names followed by their order.
+canonicalMonitorList := [0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+
+; The following has in all versions of windows to date been the same stock listing
+; for every monitor! Thus storing this value for *each* monitor has little relevance.
+numResolutionmodes := [0, 0, 0, 0, 0, 0, 0, 0, 0]
+static modes := ["", "", "", "", "", "", "", "", ""]
+static stockModes := ["", "", "", "", "", "", "", "", ""]
+
+
+numWMIResolutionmodes := [0, 0, 0, 0, 0, 0, 0, 0, 0]
+numWMIResolutionmodesTmp := [0, 0, 0, 0, 0, 0, 0, 0, 0]
+numResolutionmodesTaken := [0, 0, 0, 0, 0, 0, 0, 0, 0]
+fTemp := 0, retVal := 0
+static initResArrayStored := 0
 
 	if (!initResArrayStored)
 	{
 	resArrayInit := []
-	fTemp := 3 ; arbitrary number
+	fTemp := 1 ; arbitrary number
 	ResArrayInit[1, fTemp] := 0
 	ResArrayInit[2, fTemp] := 0
 	ResArrayInit[3, fTemp] := 0
-	
-		loop % PrgLnchOpt.dispMonNamesNo
+
+		Loop, % PrgLnchOpt.activeDispMonNamesNo
+		ResArrayStored[A_Index] := ResArrayInit
+
+	;First populate res tables with stock resolutions:
+
+		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
-			if (iDevNumArray[A_Index] > 9)
-			{
-			activeDispMonNamesNo += 1
-			}
-			else
-			Continue
-		}
-		;Trim last comma (also use RTrim(resArrayInit, ",")
-		if (activeDispMonNamesNo)
-		{
-			Loop, %activeDispMonNamesNo%
-			ResArrayStored[A_Index] := ResArrayInit
-		}
-		else
-		{
-		MsgBox, 8208, Resolutions Check, Cannot locate active monitors!
-		return
-		if (!activeDispMonNamesNo)
-		MsgBox, 8208, Resolutions Check, Cannot locate active monitors!
-		}
-	}
-
-
-
-
-;First populate res tables:
-
-	if (!initResArrayStored)
-	{
-		loop % activeDispMonNamesNo
-		{
-
+		; do stock resolutions ever vary per monitor?
 		iModeCt := 0, iModeVal := 0
 		scrWidthLast := 0, scrHeightLast := 0, scrFreqLast := 0
 		dispMon := A_Index
-		modes[dispMon] := ""
+
+		stockModes[dispMon] := ""
 
 			while GetDisplayData(dispMon, , , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, iModeVal, (PrgLnch.Monitor != dispMon))
 			{
@@ -9555,7 +12428,7 @@ fTemp := 0
 					scrFreqLast := scrFreq
 					scrDPILast := scrDPI
 					scrInterlaceLast := scrInterlace
-					modes[dispMon] .= scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
+					stockModes[dispMon] .= scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
 					}
 				}
 				else
@@ -9572,20 +12445,145 @@ fTemp := 0
 					scrFreqLast := scrFreq
 					scrDPILast := scrDPI
 					scrInterlaceLast := scrInterlace
-					modes[dispMon] .= scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
+					stockModes[dispMon] .= scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
 					}
 				}
-			iModeVal += 1
+			iModeVal++
+			}
+		numResolutionmodes[A_Index] := iModeVal
+		sleep 300
+		}
+
+	; Going through the motions, we already know the outcome ...
+	; iterate through all monitors and compare number of resolution each has
+	
+	Enabled := ComObjError(1)
+	dispMon := 0
+	wmi := ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" A_ComputerName "\root\wmi")
+		for monitor in wmi.ExecQuery("SELECT NumOfMonitorSourceModes, MonitorSourceModes FROM WmiMonitorListedSupportedSourceModes WHERE Active=TRUE",,wbemFlagForwardOnly := 32)
+		{
+		dispMon += 1
+		numWMIResolutionmodes[dispMon] := monitor.NumOfMonitorSourceModes
+		}
+
+	;As these are active monitors, they *should* be equivalent
+	dispMon := Max(dispMon, PrgLnchOpt.activeDispMonNamesNo)
+
+		if (dispMon != PrgLnchOpt.activeDispMonNamesNo)
+		msgbox, 8192, Active Monitors, Warning: Windows reports a discrepancy regarding the number of active monitors.
+
+
+	fTemp := 0
+		loop %dispMon%
+		{
+		currMon := A_Index
+			loop %dispMon%
+			{
+				if ((numResolutionmodes[currMon] == numWMIResolutionmodes[A_Index]) && !numResolutionmodesTaken[A_Index])
+				{
+				numResolutionmodesTaken[A_Index] := 1
+				fTemp++
+				monitorOrder[fTemp] := currMon
+				Break
+				}
 			}
 		}
-	initResArrayStored := 1
-	}
 
-	if (!checkedRegister[targMonitorNum])
-	{
+		; Fill the rest of the array with the monitors having the non matching res modes
+		loop %dispMon%
+		{
+		currMon := A_Index
+			if (currMon > fTemp)
+			{
+				loop %dispMon%
+				{
+					if (!numResolutionmodesTaken[A_Index])
+					{
+					monitorOrder[currMon] := A_Index
+					numResolutionmodesTaken[A_Index] := 1
+					Break
+					}
+				}
+			}
+		}
+
+	IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, MonitorNames
+
+		if (fTemp == "ERROR")
+		{
+		; Versioning:  IniSpaceCleaner moves this before ResMode
+		IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, MonitorNames
+		; MonitorOrder is also stored in ini file
+		IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, MonitorOrder
+		fTemp := 0
+		}
+		
+		if (fTemp && InStr(fTemp, ","))
+		{
+			Loop, Parse, fTemp, CSV
+			canonicalMonitorList[A_Index] := A_Loopfield
+
+			IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, MonitorOrder
+			if (fTemp)
+			{
+			Loop, Parse, fTemp, CSV
+			monitorOrder[A_Index] := A_Loopfield
+			}
+			else
+			{
+				While (!(canonicalMonitorList := MonitorSelectProc(monitorOrder, canonicalMonitorList)))
+				{
+				retVal := TaskDialog("Monitor names", "No monitor names obtained", , "", "", "Continue with unreliable monitor info", "Retry (Recommended)")
+					if (retVal == 1)
+					{
+					; populate with unknowns
+						loop % PrgLnchOpt.dispMonNamesNo
+						canonicalMonitorList[A_Index] := "Unknown" . A_Index
+					break
+					}
+				}
+			}
+		}
+		else
+		{
+			While (!(canonicalMonitorList := MonitorSelectProc(monitorOrder, canonicalMonitorList)))
+			{
+			retVal := TaskDialog("Monitor names", "No monitor names obtained", , "", "", "Continue with unreliable monitor info", "Retry (Recommended)")
+				if (retVal == 1)
+				{
+				; populate with unknowns
+					loop % PrgLnchOpt.dispMonNamesNo
+					canonicalMonitorList[A_Index] := "Unknown" . A_Index
+				break
+				}
+			}
+
+			if (!retVal)
+			{
+			fTemp := ""
+
+				loop % PrgLnchOpt.activeDispMonNamesNo
+				fTemp .= A_Space . canonicalMonitorList[A_Index] . ","
+
+			fTemp := SubStr(fTemp, 1, StrLen(fTemp) - 1)
+
+			IniWrite, % Trim(fTemp), % PrgLnch.SelIniChoicePath, General, MonitorNames
+
+			fTemp := ""
+
+				loop % PrgLnchOpt.activeDispMonNamesNo
+				fTemp .= monitorOrder[A_Index] . ","
+
+			fTemp := SubStr(fTemp, 1, StrLen(fTemp) - 1)
+			IniWrite, %fTemp%, % PrgLnch.SelIniChoicePath, General, MonitorOrder
+			}
+		}
+
+	; Obtain resolution set for current monitor.
+
 	ResArrayTracked := []
 		; Clone useless for MD arrays
-		loop % activeDispMonNamesNo
+		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
 		dispMon := A_Index
 			loop % ResArrayStored[A_Index, 1].Length()
@@ -9596,163 +12594,227 @@ fTemp := 0
 			}
 		}
 
+	; Populate ResArrayWMI (initially unordered)
 	Enabled := ComObjError(1)
 	dispMon := 0
+	Strng := ""
 	wmi := ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" A_ComputerName "\root\wmi")
 		for monitor in wmi.ExecQuery("SELECT NumOfMonitorSourceModes, MonitorSourceModes FROM WmiMonitorListedSupportedSourceModes WHERE Active=TRUE",,wbemFlagForwardOnly := 32)
 		{
+		; https://superuser.com/questions/1683790/devmode-videomodedescriptor-screen-refresh-rate-data
+		; repeated width, height, freq sets may have interlace toggle.
+		; NumOfMonitorSourceModes is *supported* modes
+		ResArrayTmp := ""
+		ResArrayTmp := []
+		dispMon++
+		numWMIResolutionmodes[dispMon] := monitor.NumOfMonitorSourceModes
 
-		dispMon += 1
-		scrWidthLast := 0, scrHeightLast := 0, scrFreqLast := 0
-
-			if (!checkedRegister[dispMon])
+			Loop, % monitor.NumOfMonitorSourceModes
 			{
-			noOfSourceModes[dispMon] := monitor.NumOfMonitorSourceModes
-			; Essentially a resource allocation or best fit problem when there are no exact matches
+			sourceIndex := A_Index - 1
+			ResArrayTmp[1, A_Index] := monitor.MonitorSourceModes[sourceIndex].HorizontalActivePixels
+			ResArrayTmp[2, A_Index] := monitor.MonitorSourceModes[sourceIndex].VerticalActivePixels
+			ResArrayTmp[3, A_Index] := Round((monitor.MonitorSourceModes[sourceIndex].VerticalRefreshRateNumerator)/(monitor.MonitorSourceModes[sourceIndex].VerticalRefreshRateDenominator))
+			}
 
-			;fName := monitor.PreferredMonitorSourceModeIndex
-			; NumOfMonitorSourceModes is *supported* modes
-				Loop, % noOfSourceModes[dispMon]
+		ResArrayTmp := SortSourceModes(dispMon, numWMIResolutionmodes, ResArrayTmp)
+
+
+			Loop, % numWMIResolutionmodes[dispMon]
+			{
+			scrWidth := ResArrayTmp[1, A_Index]
+			ResArrayWMI[dispMon, 1, A_Index] := scrWidth
+			scrHeight := ResArrayTmp[2, A_Index]
+			ResArrayWMI[dispMon, 2, A_Index] := scrHeight
+			scrFreq := ResArrayTmp[3, A_Index]
+			ResArrayWMI[dispMon, 3, A_Index] := scrFreq
+			modes[dispMon] .= scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
+			iModeCt := 0
+
+
+			; Now check the all WMI resolutions are in the stock:
+
+			resArrayInit := ""
+			resArrayInit := []
+				loop % numResolutionmodes[dispMon]
 				{
-				sourceIndex := A_Index - 1
-
-				scrWidth := monitor.MonitorSourceModes[sourceIndex].HorizontalActivePixels
-
-				While % (scrWidthTest := ResArrayTracked[targMonitorNum, 1, A_Index])
+				if (scrWidth == ResArrayTracked[dispMon, 1, A_Index])
+				resArrayInit.Push(A_Index)
+				}
+				iModeCt := 0
+				for each in resArrayInit
 				{
-					if (scrWidth == scrWidthTest)
+				fTemp := resArrayInit[A_Index]
+				scrWidthTest := ResArrayTracked[dispMon, 1, fTemp]
+				scrHeightTest := ResArrayTracked[dispMon, 2, fTemp]
+					if (scrHeight == scrHeightTest)
 					{
-					scrHeight := monitor.MonitorSourceModes[sourceIndex].VerticalActivePixels
-					scrHeightTest := ResArrayTracked[targMonitorNum, 2, A_Index]
-						if (scrHeight == scrHeightTest)
+					scrFreqTest := ResArrayTracked[dispMon, 3, fTemp]
+					; reduce search payload
+						if (scrFreq == scrFreqTest)
 						{
-						scrFreq := Round((monitor.MonitorSourceModes[sourceIndex].VerticalRefreshRateNumerator)/(monitor.MonitorSourceModes[sourceIndex].VerticalRefreshRateDenominator))
-						scrFreqTest := ResArrayTracked[targMonitorNum, 3, A_Index]
-							if (scrFreq == scrFreqTest)
-							{
-								if (scrWidthLast != scrWidthTest || scrHeightLast != scrHeightTest !! scrFreqLast != scrFreqTest)
-								{
-									for each, array in ResArrayTracked[dispMon]
-									array.RemoveAt(A_Index)
-								scrWidthLast := scrWidthTest
-								scrHeightLast := scrHeightTest
-								scrFreqLast := scrFreqTest
-								}
-							}
+							for each, array in ResArrayTracked[dispMon]
+							array.RemoveAt(fTemp)
+						iModeCt := 1
 						}
-
 					}
-
 				}
-				}
-
-				if (!(checkedRegister[dispMon] := ResArrayTracked[dispMon, 1].Length()))
-				{
-				; Perfect match!
-
-					Loop, % noOfSourceModes[dispMon]
-					{
-					ResArray[1, A_Index] := ResArrayStored[dispMon, 1, A_Index]
-					ResArray[2, A_Index] := ResArrayStored[dispMon, 2, A_Index]
-					ResArray[3, A_Index] := ResArrayStored[dispMon, 3, A_Index]
-					}
-				checkedRegister[dispMon] := -1
-				return % modes[dispMon]
-				}
+			if (!imodeCt)
+			Strng .= scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz`n"
 			}
 		}
 
-	; Get here when no perfect match, so find best match
-	fTemp := 1000
-		for dispMon in checkedRegister
-		{
-			each := checkedRegister[dispMon]
-			if (each > 0)
-			{
-				if (each <= fTemp)
-				{
-				fTemp := each
-				sourceIndex := dispMon
-msgbox % "sourceIndex " sourceIndex " A_Index " A_Index " dispMon " dispMon " targMonitorNum " targMonitorNum "`neach " each " fTemp " fTemp " checkedRegister[dispMon] " checkedRegister[dispMon] "`n`nmodes[dispMon] " modes[dispMon] "`n`nscrWidth " scrWidth " scrWidthTest " scrWidthTest " scrHeight " scrHeight " scrHeightTest " scrHeightTest "`n`nResArrayTracked[dispMon, 1].Length() " ResArrayTracked[dispMon, 1].Length() " ResArrayStored[dispMon, 1].Length() " ResArrayStored[dispMon, 1].Length() "`nnoOfSourceModes[dispMon] " noOfSourceModes[dispMon] "`n`nResArray[1, A_Index] " ResArray[1, A_Index] " ResArrayStored[dispMon, 1, A_Index] " ResArrayStored[dispMon, 1, A_Index]
-				}
-			}
-		}
+msgbox % strng
 
-		if (sourceIndex)
-		{
-
-		; Now reset CheckedRegister for next time
-			for dispMon in checkedRegister
-			{
-				if (dispMon > 0)
-				checkedRegister[dispMon] := 0
-			}
-			Loop, % ResArrayStored[sourceIndex, 1].Length()
-			{
-			ResArray[1, A_Index] := ResArrayStored[sourceIndex, 1, A_Index]
-			ResArray[2, A_Index] := ResArrayStored[sourceIndex, 2, A_Index]
-			ResArray[3, A_Index] := ResArrayStored[sourceIndex, 3, A_Index]
-			}
-		; This one taken
-		checkedRegister[sourceIndex] := -1
-
-
-		return % modes[sourceIndex]
-		}
-		else
-		{
-		MsgBox, 8192, Resolution Check, Critical error with Monitor
-		return
-		}
-		
+	initResArrayStored := 1
 	}
+
+	if (allModes)
+	{
+		if (stockModes[monitorOrder[targMonitorNum]])
+		return stockModes[monitorOrder[targMonitorNum]]
+	}
+	else
+	{
+		if (modes[monitorOrder[targMonitorNum]])
+		return modes[monitorOrder[targMonitorNum]]
+	}
+
+MsgBox, 8208, Monitor Resolutions, Critical error with selected Monitor %targMonitorNum%.
+return
+
+	
 }
 
 
-GetResList(targMonitorNum, ByRef ResArray, allModes, iDevNumArray := 0, getCurrentRes := 0)
+SortSourceModes(dispMonIn, numWMIResolutionmodes, ResArray)
+{
+Static dispMon := dispMonIn
+ResNewArray := []
+; Sorts the unordered WMI res modes and returns them in ResNewArray
+
+	if (dispMon != dispMonIn)
+	{
+	;reset stuff
+	dispMon := dispMonIn
+	numWMIResolutionmodesSaved := numWMIResolutionmodes[dispMon]
+	numWMIResolutionmodesTmp := numWMIResolutionmodesSaved
+	}
+
+	While (numWMIResolutionmodesTmp)
+	{
+	temp := Min(ResArray[1]*)
+	fTemp := 0
+	tempHeight := ""
+	tempHeight := []
+	tempFreq := ""
+	tempFreq := []
+	strHeight := ""
+	strFreq := ""
+
+	resOffset := numWMIResolutionmodesSaved - numWMIResolutionmodesTmp
+
+		Loop, % numWMIResolutionmodesTmp
+		{
+			if (ResArray[1, A_Index] == temp)
+			{
+			fTemp++
+			ResNewArray[1, resOffset + fTemp] := temp
+			tempHeight.Push(A_Index)
+			}
+		}
+
+		for fTemp in tempHeight
+		{
+			Loop, % numWMIResolutionmodesTmp
+			{
+				if (A_Index == tempHeight[fTemp])
+				{
+				strHeight .= ResArray[2, A_Index] . "`,"
+				tempFreq.Push(A_Index)
+				}
+			}
+		}
+
+	strHeightOld := strHeight
+	Sort strHeight, N D, 
+
+	;Order of frequencies follows ordered Height
+		for fTemp in tempFreq
+		{
+			Loop, Parse, strHeight, CSV
+			{
+			temp := 0
+			newLoopfield := A_Loopfield
+				Loop, Parse, strHeightOld, CSV
+				{
+					if (A_Loopfield && A_Loopfield == newLoopfield)
+					{
+					strFreq .= ResArray[3, tempFreq[fTemp]] . "`,"
+					strHeightOld := SubStr(strHeightOld, 1, InStr(strHeightOld, A_Loopfield) - 1) . SubStr(strHeightOld, InStr(strHeightOld, A_Loopfield) + StrLen(A_Loopfield))
+					temp := 1
+					break
+					}
+				}
+			ResNewArray[2, resOffset + fTemp] := A_Loopfield
+				if (temp)
+				break
+			}
+		}
+
+	temp := 0
+	fTemp := 0
+		Loop, Parse, strFreq, CSV
+		{
+			if (A_Loopfield)
+			{
+			; Remove processed entries and adjust counter
+				if (fTemp)
+				{
+					if (tempHeight[A_Index] > fTemp)
+					fTemp := tempHeight[A_Index]
+					else
+					fTemp := tempHeight[A_Index] - 1
+				}
+				else
+				fTemp := tempHeight[A_Index]
+
+				if (!(ResArray[1].RemoveAt(fTemp) && ResArray[2].RemoveAt(fTemp) && ResArray[3].RemoveAt(fTemp)))
+				MsgBox, 8192, SortSourceModes, Unexpected error!
+
+			ResNewArray[3, resOffset + A_Index] := A_Loopfield
+			numWMIResolutionmodesTmp--
+			}
+		}
+	}
+Return ResNewArray
+}
+
+
+
+
+GetResInfo(targMonitorNum, ByRef ResArray, getCurrentRes := 0, allModes := 0, ByRef monitorOrder := 0, ByRef iDevNumArray := 0)
 {
 ; From Checkmodes, getCurrentRes is 0: get all, 1: get default, 2: check default
 
 static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
+static monitorMsg := 0, defResArray := [], iniDefResArray := []
+Static ResArrayIn := [[], [], []]
 ResList := "", Strng := ""
 
 fTemp := 0, iModeCt := 0, checkDefMissing := 0, iModeval := 0
 scrWidth := 0, scrHeight := 0, scrDPI := 0, scrInterlace := 0, scrFreq := 0
 scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, scrFreqLast := 0
 
+
 	switch (getCurrentRes)
 	{
-		case 1:
+		case 1:  ; 0: populate list
 		{
-		;imodeVal == 0 caches the data for EnumSettings
-			if (!GetDisplayData(targMonitorNum, , , , , , , , iModeval, (PrgLnch.Monitor != targMonitorNum)))
-			MsgBox, 8192, Display Data, Display data could not be cached!
-			if (!GetDisplayData(targMonitorNum, , , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, (PrgLnch.regoVar)? ENUM_REGISTRY_SETTINGS: ENUM_CURRENT_SETTINGS, (PrgLnch.Monitor != targMonitorNum)))
-			MsgBox, 8192, Display Data, PrgLnch could not retrieve information on the monitor from which it was launched!
-
-		; Compare & check defaults (hope frequencies tally)
-		SysGet, mt, Monitor, %targMonitorNum%
-
-			if (mtRight - mtLeft)
-			{
-				if (mtRight - mtLeft != scrWidth)
-				fTemp := 1
-				else
-				{
-					if (mtBottom - mtTop != scrHeight)
-					fTemp := 1
-				}
-
-				if (fTemp)
-				MsgBox, 8192, Monitor Setup, The default screen resolution for the current monitor is not correct,`nand its default refresh rate (frequency Hz) may not be reliable.`nCould be an issue with the initial monitor setup.
-
-			PrgLnchOpt.scrWidthDef := mtRight - mtLeft
-			PrgLnchOpt.scrHeightDef := mtBottom - mtTop
-			PrgLnchOpt.scrFreqDef := scrFreq
-			ResList := PrgLnchOpt.scrWidthDef . " `, " . PrgLnchOpt.scrHeightDef . " @ " . PrgLnchOpt.scrFreqDef . "Hz |"
-			}
+		ResList := CheckResolutions(targMonitorNum, monitorOrder, allModes, ResArrayIn)
+		ResArray := ResArrayIn[monitorOrder[targMonitorNum]]
 		}
-		case 2: ; check default
+		case 2:
 		{
 		iModeCt := 1
 
@@ -9766,17 +12828,17 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 				{
 					if ((!FindResMatch(iModeCt, ResArray)) || (scrWidthLast != PrgLnchOpt.scrWidthDef))
 					{
-					iModeCt += 1
-					ResArray[1, iModeCt] := PrgLnchOpt.scrWidthDef
-					ResArray[2, iModeCt] := PrgLnchOpt.scrHeightDef
-					ResArray[3, iModeCt] := PrgLnchOpt.scrFreqDef
+					ResArray[1].InsertAt(iModeCt, PrgLnchOpt.scrWidthDef)
+					ResArray[2].InsertAt(iModeCt, PrgLnchOpt.scrHeightDef)
+					ResArray[3].InsertAt(iModeCt, PrgLnchOpt.scrFreqDef)
 					Strng := PrgLnchOpt.scrWidthDef . " `, " . PrgLnchOpt.scrHeightDef . " @ " . PrgLnchOpt.scrFreqDef . "Hz |"
 					ResList .= Strng
 
 					IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
-						; Versioning: this code would want to be in IniProc
+
 						if (fTemp = "ERROR")
 						{
+						; Versioning:  IniSpaceCleaner moves this before ResMode
 						IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
 						fTemp := 0
 						}
@@ -9784,7 +12846,7 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 						if (!fTemp)
 						{
 						;note-msgbox isn't modal if called from function
-						retVal := TaskDialog("Default Resolution", "Unsupported Resolution?", "", "The current desktop resolution of " PrgLnchOpt.scrWidthDef " X " PrgLnchOpt.scrHeightDef " does not belong to the list of resolution modes the firmware of the current monitor has flagged as operable. If the OEM wddm driver asserts the resolution mode is actually compatible, the mode will appear in the Windows Setting's list of resolution, there is no issue other than PrgLnch using an older technology from that of the driver. Else, the options of an out-dated or imported PrgLnch ini file, driver inconsistency or error in multi-monitor setup cannot be discounted.`n`nThe mode has been inserted to the PrgLnch Resolution Mode list, however changes to this, or any other resolution mode in this PrgLnch instance may not work properly.`n`nTo use PrgLnch, it's recommended the current desktop resolution be permanently changed to one which is more " . """" . "compatible" . """" . " with the driver.`nTo do so, from PrgLnch Options, select " . """" . "None" . """" . " in Shortcut slots, and choose " . """" . "Dynamic" . """" . " in the Res Options, and then select an alternative resolution mode from the list. Be sure to return the selection in Res Options to " . """" . "Temporary" . """" . ", if that is the preference.", , "Continue with the resolution checks")
+						retVal := TaskDialog("Unsupported Default Resolution", "Switching Monitors", "", "The current desktop resolution of " PrgLnchOpt.scrWidthDef " X " PrgLnchOpt.scrHeightDef " does not belong to the list of resolution modes the firmware of the selected monitor has flagged as operable. If the OEM wddm driver asserts the resolution mode is actually compatible, the mode will appear in the Windows Setting's list of resolution, there is no issue other than PrgLnch using an older technology from that of the driver. Else, the options of an out-dated or imported PrgLnch ini file, driver inconsistency or error in multi-monitor setup cannot be discounted.`n`nThe mode has been inserted to the PrgLnch Resolution Mode list, however changes to this, or any other resolution mode in this PrgLnch instance may not work properly.`n`nTo use PrgLnch, it's recommended the current desktop resolution be permanently changed to one which is more " . """" . "compatible" . """" . " with the driver.`nTo do so, from PrgLnch Options, select " . """" . "None" . """" . " in Shortcut slots, and choose " . """" . "Dynamic" . """" . " in the Res Options, and then select an alternative resolution mode from the list. Be sure`nto return the selection in Res Options to " . """" . "Temporary" . """" . ", if that is the preference.", , "Continue with the resolution checks")
 							if (retVal < 0)
 							IniWrite, 1, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
 						}
@@ -9797,7 +12859,6 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 					;many iModeCts here are equivalent for the above params. scrFreq & scrHeight may vary for a subset of those
 					if ((allModes && (scrHeightLast == scrHeight || scrFreqLast == scrFreq)) || (scrHeightLast != scrHeight || scrFreqLast != scrFreq))
 					{
-					iModeCt += 1
 					scrHeightLast := scrHeight
 					scrFreqLast := scrFreq
 					Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
@@ -9806,67 +12867,51 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 				}
 				else
 				{
-					if ((AllModes && scrHeightLast == scrHeight && scrFreqLast == scrFreq) || ((scrHeightLast != scrHeight || scrFreqLast != scrFreq)))
+					if (!allModes || allModes && (scrHeightLast == scrHeight && scrFreqLast == scrFreq))
 					{
-					iModeCt += 1
 					scrWidthLast := scrWidth
 					scrHeightLast := scrHeight
 					scrFreqLast := scrFreq
-
-					;https://autohotkey.com/boards/viewtopic.php?f=5&t=23021&p=108567#p108567
 					Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
 					ResList .= Strng
 					}
 				}
+			iModeCt += 1
 			}
 		}
-		Default: ; 0: populate list
+		Default: ; check default (when switching monitors)
 		{
-			while GetDisplayData(targMonitorNum, iDevNumArray, , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, iModeval, (PrgLnch.Monitor != targMonitorNum))
+		;imodeVal == 0 caches the data for EnumSettings
+			if (!GetDisplayData(targMonitorNum, , , , , , , , iModeval, (PrgLnch.Monitor != targMonitorNum)))
+			MsgBox, 8192, Display Data, Display data could not be cached!
+			if (!GetDisplayData(targMonitorNum, , , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, (PrgLnch.regoVar)? ENUM_REGISTRY_SETTINGS: ENUM_CURRENT_SETTINGS, (PrgLnch.Monitor != targMonitorNum)))
+			MsgBox, 8192, Display Data, % "PrgLnch could not retrieve information on " ((PrgLnch.Monitor == targMonitorNum)? "the monitor from which it was launched!": "monitor " targMonitorNum)
+		; Compare & check defaults (hope frequencies tally)
+		SysGet, mt, Monitor, %targMonitorNum%
+
+			if (mtRight - mtLeft)
 			{
-
-				if (scrWidthLast == scrWidth)
-				{
-					;many iModeCts here are equivalent for the above params. scrFreq & scrHeight may vary for a subset of those
-					if ((allModes && (scrHeightLast == scrHeight || scrFreqLast == scrFreq)) || (scrHeightLast != scrHeight || scrFreqLast != scrFreq))
-					{
-					iModeCt += 1
-					ResArray[1, iModeCt] := scrWidth
-					ResArray[2, iModeCt] := scrHeight
-					ResArray[3, iModeCt] := scrFreq
-
-					scrHeightLast := scrHeight
-					scrFreqLast := scrFreq
-					scrDPILast := scrDPI
-					scrInterlaceLast := scrInterlace
-					Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq . "Hz |"
-					ResList .= Strng
-					}
-				}
+				if (mtRight - mtLeft != scrWidth)
+				fTemp := 1
 				else
 				{
-					if ((AllModes && scrHeightLast == scrHeight && scrFreqLast == scrFreq) || ((scrHeightLast != scrHeight || scrFreqLast != scrFreq)))
-					{
-					iModeCt += 1
-					ResArray[1, iModeCt] := scrWidth
-					ResArray[2, iModeCt] := scrHeight
-					ResArray[3, iModeCt] := scrFreq
-
-					scrWidthLast := scrWidth
-					scrHeightLast := scrHeight
-					scrFreqLast := scrFreq
-					scrDPILast := scrDPI
-					scrInterlaceLast := scrInterlace
-
-					;https://autohotkey.com/boards/viewtopic.php?f=5&t=23021&p=108567#p108567
-					Strng := scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz |"
-					ResList .= Strng
-					}
+					if (mtBottom - mtTop != scrHeight)
+					fTemp := 1
 				}
-				iModeval += 1
+
+				if (monitorMsg && fTemp)
+				{
+				monitorMsg := 1
+				MsgBox, 8192, Monitor Setup, The default screen resolution for the current monitor is not correct,`nand its default refresh rate (frequency Hz) may not be reliable.`nCould be an issue with the initial monitor setup,`nor that the monitor was not available on Windows Bootup`n`n(A once per session notification that may apply to any other physical monitor attached to the desktop).
+				}
+
+			PrgLnchOpt.scrWidthDef := mtRight - mtLeft
+			PrgLnchOpt.scrHeightDef := mtBottom - mtTop
+			PrgLnchOpt.scrFreqDef := scrFreq
+			ResList := PrgLnchOpt.scrWidthDef . " `, " . PrgLnchOpt.scrHeightDef . " @ " . PrgLnchOpt.scrFreqDef . "Hz |"
 			}
-			if (Strng := CheckResolutions(targMonitorNum, iDevNumArray, allModes, ResArray))
-			ResList := Strng
+			else
+			MsgBox, 8208, Monitor Dimensions, Critical error in monitor dimensions!
 		}
 	}
 return ResList
@@ -10861,9 +13906,9 @@ else
 	if (!checkSubSys || (checkSubSys && !Instr(exeStrOld, A_WinDir) && !Instr(PrgChoicePaths[selPrgChoice], A_WinDir)))
 	{
 	IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, DcmpExecutableWrn
-		; Versioning: this code would want to be in IniProc
 		if (fTemp = "ERROR")
 		{
+		; Versioning:  IniSpaceCleaner moves this before ResMode
 		IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, DcmpExecutableWrn
 		fTemp := 0
 		}
@@ -11184,7 +14229,7 @@ GuiControl, PrgLnchOpt: Hide, FMode
 GuiControl, PrgLnchOpt: Hide, Dynamic
 GuiControl, PrgLnchOpt: Hide, Tmp
 GuiControl, PrgLnchOpt: Hide, Rego
-GuiControl, PrgLnchOpt: Hide, allModes
+GuiControl, PrgLnchOpt: Hide, Allmodes
 GuiControl, PrgLnchOpt: Hide, ResIndex
 GuiControl, PrgLnchOpt: Hide, RnPrgLnch
 GuiControl, PrgLnchOpt: Hide, CmdLinPrm
@@ -11214,7 +14259,7 @@ GuiControl, PrgLnchOpt: Show, FMode
 GuiControl, PrgLnchOpt: Show, Dynamic
 GuiControl, PrgLnchOpt: Show, Tmp
 GuiControl, PrgLnchOpt: Show, Rego
-GuiControl, PrgLnchOpt: Show, allModes
+GuiControl, PrgLnchOpt: Show, Allmodes
 GuiControl, PrgLnchOpt: Show, ResIndex
 GuiControl, PrgLnchOpt: Show, RnPrgLnch
 GuiControl, PrgLnchOpt: Show, CmdLinPrm
@@ -11258,7 +14303,12 @@ IniProcStart:
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgAlreadyLaunchedMsg
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, ChangeShortcutMsg
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgLaunchAfterDL
+	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
+	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
+	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, DcmpExecutableWrn
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, MonProbMsg
+	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, MonitorNames
+	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, MonitorOrder
 
 	; % PrgLnch.SelIniChoicePath as long as the current directory isn't changed while this loads
 
@@ -11270,9 +14320,7 @@ IniProcStart:
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, OnlyOneMonitor
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, DefPresetSettings
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgVersionError
-	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
-	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
-	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, DcmpExecutableWrn
+
 
 	IniWrite, %SelIniChoiceName%, %PrgLnchIni%, General, SelIniChoiceName
 
@@ -11367,7 +14415,9 @@ IniProcStart:
 
 		}
 	reWriteIni := 0
-	} ; Ini file exists
+	}
+	; Ini file exists
+	; **********************************************************************************************************************************************
 	else
 	{
 
@@ -11405,9 +14455,7 @@ IniProcStart:
 			}
 
 
-			p := InStr(A_LoopField, "=")
-
-			if (p)
+			if (p := InStr(A_LoopField, "="))
 			{
 			k := SubStr(A_LoopField, p + 1)
 			sectCount := sectCount + 1
@@ -11415,7 +14463,7 @@ IniProcStart:
 				{
 					switch (sectCount)
 					{
-						case 13: ; ResMode
+						case 18: ; ResMode
 						{
 							if (selPrgChoice)
 							{
@@ -11444,15 +14492,20 @@ IniProcStart:
 							{
 								if (k)
 								{
-								PrgLnchOpt.TestMode := Test := SubStr(k, 1, 1)
-								PrgLnchOpt.Fmode := FMode := SubStr(k, 3, 1)
-								PrgLnchOpt.DynamicMode := Dynamic := SubStr(k, 5, 1)
-								PrgLnchOpt.TmpMode := Tmp := SubStr(k, 7)
+									if (InStr(k, ","))
+									{
+									PrgLnchOpt.TestMode := Test := SubStr(k, 1, 1)
+									PrgLnchOpt.Fmode := FMode := SubStr(k, 3, 1)
+									PrgLnchOpt.DynamicMode := Dynamic := SubStr(k, 5, 1)
+									PrgLnchOpt.TmpMode := Tmp := SubStr(k, 7)
+									}
+									else
+									MsgBox, 8208, Ini File, Error reading Resmode in file! `nTry restarting PrgLnch.
 								}
 							}
 					
 						}
-						case 14: ; UseReg
+						case 19: ; UseReg
 						{
 							if (selPrgChoice)
 							IniWrite, % PrgLnch.regoVar, % PrgLnch.SelIniChoicePath, General, UseReg
@@ -11467,7 +14520,7 @@ IniProcStart:
 							;else
 							}
 						}
-						case 15: ; ResShortcut
+						case 20: ; ResShortcut
 						{
 							if (selPrgChoice)
 							IniWrite, %ResShortcut%, % PrgLnch.SelIniChoicePath, General, ResShortcut
@@ -11479,7 +14532,7 @@ IniProcStart:
 						}
 						default:
 						Continue
-						; section 16- ...22+ : read "on the fly"
+						; section 21- ...26+ : read "on the fly"
 					}
 				}
 				else
@@ -11530,20 +14583,20 @@ IniProcStart:
 								{
 									if (temp == PrgLnchOpt.dispMonNamesNo)
 									{
-									loop % temp
-									{
-										if (iDevNumArray[A_Index] != iDevNumArrayIn[A_Index])
+										loop % temp
 										{
-										retVal := TaskDialog("Monitor configuration", "Informational: The current monitor config`ndiffers to the one read from the ini file", , "This usually occurs after monitors have been added or removed`,`nor the existing PrgLnch ini file has been generated on another device.`nThis is only an issue if the existing ini file is not to be overwritten.", "", "Continue to write the new configuration", "Quit Prglnch")
-											if (retVal == 1)
-											Break
-											else
+											if (iDevNumArray[A_Index] != iDevNumArrayIn[A_Index])
 											{
-											KleenupPrgLnchFiles()
-											ExitApp
+											retVal := TaskDialog("Monitor configuration", "Informational: The current monitor config`ndiffers to the one read from the ini file", , "This usually occurs after monitors have been added or removed`,`nor the existing PrgLnch ini file has been generated on another device.`nThis is only an issue if the existing ini file is not to be overwritten.", "", "Continue to write the new configuration", "Quit Prglnch")
+												if (retVal == 1)
+												Break
+												else
+												{
+												KleenupPrgLnchFiles()
+												ExitApp
+												}
 											}
 										}
-									}
 									}
 									else
 									{
@@ -11893,13 +14946,13 @@ IniProcStart:
 				reWriteIni := DeleteIniFile("", 1)
 					if (reWriteIni)
 					{
-							if (reWriteIni == 1)
-							reWriteIni := 0
-						FileExistSelIniChoicePath := ""
-						strPrgChoice := "|None|"
-						defPrgStrng := "None"
-						PrgBatchIniStartup := ""
-						goto IniProcStart
+						if (reWriteIni == 1)
+						reWriteIni := 0
+					FileExistSelIniChoicePath := ""
+					strPrgChoice := "|None|"
+					defPrgStrng := "None"
+					PrgBatchIniStartup := ""
+					goto IniProcStart
 					}
 					else
 					{
@@ -11931,26 +14984,26 @@ DeleteIniFile(iniFile, wrnPrompt := 0)
 {
 spr := 0
 reWriteIni := 1
-if (wrnPrompt == 1)
-{
-retVal := TaskDialog("Ini file", "A PrgLnch ini file appears corrupted", , "", "", "Attempt reset to currently stored values (Recommended)", "Clear settings to their initial state", "Continue with errors")
-	switch (retVal)
+	if (wrnPrompt == 1)
 	{
-	case 1:
-	reWriteIni := 2
-	case 2:
-	reWriteIni := 1
-	case 3:
-	return reWriteIni
+	retVal := TaskDialog("Ini file", "A PrgLnch ini file appears corrupted", , "", "", "Attempt reset to currently stored values (Recommended)", "Clear settings to their initial state", "Continue with errors")
+		switch (retVal)
+		{
+		case 1:
+		reWriteIni := 2
+		case 2:
+		reWriteIni := 1
+		case 3:
+		return reWriteIni
+		}
 	}
-}
-else 
-{
-	if (wrnPrompt == 2)
+	else 
 	{
-	MsgBox, 8192, Ini File, Ini file will be converted to version 2.x.`nMost settings will be preserved.
+		if (wrnPrompt == 2)
+		{
+		MsgBox, 8192, Ini File, Ini file will be converted to version 2.x.`nMost settings will be preserved.
+		}
 	}
-}
 
 	if (!iniFile)
 	iniFile := PrgLnch.SelIniChoicePath
@@ -11970,25 +15023,87 @@ return reWriteIni
 IniSpaceCleaner(IniFile, oldVerChg := 0)
 {
 ; https://autohotkey.com/boards/viewtopic.php?f=13&t=26556&p=124630#p124630
-retVal := "", temp := ""
+spr := "", strRetVal := "", temp := ""
 Thread, NoTimers
 try
 {
 	FileRead, strRetVal, %IniFile%
 	if (oldVerChg)
 	{
-		
 		if (InStr(strRetVal, "NavShortcut"))
 		strRetVal := StrReplace(strRetVal, "NavShortcut", "ResShortcut")
 
+
 		if (InStr(strRetVal, "LoseGuiChangeResWrn"))
-		return
-		else
-		strRetVal := StrReplace(strRetVal, "ResMode=", "LoseGuiChangeResWrn= `nPrgAlreadyLaunchedMsg= `nChangeShortcutMsg= `nResMode= ")
+		{
+		temp := InStr(strRetVal, "`n[Prgs]")
+		temp := SubStr(strRetVal, 1, temp - 1)
+		temp := SubStr(temp, InStr(temp, "`n", 0, 0))
+		; includes trailing "`n"
+			if (InStr(temp, "MonitorNames"))
+			{
+				;first remove current MonitorNames
+				strRetVal := StrReplace(strRetVal, temp, "")
+
+				fTemp := InStr(strRetVal, "ResMode=") - 1
+				temp .= "MonitorOrder= `n"
+					if (!InStr(strRetVal, "MonProbMsg="))
+					temp := "`nMonProbMsg=" . temp
+					if (!InStr(strRetVal, "DcmpExecutableWrn="))
+					temp := "`nDcmpExecutableWrn=" . temp
+					if (!InStr(strRetVal, "CheckDefMissingMsg="))
+					temp := "`nCheckDefMissingMsg=" . temp
+					if (!InStr(strRetVal, "PrgCleanOnExit="))
+					temp := "`nPrgCleanOnExit=" . temp
+
+				fTemp := SubStr(strRetVal, 1, fTemp)
+
+				fTemp := InStr(fTemp, "`n", 0, 0)
+				; factor in the extra carriage return
+
+				strRetVal := SubStr(strRetVal, 1, fTemp - 2) . temp . SubStr(strRetVal, fTemp + 1)
+			}
+			else
+			{
+				if (InStr(temp, ","))
+				{
+				temp := InStr(strRetVal, "`n[Prgs]")
+				temp := SubStr(strRetVal, 1, temp - 1)
+				; includes trailing "`n"
+					if (!InStr(temp, "MonitorNames"))
+					{
+					temp := "MonitorNames= `nMonitorOrder= `n"
+						if (!InStr(strRetVal, "MonProbMsg="))
+						temp := "MonProbMsg= `n" . temp
+						if (!InStr(strRetVal, "DcmpExecutableWrn="))
+						temp := "DcmpExecutableWrn= `n" . temp
+						if (!InStr(strRetVal, "CheckDefMissingMsg="))
+						temp := "CheckDefMissingMsg= `n" . temp
+						if (!InStr(strRetVal, "PrgCleanOnExit="))
+						temp := "PrgCleanOnExit= `n" . temp
+					temp := "`n" . temp
+					fTemp := InStr(strRetVal, "ResMode=") - 1
+					fTemp := SubStr(strRetVal, 1, fTemp)
+
+					fTemp := InStr(fTemp, "`n", 0, 0)
+					; factor in the extra carriage return
+
+					strRetVal := SubStr(strRetVal, 1, fTemp - 2) . temp . SubStr(strRetVal, fTemp + 1)
+					}
+				}
+				else
+				{
+				MsgBox, 8208, Ini File, Unknown problem with Resmode in the ini file!`nTry manually editing it, or delete it and start afresh.
+				return
+				}
+			}
+		}
+		else ; Hope this is never reached!
+		strRetVal := StrReplace(strRetVal, "ResMode=", "LoseGuiChangeResWrn= `nPrgAlreadyLaunchedMsg= `nChangeShortcutMsg= `nPrgLaunchAfterDL= `nPrgCleanOnExit= `nCheckDefMissingMsg= `nDcmpExecutableWrn= `nMonProbMsg= `nMonitorNames= `nResMode=")
 	}
 	else
 	strRetVal := RegExReplace(strRetVal, "m) +$", " ") ;m multilineselect; " +" one or more spaces; $ only at EOL
-	; Names & pathnames with more than one space are tested a not affected.
+	; Names & pathnames with more than one space are tested and not affected.
 
 	DeleteIniFile(IniFile)
 	FileAppend, %strRetVal%, %IniFile%
