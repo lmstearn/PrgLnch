@@ -6304,7 +6304,9 @@ temp := 0
 }
 RunChm(chmTopic := 0, Anchor := "")
 {
-x := 0, y := 0, w := 0, h := 0, hAdj := 0, temp := 0, retVal := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
+x := 0, y := 0, w := 0, h := 0, hAdj := 0
+temp := 0, retVal := 0, notPrgLnchGui := 0
+htmlHelp := "C:\Windows\hh.exe ms-its"
 
 if (!FileExist(A_ScriptDir . "\PrgLnch.chm"))
 return -1
@@ -6320,7 +6322,15 @@ retVal := CloseChm()
 	if (WinActive("A") == PrgLnchOpt.Hwnd())
 	hAdj := 2 * h
 	else
-	hAdj := floor(3 * h/2)
+	{
+		if (WinActive("A") == PrgLnch.Hwnd())
+		hAdj := floor(3 * h/2)
+		else
+		{
+		notPrgLnchGui := 1
+		hAdj := h
+		}
+	}
 
 if (chmTopic)
 run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm#%Anchor%,, UseErrorLevel
@@ -6369,7 +6379,7 @@ WinGetTitle, strtemp , A
 		scrWd := mdRight - mdleft
 		scrHt := mdBottom - mdTop
 
-		if (y + h >  scrHt)
+		if (y + h > scrHt)
 		y := scrHt - h
 		else
 		{
@@ -6379,7 +6389,7 @@ WinGetTitle, strtemp , A
 
 		;y -= floor(y/10)
 
-		if (x + w >  scrWd)
+		if (x + w > scrWd)
 		x := scrWd - w
 		else
 		{
@@ -6387,6 +6397,7 @@ WinGetTitle, strtemp , A
 			x := 0
 		}		
 
+		if (!notPrgLnchGui)
 		WinMove, A, , %x%, % y - hAdj, %w%, %hAdj%
 
 		}
@@ -10332,14 +10343,17 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 			}
 		}
 
-		if (w || h)
+		if (!targHWnd)
 		{
-		dx := Round(dx + w/2)
-		dy := Round(dy + h/2)
-			if (fTemp)
-			DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
-			else
-			fTemp := 1
+			if (w || h)
+			{
+			dx := Round(dx + w/2)
+			dy := Round(dy + h/2)
+				if (fTemp)
+				DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
+				else
+				fTemp := 1
+			}
 		}
 	}
 
@@ -12250,6 +12264,7 @@ return 0
 
 MonitorSelectProc(ByRef resultResolutionMons, canonicalMonitorListIn)
 {
+WS_EX_CONTEXTHELP := 0x00000400
 	static acceptDlg := 0, trackMonNames := [], monitors := [], canonicalMonitorListOut := []
 
 
@@ -12260,16 +12275,16 @@ MonitorSelectProc(ByRef resultResolutionMons, canonicalMonitorListIn)
 
 	if (!acceptDlg)
 	{
-	height := A_ScreenHeight/20
+	height := A_ScreenHeight/18
 
 		loop % PrgLnchOpt.activeDispMonNamesNo
 		trackMonNames[A_Index] := A_Index
 
-	gui, MonitorSelectDlg: +resize -MaximizeBox -MinimizeBox HWNDhWndMonitorSelectDlg
+	gui, MonitorSelectDlg: -MaximizeBox -MinimizeBox HWNDhWndMonitorSelectDlg +E%WS_EX_CONTEXTHELP% 
 	Gui, MonitorSelectDlg: Font, cTeal Bold, s10
 
-	gui, MonitorSelectDlg: add, text, % "w" . 3 * height . " h" . height/2, Arrange Monitors
-	GuiControl, MonitorSelectDlg: +Center, Arrange Monitors
+	gui, MonitorSelectDlg: add, text, % "w" . 3 * height . " h" . height/2, Verify Device Numbers
+	GuiControl, MonitorSelectDlg: +Center, Verify Device Numbers
 
 	gui, MonitorSelectDlg: Font
 
@@ -12292,18 +12307,19 @@ MonitorSelectProc(ByRef resultResolutionMons, canonicalMonitorListIn)
 		monitors.push(fname)
 		}
 
+		; PrgLnch monitor dimensions used for other monitors.
 		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
 		canonicalMonitorListOut[A_Index] := canonicalMonitorListIn[A_Index]
 		gui, MonitorSelectDlg: add, button, % "xs+" . height/2 . " ys+" . (A_Index - 1) * height + height/2 . " W" . 2 * height . " H" . height/2 . " gGuiMonitorSelect" . " vguiMonitorSelect" . A_Index, % "Monitor" . resultResolutionMons[A_Index]
-		%SplashRef%(Splashy, {imagePath: "*", instance: A_Index, mainText: resultResolutionMons[A_Index], subText: monitors[resultResolutionMons[A_Index]], mainFontSize: 100, subFontSize: 30, vImgW: A_ScreenWidth/4, vImgH: A_ScreenHeight/3, vMovable: 1}*)
+		%SplashRef%(Splashy, {imagePath: "*", instance: A_Index, mainText: resultResolutionMons[A_Index], subText: monitors[resultResolutionMons[A_Index]], mainFontSize: 100, subFontSize: 30, vPosX : "C", vPosY : "C", vImgW: A_ScreenWidth/4, vImgH: A_ScreenHeight/3, vOnTop: 1}*)
 		resultResolutionMons[A_Index] := A_Index
 		MovePrgToMonitor(A_Index, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[A_Index])
 		}
 
 	gui, MonitorSelectDlg: add, button, % "Section xp w" . 2 * height . " ys" . height * (PrgLnchOpt.activeDispMonNamesNo + 1) . " gGuiMonitorSelectDlgAccept", Accept
 
-	gui, MonitorSelectDlg: show, % "x" . A_ScreenWidth/4, Verify Monitors
+	gui, MonitorSelectDlg: show, % "x" . A_ScreenWidth/4, Monitors
 
 	WinWaitClose, ahk_id %hWndMonitorSelectDlg%
 	}
@@ -12381,13 +12397,13 @@ canonicalMonitorList := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 numResolutionmodes := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 static modes := ["", "", "", "", "", "", "", "", ""]
 static stockModes := ["", "", "", "", "", "", "", "", ""]
-
+static initResArrayStored := 0, initMonitors := 0
 
 numWMIResolutionmodes := [0, 0, 0, 0, 0, 0, 0, 0, 0]
-numWMIResolutionmodesTmp := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 numResolutionmodesTaken := [0, 0, 0, 0, 0, 0, 0, 0, 0]
+resStrng := ["", "", "", "", "", "", "", "", ""]
 fTemp := 0, retVal := 0
-static initResArrayStored := 0
+
 
 	if (!initResArrayStored)
 	{
@@ -12542,6 +12558,7 @@ static initResArrayStored := 0
 					break
 					}
 				}
+			initMonitors := 1
 			}
 		}
 		else
@@ -12576,6 +12593,8 @@ static initResArrayStored := 0
 
 			fTemp := SubStr(fTemp, 1, StrLen(fTemp) - 1)
 			IniWrite, %fTemp%, % PrgLnch.SelIniChoicePath, General, MonitorOrder
+
+			initMonitors := 1
 			}
 		}
 
@@ -12597,7 +12616,6 @@ static initResArrayStored := 0
 	; Populate ResArrayWMI (initially unordered)
 	Enabled := ComObjError(1)
 	dispMon := 0
-	Strng := ""
 	wmi := ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" A_ComputerName "\root\wmi")
 		for monitor in wmi.ExecQuery("SELECT NumOfMonitorSourceModes, MonitorSourceModes FROM WmiMonitorListedSupportedSourceModes WHERE Active=TRUE",,wbemFlagForwardOnly := 32)
 		{
@@ -12660,11 +12678,15 @@ static initResArrayStored := 0
 					}
 				}
 			if (!imodeCt)
-			Strng .= scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz`n"
+			resStrng[dispMon] .= scrWidth . " `, " . scrHeight . " @ " . scrFreq "Hz`n"
 			}
 		}
 
-msgbox % strng
+if (initMonitors)
+{
+DisplayNonStockRes(canonicalMonitorList, resStrng)
+initMonitors := 0
+}
 
 	initResArrayStored := 1
 	}
@@ -12684,6 +12706,58 @@ MsgBox, 8208, Monitor Resolutions, Critical error with selected Monitor %targMon
 return
 
 	
+}
+
+
+DisplayNonStockRes(canonicalMonitorList, ResList)
+{
+
+	height := A_ScreenHeight/5
+	WS_EX_CONTEXTHELP := 0x00000400
+
+	gui, NonStockResDlg: -MaximizeBox -MinimizeBox +E%WS_EX_CONTEXTHELP% HWNDhWndNonStockResDlg
+	Gui, NonStockResDlg: Font, cTeal Bold, s10
+	gui, NonStockResDlg: add, text, w%height%, Missing Stock Resolutions
+	Gui, NonStockResDlg: Font
+
+	Gui, NonStockResDlg: Font, cA96915, s10
+
+	Strng := ""
+		for each in canonicalMonitorList
+		{
+			loop StrLen(canonicalMonitorList[A_Index])
+			Strng .= "-"
+		Strng .= "`n" . canonicalMonitorList[A_Index] . "`n"
+			loop StrLen(canonicalMonitorList[A_Index])
+			Strng .= "-"
+
+			Strng .= "`n" . ResList[A_Index] 
+		}
+	gui, NonStockResDlg: add, text, w%height%, %Strng%
+
+
+	gui, NonStockResDlg: Font
+	Gui, NonStockResDlg: Font, cTeal
+
+
+	gui, NonStockResDlg: add, button, gNonStockResDlgClipSave w%height%, Save to Clipboard
+	gui, NonStockResDlg: add, button, gNonStockResDlgAccept w%height%, Accept
+
+	gui, NonStockResDlg: show, % "x" . height, Res. Report 
+
+	WinWaitClose, ahk_id %hWndNonStockResDlg%
+
+
+	return
+
+	NonStockResDlgClipSave:
+	Clipboard := Strng
+	return
+
+	NonStockResDlgAccept:
+	NonStockResDlgGuiClose:
+	gui, NonStockResDlg: Destroy
+	return 0
 }
 
 
