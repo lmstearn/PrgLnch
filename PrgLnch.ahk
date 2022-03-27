@@ -3275,6 +3275,13 @@ Class PrgLnch
 		}
 	DetectHiddenWindows, Off
 	}
+	X()
+	{
+	DetectHiddenWindows, On
+	WinGetPos, X, , , , % "ahk_id" This.PrgHwnd
+	DetectHiddenWindows, Off
+	return X
+	}
 	Y()
 	{
 	DetectHiddenWindows, On
@@ -3309,7 +3316,6 @@ Class PrgLnch
 
 	}
 
-Global SplashRef := Splashy.SplashImg
 
 (A_PtrSize == 8)? 64bit := 1: 64bit := 0 ; ONLY checks .exe bitness
 updateStatus := 1
@@ -3530,8 +3536,7 @@ GetDisplayData(, iDevNumArray, dispMonNames, , , , , , -3)
 
 PrgLnch.Monitor := GetPrgLnchMonNum(iDevNumArray, primaryMon, 1)
 
-
-WinMover(, , , , "*Loading", 1)
+SplashyProc("*Loading")
 
 temp := PrgLnch.Title
 fTemp := 0
@@ -4212,7 +4217,8 @@ DllCall("ChangeWindowMessageFilterEx", "Ptr", strTemp, "UInt", WM_DROPFILES, "UI
 
 Gui, PrgLnch: Show,, % PrgLnch.Title
 
-%SplashRef%(Splashy, {release: 1}*)
+SplashyProc("*Release")
+
 
 Process, priority, %PrgLnchPID%, B
 
@@ -4925,7 +4931,7 @@ if (A_GuiEvent == "DoubleClick")
 	lnchPrgIndex := PrgBatchIni%btchPrgPresetSel%[batchPrgStatus]
 	temp := PrgChoicePaths[lnchPrgIndex]
 
-	WinMover(, , , , "*Launching")
+	SplashyProc("*Launching")
 	sleep, % (!PrgIntervalLnch)? 2000: (PrgIntervalLnch == -1)? 4000: 6000
 	targMonitorNum := PrgMonToRn[lnchPrgIndex]
 	iDevNoFunc(txtPrgChoice, lnchPrgIndex, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
@@ -4950,7 +4956,7 @@ if (A_GuiEvent == "DoubleClick")
 	strTemp2 := PrgListPID%btchPrgPresetSel%[A_Index]
 		if (batchPrgStatus == A_Index)
 		{
-		SplashImage, PrgLaunching.jpg, Hide,,,LnchSplash
+		SplashyProc("*Release")
 		HideShowLnchControls(quitHwnd, GoConfigHwnd, 1)
 
 			if (strRetVal) ;Lnch fail
@@ -5855,11 +5861,11 @@ if (showCtl)
 	GuiControl, PrgLnch: Show, MovePrg
 	GuiControl, PrgLnch: Show, PresetName
 	GuiControl, PrgLnch: Show, BtchPrgPreset
-	GuiControl, PrgLnch: Hide, PwrChoice
+	GuiControl, PrgLnch: Show, PwrChoice
 	GuiControl, PrgLnch: Show, RunBatchPrg
 	GuiControl, PrgLnch: Show, % GoConfigHwnd
 	GuiControl, PrgLnch: Show, IniChoice
-	GuiControl, PrgLnch: Hide, LnchPadConfig
+	GuiControl, PrgLnch: Show, LnchPadConfig
 	GuiControl, PrgLnch: Show, % quitHwnd
 	}
 	else
@@ -7074,15 +7080,13 @@ Tooltip
 
 
 strRetVal := WorkingDirectory(A_ScriptDir, 1)
-If (strRetVal)
-MsgBox, 8192, Missing script, % strRetVal
+	if (strRetVal)
+	MsgBox, 8192, Missing script, % strRetVal
 
-WinMover(,"d r" , , , "*Loading")
 
-WinGetPos, , , w, h, LnchSplash
+SplashyProc("*Loading", 1)
 
-WinMove, LnchSplash, , % PrgLnchOpt.X() + (PrgLnchOpt.Width() - w)/2, % PrgLnchOpt.Y() + (PrgLnchOpt.Height() - h)
-sleep, 60
+sleep, 30
 
 
 
@@ -9720,7 +9724,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 		lnchPrgIndex := temp
 
 		temp := PrgChoicePaths[lnchPrgIndex]
-		WinMover(, , , , "*Launching")
+		SplashyProc("*Launching")
 		sleep, % (!PrgIntervalLnch)? 2000: (PrgIntervalLnch == -1)? 4000: 6000
 		}
 		else
@@ -9812,7 +9816,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 			PrgPIDMast[lnchPrgIndex] := PrgListPID%btchPrgPresetSel%[A_Index]
 		}
 	}
-SplashImage, PrgLaunching.jpg, Hide,,,LnchSplash
+SplashyProc("*Release")
 }
 
 sleep 300
@@ -9908,7 +9912,7 @@ if (PrgLnch.Monitor != PrgLnchMon)
 		if (retVal < 0)
 		IniWrite, 1, % PrgLnch.SelIniChoicePath, General, LnchPrgMonWarn
 
-	WinMover(, , , , "*Launching")
+	SplashyProc("*Launching")
 	}
 PrgLnch.Monitor := PrgLnchMon
 }
@@ -10021,7 +10025,7 @@ if (lnchPrgIndex > 0) ;Running
 						return "Cancelled!"
 						}
 
-					WinMover(, , , , "*Launching")
+					SplashyProc("*Launching")
 					}
 				}
 			}
@@ -10037,8 +10041,8 @@ if (lnchPrgIndex > 0) ;Running
 				retVal := TaskDialog("Screen Resolution", "Resolution change failed", , "Res. change reported an error when launching " . PrgNames[lnchPrgIndex] . ".`nPrg's saved resolution data is: " . PrgLnchOpt.scrWidth . " width, " . PrgLnchOpt.scrHeight . " height, at " . PrgLnchOpt.scrFreq . " Hz.`nReason for failure: `n" . """" . strRetVal . "." . """" . "`nUpon continuation of the launch, the Prg should (but is not guaranteed) to become visible in the primary (or default) monitor at its current resolution.", "", "Continue launching " . PrgNames[lnchPrgIndex], "Cancel launch")
 					if (retVal == 1)
 					{
-					WinMover(, , , , "*Launching")
-					Sleep 200
+					SplashyProc("*Launching")
+					Sleep 100
 					}
 					else
 					{
@@ -12324,7 +12328,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 		{
 		canonicalMonitorListOut[A_Index] := canonicalMonitorListIn[A_Index]
 		gui, MonitorSelectDlg: add, button, % "xs+" . height/2 . " ys+" . (A_Index - 1) * height + height/2 . " W" . 2 * height . " H" . height/2 . " gGuiMonitorSelect" . " vguiMonitorSelect" . A_Index, % "Monitor" . resultResolutionMons[A_Index]
-		%SplashRef%(Splashy, {imagePath: "*", instance: A_Index, mainText: resultResolutionMons[A_Index], subText: monitors[resultResolutionMons[A_Index]], mainFontSize: 100, subFontSize: 30, vPosX : "C", vPosY : "C", vImgW: A_ScreenWidth/4, vImgH: A_ScreenHeight/3, vOnTop: 1}*)
+		SplashyProc("*", A_Index + 1, resultResolutionMons[A_Index], monitors[resultResolutionMons[A_Index]])
 		resultResolutionMons[A_Index] := A_Index
 		MovePrgToMonitor(A_Index, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[A_Index])
 		}
@@ -12345,18 +12349,19 @@ WS_EX_CONTEXTHELP := 0x00000400
 	MonitorSelectDlgGuiClose:
 	acceptDlg := 0
 	gui, MonitorSelectDlg: Destroy
-	%SplashRef%(Splashy, {release: 1}*)
+		loop % PrgLnchOpt.activeDispMonNamesNo
+		SplashyProc("*", -(A_Index + 1))
 	return 0
 
 
 	GuiMonitorSelectDlgAccept:
 	acceptDlg := 1
 
-	%SplashRef%(Splashy, {release: 1}*)
 		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
 		canonicalMonitorListOut[trackMonNames[A_Index]] := monitors[A_Index]
 		resultResolutionMons[A_Index] := trackMonNames[A_Index]
+		SplashyProc("*", -(A_Index + 1))
 		}
 
 	gui, MonitorSelectDlg: Destroy
@@ -12371,7 +12376,8 @@ WS_EX_CONTEXTHELP := 0x00000400
 		trackMonNames[fTemp] += 1
 		else
 		trackMonNames[fTemp] := 1
-	%SplashRef%(Splashy, {instance: fTemp, mainText: trackMonNames[fTemp], subText: monitors[trackMonNames[fTemp]]}*)	
+
+	SplashyProc("*", fTemp, trackMonNames[fTemp], monitors[trackMonNames[fTemp]])
 
 		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
@@ -12545,8 +12551,7 @@ fTemp := 0, retVal := 0
 		IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, MonitorOrder
 		fTemp := 0
 		}
-		
-	%SplashRef%(Splashy, {release: 1}*)
+
 		if (fTemp && InStr(fTemp, ","))
 		{
 			Loop, Parse, fTemp, CSV
@@ -12612,8 +12617,9 @@ fTemp := 0, retVal := 0
 			initMonitors := 1
 			}
 		}
+	SplashyProc("*Release")
+	SplashyProc("*Loading")
 
-	WinMover(, , , , "*Loading", 1)
 
 	; Obtain resolution set for current monitor.
 
@@ -14129,6 +14135,64 @@ else
 }
 }
 
+SplashyProc(type, action := 0, mainText := "", subText := "")
+{
+Static SplashRef := Splashy.SplashImg
+static loadW := 0, loadH := 0, propW := 0, propH := 0
+vImgW := 0
+vImgH := 0
+vPosX := "C"
+vPosY := "C"
+
+
+
+	switch type
+	{
+		case "*Release":
+		{
+		%SplashRef%(Splashy, {release: 1}*)
+		return
+		}
+		case "*Loading":
+		{
+			if (action)
+			{
+			vPosX := floor(PrgLnchOpt.X() + (PrgLnchOpt.Width() - loadW)/2)
+			vPosY := floor(PrgLnchOpt.Y() + (PrgLnchOpt.Height() - loadH))
+			}
+		}
+		case "*Launching":
+		{
+		}
+		case "*Properties":
+		{
+			if (!propW)
+			{
+			%SplashRef%(Splashy, {imagePath: "*Properties", vHide : 1}*)
+			propW := Splashy.vImgW
+			propH := Splashy.vImgH
+			}
+		vPosX := PrgLnch.X() + (PrgLnch.Width() - propW)/2
+		vPosY := Abs(PrgLnch.Y() - propH)
+		}
+		default:
+		{
+		%SplashRef%(Splashy, {imagePath: "*", vHide : 1, instance: action, mainText: mainText, subText: subText, mainFontSize: 100, subFontSize: 30, vOnTop: 1}*)
+			if (action < 0)
+			return
+		vImgW := A_ScreenWidth/4
+		vImgH := A_ScreenHeight/3	
+		}
+	}
+
+%SplashRef%(Splashy, {imagePath: type, vHide : 0, vPosX : vPosX, vPosY : vPosY, vImgW : vImgW, vImgH : vImgW}*)
+
+	if (!loadW)
+	{
+	loadW := Splashy.vImgW
+	loadH := Splashy.vImgH
+	}
+}
 
 WinMover(Hwnd := 0, position := "hc vc", Width := 0, Height := 0, splashInit := 0, init := 0, wdRatio := 1, htRatio := 1)
 {
@@ -14154,7 +14218,7 @@ Static x := 0, y := 0, splashyW := 0, splashyH := 0
 	{
 		if (init)
 		{
-		%SplashRef%(Splashy, {imagePath: splashInit, vPosX : "C", vPosY : "C"}*)
+		;%SplashRef%(Splashy, {imagePath: splashInit, vPosX : "C", vPosY : "C"}*)
 		splashyW := Splashy.vImgW
 		splashyH := Splashy.vImgH
 		}
@@ -14177,8 +14241,8 @@ Static x := 0, y := 0, splashyW := 0, splashyH := 0
 	; splashInit == "*Loading"
 	;WinMove, LnchSplash, , % PrgLnchOpt.X() + (PrgLnchOpt.Width() - w)/2, % PrgLnchOpt.Y() + (PrgLnchOpt.Height() - h)
 
-		if (!init)
-		%SplashRef%(Splashy, {imagePath: splashInit, vPosX : wdRatio * (PrgLnchOpt.X() + (PrgLnchOpt.Width() - w)/2), vPosY : htRatio * (PrgLnchOpt.Y() + (PrgLnchOpt.Height() - h)), vImgW : 0, vImgH : 0}*)
+		;if (!init)
+		;%SplashRef%(Splashy, {imagePath: splashInit, vPosX : wdRatio * (PrgLnchOpt.X() + (PrgLnchOpt.Width() - w)/2), vPosY : htRatio * (PrgLnchOpt.Y() + (PrgLnchOpt.Height() - h)), vImgW : 0, vImgH : 0}*)
 	}
 	else
 	WinMove, ahk_id %Hwnd%,, wdRatio * x, htRatio * y
@@ -15298,26 +15362,10 @@ static tabName := 0
 x := PrgLnchOpt.X(), y := PrgLnch.Y(), w:= PrgLnchOpt.Width(), h := PrgLnch.Height()
 
 
-strRetVal := WorkingDirectory(A_ScriptDir, 1)
-	if (strRetVal)
+	if (strRetVal := WorkingDirectory(A_ScriptDir, 1))
 	MsgBox, 8192, PrgProperties, % strRetVal
-	else
-	{
-		If (!FileExist("PrgLnchProperties.jpg"))
-		FileInstall PrgLnchProperties.jpg, PrgLnchProperties.jpg
 
-	sleep, 200
-	SplashImage, PrgLnchProperties.jpg, A B,,,LnchSplash
-	WinGetPos,, propY, propW, propH, LnchSplash
-
-		if (y > propY)
-		WinMove, LnchSplash, , % x + (w - propW)/2, % y - propY
-		else
-		WinMove, LnchSplash, , % x + (w - propW)/2, % propY - Y
-
-	}
-
-
+SplashyProc("*Properties")
 
 
 Gui, PrgProperties: Destroy
@@ -15592,13 +15640,13 @@ WinGetPos,, propY,, propH, % "ahk_id" PrgPropertiesHwnd
 
 
 
-;For low screen res 
-if (propH + h > (mtBottom - mtTop))
+	;For low screen res 
+	if (propH + h > (mtBottom - mtTop))
 	WinMove, % "ahk_id" PrgPropertiesHwnd, , , %mtBottom%, , % mtBottom - mtTop
 
 DetectHiddenWindows, Off
 
-SplashImage, PrgLnchProperties.jpg, Hide,,,LnchSplash
+SplashyProc("*Release")
 Gui, PrgProperties: Show, , Prg Properties (Version 2.x)
 
 }
