@@ -323,7 +323,10 @@ Class Splashy
 			{
 				if (!ctlHWnd)
 				return
-				if (!SubProcFunc)
+				; This only works for one window atm
+				if (SubProcFunc)
+				return
+				else
 				{
 				This.subClbk := new This.BoundFuncCallback(ObjBindMethod(This, "SubClassTextProc"), 6)
 				SubProcFunc := This.subClbk.addr
@@ -514,10 +517,8 @@ Class Splashy
 				}
 			}
 			else
-			{
-			This.SaveRestoreUserParms(1)
-			return
-			}
+			This.instance := 1
+
 		}
 
 		if (This.hWndSaved[This.instance])
@@ -537,11 +538,13 @@ Class Splashy
 		; init the parent hWnd
 			if (!This.parentHWnd)
 			{
-				This.parentHWnd := This.SetParentFlag()
-				if (This.parentHWnd == "Error")
+				if (This.parentHWnd := This.SetParentFlag())
 				{
-				;msgbox, 8192, Parent Script, Warning: Parent script is not AHK, or the window handle cannot be obtained!
-				This.parentHWnd := 0
+					if (This.parentHWnd == "Error")
+					{
+					;msgbox, 8192, Parent Script, Warning: Parent script is not AHK, or the window handle cannot be obtained!
+					This.parentHWnd := 0
+					}
 				}
 			}
 		}
@@ -961,14 +964,13 @@ Class Splashy
 	; Determines redraw of Splashy window (placeholder)
 	diffPicOrDiffDims := 0
 
-
 	This.procEnd := 0
 
 		if (This.updateFlag <= 0)
 		{
 		;Set defaults
-
-		This.parent := parentIn
+			if (parentIn != "")
+			This.parent := parentIn
 
 			if (imagePathIn == "")
 			{
@@ -1473,9 +1475,7 @@ Class Splashy
 			try
 			{
 ;https://webapps.stackexchange.com/questions/162310/url-image-filtering-url-suffixes-and-wikimedia
-			;SplitPath,d,name
-			;UrlDownloadToFile,%d%,%name%
-				UrlDownloadToFile, %URL%, %fName%
+			UrlDownloadToFile, %URL%, %fName%
 			}
 			catch spr
 			{
@@ -2065,6 +2065,7 @@ Class Splashy
 	;draw bitmap/icon onto GUI & call GetDC every paint
 
 	This.hDCWin := DllCall("user32\GetDC", "Ptr", This.hWndSaved[This.instance], "Ptr")
+
 		Switch This.vImgType
 		{
 			case 0:
@@ -2376,7 +2377,22 @@ Class Splashy
 	static SS_Center := 0X1, SWP_SHOWWINDOW := 0x0040, mainTextSize := [], subTextSize := []
 	static oldSubBkgdColour := 0, oldMainBkgdColour := 0
 	init := 0
-		if (text != "")
+
+		if (text == "")
+		{
+			if (hWnd)
+			{
+			GuiControl, %splashyInst%: Hide, %hWnd%
+
+				if (sub)
+				subTextSize := ""
+				else
+				mainTextSize := ""
+			}
+
+		return 0
+		}
+		else
 		{
 		; Note default font styles for main & sub differ
 			if (sub)
@@ -2497,7 +2513,7 @@ Class Splashy
 					if (This.subBkgdColour == This.bkgdColour)
 					{
 					spr := This.vImgW - subTextSize[1] + 2 * This.vMgnX
-					spr := (spr > 0)?((This.vImgTxtSize)? 0: spr)/2: 0
+					spr := (spr > 0)?((This.vImgTxtSize)? 0: spr/2): 0
 					}
 					else	; colours won't cover all the region after the move
 					spr := This.vMgnX
@@ -2533,20 +2549,7 @@ Class Splashy
 		This.SubClassTextCtl(hWnd)
 		return % (sub)?subTextSize[2]:mainTextSize[2]
 		}
-		else
-		{
-			if (hWnd)
-			{
-			GuiControl, %splashyInst%: Hide, %hWnd%
 
-				if (sub)
-				subTextSize := ""
-				else
-				mainTextSize := ""
-			}
-
-		return 0
-		}
 	}
 
 
@@ -10336,11 +10339,13 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 	dx := mdLeft + (x-msLeft)*(mdw/msw)
 	dy := mdTop + (y-msTop)*(mdh/msh)
 
-		if (wp_IsResizable())
+		; not for the Splashy monitor guis
+		if (!targHWnd && wp_IsResizable())
 		{
 		w := Round(w*(mdw/msw))
 		h := Round(h*(mdh/msh))
 		}
+
 
 	; Move window, using resolution difference to scale co-ordinates.
 
@@ -12289,6 +12294,26 @@ WS_EX_CONTEXTHELP := 0x00000400
 	; gui variables in function must be global
 	Global guiMonitorSelect1, guiMonitorSelect2, guiMonitorSelect3, guiMonitorSelect4, guiMonitorSelect5, guiMonitorSelect6, guiMonitorSelect7, guiMonitorSelect8, guiMonitorSelect9, outputText
 
+	;monitor names
+	wmi := ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" A_ComputerName "\root\wmi")
+
+		for monitor in wmi.ExecQuery("Select * from WmiMonitorID") ;extract names
+		{	
+		fname := ""
+			for char in monitor.UserFriendlyName
+			fname .= chr(char)
+		monitors.push(fname)
+		}
+
+
+	if (PrgLnchOpt.activeDispMonNamesNo = 1)
+	{
+	resultResolutionMons[1] := 1
+	canonicalMonitorListOut[1] := monitors[1]
+	return canonicalMonitorListOut
+	}
+	
+	
 	if (!acceptDlg)
 	{
 	height := A_ScreenHeight/18
@@ -12312,25 +12337,15 @@ WS_EX_CONTEXTHELP := 0x00000400
 	Gui, MonitorSelectDlg: Font, cTeal
 	Gui, MonitorSelectDlg: Add, GroupBox, % "Section W" . 3 * height . " H" . height * PrgLnchOpt.activeDispMonNamesNo + height/2, Monitor List
 
-	;monitor names
-	wmi := ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" A_ComputerName "\root\wmi")
-
-		for monitor in wmi.ExecQuery("Select * from WmiMonitorID") ;extract names
-		{	
-		fname := ""
-			for char in monitor.UserFriendlyName
-			fname .= chr(char)
-		monitors.push(fname)
-		}
 
 		; PrgLnch monitor dimensions used for other monitors.
 		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
 		canonicalMonitorListOut[A_Index] := canonicalMonitorListIn[A_Index]
 		gui, MonitorSelectDlg: add, button, % "xs+" . height/2 . " ys+" . (A_Index - 1) * height + height/2 . " W" . 2 * height . " H" . height/2 . " gGuiMonitorSelect" . " vguiMonitorSelect" . A_Index, % "Monitor" . resultResolutionMons[A_Index]
-		SplashyProc("*", A_Index + 1, resultResolutionMons[A_Index], monitors[resultResolutionMons[A_Index]])
+		SplashyProc("*", A_Index, resultResolutionMons[A_Index], monitors[resultResolutionMons[A_Index]])
 		resultResolutionMons[A_Index] := A_Index
-		MovePrgToMonitor(A_Index, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[A_Index])
+		MovePrgToMonitor(A_Index, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[A_Index + 1])
 		}
 
 	gui, MonitorSelectDlg: add, button, % "Section xp w" . 2 * height . " ys" . height * (PrgLnchOpt.activeDispMonNamesNo + 1) . " gGuiMonitorSelectDlgAccept", Accept
@@ -12350,7 +12365,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 	acceptDlg := 0
 	gui, MonitorSelectDlg: Destroy
 		loop % PrgLnchOpt.activeDispMonNamesNo
-		SplashyProc("*", -(A_Index + 1))
+		SplashyProc("*", -A_Index)
 	return 0
 
 
@@ -12361,7 +12376,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 		{
 		canonicalMonitorListOut[trackMonNames[A_Index]] := monitors[A_Index]
 		resultResolutionMons[A_Index] := trackMonNames[A_Index]
-		SplashyProc("*", -(A_Index + 1))
+		SplashyProc("*", -A_Index)
 		}
 
 	gui, MonitorSelectDlg: Destroy
@@ -12378,6 +12393,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 		trackMonNames[fTemp] := 1
 
 	SplashyProc("*", fTemp, trackMonNames[fTemp], monitors[trackMonNames[fTemp]])
+	MovePrgToMonitor(fTemp, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[fTemp + 1])
 
 		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
@@ -12566,7 +12582,6 @@ fTemp := 0, retVal := 0
 			}
 			else
 			{
-
 				While (!(canonicalMonitorList := MonitorSelectProc(monitorOrder, canonicalMonitorList)))
 				{
 				retVal := TaskDialog("Monitor names", "No monitor names obtained", , "", "", "Continue with unreliable monitor info", "Retry (Recommended)")
@@ -12617,8 +12632,6 @@ fTemp := 0, retVal := 0
 			initMonitors := 1
 			}
 		}
-	SplashyProc("*Release")
-	SplashyProc("*Loading")
 
 
 	; Obtain resolution set for current monitor.
@@ -14143,6 +14156,7 @@ vImgW := 0
 vImgH := 0
 vPosX := "C"
 vPosY := "C"
+instance := 0
 
 
 
@@ -14150,6 +14164,9 @@ vPosY := "C"
 	{
 		case "*Release":
 		{
+		if (action)
+		%SplashRef%(Splashy, {InitSplash: 1}*)
+		else
 		%SplashRef%(Splashy, {release: 1}*)
 		return
 		}
@@ -14177,15 +14194,22 @@ vPosY := "C"
 		}
 		default:
 		{
-		%SplashRef%(Splashy, {imagePath: "*", vHide : 1, instance: action, mainText: mainText, subText: subText, mainFontSize: 100, subFontSize: 30, vOnTop: 1}*)
-			if (action < 0)
+		instance := (action > 0)? action + 1: action - 1
+			if (instance < 0)
+			{
+			%SplashRef%(Splashy, {imagePath: "*", instance: -instance, mainText: "", subText: "", mainFontSize: 10, subFontSize: 10, vOnTop: 0, vImgW : vImgW, vImgH : vImgH}*)
+			%SplashRef%(Splashy, {imagePath: "*", instance: instance}*)
 			return
+			}
+			else
+			%SplashRef%(Splashy, {imagePath: "*", vHide : 1, instance: instance, mainText: mainText, subText: subText, mainFontSize: 100, subFontSize: 30, vOnTop: 1}*)
+
 		vImgW := A_ScreenWidth/4
 		vImgH := A_ScreenHeight/3	
 		}
 	}
 
-%SplashRef%(Splashy, {imagePath: type, vHide : 0, vPosX : vPosX, vPosY : vPosY, vImgW : vImgW, vImgH : vImgW}*)
+%SplashRef%(Splashy, {imagePath: type, vHide : 0, instance: instance, vPosX : vPosX, vPosY : vPosY, vImgW : vImgW, vImgH : vImgH}*)
 
 	if (!loadW)
 	{
