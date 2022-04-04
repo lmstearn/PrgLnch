@@ -18,6 +18,10 @@
 		<param name="Local" value="What Is PrgLnch.htm">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Monitor Setup">
+		<param name="Local" value="Monitor Setup\Monitor Setup.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Getting Started">
 		<param name="Local" value="Getting Started.htm">
 		</OBJECT>
