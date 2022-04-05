@@ -3484,9 +3484,6 @@ scrWidthDefArr := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 scrHeightDefArr := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 scrFreqDefArr := [0, 0, 0, 0, 0, 0, 0, 0, 0] ; frequencies == vertical refresh rates
 ; settings per Prg
-scrWidthArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-scrHeightArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-scrFreqArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgLnchMon := 0 ; Device PrgLnch is run from
 PrgLnchOpt.dispMonNamesNo := 9 ;No more than 9 displays!?
 targMonitorNum := 1
@@ -3618,7 +3615,6 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 		Menu, Tray, Icon, PrgLnch.ico
 	FileInstall PrgLnch.chm, PrgLnch.chm
 	sleep, 300
-	SetTimer, RnChmWelcome, 3500
 	; init LnchPad here
 	IniProcIniFile(0, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 	oldSelIniChoiceName := selIniChoiceName
@@ -3813,7 +3809,7 @@ Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHwnd
 	if (PrgMonToRn[selPrgChoice] && (defPrgStrng != "None"))
 	{
 	targMonitorNum := PrgMonToRn[selPrgChoice]
-	iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
+	StoreFetchPrgRes(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum)
 	SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 	CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 	}
@@ -4915,7 +4911,7 @@ if (A_GuiEvent == "DoubleClick")
 
 	; save to old
 	CopyToFromRes(targMonitorNum, 1, -1)
-	iDevNoFunc(txtPrgChoice, lnchPrgIndex, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
+	StoreFetchPrgRes(txtPrgChoice, lnchPrgIndex, PrgLnkInf, targMonitorNum)
 
 	}
 	else
@@ -6346,7 +6342,7 @@ temp := 0
 RunChm(chmTopic := 0, Anchor := "")
 {
 x := 0, y := 0, w := 0, h := 0, hAdj := 0
-temp := 0, retVal := 0, notPrgLnchGui := 0
+temp := 0, retVal := 0, notPrgLnchGui := 0, wndStat := 0
 htmlHelp := "C:\Windows\hh.exe ms-its"
 
 if (!FileExist(A_ScriptDir . "\PrgLnch.chm"))
@@ -6368,8 +6364,22 @@ retVal := CloseChm()
 		hAdj := floor(3 * h/2)
 		else
 		{
-		notPrgLnchGui := 1
-		hAdj := h
+			; not the optimal check
+			if (WinExist(PrgLnch.ProcAHK))
+			{
+				if (WinExist("Monitors"))
+				wndStat := 1
+				else
+				{
+				if (WinExist("Res. Report"))
+				wndStat := 2
+				}
+			}
+			else
+			{
+			wndStat := -1
+			hAdj := h
+			}
 		}
 	}
 
@@ -6420,26 +6430,47 @@ WinGetTitle, strtemp , A
 		scrWd := mdRight - mdleft
 		scrHt := mdBottom - mdTop
 
-		if (y + h > scrHt)
-		y := scrHt - h
-		else
+		if (wndStat)
 		{
-			if (y - hAdj < 0)
-			y += h + hAdj
+			if (wndStat == 1)
+			{
+			w := 5/4 * Splashy.vImgW
+			x := mdRight - (scrWd - w)/2
+			hAdj := 2 * Splashy.vImgH
+			y := mdTop + (scrHt - hAdj)/2
+			}
+			else
+			{
+			w := 3.5 * Splashy.vImgW
+			x := mdRight - (scrWd - w)/2
+			hAdj := 2.5 * Splashy.vImgH
+			y := mdTop + (scrHt - hAdj)/2
+			}
 		}
-
-		;y -= floor(y/10)
-
-		if (x + w > scrWd)
-		x := scrWd - w
 		else
 		{
-			if (x < 0)
-			x := 0
+			if (y + h > scrHt)
+			y := scrHt - h
+			else
+			{
+				if (y - hAdj < 0)
+				y += h + hAdj
+			}
+
+			;y -= floor(y/10)
+
+			if (x + w > scrWd)
+			x := scrWd - w
+			else
+			{
+				if (x < 0)
+				x := 0
+			}
+		y := y - hAdj
 		}		
 
-		if (!notPrgLnchGui)
-		WinMove, A, , %x%, % y - hAdj, %w%, %hAdj%
+		if (wndStat > -1)
+		WinMove, A, , %x%, %y%, %w%, %hAdj%
 
 		}
 		; else just use last help co-ords: not covering the case when the gui is moved while the help file is open, and not moved
@@ -6475,7 +6506,7 @@ return retVal
 }
 
 RnChmWelcome:
-	if (WinActive("A") == PrgLnch.Hwnd() || WinActive("A") == PrgLnchOpt.Hwnd())
+	if (WinExist(PrgLnch.ProcAHK) && (WinActive("A") == PrgLnch.Hwnd() || WinActive("A") == PrgLnchOpt.Hwnd() || WinExist("Monitors") || WinExist("Res. Report")))
 	{
 	RunChm("Welcome")
 	SetTimer, RnChmWelcome, Delete
@@ -7557,29 +7588,49 @@ SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr
 
 return
 
-iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
+StoreFetchPrgRes(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, Store := 0)
 {
-	if (txtPrgChoice == "None")
-	MsgBox, 8192, Function Call, iDevNoFunc called incorrectly!
-	else
+Static scrWidthArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], scrHeightArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], scrFreqArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+	if (Store)
 	{
-		if ((scrWidthArr[selPrgChoice] && scrHeightArr[selPrgChoice] && scrFreqArr[selPrgChoice]))
+		if (Store < 0)
 		{
-		PrgLnchOpt.scrWidth := scrWidthArr[selPrgChoice]
-		PrgLnchOpt.scrHeight := scrHeightArr[selPrgChoice]
-		PrgLnchOpt.scrFreq := scrFreqArr[selPrgChoice]
-		return 1
+		scrWidthArr[selPrgChoice] := ""
+		scrHeightArr[selPrgChoice] := ""
+		scrFreqArr[selPrgChoice] := ""
 		}
 		else
 		{
-		; If by misadventure the values are zero
-			if (LNKFlag(PrgLnkInf[selPrgChoice]) > -1) ; don't want the msgbox as ResIndex is already disabled
-			MsgBox, 8192, No Resolution Mode, Monitor parameters for the selected or startup Prg do not exist!`n`nDefaults assumed.`nIt's recommended to save the parameters by reselecting the target monitor from the Monitor List, and, if required, changing the resolution mode.
-		; save to defaults
-		CopyToFromRes(targMonitorNum, 1)
-		return 0
+		scrWidthArr[selPrgChoice] := PrgLnchOpt.scrWidth
+		scrHeightArr[selPrgChoice] := PrgLnchOpt.scrHeight
+		scrFreqArr[selPrgChoice] := PrgLnchOpt.scrFreq
 		}
 	}
+	else
+	{
+		if (txtPrgChoice == "None")
+		MsgBox, 8192, Function Call, StoreFetchPrgRes called incorrectly!
+		else
+		{
+			if ((scrWidthArr[selPrgChoice] && scrHeightArr[selPrgChoice] && scrFreqArr[selPrgChoice]))
+			{
+			PrgLnchOpt.scrWidth := scrWidthArr[selPrgChoice]
+			PrgLnchOpt.scrHeight := scrHeightArr[selPrgChoice]
+			PrgLnchOpt.scrFreq := scrFreqArr[selPrgChoice]
+			return 1
+			}
+			else
+			{
+			; If by misadventure the values are zero
+				if (LNKFlag(PrgLnkInf[selPrgChoice]) > -1) ; don't want the msgbox as ResIndex is already disabled
+				MsgBox, 8192, No Resolution Mode, Monitor parameters for the selected or startup Prg do not exist!`n`nDefaults assumed.`nIt's recommended to save the parameters by reselecting the target monitor from the Monitor List, and, if required, changing the resolution mode.
+			; save to defaults
+			CopyToFromRes(targMonitorNum, 1)
+			}
+		}
+	}
+return 0
 }
 
 
@@ -7947,23 +7998,16 @@ else
 				GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 
 					; Update monitor info & res
-					if (targMonitorNum == PrgMonToRn[selPrgChoice])
-					{
-						if (!(iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)))
-						{ 
-						SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
-						CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
-						}
-					}
-					else
-					{
+					if (targMonitorNum != PrgMonToRn[selPrgChoice])
 					targMonitorNum := PrgMonToRn[selPrgChoice]
-					iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
+
+					if (!(StoreFetchPrgRes(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum)))
+					{ 
 					SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 					CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
-
-					GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 					}
+
+				GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 
 					if (!FindStoredRes(ResIndexHwnd))
 					GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
@@ -8294,7 +8338,7 @@ GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 
 borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
 
-iDevNoFunc(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
+StoreFetchPrgRes(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum)
 SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 
 CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
@@ -8959,7 +9003,7 @@ CoordMode, Mouse, Screen
 MouseGetPos, x, y
 CoordMode, Mouse, % strTemp
 
-	if (WinExist("PrgLnch.ahk") or WinExist("ahk_id" . PrgLnchOpt.Hwnd()) or WinExist("ahk_class" . PrgLnch.Title) or WinExist (PrgLnch.ProcAHK))
+	if (WinExist("PrgLnch.ahk") or WinExist("ahk_id" . PrgLnchOpt.Hwnd()) or WinExist("ahk_class" . PrgLnch.Title) or WinExist(PrgLnch.ProcAHK))
 	{
 		if (WinExist(%id%))
 		{
@@ -9379,9 +9423,6 @@ PrgRnPriority = ""
 PrgUrl = ""
 PrgVer = ""
 
-scrWidthArr = ""
-scrHeightArr = ""
-scrFreqArr = ""
 scrWidthDefArr = ""
 scrHeightDefArr = ""
 scrFreqDefArr = ""
@@ -9705,7 +9746,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 	{
 	temp := PrgBatchIni%btchPrgPresetSel%[A_Index]
 	targMonitorNum := PrgMonToRn[temp]
-	iDevNoFunc(txtPrgChoice, temp, PrgLnkInf, targMonitorNum, scrWidthArr, scrHeightArr, scrFreqArr)
+	StoreFetchPrgRes(txtPrgChoice, temp, PrgLnkInf, targMonitorNum)
 
 		if (lnchPrgIndex > 0)
 		{
@@ -10030,6 +10071,7 @@ if (lnchPrgIndex > 0) ;Running
 						return "Cancelled!"
 						}
 
+					; reposition Splashy
 					SplashyProc("*Launching")
 					}
 				}
@@ -10754,9 +10796,7 @@ If (WinWaiter(presetNoTest, PrgLnch.Title, PrgLnchOpt.Title, waitBreak))
 
 		if ((prgSwitchIndex)? PrgChgResOnSwitch[prgSwitchIndex]: PrgChgResOnSwitch[selPrgChoice])
 		{
-		PrgLnchOpt.scrWidth := (lnchStat < 0)? scrWidthArr[selPrgChoice]: scrWidthArr[prgSwitchIndex]
-		PrgLnchOpt.scrHeight := (lnchStat < 0)? scrHeightArr[selPrgChoice]: scrHeightArr[prgSwitchIndex]
-		PrgLnchOpt.scrFreq := (lnchStat < 0)? scrFreqArr[selPrgChoice]: scrFreqArr[prgSwitchIndex]
+		StoreFetchPrgRes(1, (lnchStat < 0)? selPrgChoice: prgSwitchIndex, PrgLnkInf, targMonitorNum)
 		targMonitorNum := (lnchStat < 0)? PrgMonToRn[selPrgChoice]: PrgMonToRn[prgSwitchIndex]
 			if (DefResNoMatchRes() && (PrgLnch.Monitor == targMonitorNum))
 			{
@@ -12322,7 +12362,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 		}
 
 
-	if (PrgLnchOpt.activeDispMonNamesNo = 1)
+	if (PrgLnchOpt.activeDispMonNamesNo == 1)
 	{
 	resultResolutionMons[1] := 1
 	canonicalMonitorListOut[1] := monitors[1]
@@ -12614,6 +12654,9 @@ fTemp := 0, retVal := 0
 		}
 		else
 		{
+			if (PrgLnchOpt.activeDispMonNamesNo > 1)
+			SetTimer, RnChmWelcome, 3200
+
 			While (!(canonicalMonitorList := MonitorSelectProc(monitorOrder, canonicalMonitorList)))
 			{
 			retVal := TaskDialog("Monitor names", "No monitor names obtained", , "", "", "Continue with unreliable monitor info", "Retry (Recommended)")
@@ -12792,6 +12835,9 @@ DisplayNonStockRes(canonicalMonitorList, ResList)
 	gui, NonStockResDlg: add, button, gNonStockResDlgAccept w%height%, Accept
 
 	gui, NonStockResDlg: show, % "x" . height, Res. Report 
+
+	if (PrgLnchOpt.activeDispMonNamesNo == 1)
+	SetTimer, RnChmWelcome, 3500
 
 	WinWaitClose, ahk_id %hWndNonStockResDlg%
 
@@ -14221,6 +14267,7 @@ instance := 0
 		}
 		case "*Launching":
 		{
+		; onTop?: too many issues
 		}
 		case "*LnchPadCfg":
 		{
@@ -14648,7 +14695,9 @@ IniProcStart:
 
 		IniWrite, % spr, % PrgLnch.SelIniChoicePath, Prg%A_Index%, PrgMisc
 
-		spr := % scrWidthArr[A_Index] . "," . scrHeightArr[A_Index] . "," . scrFreqArr[A_Index] . "," 0
+		StoreFetchPrgRes(1, A_Index, PrgLnkInf, targMonitorNum)
+
+		spr := % PrgLnchOpt.scrWidth . "," . PrgLnchOpt.scrHeight . "," . PrgLnchOpt.scrFreq . "," 0
 
 		IniWrite, %spr%, % PrgLnch.SelIniChoicePath, Prg%A_Index%, PrgRes
 
@@ -15045,10 +15094,7 @@ IniProcStart:
 							{
 								if (removeRec)
 								{
-								scrWidthArr[selPrgChoice] := ""
-								scrHeightArr[selPrgChoice] := ""
-								scrFreqArr[selPrgChoice] := ""
-
+								StoreFetchPrgRes(1, A_Index, PrgLnkInf, targMonitorNum, -1)
 								IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, Prg%recCount%, PrgRes
 								}
 								else
@@ -15058,9 +15104,7 @@ IniProcStart:
 									spr := PrgLnchOpt.scrWidth . "," . PrgLnchOpt.scrHeight . "," . PrgLnchOpt.scrFreq . "," . 0
 									;extra 0 for interlace which might implement later
 									IniWrite, %spr%, % PrgLnch.SelIniChoicePath, Prg%recCount%, PrgRes
-									scrWidthArr[selPrgChoice] := PrgLnchOpt.scrWidth
-									scrHeightArr[selPrgChoice] := PrgLnchOpt.scrHeight
-									scrFreqArr[selPrgChoice] := PrgLnchOpt.scrFreq
+									StoreFetchPrgRes(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, 1)
 									}
 								}
 							}
@@ -15075,9 +15119,7 @@ IniProcStart:
 								PrgLnchOpt.scrHeight := SubStr(k, foundPos + 1, spr - foundPos - 1)
 								foundPos := InStr(k, ",",,,3)
 								PrgLnchOpt.scrFreq := SubStr(k, spr + 1 , foundPos - spr - 1)
-								scrWidthArr[recCount] := PrgLnchOpt.scrWidth
-								scrHeightArr[recCount] := PrgLnchOpt.scrHeight
-								scrFreqArr[recCount] := PrgLnchOpt.scrFreq
+								StoreFetchPrgRes(txtPrgChoice, recCount, PrgLnkInf, targMonitorNum, 1)
 							}
 						}
 					}
