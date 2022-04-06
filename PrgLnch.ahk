@@ -3924,6 +3924,9 @@ WinMover(PrgLnchOpt.Hwnd(), "d r")   ; "dr" means "down, right"
 	SetTimer, WatchSwitchOut, -%timWatchSwitch%
 	}
 
+	if (!disclaimer)
+	SetTimer, RnChmWelcome, 3200
+
 IniProc(100) ;initialises scrWidth, scrHeight, scrFreq & saves iDevNumArray (Prgmon) in ini
 
 
@@ -6341,9 +6344,10 @@ temp := 0
 }
 RunChm(chmTopic := 0, Anchor := "")
 {
+static firstRun := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
 x := 0, y := 0, w := 0, h := 0, hAdj := 0
 temp := 0, retVal := 0, notPrgLnchGui := 0, wndStat := 0
-htmlHelp := "C:\Windows\hh.exe ms-its"
+
 
 if (!FileExist(A_ScriptDir . "\PrgLnch.chm"))
 return -1
@@ -6383,10 +6387,20 @@ retVal := CloseChm()
 		}
 	}
 
-if (chmTopic)
-run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm#%Anchor%,, UseErrorLevel
-else
-run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/About%A_Space%PrgLnch.htm,, UseErrorLevel
+	if (chmTopic)
+	{
+		if (chmTopic == "Welcome")
+		{
+			if (firstRun == 1)
+			return
+			else
+			firstRun := 1
+		}
+		run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm#%Anchor%,, UseErrorLevel
+	}
+	else
+	run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/About%A_Space%PrgLnch.htm,, UseErrorLevel
+
 sleep, 120
 
 
