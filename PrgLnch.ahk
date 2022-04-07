@@ -7628,7 +7628,10 @@ Static scrWidthArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], scrHeightArr := [0, 
 	else
 	{
 		if (txtPrgChoice == "None")
+		{
 		MsgBox, 8192, Function Call, StoreFetchPrgRes called incorrectly!
+		return 0
+		}
 		else
 		{
 			if ((scrWidthArr[selPrgChoice] && scrHeightArr[selPrgChoice] && scrFreqArr[selPrgChoice]))
@@ -7648,7 +7651,7 @@ Static scrWidthArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], scrHeightArr := [0, 
 			}
 		}
 	}
-return 0
+return 1
 }
 
 
@@ -7703,7 +7706,7 @@ static oldTargMonitorNum := 0
 					
 						if (!strTemp2)
 						{
-						retVal := TaskDialog("Monitors", "Monitor connection issue", "", "Monitor " . """" . targMonitorNum . """" . " returns a bad status, possibly because of an unsupported setting on the physical monitor itself.`nThe list of resolution modes will now default to those of the primary monitor.`nIt's still possible to change the monitor's resolution from any supported mode from the list, and launch Prgs in the monitor defined in the virtual screen, however.", , "Continue with resolution checks")
+						retVal := TaskDialog("Monitors", "Monitor connection issue", "", "Monitor " . """" . targMonitorNum . """" . " returns a bad status, possibly because of an unsupported setting or missing feature on the physical monitor itself.`nThe list of resolution modes will now default to those of the primary monitor.`nIt's still possible to change the monitor's resolution from any supported mode from the list, and launch Prgs in the monitor defined in the virtual screen, however.", , "Continue with resolution checks")
 							if (retVal < 0)
 							IniWrite, 1, % PrgLnch.SelIniChoicePath, General, MonProbMsg
 						}
@@ -8019,11 +8022,13 @@ else
 					if (targMonitorNum != PrgMonToRn[selPrgChoice])
 					targMonitorNum := PrgMonToRn[selPrgChoice]
 
-					if (!(StoreFetchPrgRes(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum)))
+					if (StoreFetchPrgRes(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum))
 					{ 
 					SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 					CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 					}
+					else
+					return
 
 				GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 
