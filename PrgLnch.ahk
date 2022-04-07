@@ -3813,7 +3813,7 @@ Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHwnd
 	if (PrgMonToRn[selPrgChoice] && (defPrgStrng != "None"))
 	{
 	targMonitorNum := PrgMonToRn[selPrgChoice]
-	StoreFetchPrgRes(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum)
+	StoreFetchPrgRes(1, selPrgChoice, PrgLnkInf, targMonitorNum)
 	SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 	CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 	}
@@ -4918,7 +4918,7 @@ if (A_GuiEvent == "DoubleClick")
 
 	; save to old
 	CopyToFromRes(targMonitorNum, 1, -1)
-	StoreFetchPrgRes(txtPrgChoice, lnchPrgIndex, PrgLnkInf, targMonitorNum)
+	StoreFetchPrgRes(1, lnchPrgIndex, PrgLnkInf, targMonitorNum)
 
 	}
 	else
@@ -7693,7 +7693,7 @@ static oldTargMonitorNum := 0
 				{
 				GuiControlGet, strTemp2, PrgLnchOpt: FocusV
 
-					if (!PresetPropHwnd || strTemp2 == "iDevNum" ||)
+					if (!PresetPropHwnd || strTemp2 == "iDevNum")
 					{
 					IniRead, strTemp2, % PrgLnch.SelIniChoicePath, General, MonProbMsg
 
@@ -7706,7 +7706,7 @@ static oldTargMonitorNum := 0
 					
 						if (!strTemp2)
 						{
-						retVal := TaskDialog("Monitors", "Monitor connection issue", "", "Monitor " . """" . targMonitorNum . """" . " returns a bad status, possibly because of an unsupported setting or missing feature on the physical monitor itself.`nThe list of resolution modes will now default to those of the primary monitor.`nIt's still possible to change the monitor's resolution from any supported mode from the list, and launch Prgs in the monitor defined in the virtual screen, however.", , "Continue with resolution checks")
+						retVal := TaskDialog("Monitors", "Monitor connection issue", "", "Monitor " . """" . targMonitorNum . """" . " returns a bad status, possibly due to an unsupported`nsetting or missing feature on the physical monitor itself.`n`nThe Default Resolution value is greyed out as an indication,`nhowever it's possible any number of Resolution Modes from`nthe list will still be supported for the monitor. Otherwise, Prgs`ncan be launched in the monitor defined in the system's Virtual`nScreen, and then moved to a location where they are visible.", , "Continue with resolution checks")
 							if (retVal < 0)
 							IniWrite, 1, % PrgLnch.SelIniChoicePath, General, MonProbMsg
 						}
@@ -8214,7 +8214,7 @@ else
 
 		if (!ErrorLevel)
 		{
-			if (txtPrgChoice == "Prg" . selPrgChoice)
+			if (txtPrgChoice == "" || txtPrgChoice == "Prg" . selPrgChoice)
 			SplitPath, strTemp, , , , txtPrgChoice
 		GoSub ProcessNewPrg
 		}
@@ -8361,7 +8361,7 @@ GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 
 borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, 1)
 
-StoreFetchPrgRes(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum)
+StoreFetchPrgRes(1, selPrgChoice, PrgLnkInf, targMonitorNum)
 SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 
 CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
@@ -8531,12 +8531,12 @@ ChkPrgNames(testName, PrgNo, IniBox := "", forDeletion := 0)
 {
 ; returns 1 if testName is a spare, bad or default slot name
 
-	If (Inibox)
+	if (Inibox)
 	spr := IniBox
 	else
 	spr = Prg
 
-	Loop % PrgNo
+	loop % PrgNo
 	{
 	if (testName == spr . A_Index)
 	return 1
@@ -9769,7 +9769,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 	{
 	temp := PrgBatchIni%btchPrgPresetSel%[A_Index]
 	targMonitorNum := PrgMonToRn[temp]
-	StoreFetchPrgRes(txtPrgChoice, temp, PrgLnkInf, targMonitorNum)
+	StoreFetchPrgRes(1, temp, PrgLnkInf, targMonitorNum)
 
 		if (lnchPrgIndex > 0)
 		{
@@ -15129,7 +15129,7 @@ IniProcStart:
 									spr := PrgLnchOpt.scrWidth . "," . PrgLnchOpt.scrHeight . "," . PrgLnchOpt.scrFreq . "," . 0
 									;extra 0 for interlace which might implement later
 									IniWrite, %spr%, % PrgLnch.SelIniChoicePath, Prg%recCount%, PrgRes
-									StoreFetchPrgRes(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum, 1)
+									StoreFetchPrgRes(1, selPrgChoice, PrgLnkInf, targMonitorNum, 1)
 									}
 								}
 							}
@@ -15144,7 +15144,7 @@ IniProcStart:
 								PrgLnchOpt.scrHeight := SubStr(k, foundPos + 1, spr - foundPos - 1)
 								foundPos := InStr(k, ",",,,3)
 								PrgLnchOpt.scrFreq := SubStr(k, spr + 1 , foundPos - spr - 1)
-								StoreFetchPrgRes(txtPrgChoice, recCount, PrgLnkInf, targMonitorNum, 1)
+								StoreFetchPrgRes(1, recCount, PrgLnkInf, targMonitorNum, 1)
 							}
 						}
 					}
