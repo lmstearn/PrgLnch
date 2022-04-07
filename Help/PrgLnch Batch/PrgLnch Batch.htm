@@ -68,7 +68,7 @@ Power Plans:
 </td>
 <td>
 A <a href="https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/create-a-custom-power-plan-technicalreference">Power Plan</a> can be applied for an actve Batch. The Power Plan used by the OS before PrgLnch loads is the first one in the list, the <STRONG>Default</STRONG>, which corresponds to one of the following plans in the list.<br>
-A Batch Power Plan will be replaced by the Power Plan of the most recent concurrent Batch activated. When PrgLnch starts, a Power Plan for an already active Batch is actually <STRONG>Default</STRONG>, contrary to the list selection, and Power Plans revert to <STRONG>Default</STRONG> when PrgLnch is quit.
+A Batch Power Plan will be replaced by the Power Plan of the most recent concurrent Batch activated. When PrgLnch starts, a Power Plan for a Batch detected as already active actually remains the <STRONG>Default</STRONG> plan, contrary to the list selection, and will change only when reselected from the list. All Power Plans revert to <STRONG>Default</STRONG> when PrgLnch is quit, even when Batches are still active.
 </td>
  </tr>
 <tr href="#" id="RunBatch">

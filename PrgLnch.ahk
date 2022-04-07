@@ -1,6 +1,4 @@
-﻿;AutoHotkey /Debug C:\Users\New\Desktop\PrgLnch\PrgLnch.ahk
-;AutoHotkey /Debug C:\Users\New\Desktop\Desktemp\PrgLnch\PrgLnch.ahk
-#SingleInstance, force
+﻿#SingleInstance, force
 #NoEnv  ; Performance and compatibility with future AHK releases.
 ;#Warn, All, OutputDebug ; Enable warnings for a debugger to display to assist with detecting common errors.
 ;#Warn UseUnsetLocal, OutputDebug  ; Warn when a local variable is used before it's set; send to OutputDebug
@@ -460,65 +458,68 @@ Class Splashy
 
 		if (argList.HasKey("instance"))
 		{
-			key := argList["instance"]
-			if ((key := Floor(key))) ; 0 is invalid
+			if (key := argList["instance"])
 			{
-				if (This.hWndSaved[key])
-				{
-				This.instance := key
+				if key is not number
+				key := 1
+			}
+			else
+			key := 1
+			
+		key := Floor(key) ; 0 defaults to 1
 
-					if (This.instance != This.oldInstance)
+			if (This.hWndSaved[key])
+			{
+			This.instance := key
+
+				if (This.instance != This.oldInstance)
+				{
+				; Ensures current postion is not reset
+					This.vPosX := ""
+					This.vPosY := ""
+				}
+			}
+			else
+			{
+				if (key < 0)
+				{
+				key := -key
+					if (This.hWndSaved[key])
 					{
-					; Ensures current postion is not reset
-						This.vPosX := ""
-						This.vPosY := ""
+					;WinClose, % "ahk_id " This.hWndSaved[This.instance]
+					This.hWndSaved[key] := 0
+					This.mainTextHWnd[key] := 0
+					This.subTextHWnd[key] := 0
+					spr := "Splashy" . key
+					Gui, %spr%: Destroy
+					Splashy.NewWndProc.clbk[key] := ""
+
+					;Now reset This.instance for next call
+						if (This.hWndSaved.Length() == 1)
+						This.instance := 1
+						else
+						{
+							if (This.hWndSaved.Length() == key)
+							This.instance -= 1
+							else
+							This.instance := This.hWndSaved.MaxIndex()
+						}
+					This.oldInstance := This.instance
 					}
+				This.SaveRestoreUserParms(1)
+				return
 				}
 				else
 				{
-					if (key < 0)
+					if (key > This.MaxGuis)
 					{
-					key := -key
-						if (This.hWndSaved[key])
-						{
-						;WinClose, % "ahk_id " This.hWndSaved[This.instance]
-						This.hWndSaved[key] := 0
-						This.mainTextHWnd[key] := 0
-						This.subTextHWnd[key] := 0
-						spr := "Splashy" . key
-						Gui, %spr%: Destroy
-						Splashy.NewWndProc.clbk[key] := ""
-
-						;Now reset This.instance for next call
-							if (This.hWndSaved.Length() == 1)
-							This.instance := 1
-							else
-							{
-								if (This.hWndSaved.Length() == key)
-								This.instance -= 1
-								else
-								This.instance := This.hWndSaved.MaxIndex()
-							}
-						This.oldInstance := This.instance
-						}
 					This.SaveRestoreUserParms(1)
 					return
 					}
 					else
-					{
-						if (key > This.MaxGuis)
-						{
-						This.SaveRestoreUserParms(1)
-						return
-						}
-						else
-						This.instance := key
-					}
+					This.instance := key
 				}
 			}
-			else
-			This.instance := 1
-
 		}
 
 		if (This.hWndSaved[This.instance])
@@ -2903,6 +2904,9 @@ Class Splashy
 	; ##################################################################################
 }
 ;=====================================================================================
+
+
+
 
 ;=====================================================================================
 
@@ -11243,6 +11247,9 @@ return strRetVal
 ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgChoicePaths, IniFileShortctSep, btchRun := 0, multiInst := 0)
 {
 strComputer := ".", dupList := "", temp := 0, strTemp := "", strTemp2 := "", IsaPrgLnk := 0
+wbemFlagForwardOnly := 0x20, wbemFlagReturnImmediately := 0x10
+static Flags := wbemFlagForwardOnly & wbemFlagReturnImmediately
+
 
 if (presetNoTest && btchRun)
 {
@@ -11258,7 +11265,8 @@ loop % currBatchNo
 	return "BadPath"
 	strTemp2 := ""
 	; Does not work for lnk files. "Select *" means full paths and names and commandlines!
-		for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" . strComputer . "\root\cimv2").ExecQuery("Select Name from Win32_Process")
+	; ExecutablePath maybe null if insufficent permission
+		for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" . strComputer . "\root\cimv2").ExecQuery("Select Name from Win32_Process where ExecutablePath is not null",,Flags)
 		{
 			if (strTemp == process.Name) ; process.ExecutablePath was also possible (Select Name, ExecutablePath from Win32_Process)
 			{
@@ -11293,7 +11301,7 @@ else
     if (!(strTemp := GetProcFromPath(strTemp, strTemp2)))
 	return "BadPath"
 	strTemp2 := ""
-	for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" . strComputer . "\root\cimv2").ExecQuery("Select Name from Win32_Process")
+	for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" . strComputer . "\root\cimv2").ExecQuery("Select Name from Win32_Process where ExecutablePath is not null,,Flags")
 	{
 		if (strTemp == process.Name)
 		{
@@ -11375,9 +11383,7 @@ else
 	{
 		if (PrgChoicePaths[A_Index] && PrgPIDMast[A_Index])
 		{
-		strRetVal := ChkExistingProcess(PrgLnkInf, 0, A_Index, 0, 0, PrgChoicePaths, IniFileShortctSep, 0, 1)
-
-			if (strRetVal)
+			if (strRetVal := ChkExistingProcess(PrgLnkInf, 0, A_Index, 0, 0, PrgChoicePaths, IniFileShortctSep, 0, 1))
 			{
 			MultInstPrg := 0
 			foundpos := 1
@@ -11400,8 +11406,8 @@ else
 
 	if (!WarnAlreadyRunning && foundpos)
 	{
-	strRetVal := % (multipleInstance)? "`nNote, if Yes, PrgLnch will only choose one of the instances.": ""
-	retVal := TaskDialog("Running Prgs", "The Prgs in the list below have already started:`n" . strTemp, , "", , "Update Prg Batch Status (Recommended)", "Do not update Prg Batch Status")
+	strRetVal := % (multipleInstance)? "`nIf multiple instances of Prg were detected during the process of automatically`nupdating the Batch list, PrgLnch will choose just one of the available instances.`nThat choice is likely to be the instance most recently launched,`nbut there is no guarantee.`n": ""
+	retVal := TaskDialog("Running Prgs", "The Prgs in the list below have already started:`n" . strTemp, , "Some processes may not be retrieved if PrgLnch`nis not currently run as Admin`, if it ever was before.`n" . strRetVal . "`nAs mentioned in the Help file`, non-default Power Plans do not activate for`nresumed Batch Presets`, manually re-select them from the list to make it so.", , "Update Prg Batch Status (Recommended)", "Do not update Prg Batch Status")
 		if (retVal < 0)
 		{
 		retVal := -retVal
