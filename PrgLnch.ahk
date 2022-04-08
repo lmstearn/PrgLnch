@@ -2931,8 +2931,8 @@ Class PrgProperties
 
 Class PrgLnchOpt
 	{
-	temp := 0
 	static Title := "PrgLnch Options"
+	static PrgHwnd := ""
 	static DefScrWidth := 1920
 	static DefScrHeight := 1080
 	static DefScrFreq := 60
@@ -2941,10 +2941,13 @@ Class PrgLnchOpt
 
 	Hwnd()
 	{
-	DetectHiddenWindows, On
-	Gui, PrgLnchOpt: +Hwndtemp
-	This.PrgHwnd := temp
-	DetectHiddenWindows, Off
+		if (!This.PrgHwnd)
+		{
+		DetectHiddenWindows, On
+		Gui, PrgLnchOpt: +Hwndtemp
+		This.PrgHwnd := temp
+		DetectHiddenWindows, Off
+		}
 	return This.PrgHwnd
 	}
 	X()
@@ -3174,9 +3177,9 @@ Class PrgLnchOpt
 		}
 	}
 
-	SetDispAdapterNamesVal(adapterName)
+	SetDispAdapterNamesVal(index, adapterName)
 	{
-	This.adapterNames.Push(adapterName)
+	This.adapterNames.InsertAt(index, adapterName)
 	}
 	GetDispAdapterNamesVal(index)
 	{
@@ -3184,7 +3187,7 @@ Class PrgLnchOpt
 	}
 	SetDispMonNamesVal(index, monName)
 	{
-	PrgLnchOpt.monNames.InsertAt(index, monName)
+	This.monNames.InsertAt(index, monName)
 	}
 	GetDispMonNamesVal(index)
 	{
@@ -3194,21 +3197,24 @@ Class PrgLnchOpt
 
 Class PrgLnch
 	{
-	temp := 0
 	static Title := "PrgLnch"
+	static PrgHwnd := ""
 	static Title1 := "Notepad++"
 	;static NplusplusClass := "ahk_exe Notepad++.exe"
 	;static NplusplusClass := "ahk_class Notepad++"
 	static ProcScpt := "ahk_exe PrgLnch.exe"
 	static ProcAHK := "ahk_class AutoHotkeyGUI"
-	static PrgHwnd := ""
+
 
 	Hwnd()
 	{
-	DetectHiddenWindows, On
-	Gui, PrgLnch: +Hwndtemp
-	This.PrgHwnd := temp
-	DetectHiddenWindows, Off
+		if (!This.PrgHwnd)
+		{
+		DetectHiddenWindows, On
+		Gui, PrgLnch: +Hwndtemp
+		This.PrgHwnd := temp
+		DetectHiddenWindows, Off
+		}
 	return This.PrgHwnd
 	}
 	SelIniChoicePath
@@ -4178,6 +4184,7 @@ temp:= 1/2 * fTemp
 
 
 Gui, PrgLnch: Show, Hide
+
 WinMover(PrgLnch.Hwnd(), "d r", PrgLnchOpt.Width() * 61/80, PrgLnchOpt.Height() * 13/10)
 
 sleep, 20
@@ -4188,7 +4195,7 @@ sleep, 20
 	}
 
 ; Enable message filters for drag'ndrop
-if (A_ISAdmin)
+if (A_IsAdmin)
 {
 strTemp := PrgLnchOpt.Hwnd()
 DllCall("ChangeWindowMessageFilterEx", "Ptr", strTemp, "UInt", WM_COPYDATA, "UInt", MSGFLT_ALLOW, "Ptr", 0)
@@ -6876,14 +6883,14 @@ Static flags = 0x1011, TDF_VERIFICATION_FLAG_CHECKED = 0x0100, TDF_CALLBACK_TIME
 CustomButtons := []
 
 hwndParent := WinExist("A")
-	if (hwndParent != PrgLnch.Hwnd() && hwndParent != PrgLnchOpt.Hwnd())
+;	; Do not invoke .Hwnd() unless form is initialised
+	if (hwndParent != PrgLnch.PrgHwnd && hwndParent != PrgLnchOpt.PrgHwnd)
 	{
+	DetectHiddenWindows, On
+	if (!(WinExist("ahk_id" . PrgLnch.PrgHwnd) || WinExist("ahk_id" . PrgLnchOpt.PrgHwnd)))
+	MsgBox, 8192, Task Dialog, Informational: PrgLnch form AWOL:`nNo parent window for dialog.
+	DetectHiddenWindows, Off
 	hwndParent := 0
-	WinActivate, PrgLnch Options
-	WinActivate, PrgLnch
-	hwndParent := WinExist("A")
-		if (!hwndParent)
-		MsgBox, 8192, Task Dialog, Informational: PrgLnch form AWOL:`nNo parent window for dialog.
 	}
 
 	if (!(TDCallback := RegisterCallback("TDCallback", "Fast")))
