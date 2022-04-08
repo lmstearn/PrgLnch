@@ -4958,7 +4958,7 @@ if (A_GuiEvent == "DoubleClick")
 					; restore from old
 					CopyToFromRes(targMonitorNum, 0, -1)
 
-						if (ChangeResolution(targMonitorNum))
+						if (DefResNoMatchRes(1) && ChangeResolution(targMonitorNum))
 						; restore from defaults on fail
 						CopyToFromRes(targMonitorNum)
 						else
@@ -5028,7 +5028,7 @@ Thread, NoTimers, false
 
 	if (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, , (lnchPrgIndex > 0)? 1: 0))
 	{
-		if (PrgChgResOnClose[abs(lnchPrgIndex)] && DefResNoMatchRes())
+		if (PrgChgResOnClose[abs(lnchPrgIndex)] && DefResNoMatchRes(1))
 		{
 			; restore from defaults when cancelling
 			if (lnchPrgIndex < 0)
@@ -7672,92 +7672,91 @@ static oldTargMonitorNum := 0
 	GetResInfo(targMonitorNum, 1, allModes, iDevNumArray, setPrgLnchOptDefs)
 	else
 	{
-	ResIndexList := "|" . GetResInfo(targMonitorNum, 2, allModes, iDevNumArray)
-
-
-	; Now process default res
-
-		if (strTemp := GetResInfo(targMonitorNum))
+		; use PresetPropHwnd to determine intialisation
+		if (!PresetPropHwnd || oldTargMonitorNum != targMonitorNum)
 		{
-		strTemp := substr(strTemp, 1, StrLen(strTemp) - 1)
+		ResIndexList := "|" . GetResInfo(targMonitorNum, 2, allModes, iDevNumArray)
 
-			if (PrgLnch.Monitor == targMonitorNum)
+		; Now process default res
+
+			if (strTemp := GetResInfo(targMonitorNum))
 			{
-			PrgLnchOpt.MonDefResStrng := strTemp
-			PrgLnchOpt.MonCurrResStrng := strTemp
-			PrgLnchOpt.CurrMonStat := 1 ; Assume the PrgLnch monitor is always ok
-			}
-			else
-			{
-				if ((iDevNumArray[targMonitorNum] > 9) && (!(MDMF_GetMonStatus(targMonitorNum))))
+			strTemp := substr(strTemp, 1, StrLen(strTemp) - 1)
+
+				if (PrgLnch.Monitor == targMonitorNum)
 				{
-				GuiControlGet, strTemp2, PrgLnchOpt: FocusV
-
-					if (!PresetPropHwnd || strTemp2 == "iDevNum")
-					{
-					IniRead, strTemp2, % PrgLnch.SelIniChoicePath, General, MonProbMsg
-
-						if (strTemp2 = "ERROR")
-						{
-						; Versioning:  IniSpaceCleaner moves this before ResMode
-						IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
-						strTemp2 := 0
-						}
-					
-						if (!strTemp2)
-						{
-						retVal := TaskDialog("Monitors", "Monitor connection issue", "", "Monitor " . """" . targMonitorNum . """" . " returns a bad status, possibly due to an unsupported`nsetting or missing feature on the physical monitor itself.`n`nThe Default Resolution value is greyed out as an indication,`nhowever it's possible any number of Resolution Modes from`nthe list will still be supported for the monitor. Otherwise, Prgs`ncan be launched in the monitor defined in the system's Virtual`nScreen, and then moved to a location where they are visible.", , "Continue with resolution checks")
-							if (retVal < 0)
-							IniWrite, 1, % PrgLnch.SelIniChoicePath, General, MonProbMsg
-						}
-					}
-				GuiControl, PrgLnchOpt: Disabled, currRes
+				PrgLnchOpt.MonDefResStrng := strTemp
+				PrgLnchOpt.MonCurrResStrng := strTemp
+				PrgLnchOpt.CurrMonStat := 1 ; Assume the PrgLnch monitor is always ok
 				}
 				else
-				PrgLnchOpt.MonCurrResStrng := strTemp
-			}
+				{
+					if ((iDevNumArray[targMonitorNum] > 9) && (!(MDMF_GetMonStatus(targMonitorNum))))
+					{
+					GuiControlGet, strTemp2, PrgLnchOpt: FocusV
 
-			; Check default on monitor change
-			if (!allModes && oldTargMonitorNum != targMonitorNum)
-			ResIndexList := "|" . GetResInfo(targMonitorNum, 3, allModes)
+						if (!PresetPropHwnd || strTemp2 == "iDevNum")
+						{
+						IniRead, strTemp2, % PrgLnch.SelIniChoicePath, General, MonProbMsg
 
-		oldTargMonitorNum := targMonitorNum
+							if (strTemp2 = "ERROR")
+							{
+							; Versioning:  IniSpaceCleaner moves this before ResMode
+							IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
+							strTemp2 := 0
+							}
+						
+							if (!strTemp2)
+							{
+							retVal := TaskDialog("Monitors", "Monitor connection issue", "", "Monitor " . """" . targMonitorNum . """" . " returns a bad status, possibly due to an unsupported`nsetting or missing feature on the physical monitor itself.`n`nThe Default Resolution value is greyed out as an indication,`nhowever it's possible any number of Resolution Modes from`nthe list will still be supported for the monitor. Otherwise, Prgs`ncan be launched in the monitor defined in the system's Virtual`nScreen, and then moved to a location where they are visible.", , "Continue with resolution checks")
+								if (retVal < 0)
+								IniWrite, 1, % PrgLnch.SelIniChoicePath, General, MonProbMsg
+							}
+						}
+					GuiControl, PrgLnchOpt: Disabled, currRes
+					}
+					else
+					PrgLnchOpt.MonCurrResStrng := strTemp
+				}
 
-		;Not the g-label ResListBox!
-		GuiControl, PrgLnchOpt:, ResIndex, %ResIndexList%
+				; Check default on monitor change
+				if (!allModes)
+				ResIndexList := "|" . GetResInfo(targMonitorNum, 3, allModes)
 
+			;Not the g-label ResListBox!
+			GuiControl, PrgLnchOpt:, ResIndex, %ResIndexList%
 
+			oldTargMonitorNum := targMonitorNum
 
-			if (allModes)
-			Gui, PrgLnchOpt: Font, Bold CA96915, Verdana
-			else
-			Gui, PrgLnchOpt: Font
-		GuiControl, PrgLnchOpt: Font, ResIndex
-
-
-			if (PresetPropHwnd)
-			{
-				if ((PrgLnch.Monitor != targMonitorNum) || PrgLnchOpt.Fmode() || PrgLnchOpt.DynamicMode())
-				GuiControl, PrgLnchOpt:, currRes, %strTemp%
+				if (allModes)
+				Gui, PrgLnchOpt: Font, Bold CA96915, Verdana
 				else
-				GuiControl, PrgLnchOpt:, currRes, % PrgLnchOpt.MonCurrResStrng
+				Gui, PrgLnchOpt: Font
+
+			GuiControl, PrgLnchOpt: Font, ResIndex
+
+				if (PresetPropHwnd)
+				{
+					if ((PrgLnch.Monitor != targMonitorNum) || PrgLnchOpt.Fmode() || PrgLnchOpt.DynamicMode())
+					GuiControl, PrgLnchOpt:, currRes, %strTemp%
+					else
+					GuiControl, PrgLnchOpt:, currRes, % PrgLnchOpt.MonCurrResStrng
+				}
+				else  ;Update all at PrgLnch Load
+				{
+					GuiControl, PrgLnchOpt:, currRes, %strTemp%
+
+					; restore from defaults on res change
+					if (defPrgStrng == "None")
+					CopyToFromRes(targMonitorNum)
+				}
+
+			GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+			GuiControl, PrgLnchOpt: Show, ResIndex
 			}
-			else  ;Update all at PrgLnch Load
-			{
-				GuiControl, PrgLnchOpt:, currRes, %strTemp%
-
-				; restore from defaults on res change
-				if (defPrgStrng == "None")
-				CopyToFromRes(targMonitorNum)
-			}
-
-
-		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+			else
+			CreateToolTip("Critical error with dimensions of target monitor " . """" . targMonitorNum . """" . " !")
 		}
-		else
-		CreateToolTip("Critical error with dimensions of target monitor " . """" . targMonitorNum . """" . " !")
-
-	GuiControl, PrgLnchOpt: Show, ResIndex
 	}
 }
 
@@ -9812,7 +9811,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 
 			; restore from old
 			CopyToFromRes(targMonitorNum, 0, -1)
-				if (ChangeResolution(targMonitorNum))
+				if (DefResNoMatchRes(1) && ChangeResolution(targMonitorNum))
 				; restore from defaults when fail
 				CopyToFromRes(targMonitorNum)
 				else
@@ -9864,7 +9863,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 				{
 					if (PrgChgResOnClose[abs(lnchPrgIndex)] && (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID)))
 					{
-						if (DefResNoMatchRes())
+						if (DefResNoMatchRes(1))
 						{
 						; restore from defaults
 						CopyToFromRes(targMonitorNum)
@@ -10238,18 +10237,13 @@ else
 	if (lnchPrgIndex == 0) ;Just Change Res
 	{
 		GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
-		tmp := 1
 
-		if ((targMonitorNum != PrgLnchMon) || tmp := DefResNoMatchRes())
+		if ((targMonitorNum != PrgLnchMon) || temp := DefResNoMatchRes())
 		{
-			if (!tmp)
-			return "Failed!"
-			if (tmp < 0)
+			if (!temp)
 			return "Cancelled!"
 
-			strRetVal := ChangeResolution(targMonitorNum)
-
-			if (strRetVal)
+			if (strRetVal := ChangeResolution(targMonitorNum))
 			return % "Requested resolution change did not work. Reason: `n" strRetVal
 			else
 			WinMover(PrgLnchOpt.Hwnd(), "d r")
@@ -10631,7 +10625,7 @@ if (WinActive(PrgLnch.Title) || WinActive(PrgLnchOpt.Title))
 		; restore from defaults
 		CopyToFromRes(targMonitorNum)
 		targMonitorNum := (lnchStat < 0)? PrgMonToRn[selPrgChoice]: PrgMonToRn[prgSwitchIndex]
-			if (PrgLnch.Monitor == targMonitorNum)
+			if (DefResNoMatchRes(1) && PrgLnch.Monitor == targMonitorNum)
 			{
 			ChangeResolution(targMonitorNum)
 			sleep, 300
@@ -10693,7 +10687,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 								; got PID just closed by user && update for each prg in batch
 									if (PrgMonPID.delete(timerfTemp))
 									{
-										if (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, timerfTemp) && DefResNoMatchRes())
+										if (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, timerfTemp) && DefResNoMatchRes(1))
 										{
 										; restore from defaults
 										CopyToFromRes(targMonitorNum)
@@ -10777,7 +10771,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 								{
 									if (temp := RevertResLastPrgProc(maxBatchPrgs, PrgMonPID, timerfTemp))
 									{
-										if (DefResNoMatchRes())
+										if (DefResNoMatchRes(1))
 										{
 										; restore from defaults
 										CopyToFromRes(targMonitorNum)
@@ -10821,7 +10815,7 @@ If (WinWaiter(presetNoTest, PrgLnch.Title, PrgLnchOpt.Title, waitBreak))
 		{
 		StoreFetchPrgRes(1, (lnchStat < 0)? selPrgChoice: prgSwitchIndex, PrgLnkInf, targMonitorNum)
 		targMonitorNum := (lnchStat < 0)? PrgMonToRn[selPrgChoice]: PrgMonToRn[prgSwitchIndex]
-			if (DefResNoMatchRes() && (PrgLnch.Monitor == targMonitorNum))
+			if (DefResNoMatchRes(1) && (PrgLnch.Monitor == targMonitorNum))
 			{
 			ChangeResolution(targMonitorNum)
 			sleep, 300
@@ -10987,7 +10981,7 @@ else ;Config screen
 	GuiControl, PrgLnchOpt:, Bordless, % PrgBordless[selPrgChoice]
 
 		;  used to be extra condition: (PrgMonToRn[selPrgChoice] == PrgLnch.Monitor)
-		if (PrgChgResOnClose[selPrgChoice] && DefResNoMatchRes())
+		if (PrgChgResOnClose[selPrgChoice] && DefResNoMatchRes(1))
 		{
 		; restore from old
 		CopyToFromRes(targMonitorNum, 0, -1)
@@ -11042,7 +11036,7 @@ sleep, 120
 	{
 	CopyToFromRes(targMonitorNum, 0, 1)
 
-		if (DefResNoMatchRes())
+		if (DefResNoMatchRes(1))
 		{
 		ChangeResolution(targMonitorNum)
 		sleep, 300
@@ -13199,34 +13193,35 @@ scrWidth := 0, scrHeight := 0, scrFreq := 0
 	}
 }
 
-DefResNoMatchRes()
+DefResNoMatchRes(noPrompt := 0)
 {
-defResmsg := 0
+defResMsg := 0
 
 	if (PrgLnchOpt.scrWidth == PrgLnchOpt.scrWidthDef && PrgLnchOpt.scrHeight == PrgLnchOpt.scrHeightDef)
 	{
 
-	if (!(PrgLnchOpt.Fmode())) ;always change: Condition removed: !(PrgLnchOpt.DynamicMode()
-	return 1
+		if (PrgLnchOpt.Fmode()) ;always change: Condition removed: (PrgLnchOpt.DynamicMode()
+		return 1
 
-	IniRead, defResmsg, % PrgLnch.SelIniChoicePath, General, DefResmsg
-		if (defResmsg)
+	IniRead, defResMsg, % PrgLnch.SelIniChoicePath, General, DefResMsg
+
+		if (noPrompt || defResMsg)
 		{
-			if (defResmsg == 1)
-			return 0
-			else
+			if (DefResMsg == 1)
 			return 1
+			else
+			return 0
 		}
 		else
 		{
-		defResmsg := TaskDialog("Same Resolution", "Informational: The resolution on the Prg's target`nmonitor is identical to its current resolution", , "When the target resolution is the same as the existing resolution, the firmware`nin most monitors performs a rescan each time the change resolution function`nis called, a consideration fortunately handled in most video driver software.`nChoose the recommended action, unless trouble-shooting the monitor.`n`nScreen resolution always changes automatically when " . """" . "Change at every mode" . """" . "`nin " . """" . "Res Options" . """" . " is selected`, irrespective of the following choices.", , "Change resolution", "Do not change resolution (Recommended)", "Decide later")
-			if (defResmsg < 0)
+		defResMsg := TaskDialog("Same Resolution", "Informational: The resolution on the Prg's target`nmonitor is identical to its current resolution", , "When the target resolution is the same as the existing resolution, the firmware`nin most monitors performs a rescan each time the change resolution function`nis called, a consideration fortunately handled in most video driver software.`nChoose the recommended action, unless trouble-shooting the monitor.`n`nScreen resolution always changes automatically when " . """" . "Change at every mode" . """" . "`nin " . """" . "Res Options" . """" . " is selected`, irrespective of the following choices.", , "Change resolution", "Do not change resolution (Recommended)", "Decide later")
+			if (defResMsg < 0)
 			{
-			defResmsg := -defResmsg
-				if (defResmsg != 3)
-				IniWrite, %defResmsg%, % PrgLnch.SelIniChoicePath, General, defResmsg
+			defResMsg := -defResMsg
+				if (defResMsg != 3)
+				IniWrite, %defResMsg%, % PrgLnch.SelIniChoicePath, General, DefResMsg
 			}
-			if (defResmsg == 1)
+			if (defResMsg == 1)
 			return 1
 			else
 			return 0
@@ -14610,7 +14605,7 @@ IniProcStart:
 	if (!FileExistSelIniChoicePath)
 	{
 	IniWrite, % (reWriteini)? 1: 0, % PrgLnch.SelIniChoicePath, General, Disclaimer
-	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, DefResmsg
+	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, DefResMsg
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgAlreadyMsg
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, ClosePrgWarn
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, ResClashMsg
