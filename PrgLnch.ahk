@@ -3208,13 +3208,24 @@ Class PrgLnch
 
 	Hwnd()
 	{
-		if (!This.PrgHwnd)
+		if (This.PrgHwnd)
+		{
+		DetectHiddenWindows, On
+		Gui, PrgLnch: +Hwndtemp
+		; Somehow the default window is detected and returned
+		; first regardless of whether PrgLnch is set as default or not.
+			if (This.PrgHwnd != temp)
+			This.PrgHwnd := temp
+		DetectHiddenWindows, Off
+		}
+		else
 		{
 		DetectHiddenWindows, On
 		Gui, PrgLnch: +Hwndtemp
 		This.PrgHwnd := temp
 		DetectHiddenWindows, Off
 		}
+		
 	return This.PrgHwnd
 	}
 	SelIniChoicePath
@@ -4025,7 +4036,7 @@ IniProc(100) ;initialises scrWidth, scrHeight, scrFreq & saves iDevNumArray (Prg
 
 ;Frontend form
 Gui, PrgLnch: New
-Gui, PrgLnch:Default  	;A_DefaultGui is name of default gui
+Gui, PrgLnch: Default  	;A_DefaultGui is name of default gui
 Gui, PrgLnch: -DPIScale -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP%
 Gui, PrgLnch: Color, FFFFCC
 Gui, PrgLnch: Add, Button, cdefault vPresetProp gPresetProp HWNDPresetPropHwnd, Preset Properties
@@ -4217,9 +4228,8 @@ return
 
 ;LnchPad invocation
 LnchPadConfig:
-FileInstall LnchPadCfg.jpg, LnchPadCfg.jpg
+SplashyProc("*LnchPadCfg")
 CloseChm()
-SplashImage, LnchPadCfg.jpg, A B,,, LnchPadCfg
 SetTimer, LnchPadSplashTimer, 200
 
 	if (!LnchLnchPad(SelIniChoiceName))
@@ -4241,7 +4251,7 @@ SetTitleMatchMode, 3
 	If (WinActive("LnchPad Setup"))
 	{
 	SetTimer, LnchPadSplashTimer, Delete
-	SplashImage, LnchPadCfg.jpg, Hide,,, LnchPadCfg
+	SplashyProc("*Release")
 	}
 	else
 	{
@@ -4257,7 +4267,7 @@ SetTitleMatchMode, 3
 				{
 				MsgBox, 8256, LnchPad Config Delay, There is a problem with the load of LnchPad Config!
 				SetTimer, LnchPadSplashTimer, Delete
-				SplashImage, LnchPadCfg.jpg, Hide,,, LnchPadCfg
+				SplashyProc("*Release")
 				}
 			}
 		}
@@ -5824,7 +5834,7 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 		retVal := TaskDialog("LnchPad Setup Elevated", "Admin is required for full functionality", , "", "", "Restart LnchPad Setup as Admin", "Try it without Admin")
 			if (retVal == 1)
 			strTemp2 := "*runAs " . strTemp2
-		SplashImage, LnchPadCfg.jpg, A B,,, LnchPadCfg
+		SplashyProc("*LnchPadCfg")
 		}
 
 
@@ -14336,12 +14346,11 @@ instance := 0
 	}
 }
 
-WinMover(Hwnd := 0, position := "hc vc", Width := 0, Height := 0, wdRatio := 1, htRatio := 1)
+WinMover(Hwnd, position := "hc vc", Width := 0, Height := 0, wdRatio := 1, htRatio := 1)
 {
- x := 0, y := 0, ix:= 0, iy := 0, w := 0, h:= 0
+x := 0, y := 0, ix:= 0, iy := 0, w := 0, h:= 0
 
 ; wdRatio, htRatio not used
-
 
 	SysGet, mt, MonitorWorkArea, % PrgLnch.Monitor
 	oldDHW := A_DetectHiddenWindows
@@ -14360,7 +14369,6 @@ WinMover(Hwnd := 0, position := "hc vc", Width := 0, Height := 0, wdRatio := 1, 
 	position := StrReplace(position, "b", "d") ;b=bottom (same as down)
 	x := InStr(position,"l")? mtLeft: InStr(position,"hc")? (mtLeft + (mtRight-mtLeft-w)/2): InStr(position,"r") ? mtRight - w: ix
 	y := InStr(position,"u")? mtTop: InStr(position,"vc")? (mtTop + (mtBottom-mtTop-h)/2): InStr(position,"d") ? mtBottom - h: iy
-
 
 	WinMove, ahk_id %Hwnd%,, wdRatio * x, htRatio * y
 
