@@ -5020,7 +5020,7 @@ Thread, NoTimers, false
 	SetTimer, WatchSwitchOut, %timWatchSwitch%
 	else
 	{
-	CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak, 1)
+	CleanupPID(currBatchNo, targMonitorNum, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak, 1)
 
 		if (PrgPID)
 		{
@@ -9835,7 +9835,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 			{
 				if (lnchPrgIndex)
 				;just cancelled- but not from a hidden form!
-				CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak)
+				CleanupPID(currBatchNo, targMonitorNum, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak)
 				; else Change res
 			}
 		}
@@ -9867,7 +9867,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 					}
 
 					if (currBatchno == A_Index)
-					CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak, 1)
+					CleanupPID(currBatchNo, targMonitorNum, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak, 1)
 				}
 			}
 			; Update Master
@@ -9913,7 +9913,7 @@ Thread, NoTimers, false
 
 			if (lnchPrgIndex && !batchActive)
 			{
-			CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak)
+			CleanupPID(currBatchNo, targMonitorNum, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak)
 			return
 			}
 		}
@@ -10039,9 +10039,9 @@ if (lnchPrgIndex > 0) ;Running
 		{
 		; In most cases wkDir is null, so set the working directory as the Prg location
 		strRetVal := WorkingDirectory(PrgPaths, 1)
-			If (strRetVal)
+			if (strRetVal)
 			{
-				if (disableRedirect)
+				if (disableRedirect && oldRedirectionValue)
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 			return strRetVal
 			}
@@ -10082,7 +10082,7 @@ if (lnchPrgIndex > 0) ;Running
 
 						if (retVal == 2)
 						{
-							if (disableRedirect)
+							if (disableRedirect && oldRedirectionValue)
 							DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 						return "Cancelled!"
 						}
@@ -10108,7 +10108,7 @@ if (lnchPrgIndex > 0) ;Running
 					}
 					else
 					{
-						if (disableRedirect)
+						if (disableRedirect && oldRedirectionValue)
 						DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 					return "Cancelled!"
 					}
@@ -10123,7 +10123,7 @@ if (lnchPrgIndex > 0) ;Running
 		{
 			if (!(InitDOSBoxGameDir(PrgPaths)))
 			{
-				if (disableRedirect) ; doubt it for DOSBox- just to be sure
+				if (disableRedirect && oldRedirectionValue) ; doubt it for DOSBox- just to be sure
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 			return "No Game selected!"
 			}
@@ -10146,7 +10146,7 @@ if (lnchPrgIndex > 0) ;Running
 				if (A_IsAdmin)
 				{
 				outStr := PrgNames[lnchPrgIndex] . " cannot launch with error " . A_LastError . ".`nIs it a system file, or does it have special permissions?"
-					if (disableRedirect)
+					if (disableRedirect && oldRedirectionValue)
 					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 				return outStr
 				}
@@ -10154,7 +10154,7 @@ if (lnchPrgIndex > 0) ;Running
 				retVal := TaskDialog("Prg Launch", "Prg Launch failed: Retry elevated?", , PrgNames[lnchPrgIndex] . " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nPrgLnch might be able to launch it with Admin privileges.", "", "Attempt to restart PrgLnch as Admin", "Do not restart PrgLnch")
 
 				;Try elevation?
-				if (disableRedirect)
+				if (disableRedirect && oldRedirectionValue)
 				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 
 				if (retVal == 1)
@@ -10169,7 +10169,7 @@ if (lnchPrgIndex > 0) ;Running
 				FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
 				;WinShow ahk_class Shell_TrayWnd
 				outStr := PrgNames[lnchPrgIndex] . " could not launch with error " . A_LastError
-					if (disableRedirect)
+					if (disableRedirect && oldRedirectionValue)
 					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 				return outStr
 			}
@@ -10200,7 +10200,7 @@ if (lnchPrgIndex > 0) ;Running
 			DopowerPlan(btchPowerName)
 		}
 
-		if (disableRedirect)
+		if (disableRedirect && oldRedirectionValue)
 		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 	; Path links etc cannot be cancelled as they do not return a PID:
 		if (InStr(PrgLnkInflnchPrgIndex, "|", false))
@@ -10216,7 +10216,7 @@ if (lnchPrgIndex > 0) ;Running
 	PrgPIDtmp := "TERM"
 	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
 	outStr := "Unable to determine the location of `n" . PrgPaths
-		if (disableRedirect)
+		if (disableRedirect && oldRedirectionValue)
 		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 	return outStr
 	}
@@ -10358,7 +10358,7 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 	if (!((mdLeft - mdRight) && (mdTop - mdBottom)))
 	{
 	outStr := "Incorrect destination co-ordinates.`nIf the monitor has just been configured, a reboot may resolve the issue."
-		if (disableRedirect)
+		if (disableRedirect && oldRedirectionValue)
 		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 	return outStr
 	}
@@ -10706,7 +10706,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			if (!lastMonitorUsedInBatch)
 			{
 			batchActive := 0
-			CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak, 1)
+			CleanupPID(currBatchNo, targMonitorNum, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak, 1)
 				if (!PrgPID)
 				return
 			}
@@ -10719,7 +10719,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				if (!ErrorLevel)
 				{
  				PrgPID := 0
-				CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak)
+				CleanupPID(currBatchNo, targMonitorNum, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak)
 				return
 				}
 			}
@@ -10733,7 +10733,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 			if (!ErrorLevel)
 			{
 			PrgPID := 0
-			CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak)
+			CleanupPID(currBatchNo, targMonitorNum, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak)
 				if (!batchActive)
 				return
 			}
@@ -10785,7 +10785,7 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 				if(!timerBtch)
 				{
 				batchActive := 0
-				CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak, 1)
+				CleanupPID(currBatchNo, targMonitorNum, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgStyle, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak, 1)
 				return
 				}
 			}
@@ -10895,7 +10895,7 @@ retVal := 0
 return retVal
 }
 
-CleanupPID(currBatchNo, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, PrgBordless, PrgLnchHide, ByRef PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak, batchWasActive := 0)
+CleanupPID(currBatchNo, targMonitorNum, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, ByRef PrgListPIDbtchPrgPresetSel, ByRef PrgStyle, PrgBordless, PrgLnchHide, ByRef PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak, batchWasActive := 0)
 {
 testPrgTerm := 0, temp := 0, strRetVal := "", PrgStyle := 0, dx := 0, dy:= 0
 ; The outcome of this utility depends on whether user is in Batch or Config screen which mixes things up a bit.
