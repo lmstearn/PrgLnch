@@ -1811,7 +1811,7 @@ Class Splashy
 			}
 
 
-			if ((This.hIcon := This.b64Decode(This.PicInScript))) ; Reqires "HICON:*" for Gui, Add, Picture
+			if ((This.hIcon := This.b64Decode(This.PicInScript))) ; Requires "HICON:*" for Gui, Add, Picture
 			This.vImgType := 1
 			else
 			{
@@ -4184,9 +4184,9 @@ return
 LnchPadConfig:
 SplashyProc("*LnchPadCfg")
 CloseChm()
-SetTimer, LnchPadSplashTimer, 20
+SetTimer, LnchPadSplashTimer, 300
 
-	if (!LnchLnchPad(SelIniChoiceName))
+	if (!(strTemp := LnchLnchPad(SelIniChoiceName)))
 	{
 	;Problem with script directory
 	IniProcIniFileStart()
@@ -4201,6 +4201,7 @@ return
 
 LnchPadSplashTimer:
 SetTitleMatchMode, 3
+SetTimer, LnchPadSplashTimer, 20
 
 	If (WinActive("LnchPad Setup"))
 	{
@@ -4213,13 +4214,17 @@ SetTitleMatchMode, 3
 		if (temp > 99)
 		{
 			; Prompt for Admin
-			if (winactive("LnchPad Setup Elevated?") || winactive("PrgLnch Executable Required!"))
+			if (winactive("LnchPad Setup Elevated") || winactive("PrgLnch Executable Required!"))
+			{
 			temp := 0
+			SetTimer, LnchPadSplashTimer, 300
+			}
 			else
 			{
 				if (temp == 100)
 				{
-				MsgBox, 8256, LnchPad Config Delay, There is a problem with the load of LnchPad Config!
+					if (strTemp)
+					MsgBox, 8256, LnchPad Config Delay, There is a problem with the load of LnchPad Config!`n`n %strTemp%
 				SetTimer, LnchPadSplashTimer, Delete
 				SplashyProc("*Release")
 				}
@@ -5769,9 +5774,7 @@ return floor(tempw * 1.3)
 
 LnchLnchPad(SelIniChoiceName)
 {
-ERROR_FILE_NOT_FOUND := 0x2
-ERROR_ACCESS_DENIED := 0x5
-ERROR_CANCELLED := 0x4C7
+static ERROR_FILE_NOT_FOUND := 0x2, ERROR_ACCESS_DENIED := 0x5, ERROR_CANCELLED := 0x4C7
 strTemp := ""
 
 PrgPropertiesClose()
@@ -5781,14 +5784,16 @@ Gui, PrgLnch: +Disabled
 strRetVal := WorkingDirectory(A_ScriptDir, 1)
 
 
-	If (strRetVal)
+	if (strRetVal)
 	MsgBox, 8192, Script Directory, % strRetVal "`nCannot load LnchPad file!"
 	else
 	{
-	FileInstall LnchPadInit.exe, LnchPadInit.exe
-	Sleep, 750
-
 	strTemp2 := A_ScriptDir . "\LnchPadInit.exe"
+
+	if (FileExist(strTemp2))
+	{
+	FileInstall LnchPadInit.exe, LnchPadInit.exe
+	Sleep, 600
 
 		if (!A_IsAdmin)
 		{
@@ -5797,11 +5802,12 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 			strTemp2 := "*runAs " . strTemp2
 		SplashyProc("*LnchPadCfg")
 		}
-
+	}
 
 	strTemp := PrgLnchOpt.scrWidthDef . "," . PrgLnchOpt.scrHeightDef . "," . PrgLnchOpt.scrFreqDef . "," . 0
 
 	Run, %strTemp2% %strTemp% %SelIniChoiceName%, , UseErrorLevel, OutputVarPID
+	strTemp := ""
 
 		if (A_LastError)
 		{
@@ -5814,14 +5820,17 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 			Case 0x4C7:
 			strTemp := ERROR_CANCELLED
 			}
-		MsgBox, 8192, Error, % "LnchPadInit will not run. Code: " (strTemp? strTemp: A_LastError)
+		strTemp := "LnchPadInit will not run. Code: " (strTemp? strTemp: A_LastError)
 		}
 		else
 		WinWait, ahk_pid %OutputVarPID%, , 5
-	}
 
-	if (!OutputVarPID)
-	strTemp := "Error"
+		if (!OutputVarPID)
+		{
+			if (!strTemp)
+			strTemp := "Unknown Error"
+		}
+	}
 
 Gui, PrgLnch: -Disabled
 DetectHiddenWindows, On
@@ -7561,27 +7570,26 @@ Gui, PrgLnchOpt: Submit, Nohide
 GuiControlGet, fTemp, PrgLnchOpt:, iDevNum
 
 	if (fTemp != targMonitorNum)
-	{
-	targMonitorNum := fTemp
 	GuiControl, ,PrgLnchOpt: allModes, 0
-	}
 
 ;Must reset reslist
-CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
+CheckModesFunc(defPrgStrng, PresetPropHwnd, fTemp, iDevNumArray, ResIndexList, allModes)
+
+	; invalid monitor? then keep old one
+	if (iDevNumArray[fTemp] >= 10)
+	targMonitorNum := fTemp
+
 SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 
 
 	if ((txtPrgChoice != "None") && PrgMonToRn[selPrgChoice]) ; save it if a Prg
 	{
-	; invalid monitor?
-		if (iDevNumArray[targMonitorNum] < 10)
-		targMonitorNum := PrgLnch.Monitor
 	PrgMonToRn[selPrgChoice] := targMonitorNum
 	IniProc(selPrgChoice)
 
 		; A warning is provided, but can be confusing if configured as suppressed
 		if (!FindStoredRes(ResIndexHwnd))
-		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % (iDevNumArray[targMonitorNum] < 10)? PrgLnchOpt.MonDefResStrng: PrgLnchOpt.MonCurrResStrng
+		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
 	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResOnClose, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
 	}
 	else
@@ -14869,7 +14877,7 @@ IniProcStart:
 									PrgLnchOpt.TmpMode := Tmp := SubStr(k, 7)
 									}
 									else
-									MsgBox, 8208, Ini File, Error reading Resmode in file! `nTry restarting PrgLnch.
+									MsgBox, 8208, Ini File, Error reading Resmode in file!
 								}
 							}
 					
