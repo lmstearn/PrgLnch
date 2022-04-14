@@ -35,8 +35,8 @@ About <span style="color: #40e0d0;">P</span> <span style="color: #8b4513;">r</sp
   <dt>My Prg ended when it wasn't supposed to. What happened?</dt>
   <dd>PrgLnch doesn't track what a Prg does operationally. If the Prg has its own requirements for display or resolution which conflict with PrgLnch settings there may be a problem.
  </dd>
-  <dt href="#" id="RepositionPrgLnch">Can PrgLnch forms be postioned of the currently used (default) display?</dt>
-  <dd>Possible if target resolutions are less than 1024 pixels wide. A hotkey combination (CTRL-ALT-P) should bring the window to the location of the mouse. Another edge case is if when the screen height is less than 600 pixels, <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a> may clip off the top edge of the display. 
+  <dt href="#" id="RepositionPrgLnch">Can PrgLnch gui forms be postioned off the currently used (default) display by the OS?</dt>
+  <dd>Possible if target resolutions are less than 1024 pixels wide. The desktop manager will also relocate other windows if their dimensions exceed the work area, regardless of whether they are sizeable. A hotkey combination (CTRL-ALT-P) should bring the window to the location of the mouse. Another edge case is if when the screen height is less than 600 pixels, <a href="PrgLnch Properties/PrgLnch Properties.htm">PrgLnch Properties</a> may clip off the top edge of the display. 
 </dd>
   <dt>Can a Prg exhibit different behaviour when run from an explorer folder or desktop shortcut instead of from within PrgLnch?</dt>
   <dd>Yes, even when PrgLnch settings for Prg match the "native" environment. See <a href="https://autohotkey.com/boards/viewtopic.php?f=5&amp;t=29200" target="foo">here</a> for an example. It also helps to check the environment requisites in the Prg's documentation, as it may set its own dedicated resolution mode for execution.<br>
