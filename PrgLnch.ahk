@@ -10116,8 +10116,11 @@ if (lnchPrgIndex > 0) ;Running
 				retVal := TaskDialog("Screen Resolution", "Resolution change failed", , "Res. change reported an error when launching " . PrgNames[lnchPrgIndex] . ".`nPrg's saved resolution data is: " . PrgLnchOpt.scrWidth . " width, " . PrgLnchOpt.scrHeight . " height, at " . PrgLnchOpt.scrFreq . " Hz.`nReason for failure: `n" . """" . strRetVal . "." . """" . "`nUpon continuation of the launch, the Prg should (but is not guaranteed) to become visible in the primary (or default) monitor at its current resolution.", "", "Continue launching " . PrgNames[lnchPrgIndex], "Cancel launch")
 					if (retVal == 1)
 					{
-					SplashyProc("*Launching")
-					Sleep 100
+						if (lnchStat > 0)
+						{
+						SplashyProc("*Launching")
+						Sleep 100
+						}
 					}
 					else
 					{
