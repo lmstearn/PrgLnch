@@ -3737,7 +3737,7 @@ Gui, PrgLnchOpt: Add, Checkbox, vRego gRegoCheck HWNDRegoHwnd, Pull values from 
 
 ; Save this control's position and start a new section.
 Gui, PrgLnchOpt: Add, Text, ys cTeal vcurrRes HWNDcurrResHwnd wp
-Gui, PrgLnchOpt: Add, Checkbox, vallModes gCheckModes HWNDallModesHwnd, List all 'compatible'
+Gui, PrgLnchOpt: Add, Checkbox, vallModes gCheckModes HWNDallModesHwnd, List all compatible
 
 GuiControl, PrgLnchOpt:, Rego, % PrgLnch.regoVar
 
@@ -6337,7 +6337,7 @@ temp := 0
 		; else destroys PrgProperties.Hwnd anyhow
     }
 }
-RunChm(chmTopic := 0, Anchor := "")
+RunChm(chmTopic := "", Anchor := "")
 {
 static firstRun := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
 x := 0, y := 0, w := 0, h := 0, hAdj := 0
@@ -6391,7 +6391,7 @@ retVal := CloseChm()
 			else
 			firstRun := 1
 		}
-		run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/%chmTopic%.htm#%Anchor%,, UseErrorLevel
+		run, % htmlHelp . ":" . A_ScriptDir . "`\PrgLnch.chm::`/" . chmTopic . ".htm`#" . Anchor,, UseErrorLevel
 	}
 	else
 	run, %htmlHelp%:%A_ScriptDir%\PrgLnch.chm::/About%A_Space%PrgLnch.htm,, UseErrorLevel
@@ -6409,7 +6409,8 @@ temp := 0
 	temp++
 		if (temp == 1000)
 		{
-		retVal := TaskDialog("PrgLnch Help", "Help is slow to launch", , "", "", "Wait for help", "Do not wait for help")
+		strTemp := SubStr(chmTopic, 1, InStr(chmTopic, "`\") - 1)
+		retVal := TaskDialog("PrgLnch Help", "Help is slow to launch for " . """" . strTemp . """", , "", "", "Wait for help", "Do not wait for help")
 			if (retVal == 1)
 			temp := 0
 			else
@@ -6417,10 +6418,10 @@ temp := 0
 		}
 	} Until (WinActive("PrgLnch_Help"))
 
-WinGetTitle, strtemp , A
+WinGetTitle, strTemp , A
 
 	; Too bad if we missed it
-	if (strtemp == "PrgLnch_Help")
+	if (strTemp == "PrgLnch_Help")
 	{
 		if (!retVal) ; no chm closed!
 		{
@@ -7004,12 +7005,22 @@ Static TDN_CREATED := 0, TDN_HYPERLINK_CLICKED := 3, TDN_TIMER := 4, TDN_EXPANDO
 
 		VarSetCapacity(rect, 0)
 		}
-		Case TDN_HYPERLINK_CLICKED:
-		{
-		url := StrGet(lParam, "UTF-16") ; <A HREF="URL">Link</A>
-		Run %url%
-		}
-		Case TDN_TIMER:
+			Case TDN_HYPERLINK_CLICKED:
+			{
+			url := StrGet(lParam, , "UTF-16")
+				if (InStr(url, "http"))
+				Run %url%
+				else
+				{
+				temp := StrLen(url)
+					if (temp := InStr(url, "#"))
+					{
+					strTemp := SubStr(url, temp + 1)
+					url := SubStr(url, 1, temp - 1)
+					}
+				RunChm(url, strTemp)
+				}
+			}		Case TDN_TIMER:
 		{
 		;Translate time elapsed to UTF-16
 		sElapsed := timeOut - Round(wParam / 1000)
@@ -7569,9 +7580,6 @@ Tooltip
 Gui, PrgLnchOpt: Submit, Nohide
 GuiControlGet, fTemp, PrgLnchOpt:, iDevNum
 
-	if (fTemp != targMonitorNum)
-	GuiControl, ,PrgLnchOpt: allModes, 0
-
 ;Must reset reslist
 CheckModesFunc(defPrgStrng, PresetPropHwnd, fTemp, iDevNumArray, ResIndexList, allModes)
 
@@ -7653,9 +7661,9 @@ CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResInd
 Tooltip
 return
 
-CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, ByRef iDevNumArray, ByRef ResIndexList, allModes, setPrgLnchOptDefs := 0)
+CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, ByRef iDevNumArray, ByRef ResIndexList, ByRef allModes, setPrgLnchOptDefs := 0)
 {
-static oldTargMonitorNum := 0
+static oldTargMonitorNum := 0, oldAllModes := 0
 ; resArray and all others are one-based now
 
 
@@ -7664,9 +7672,18 @@ static oldTargMonitorNum := 0
 	else
 	{
 		; use PresetPropHwnd to determine intialisation
-		if (!PresetPropHwnd || oldTargMonitorNum != targMonitorNum)
+		if (!PresetPropHwnd || oldTargMonitorNum != targMonitorNum || oldAllModes != allModes)
 		{
+
+			; reset compatible whenever changing monitors!
+			if (oldTargMonitorNum != targMonitorNum)
+			{
+			allModes := 0
+			GuiControl, PrgLnchOpt:, List all compatible, 0
+			}
+
 		ResIndexList := "|" . GetResInfo(targMonitorNum, 2, allModes, iDevNumArray)
+
 
 		; Now process default res
 
@@ -7718,9 +7735,10 @@ static oldTargMonitorNum := 0
 			GuiControl, PrgLnchOpt:, ResIndex, %ResIndexList%
 
 			oldTargMonitorNum := targMonitorNum
+			oldAllModes := allModes
 
 				if (allModes)
-				Gui, PrgLnchOpt: Font, Bold CA96915, Verdana
+				Gui, PrgLnchOpt: Font, Italic
 				else
 				Gui, PrgLnchOpt: Font
 
@@ -7757,12 +7775,7 @@ static oldTargMonitorNum := 0
 ResListBox:
 Tooltip
 
-	if (allModes)
-	{
-	GuiControlGet, strTemp, PrgLnchOpt:, currRes
-	GuiControl, PrgLnchOpt: ChooseString, ResIndex, %strTemp%
-	}
-	else
+	if (!allModes)
 	{
 	fTemp := 0
 	GuiControlGet, strTemp, PrgLnchOpt:, ResIndex
@@ -10073,7 +10086,7 @@ if (lnchPrgIndex > 0) ;Running
 				IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, LoseGuiChangeResWrn
 					if (!fTemp)
 					{
-					retVal := TaskDialog("Switching to lower resolution", "Shortcut key for PrgLnch Positioning", " Click " . """" . "See details" . """" . " on <CTRL-Alt-P> before continuing", "In the rare case of the PrgLnch GUI relocating off screen`nafter switching to a lower screen resolution, the keyboard`nshortcut, <CTRL-Alt-P> returns PrgLnch to focus", , "Continue launch (Recommended)", "Cancel launch")
+					retVal := TaskDialog("Switching to lower resolution", "Repositioning of Active Windows", , "In a some lower resolutions, current running windows can be moved`nto another monitor if their dimensions exceed that of the current monitor,`nregardless of their sizeability. Windows will ensure their dimensions`nare preserved, as it will for all other items in the desktop work area.`nIn the rare case of the PrgLnch GUI relocating off the screen,`nthe keyboard shortcut, <a href=""PrgLnch FAQ#RepositionPrgLnch"">`<CTRL-ALT-P`></a> returns PrgLnch to focus", , "Continue launch", "Cancel launch")
 						if (retVal < 0)
 						{
 						retVal := -retVal
@@ -12263,7 +12276,6 @@ retVal := 0
 
 	; Point of iChange is when initialising primary monitor, a different target monitor must not be confused with primary monitor.
 	; The fn actually has a 4th flags parm- EDS_RAWMODE might be worth another look.
-
 	if (iChange) ; DISPLAY_DEVICE.DeviceName
 	retVal := DllCall("EnumDisplaySettingsEx" . (A_IsUnicode? "W": "A"), "PTR", PrglnchOpt.GetDispMonNamesVal(targMonitorNum), "UInt", iMode, "PTR", &Device_Mode, "UInt", 0)
 	else ; PrgLnch display device (0 will do for the fn)
@@ -12284,6 +12296,7 @@ retVal := 0
 	;https://support.microsoft.com/en-au/kb/2006076
 		if (PrgLnchOpt.scrFreq == 59)
 		PrgLnchOpt.scrFreq := PrgLnchOpt.scrFreq + 1
+
 
 	;Do not touch 148 dmPanningWidth or 152 dmPanningHeight
 
@@ -12617,7 +12630,7 @@ fTemp := 0, retVal := 0
 				}
 				else
 				{
-					if (scrHeightLast != scrHeight || scrFreqLast != scrFreq && !scrWidthLast)
+					if (scrHeightLast != scrHeight || scrFreqLast != scrFreq)
 					{
 					iModeCt += 1
 					ResArrayStored[dispMon, 1, iModeCt] := scrWidth
@@ -12866,8 +12879,8 @@ fTemp := 0, retVal := 0
 
 	if (allModes)
 	{
-		if (stockModes[monitorOrder[targMonitorNum]])
-		return stockModes[monitorOrder[targMonitorNum]]
+		if (stockModes[targMonitorNum])
+		return stockModes[targMonitorNum]
 	}
 	else
 	{
@@ -13125,7 +13138,7 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 				if (scrWidthLast == scrWidth)
 				{
 					;many iModeCts here are equivalent for the above params. scrFreq & scrHeight may vary for a subset of those
-					if ((allModes && (scrHeightLast == scrHeight || scrFreqLast == scrFreq)) || (scrHeightLast != scrHeight || scrFreqLast != scrFreq))
+					if (scrHeightLast != scrHeight || scrFreqLast != scrFreq)
 					{
 					scrHeightLast := scrHeight
 					scrFreqLast := scrFreq
@@ -13139,7 +13152,7 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 				}
 				else
 				{
-					if (!allModes || allModes && (scrHeightLast == scrHeight && scrFreqLast == scrFreq))
+					if (scrHeightLast != scrHeight || scrFreqLast != scrFreq)
 					{
 					scrWidthLast := scrWidth
 					scrHeightLast := scrHeight
@@ -14464,7 +14477,7 @@ GuiControl, PrgLnchOpt:, Monitors, % PrglnchOpt.GetDispMonNamesVal(targMonitorNu
 		}
 	}
 GuiControl, PrgLnchOpt: Font, Monitors
-
+Gui, PrgLnchOpt: Font
 
 if (CtrlsOn)
 {
