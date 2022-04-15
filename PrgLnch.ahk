@@ -3888,7 +3888,7 @@ Gui, PrgLnchOpt: Show, Hide
 WinMover(PrgLnchOpt.Hwnd(), "d r")   ; "dr" means "down, right"
 
 	if (!FindStoredRes(ResIndexHwnd))
-	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % (txtPrgChoice == "None")?PrgLnchOpt.MonDefResStrng:PrgLnchOpt.MonCurrResStrng
 
 	;ChooseString may fail if frequencies differ. Meh!
 	if (PrgPID)
@@ -7595,13 +7595,14 @@ SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr
 	PrgMonToRn[selPrgChoice] := targMonitorNum
 	IniProc(selPrgChoice)
 
-		; A warning is provided, but can be confusing if configured as suppressed
-		if (!FindStoredRes(ResIndexHwnd))
-		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
 	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResOnClose, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
 	}
 	else
 	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum)
+
+	; A warning is provided, but can be confusing if configured as suppressed
+	if (!FindStoredRes(ResIndexHwnd))
+	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % (txtPrgChoice == "None")?PrgLnchOpt.MonDefResStrng:PrgLnchOpt.MonCurrResStrng
 
 return
 
@@ -7661,14 +7662,17 @@ CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResInd
 Tooltip
 return
 
-CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, ByRef iDevNumArray, ByRef ResIndexList, ByRef allModes, setPrgLnchOptDefs := 0)
+CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, ByRef iDevNumArray, ByRef ResIndexList, ByRef allModes, setPrgLnchOptDefs := 0, oldCurrRes := 0)
 {
-static oldTargMonitorNum := 0, oldAllModes := 0
+static oldResStrng := [], oldTargMonitorNum := 0, oldAllModes := 0
 ; resArray and all others are one-based now
 
 
 	if (setPrgLnchOptDefs)
+	{
 	GetResInfo(targMonitorNum, 1, allModes, iDevNumArray, setPrgLnchOptDefs)
+	oldResStrng[targMonitorNum] := oldCurrRes
+	}
 	else
 	{
 		; use PresetPropHwnd to determine intialisation
@@ -7694,7 +7698,6 @@ static oldTargMonitorNum := 0, oldAllModes := 0
 				if (PrgLnch.Monitor == targMonitorNum)
 				{
 				PrgLnchOpt.MonDefResStrng := strTemp
-				PrgLnchOpt.MonCurrResStrng := strTemp
 				PrgLnchOpt.CurrMonStat := 1 ; Assume the PrgLnch monitor is always ok
 				}
 				else
@@ -7724,7 +7727,7 @@ static oldTargMonitorNum := 0, oldAllModes := 0
 					GuiControl, PrgLnchOpt: Disabled, currRes
 					}
 					else
-					PrgLnchOpt.MonCurrResStrng := strTemp
+					PrgLnchOpt.MonDefResStrng := strTemp
 				}
 
 				; Check default on monitor change
@@ -7733,9 +7736,6 @@ static oldTargMonitorNum := 0, oldAllModes := 0
 
 			;Not the g-label ResListBox!
 			GuiControl, PrgLnchOpt:, ResIndex, %ResIndexList%
-
-			oldTargMonitorNum := targMonitorNum
-			oldAllModes := allModes
 
 				if (allModes)
 				Gui, PrgLnchOpt: Font, Italic
@@ -7749,18 +7749,21 @@ static oldTargMonitorNum := 0, oldAllModes := 0
 					if ((PrgLnch.Monitor != targMonitorNum) || PrgLnchOpt.Fmode() || PrgLnchOpt.DynamicMode())
 					GuiControl, PrgLnchOpt:, currRes, %strTemp%
 					else
-					GuiControl, PrgLnchOpt:, currRes, % PrgLnchOpt.MonCurrResStrng
+					GuiControl, PrgLnchOpt:, currRes, % PrgLnchOpt.MonDefResStrng
 				}
 				else  ;Update all at PrgLnch Load
 				{
 					GuiControl, PrgLnchOpt:, currRes, %strTemp%
 
-					; restore from defaults on res change
-					if (defPrgStrng == "None")
-					CopyToFromRes(targMonitorNum)
+						; restore from defaults on res change
+						if (defPrgStrng == "None")
+						CopyToFromRes(targMonitorNum)
 				}
 
-			GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+			oldTargMonitorNum := targMonitorNum
+			oldAllModes := allModes
+			oldResStrng[targMonitorNum] := strTemp
+
 			GuiControl, PrgLnchOpt: Show, ResIndex
 			}
 			else
@@ -7790,13 +7793,13 @@ Tooltip
 		if (fTemp)
 		{
 		fTemp --
-		CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes, fTemp)
+		CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes, fTemp, strTemp)
 
 			if (PrgChoicePaths[selPrgChoice])
 			IniProc(selPrgChoice)
 		}
 		else
-		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonDefResStrng
 	}
 return
 
@@ -7807,13 +7810,13 @@ Stat := 0, strTemp2 := "", strTemp := ""
 ControlGet, strTemp, List,,, % "ahk_id" ResIndexHwnd
 
 strTemp2 := ""
-strTemp2 .= PrgLnchOpt.scrWidth . " `, " . PrgLnchOpt.scrHeight . " @ " . PrgLnchOpt.scrFreq . "Hz "
+strTemp2 .= PrgLnchOpt.scrWidth . " `, " . PrgLnchOpt.scrHeight . " @ " . PrgLnchOpt.scrFreq . "Hz"
+PrgLnchOpt.MonCurrResStrng := strTemp2
 
 	Loop, Parse, strTemp, `n
 	{
 		if (strTemp2 == A_LoopField)
 		{
-		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % strTemp2
 		Stat := 1
 		Break
 		}
@@ -8075,6 +8078,10 @@ else
 
 				CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 				TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum)
+
+					if (!FindStoredRes(ResIndexHwnd))
+					GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonDefResStrng
+
 
 			}
 
