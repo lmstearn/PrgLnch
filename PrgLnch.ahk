@@ -3848,12 +3848,12 @@ GuiControlGet, txtPrgChoice, PrgLnchOpt:, PrgChoice
 
 
 
-if (ChkPrgNames(txtPrgChoice, PrgNo)) ;shouldn't happen on load
-{
+	if (ChkPrgNames(txtPrgChoice, PrgNo)) ;shouldn't happen on load
+	{
 	txtPrgChoice := "None"
 	GuiControl, PrgLnchOpt: Text, PrgChoice, None
 	GuiControl, PrgLnchOpt: Choose, PrgChoice, 1
-}
+	}
 
 	if (txtPrgChoice == "None")
 	{
@@ -3887,8 +3887,8 @@ if (ChkPrgNames(txtPrgChoice, PrgNo)) ;shouldn't happen on load
 Gui, PrgLnchOpt: Show, Hide
 WinMover(PrgLnchOpt.Hwnd(), "d r")   ; "dr" means "down, right"
 
-	if (!FindStoredRes(ResIndexHwnd))
-	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % (txtPrgChoice == "None")?PrgLnchOpt.MonDefResStrng:PrgLnchOpt.MonCurrResStrng
+	if (defPrgStrng != "None" && !FindStoredRes(ResIndexHwnd))
+	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
 
 	;ChooseString may fail if frequencies differ. Meh!
 	if (PrgPID)
@@ -7056,7 +7056,7 @@ MoveTDN(hWndObj)
 {
 	Timer := Func("TDNTimer").Bind(A_ThisFunc, hWndObj)
 
-	SetTimer % Timer, -15
+	SetTimer % Timer, -300
 	Return
 }
 
@@ -7278,7 +7278,7 @@ Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 
 	if (PrgPID) ;test only from config
-	BordlessProc(targMonitorNum, PrgMinMaxVar, PrgStyle, PrgBordless, selPrgChoice, 0, 0, PrgPID)
+	BordlessProc(targMonitorNum, PrgMinMaxVar, PrgStyle, PrgBordless, selPrgChoice, PrgPID)
 	else
 	{
 	PrgBordless[selPrgChoice] := Bordless
@@ -7827,7 +7827,7 @@ PrgLnchOpt.MonCurrResStrng := strTemp2
 		IniRead, strTemp, % PrgLnch.SelIniChoicePath, General, ResClashMsg
 		if (!strTemp)
 		{
-		retVal := TaskDialog("Monitors", "Resolution mismatch issue", "", "Mismatch detected in desired resolution data for selected monitor!`n" . """" . strTemp2 . """" . "`n`nThis resolution is set for the Prg in the Prglnch ini file and may apply to another monitor. Alternatively, differing frequency values appertaining to the same resolution preset is a common side-effect of some hardware. Excerpt from <A HREF=""https://support.microsoft.com/en-us/topic/screen-refresh-rate-in-windows-does-not-apply-the-user-selected-settings-on-monitors-tvs-that-report-specific-tv-compatible-timings-0a7a6a38-6c6a-2aec-debc-5183a76b9e1d"">MS Support</a>: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list of resolutiuon modes.", , "Continue resolution checks")
+		retVal := TaskDialog("Monitors", "Resolution mismatch issue", "", "Mismatch detected in desired resolution data for selected monitor!`n" . """" . strTemp2 . """" . "`n`nThis resolution is set for Prg in the Prglnch ini file and may instead apply to another monitor. Alternatively, differing frequency values appertaining to the same resolution preset is a common side-effect of some hardware. Excerpt from <A HREF=""https://support.microsoft.com/en-us/topic/screen-refresh-rate-in-windows-does-not-apply-the-user-selected-settings-on-monitors-tvs-that-report-specific-tv-compatible-timings-0a7a6a38-6c6a-2aec-debc-5183a76b9e1d"">MS Support</a>: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list of resolution modes.", , "Continue resolution checks")
 			if (retval < 0)
 			IniWrite, 1, % PrgLnch.SelIniChoicePath, General, ResClashMsg
 		}
@@ -9992,7 +9992,7 @@ if (PrgLnch.Monitor != PrgLnchMon)
 		IniWrite, 1, % PrgLnch.SelIniChoicePath, General, LnchPrgMonWarn
 
 		if (lnchStat > 0)
-		MovePrgToMonitor(PrgLnchMon, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[1])
+		MovePrgToMonitor(PrgLnchMon, 0, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[1])
 	}
 PrgLnch.Monitor := PrgLnchMon
 }
@@ -10212,7 +10212,7 @@ if (lnchPrgIndex > 0) ;Running
 		if (lnchStat == 1)
 		PrgMonPID[PrgPIDtmp] := targMonitorNum
 
-	if (outStr := MovePrgToMonitor(targMonitorNum, PrgPIDtmp, PrgMinMaxVar, PrgStyle, PrgBordless, disableRedirect, oldRedirectionValue, PrgNames, lnchPrgIndex))
+	if (outStr := MovePrgToMonitor(targMonitorNum, PrgPIDtmp, PrgMinMaxVar, PrgStyle, PrgBordless, disableRedirect, oldRedirectionValue, PrgNames, lnchPrgIndex, borderToggle))
 	return outStr
 	;WinShow ahk_class Shell_TrayWnd
 
@@ -10353,7 +10353,7 @@ else
 return 0
 }
 
-MovePrgToMonitor(targMonitorNum, PrgPIDtmp, ByRef PrgMinMaxVar, ByRef PrgStyle, PrgBordless, disableRedirect, oldRedirectionValue, PrgNames, lnchPrgIndex, targHWnd := 0)
+MovePrgToMonitor(targMonitorNum, PrgPIDtmp, ByRef PrgMinMaxVar, ByRef PrgStyle, PrgBordless, disableRedirect, oldRedirectionValue, PrgNames, lnchPrgIndex, borderToggle, targHWnd := 0)
 {
 ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
 DetectHiddenWindows, On
@@ -10366,7 +10366,6 @@ DetectHiddenWindows, On
 
 		if (temp)
 		WinRestore, ahk_pid%PrgPIDtmp%
-
 
 	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
 	}
@@ -10389,7 +10388,7 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 ; don't bother moving if the window is already located in the destination monitor
 	if (fTemp && !(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom))
 	{
-		loop % PrgLnchOpt.dispMonNamesNo
+		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
 			; no need to check source monitor if same as dest monitor
 			; in which case this would never be reached
@@ -10397,12 +10396,13 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 			{
 			SysGet, ms, MonitorWorkArea, % A_Index
 				if (x >= msLeft && x <= msRight && y >= msTop && y <= msBottom)
-				Break
+				break
 			}
 		}
 
 	mdw := mdRight - mdLeft, mdh := mdBottom - mdTop
 	msw := msRight - msLeft, msh := msBottom - msTop
+
 
 	; Calculate new size for new monitor.
 	dx := mdLeft + (x-msLeft)*(mdw/msw)
@@ -10415,7 +10415,6 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 		h := Round(h*(mdh/msh))
 		}
 
-
 	; Move window, using resolution difference to scale co-ordinates.
 
 		try
@@ -10423,7 +10422,7 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 		fTemp := 1
 		WinMove, % (targHWnd)? "ahk_id" . targHWnd: "ahk_pid" . PrgPIDtmp, , %dx%, %dy%, %w%, %h%
 		}
-		catch
+		catch x
 		{
 		sleep, 20
 		WinGetPos, x, y, w, h, % (targHWnd)? "ahk_id" . targHWnd: "ahk_pid" . PrgPIDtmp
@@ -10467,6 +10466,7 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 	{
 	dx := mdLeft
 	dy := mdTop
+
 	BordlessProc(targMonitorNum, PrgMinMaxVar, PrgStyle, PrgBordless, lnchPrgIndex, PrgPIDtmp, 1, dx, dy) ; query
 	}
 	;Then we can Move window
@@ -11881,7 +11881,7 @@ WS_EX_STATICEDGE := 0x00020000 ; Window has a 3D border style for use with items
 WS_EX_DLGMODALFRAME := 0x00000001 ; Window has a double border
 
 ; https://autohotkey.com/boards/viewtopic.php?p=123166#p123166
-S:=0, PrgStyleTmp := 0, x:= 0, y:= 0, w := 0, h := 0
+S := 0, PrgStyleTmp := 0, x := 0, y := 0, w := 0, h := 0
 WinGet, S, Style, ahk_pid%PrgPID%
 
 	; update this later
@@ -11921,7 +11921,7 @@ WinGet, S, Style, ahk_pid%PrgPID%
 	if (PrgBordless[selPrgChoice])
 	{
 	; Extended Borders
-	
+
 	WindowStyle := WS_EX_WINDOWEDGE
 		if (S & WindowStyle)
 		{
@@ -12502,7 +12502,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 		gui, MonitorSelectDlg: add, button, % "xs+" . height/2 . " ys+" . (A_Index - 1) * height + height/2 . " W" . 2 * height . " H" . height/2 . " gGuiMonitorSelect" . " vguiMonitorSelect" . A_Index, % "Monitor" . resultResolutionMons[A_Index]
 		SplashyProc("*", A_Index, resultResolutionMons[A_Index], monitors[resultResolutionMons[A_Index]])
 		resultResolutionMons[A_Index] := A_Index
-		MovePrgToMonitor(A_Index, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[A_Index + 1])
+		MovePrgToMonitor(A_Index, 0, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[A_Index + 1])
 		}
 
 	gui, MonitorSelectDlg: add, button, % "Section xp w" . 2 * height . " ys" . height * (PrgLnchOpt.activeDispMonNamesNo + 1) . " gGuiMonitorSelectDlgAccept", Accept
@@ -12550,7 +12550,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 		trackMonNames[fTemp] := 1
 
 	SplashyProc("*", fTemp, trackMonNames[fTemp], monitors[trackMonNames[fTemp]])
-	MovePrgToMonitor(fTemp, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[fTemp + 1])
+	MovePrgToMonitor(fTemp, 0, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[fTemp + 1])
 
 		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
