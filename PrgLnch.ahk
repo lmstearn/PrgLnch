@@ -7659,6 +7659,8 @@ CheckModes:
 ; Update allModes
 Gui, PrgLnchOpt: Submit, Nohide
 CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
+	if (!FindStoredRes(ResIndexHwnd))
+	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
 Tooltip
 return
 
@@ -7778,29 +7780,27 @@ static oldResStrng := [], oldTargMonitorNum := 0, oldAllModes := 0
 ResListBox:
 Tooltip
 
-	if (!allModes)
+fTemp := 0
+GuiControlGet, strTemp, PrgLnchOpt:, ResIndex
+	Loop, Parse, ResIndexList, |
 	{
-	fTemp := 0
-	GuiControlGet, strTemp, PrgLnchOpt:, ResIndex
-		Loop, Parse, ResIndexList, |
+		if (strTemp == A_Loopfield)
 		{
-			if (strTemp == A_Loopfield)
-			{
-			fTemp := A_Index
-			Break
-			}
+		fTemp := A_Index
+		Break
 		}
-		if (fTemp)
-		{
-		fTemp --
-		CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes, fTemp, strTemp)
-
-			if (PrgChoicePaths[selPrgChoice])
-			IniProc(selPrgChoice)
-		}
-		else
-		GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonDefResStrng
 	}
+	if (fTemp)
+	{
+	fTemp --
+	CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes, fTemp, strTemp)
+
+		if (PrgChoicePaths[selPrgChoice])
+		IniProc(selPrgChoice)
+	}
+	else
+	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonDefResStrng
+
 return
 
 FindStoredRes(ResIndexHwnd)
