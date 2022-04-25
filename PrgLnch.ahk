@@ -3404,10 +3404,10 @@ lnchPrgIndex := 0 ; (PrgIndex) Run, (0) Change Res or -(PrgIndex) Cancel
 lnchStat := 0 ; (-1) Test Run; (1) Batch Run; (0) BatchPrgStatus Select (not used)
 lastMonitorUsedInBatch := 0 ; Revert screen resolution for a Test Run Prg when the last Prg using the same monitor in a Batch has completed
 listPrgVar := 0 ; copy of BatchPrgs listbox id
-presetNoTest := 2 ; 0: config screen 2: return to or load of batch screen: 1: else e.g. Not click on preset 1: preset clicked
+presetNoTest := 2 ; 0: config screen 2: return to or load of batch screen: 1: else select/deselect preset
 prgSwitchIndex := 0 ; saves index of Prg switched to when active
 timWatchSwitch := 1000 ; Constant time interval for checking PrgLnch switch in/out
-waitBreak := 0 ; Switch to break the Prg watch
+waitBreak := 0 ; Switch to control WatchSwitchOut and WatchSwitchBack
 PrgCmdLine := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgMonToRn := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgChgResOnClose := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -3511,6 +3511,7 @@ ResIndexList := ""
 	if (!A_IsUnicode)
 	msgbox, 8192 , Task Dialogs, Chinese Characters in ANSI Task Dialogs!
 
+SplashyProc("*Loading", 1)
 
 ;Done here, else complications with PrgLnch.Monitor
 Gui, PrgLnchOpt: New
@@ -3523,6 +3524,7 @@ GetDisplayData(, iDevNumArray, , , , , , -3)
 
 PrgLnch.Monitor := GetPrgLnchMonNum(iDevNumArray, primaryMon, 1)
 
+sleep 20
 SplashyProc("*Loading")
 
 	if (CheckPrgLnchInstances())
@@ -3582,7 +3584,7 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 	IfMsgBox, Yes
 	{
 	IniWrite, 1, % PrgLnch.SelIniChoicePath, General, Disclaimer
-	
+
 	FileInstall PrgLnch.ico, PrgLnch.ico
 		if FileExist("PrgLnch.ico")
 		Menu, Tray, Icon, PrgLnch.ico
@@ -3887,18 +3889,15 @@ GuiControlGet, txtPrgChoice, PrgLnchOpt:, PrgChoice
 Gui, PrgLnchOpt: Show, Hide
 WinMover(PrgLnchOpt.Hwnd(), "d r")   ; "dr" means "down, right"
 
-	if (defPrgStrng != "None" && !FindStoredRes(ResIndexHwnd))
-	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+	if (defPrgStrng != "None")
+	FindStoredRes(ResIndex, ResIndexHwnd)
+	;ChooseString may fail if frequencies differ.
 
-	;ChooseString may fail if frequencies differ. Meh!
 	if (PrgPID)
 	{
 	HideShowTestRunCtrls()
 	SetTimer, WatchSwitchOut, -%timWatchSwitch%
 	}
-
-	if (!disclaimer)
-	SetTimer, RnChmWelcome, 3200
 
 IniProc(100) ;initialises scrWidth, scrHeight, scrFreq & saves iDevNumArray (Prgmon) in ini
 
@@ -4185,10 +4184,12 @@ LnchPadConfig:
 SplashyProc("*LnchPadCfg")
 CloseChm()
 SetTimer, LnchPadSplashTimer, 300
+strTemp := LnchLnchPad(SelIniChoiceName)
 
-	if (!(strTemp := LnchLnchPad(SelIniChoiceName)))
+	if (strTemp == "Bad Directory")
 	{
 	;Problem with script directory
+	SetTimer, LnchPadSplashTimer, Delete
 	IniProcIniFileStart()
 	GuiControl, PrgLnch:, IniChoice,
 	GuiControl, PrgLnch:, IniChoice, %strIniChoice%
@@ -5785,24 +5786,27 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 
 
 	if (strRetVal)
+	{
 	MsgBox, 8192, Script Directory, % strRetVal "`nCannot load LnchPad file!"
+	strTemp := "Bad Directory"
+	}
 	else
 	{
 	strTemp2 := A_ScriptDir . "\LnchPadInit.exe"
 
-	if (FileExist(strTemp2))
-	{
-	FileInstall LnchPadInit.exe, LnchPadInit.exe
-	Sleep, 600
-
-		if (!A_IsAdmin)
+		if (!FileExist(strTemp2))
 		{
-		retVal := TaskDialog("LnchPad Setup Elevated", "Admin is required for full functionality", , "", "", "Restart LnchPad Setup as Admin", "Try it without Admin")
-			if (retVal == 1)
-			strTemp2 := "*runAs " . strTemp2
-		SplashyProc("*LnchPadCfg")
+		FileInstall LnchPadInit.exe, LnchPadInit.exe
+		Sleep, 600
+
+			if (!A_IsAdmin)
+			{
+			retVal := TaskDialog("LnchPad Setup Elevated", "Admin is required for full functionality", , "", "", "Restart LnchPad Setup as Admin", "Try it without Admin")
+				if (retVal == 1)
+				strTemp2 := "*runAs " . strTemp2
+			SplashyProc("*LnchPadCfg")
+			}
 		}
-	}
 
 	strTemp := PrgLnchOpt.scrWidthDef . "," . PrgLnchOpt.scrHeightDef . "," . PrgLnchOpt.scrFreqDef . "," . 0
 
@@ -5823,12 +5827,15 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 		strTemp := "LnchPadInit will not run. Code: " (strTemp? strTemp: A_LastError)
 		}
 		else
-		WinWait, ahk_pid %OutputVarPID%, , 5
-
-		if (!OutputVarPID)
 		{
-			if (!strTemp)
-			strTemp := "Unknown Error"
+			if (OutputVarPID)
+			WinWait, ahk_pid %OutputVarPID%, , 5
+			else
+			{
+				if (!strTemp)
+				strTemp := "Unknown Error"
+			}
+
 		}
 	}
 
@@ -6133,16 +6140,55 @@ oldSelIniChoiceName := selIniChoiceName
 
 KleenupPrgLnchFiles(RecycleDir := "")
 {
+static oneWarn := 0
 namesToDel := ["PrgLnch.ico", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat", "LnchPadInit.exe"]
 
 temp := ""
 KleenupPrgLnchFiles := ""
 
-; Keep files if debugging
-if (!A_IsCompiled)
-return
 
-For eachNameToDel in namesToDel
+
+	if (A_IsCompiled)
+	{
+		if (oneWarn)
+		return
+		else
+		{
+		oneWarn := 1
+		IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, KeepFilesInDir
+			; Versioning:  IniSpaceCleaner moves this before ResMode
+			if (fTemp = "ERROR")
+			{
+			IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, KeepFilesInDir
+			fTemp := 0
+			}
+
+			if (fTemp == 1)
+			return
+			else
+			{
+				if (!fTemp)
+				{
+				retVal := TaskDialog("PrgLnch Installation", "PrgLnch program files exist in directory:`n`n" . """" . A_ScriptDir . """", , "As PrgLnch is distributed as a portable program, no formal installation`nis performed. The files can be removed, unless planning to use PrgLnch`nagain, in which case the files are best retained in the current directory.`n`nNeither the PrgLnch executable nor the PrgLnch ini file are flagged for removal.", , "Keep files", "Remove files")
+
+					if (retVal < 0)
+					{
+					temp := -retVal
+					IniWrite, %temp%, % PrgLnch.SelIniChoicePath, General, KeepFilesInDir
+					}
+					else
+					temp := retVal
+
+					if (temp == 1)
+					return
+				}
+			}
+		}
+	}
+	else	; Keep files if debugging
+	return
+
+for eachNameToDel in namesToDel
 {
 strTemp := RecycleDir . namesToDel[A_Index]
 
@@ -6846,13 +6892,13 @@ Static S_OK = 0x0, E_OUTOFMEMORY = 0x8007000E, E_INVALIDARG = 0x80070057, E_FAIL
 ;General Flags
 Static flags = 0x1011, TDF_VERIFICATION_FLAG_CHECKED = 0x0100, TDF_CALLBACK_TIMER := 0X0800
 
-; 0x1	:		TDF_ENABLE_HYPERLINKS
+; 0x1	:	TDF_ENABLE_HYPERLINKS
 ; 0X0010:		TDF_USE_COMMAND_LINKS
 ; 0x1000:		TDF_POSITION_RELATIVE_TO_WINDOW (else the monitor)
 ; 0x1000000:	TDF_SIZE_TO_CONTENT
 
 
-	if InStr(pageTitle, "Same Resolution")
+	if (InStr(pageTitle, "Same Resolution") || pageTitle, "PrgLnch Installation")
 	flags |= TDF_VERIFICATION_FLAG_CHECKED
 	else
 	{
@@ -7005,22 +7051,23 @@ Static TDN_CREATED := 0, TDN_HYPERLINK_CLICKED := 3, TDN_TIMER := 4, TDN_EXPANDO
 
 		VarSetCapacity(rect, 0)
 		}
-			Case TDN_HYPERLINK_CLICKED:
+		Case TDN_HYPERLINK_CLICKED:
+		{
+		url := StrGet(lParam, , "UTF-16")
+			if (InStr(url, "http"))
+			Run %url%
+			else
 			{
-			url := StrGet(lParam, , "UTF-16")
-				if (InStr(url, "http"))
-				Run %url%
-				else
+			temp := StrLen(url)
+				if (temp := InStr(url, "#"))
 				{
-				temp := StrLen(url)
-					if (temp := InStr(url, "#"))
-					{
-					strTemp := SubStr(url, temp + 1)
-					url := SubStr(url, 1, temp - 1)
-					}
-				RunChm(url, strTemp)
+				strTemp := SubStr(url, temp + 1)
+				url := SubStr(url, 1, temp - 1)
 				}
-			}		Case TDN_TIMER:
+			RunChm(url, strTemp)
+			}
+		}
+		Case TDN_TIMER:
 		{
 		;Translate time elapsed to UTF-16
 		sElapsed := timeOut - Round(wParam / 1000)
@@ -7129,7 +7176,7 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 	MsgBox, 8192, Missing script, % strRetVal
 
 
-SplashyProc("*Loading", 1)
+SplashyProc("*Loading", 2)
 
 sleep, 30
 
@@ -7596,13 +7643,15 @@ SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr
 	IniProc(selPrgChoice)
 
 	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResOnClose, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
+	FindStoredRes(ResIndex, ResIndexHwnd)
 	}
 	else
+	{
 	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum)
+	FindStoredRes(ResIndex, ResIndexHwnd, 1)
+	}
 
-	; A warning is provided, but can be confusing if configured as suppressed
-	if (!FindStoredRes(ResIndexHwnd))
-	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % (txtPrgChoice == "None")?PrgLnchOpt.MonDefResStrng:PrgLnchOpt.MonCurrResStrng
+	; Warning applies to Prgs, can be confusing later if configured as suppressed
 
 return
 
@@ -7639,7 +7688,6 @@ Static scrWidthArr := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], scrHeightArr := [0, 
 			PrgLnchOpt.scrWidth := scrWidthArr[selPrgChoice]
 			PrgLnchOpt.scrHeight := scrHeightArr[selPrgChoice]
 			PrgLnchOpt.scrFreq := scrFreqArr[selPrgChoice]
-			return 1
 			}
 			else
 			{
@@ -7659,8 +7707,11 @@ CheckModes:
 ; Update allModes
 Gui, PrgLnchOpt: Submit, Nohide
 CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
-	if (!FindStoredRes(ResIndexHwnd))
-	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+	if ((txtPrgChoice != "None") && PrgMonToRn[selPrgChoice])
+	FindStoredRes(ResIndex, ResIndexHwnd)
+	else
+	FindStoredRes(ResIndex, ResIndexHwnd, 1)
+
 Tooltip
 return
 
@@ -7712,10 +7763,10 @@ static oldResStrng := [], oldTargMonitorNum := 0, oldAllModes := 0
 						{
 						IniRead, strTemp2, % PrgLnch.SelIniChoicePath, General, MonProbMsg
 
-							if (strTemp2 = "ERROR")
+							if (strTemp2 == "ERROR")
 							{
 							; Versioning:  IniSpaceCleaner moves this before ResMode
-							IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
+							IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, MonProbMsg
 							strTemp2 := 0
 							}
 						
@@ -7803,36 +7854,48 @@ GuiControlGet, strTemp, PrgLnchOpt:, ResIndex
 
 return
 
-FindStoredRes(ResIndexHwnd)
+FindStoredRes(ResIndex, ResIndexHwnd, noWrn := 0)
 {
 Stat := 0, strTemp2 := "", strTemp := ""
 
 ControlGet, strTemp, List,,, % "ahk_id" ResIndexHwnd
 
 strTemp2 := ""
-strTemp2 .= PrgLnchOpt.scrWidth . " `, " . PrgLnchOpt.scrHeight . " @ " . PrgLnchOpt.scrFreq . "Hz"
-PrgLnchOpt.MonCurrResStrng := strTemp2
+	if (noWrn)
+	strTemp2 .= PrgLnchOpt.scrWidthDef . " `, " . PrgLnchOpt.scrHeightDef . " @ " . PrgLnchOpt.scrFreqDef . "Hz"
+	else
+	strTemp2 .= PrgLnchOpt.scrWidth . " `, " . PrgLnchOpt.scrHeight . " @ " . PrgLnchOpt.scrFreq . "Hz"
 
-	Loop, Parse, strTemp, `n
+	Loop, Parse, strTemp,`n
 	{
-		if (strTemp2 == A_LoopField)
+		if (Instr(A_LoopField, strTemp2))
 		{
-		Stat := 1
+		strTemp2 := A_LoopField
+			if (noWrn)
+			PrgLnchOpt.MonDefResStrng := strTemp2
+			else
+			PrgLnchOpt.MonCurrResStrng := strTemp2
+		stat := 1
 		Break
 		}
 	}
 
-	if (!stat)
+	if (stat)
+	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % strTemp2
+	else
 	{
-		IniRead, strTemp, % PrgLnch.SelIniChoicePath, General, ResClashMsg
-		if (!strTemp)
+		if (!noWrn)
 		{
-		retVal := TaskDialog("Monitors", "Resolution mismatch issue", "", "Mismatch detected in desired resolution data for selected monitor!`n" . """" . strTemp2 . """" . "`n`nThis resolution is set for Prg in the Prglnch ini file and may instead apply to another monitor. Alternatively, differing frequency values appertaining to the same resolution preset is a common side-effect of some hardware. Excerpt from <A HREF=""https://support.microsoft.com/en-us/topic/screen-refresh-rate-in-windows-does-not-apply-the-user-selected-settings-on-monitors-tvs-that-report-specific-tv-compatible-timings-0a7a6a38-6c6a-2aec-debc-5183a76b9e1d"">MS Support</a>: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list of resolution modes.", , "Continue resolution checks")
-			if (retval < 0)
-			IniWrite, 1, % PrgLnch.SelIniChoicePath, General, ResClashMsg
+			IniRead, strTemp, % PrgLnch.SelIniChoicePath, General, ResClashMsg
+			if (!strTemp)
+			{
+			retVal := TaskDialog("Monitors", "Resolution mismatch issue", "", "Mismatch detected in desired resolution data for selected monitor!`n" . """" . strTemp2 . """" . "`n`nThis resolution is set for Prg in the Prglnch ini file and may instead apply to another monitor. Alternatively, differing frequency values appertaining to the same resolution preset is a common side-effect of some hardware. Excerpt from <A HREF=""https://support.microsoft.com/en-us/topic/screen-refresh-rate-in-windows-does-not-apply-the-user-selected-settings-on-monitors-tvs-that-report-specific-tv-compatible-timings-0a7a6a38-6c6a-2aec-debc-5183a76b9e1d"">MS Support</a>: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list of resolution modes.", , "Continue resolution checks")
+				if (retval < 0)
+				IniWrite, 1, % PrgLnch.SelIniChoicePath, General, ResClashMsg
+			}
 		}
+	GuiControl, PrgLnchOpt: Choose, ResIndex, 0
 	}
-return stat
 }
 SetResDefaults(lnchStat, targMonitorNum, ByRef scrWidthDefArr, ByRef scrHeightDefArr, ByRef scrFreqDefArr, SaveVars := 0)
 {
@@ -8032,7 +8095,7 @@ else
 					targMonitorNum := PrgMonToRn[selPrgChoice]
 
 					if (StoreFetchPrgRes(txtPrgChoice, selPrgChoice, PrgLnkInf, targMonitorNum))
-					{ 
+					{
 					SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
 					CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 					}
@@ -8041,12 +8104,11 @@ else
 
 				GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 
-					if (!FindStoredRes(ResIndexHwnd))
-					GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+				sleep 20
+
+				FindStoredRes(ResIndex, ResIndexHwnd)
 
 				TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResOnClose, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
-
-
 				}
 				else
 				{
@@ -8078,10 +8140,7 @@ else
 
 				CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 				TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum)
-
-					if (!FindStoredRes(ResIndexHwnd))
-					GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonDefResStrng
-
+				FindStoredRes(ResIndex, ResIndexHwnd, 1)
 
 			}
 
@@ -8382,8 +8441,7 @@ TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorN
 
 GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 
-	if (!FindStoredRes(ResIndexHwnd))
-	GuiControl, PrgLnchOpt: ChooseString, ResIndex, % PrgLnchOpt.MonCurrResStrng
+FindStoredRes(ResIndex, ResIndexHwnd)
 
 PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd, IniFileShortctSep)
 
@@ -9363,11 +9421,11 @@ loop % PrgNo
 		{
 			if (temp) ;IsaPrgLnk
 			strIniChoice := PrgLnkInf[A_Index]
-			
+
 
 		strRetVal := WorkingDirectory(strIniChoice, 1)
 
-			If (strRetVal)
+			if (strRetVal)
 			strTemp2 .= "`n" . strRetVal
 			else
 			{
@@ -10244,7 +10302,8 @@ if (lnchPrgIndex > 0) ;Running
 	return outStr
 	}
 
-;WinWaitClose What about suspended task?
+; Also try WinWaitClose
+; What about suspended tasks?
 
 
 }
@@ -10253,20 +10312,20 @@ else
 
 	if (lnchPrgIndex == 0) ;Just Change Res
 	{
-		GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
-
-		if ((targMonitorNum != PrgLnchMon) || temp := DefResNoMatchRes())
+	GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
+		if (DefResNoMatchRes())
 		{
-			if (!temp)
-			return "Cancelled!"
+			if ((targMonitorNum != PrgLnchMon))
+			{
+				if (strRetVal := ChangeResolution(targMonitorNum))
+				return % "Requested resolution change did not work. Reason: `n" strRetVal
+				else
+				WinMover(PrgLnchOpt.Hwnd(), "d r")
 
-			if (strRetVal := ChangeResolution(targMonitorNum))
-			return % "Requested resolution change did not work. Reason: `n" strRetVal
-			else
-			WinMover(PrgLnchOpt.Hwnd(), "d r")
-
+			}
 		}
-		
+		else
+		return "Cancelled!"		
 	}
 	else ;Cancel Prg: Either this or Waitclose
 	{
@@ -11004,11 +11063,20 @@ else ;Config screen
 		sleep, 300
 		}
 
-		if (!presetNoTest)
+	SetTimer, WatchSwitchBack, Delete
+	SetTimer, WatchSwitchOut, Delete
+
+		if (!waitBreak)
 		{
-		SetTimer, WatchSwitchBack, Delete
-		SetTimer, WatchSwitchOut, Delete
+			if (PrgMonToRn[selPrgChoice] != PrgLnch.Monitor)
+			{
+			SysGet, md, MonitorWorkArea, % PrgLnch.Monitor
+			dx := Round(mdleft + (mdRight- mdleft)/2)
+			dy := Round(mdTop + (mdBottom - mdTop)/2)
+			DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
+			}
 		}
+
 	}
 
 
@@ -11019,14 +11087,6 @@ WinMover(PrgLnchOpt.Hwnd(), "d r")
 	Gui, PrgLnchOpt: Show,, % PrgLnchOpt.Title
 
 }
-
-	if (!waitBreak && presetNoTest == 1)
-	{
-	SysGet, md, MonitorWorkArea, % PrgLnch.Monitor
-	dx := Round(mdleft + (mdRight- mdleft)/2)
-	dy := Round(mdTop + (mdBottom - mdTop)/2)
-	DllCall("SetCursorPos", "UInt", dx, "UInt", dy)
-	}
 
 }
 
@@ -12941,8 +13001,6 @@ DisplayNonStockRes(canonicalMonitorList, ResList)
 	SetTimer, RnChmWelcome, 3500
 
 	WinWaitClose, ahk_id %hWndNonStockResDlg%
-
-
 	return
 
 	NonStockResDlgClipSave:
@@ -14347,6 +14405,7 @@ SplashyProc(type, action := 0, mainText := "", subText := "")
 {
 Static SplashRef := Splashy.SplashImg
 static loadW := 0, loadH := 0, propW := 0, propH := 0
+vHide := 0
 vImgW := 0
 vImgH := 0
 vPosX := "C"
@@ -14367,7 +14426,9 @@ instance := 0
 		}
 		case "*Loading":
 		{
-			if (action)
+			if (action == 1)
+			vHide := 1
+			if (action == 2)
 			{
 			vPosX := floor(PrgLnchOpt.X() + (PrgLnchOpt.Width() - loadW)/2)
 			vPosY := floor(PrgLnchOpt.Y() + (PrgLnchOpt.Height() - loadH))
@@ -14408,7 +14469,7 @@ instance := 0
 		}
 	}
 
-%SplashRef%(Splashy, {imagePath: type, vHide : 0, instance: instance, vPosX : vPosX, vPosY : vPosY, vImgW : vImgW, vImgH : vImgH}*)
+%SplashRef%(Splashy, {imagePath: type, vHide : vHide, instance: instance, vPosX : vPosX, vPosY : vPosY, vImgW : vImgW, vImgH : vImgH}*)
 
 	if (!loadW)
 	{
@@ -14705,6 +14766,7 @@ IniProcStart:
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, CheckDefMissingMsg
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, DcmpExecutableWrn
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, MonProbMsg
+	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, KeepFilesInDir
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, MonitorNames
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, MonitorOrder
 
@@ -14863,7 +14925,7 @@ IniProcStart:
 				{
 					switch (sectCount)
 					{
-						case 18: ; ResMode
+						case 19: ; ResMode
 						{
 							if (selPrgChoice)
 							{
@@ -14905,7 +14967,7 @@ IniProcStart:
 							}
 					
 						}
-						case 19: ; UseReg
+						case 20: ; UseReg
 						{
 							if (selPrgChoice)
 							IniWrite, % PrgLnch.regoVar, % PrgLnch.SelIniChoicePath, General, UseReg
@@ -14920,7 +14982,7 @@ IniProcStart:
 							;else
 							}
 						}
-						case 20: ; ResShortcut
+						case 21: ; ResShortcut
 						{
 							if (selPrgChoice)
 							IniWrite, %ResShortcut%, % PrgLnch.SelIniChoicePath, General, ResShortcut
@@ -14932,7 +14994,7 @@ IniProcStart:
 						}
 						default:
 						Continue
-						; section 21- ...26+ : read "on the fly"
+						; section 22- ...27+ : read "on the fly"
 					}
 				}
 				else
@@ -15433,6 +15495,7 @@ try
 		temp := SubStr(strRetVal, 1, temp - 1)
 		temp := SubStr(temp, InStr(temp, "`n", 0, 0))
 		; includes trailing "`n"
+
 			if (InStr(temp, "MonitorNames"))
 			{
 				;first remove current MonitorNames
@@ -15440,6 +15503,8 @@ try
 
 				fTemp := InStr(strRetVal, "ResMode=") - 1
 				temp .= "MonitorOrder= `n"
+					if (!InStr(strRetVal, "KeepFilesInDir="))
+					temp := "`nKeepFilesInDir=" . temp
 					if (!InStr(strRetVal, "MonProbMsg="))
 					temp := "`nMonProbMsg=" . temp
 					if (!InStr(strRetVal, "DcmpExecutableWrn="))
@@ -15462,10 +15527,13 @@ try
 				{
 				temp := InStr(strRetVal, "`n[Prgs]")
 				temp := SubStr(strRetVal, 1, temp - 1)
+
 				; includes trailing "`n"
 					if (!InStr(temp, "MonitorNames"))
 					{
 					temp := "MonitorNames= `nMonitorOrder= `n"
+						if (!InStr(strRetVal, "KeepFilesInDir="))
+						temp := "KeepFilesInDir= `n" . temp
 						if (!InStr(strRetVal, "MonProbMsg="))
 						temp := "MonProbMsg= `n" . temp
 						if (!InStr(strRetVal, "DcmpExecutableWrn="))
@@ -15482,6 +15550,7 @@ try
 					; factor in the extra carriage return
 
 					strRetVal := SubStr(strRetVal, 1, fTemp - 2) . temp . SubStr(strRetVal, fTemp + 1)
+
 					}
 				}
 				else
