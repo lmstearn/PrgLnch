@@ -3242,11 +3242,22 @@ Class PrgLnch
 	{
 		set
 		{
-		this._PrgLnchMonitor := value
+		this._Monitor := value
 		}
 		get
 		{
-		return this._PrgLnchMonitor
+		return this._Monitor
+		}
+	}
+	LnchPadPID
+	{
+		set
+		{
+		this._LnchPadPID := value
+		}
+		get
+		{
+		return this._LnchPadPID
 		}
 	}
 
@@ -5829,13 +5840,14 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 		else
 		{
 			if (OutputVarPID)
-			WinWait, ahk_pid %OutputVarPID%, , 5
+			WinWait, ahk_pid %OutputVarPID%, , 10
 			else
 			{
 				if (!strTemp)
 				strTemp := "Unknown Error"
 			}
 
+		PrgLnch.LnchPadPID := OutputVarPID
 		}
 	}
 
@@ -6169,7 +6181,7 @@ KleenupPrgLnchFiles := ""
 			{
 				if (!fTemp)
 				{
-				retVal := TaskDialog("PrgLnch Installation", "PrgLnch program files exist in directory:`n`n" . """" . A_ScriptDir . """", , "As PrgLnch is distributed as a portable program, no formal installation`nis performed. The files can be removed, unless planning to use PrgLnch`nagain, in which case the files are best retained in the current directory.`n`nNeither the PrgLnch executable nor the PrgLnch ini file are flagged for removal.", , "Keep files", "Remove files")
+				retVal := TaskDialog("PrgLnch Installation", "PrgLnch non-essential program files exist in directory:`n`n" . """" . A_ScriptDir . """", , "As PrgLnch is distributed as a portable program, no formal installation`nis performed. The files can be removed, unless planning to use PrgLnch`nagain, in which case the files are best retained in the current directory.`n`nNeither the PrgLnch executable nor the PrgLnch ini file are flagged for removal.", , "Keep files", "Remove files")
 
 					if (retVal < 0)
 					{
@@ -9304,44 +9316,44 @@ critical
 	}
 
 
-if (PrgTermExit <> 2)
-{
-	if (presetNoTest) ; Quit Button clicked
+	if (PrgTermExit <> 2)
 	{
-	strTemp2 := ""
-	temp := ""
-	loop % PrgNo
-	{
-		lTemp := PrgPIDMast[A_Index]
-		if (lTemp)
+		if (presetNoTest) ; Quit Button clicked
 		{
-			Process, Exist, % lTemp
-			if (ErrorLevel)
+		strTemp2 := ""
+		temp := ""
+			loop % PrgNo
 			{
-				
-				if (!(strRetVal := PrgChoicePaths[A_Index]))
-				Continue
-				strRetVal := ExtractPrgPath(A_Index, 0, strRetVal, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)
-
-				if (strRetVal := GetProcFromPath(strRetVal, Instr(strRetVal, IniFileShortctSep)))
+			lTemp := PrgPIDMast[A_Index]
+				if (lTemp)
 				{
-					if (temp)
-					strTemp2 .= temp . """" . strRetVal . """"
-					else
+				Process, Exist, % lTemp
+					if (ErrorLevel)
 					{
-					temp := ", "
-					strTemp2 := "`[Batched`]: """ . strRetVal . """"
+						if (!(strRetVal := PrgChoicePaths[A_Index]))
+						Continue
+
+					strRetVal := ExtractPrgPath(A_Index, 0, strRetVal, PrgLnkInf, 0, IniFileShortctSep, IsaPrgLnk)
+
+						if (strRetVal := GetProcFromPath(strRetVal, Instr(strRetVal, IniFileShortctSep)))
+						{
+							if (temp)
+							strTemp2 .= temp . """" . strRetVal . """"
+							else
+							{
+							temp := ", "
+							strTemp2 := "`[Batched`]: """ . strRetVal . """"
+							}
+						}
 					}
 				}
 			}
 		}
-	}
-	}
 
-	if (PrgPID)
-	{
+		if (PrgPID)
+		{
 		Process, Exist, %PrgPID%
-		if (ErrorLevel)
+			if (ErrorLevel)
 			{
 				if (PrgChoicePaths[selPrgChoice])
 				{
@@ -9351,58 +9363,57 @@ if (PrgTermExit <> 2)
 					(strTemp2)? strTemp2 := "`[Test Run`]: """ . strRetVal . """`n" . strTemp2: strTemp2 := "`[Test Run`]: """ . strRetVal . """"
 				}
 			}
-	}
-
-	if (strTemp2)
-	{
-		if ((Instr(strTemp2, "`n")) || (Instr(strTemp2, ",")))
-		{
-		temp := "Prgs are"
-		strTemp := "them"
-		}
-		else
-		{
-		temp := "A Prg is"
-		strTemp := "it"
 		}
 
-		if (!PrgTermExit)
+		if (strTemp2)
 		{
+			if ((Instr(strTemp2, "`n")) || (Instr(strTemp2, ",")))
+			{
+			temp := "Prgs are"
+			strTemp := "them"
+			}
+			else
+			{
+			temp := "A Prg is"
+			strTemp := "it"
+			}
+
+			if (!PrgTermExit)
+			{
 			PrgTermExit := TaskDialog("Active on Quit", temp . " still running!`n" . strTemp2, , "If the active Prgs in a Batch Preset are not cancelled before Prglnch Quit, they'll`nbe automatically re-assigned to the (selected) Preset if active on PrgLnch rerun.`nAs a general rule, whenever the " . """" . " Do not show this again" . """" . " option is checked,`nthis dialog can only be restored by manually editing the LnchPad Slot ini file.`nThis tends to happen more when the " . """" . "Close" . """" . " option is clicked.", , "Close " . strTemp, "Do not close " . strTemp . " (Recommended)")
 				if (PrgTermExit < 0)
 				{
 				PrgTermExit := -PrgTermExit
 				IniWrite, %PrgTermExit%, % PrgLnch.SelIniChoicePath, Prgs, PrgTermExit
 				}
+			}
 		}
-
 	}
 
-}
+	if (PrgTermExit == 1)
+	{ ;cancel Prgs
 
-if (PrgTermExit == 1)
-{ ;cancel Prgs
+		loop % PrgNo
+		{
+			if (temp := PrgPIDMast[A_Index])
+			{
+			WinClose, ahk_pid%temp%
+			sleep, 100
 
-	loop % PrgNo
-		{
-		temp := PrgPIDMast[A_Index]
-		if (temp)
-		{
-		WinClose, ahk_pid%temp%
-		sleep, 100
+				if (WinExist("ahk_pid" . temp))
+				KillPrg(temp)
+			}
 		}
 
-		if (temp)
-		KillPrg(temp)
-		}
-	if (PrgPID)
-	{
-	WinClose, ahk_pid%PrgPID%
-	sleep, 100
 		if (PrgPID)
-		KillPrg(PrgPID)
+		{
+		WinClose, ahk_pid%PrgPID%
+		sleep, 100
+
+			if (WinExist("ahk_pid" . PrgPID))
+			KillPrg(PrgPID)
+		}
 	}
-}
 
 SetTimer, NewThreadforDownload, Delete ;Cleanup
 CloseChm()
@@ -9482,6 +9493,20 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 	}
 
 ; Gui, Progrezz: Destroy ; automatic, as with PrgLnchOpt: PrgLnch
+	if (WinExist("LnchPad Setup"))
+	{
+
+		if (PrgPID := PrgLnch.LnchPadPID)
+		{
+		WinClose, ahk_pid%PrgPID%
+		sleep, 100
+
+			if (WinExist("ahk_pid" . temp))
+			KillPrg(temp)
+		}
+		else
+		WinClose, LnchPad Setup
+	}
 
 
 arrPowerPlanNames = ""
