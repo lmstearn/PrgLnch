@@ -10340,14 +10340,14 @@ else
 	GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 		if (DefResNoMatchRes())
 		{
-			if ((targMonitorNum != PrgLnchMon))
+			if (strRetVal := ChangeResolution(targMonitorNum))
+			return % "Requested resolution change did not work. Reason: `n" strRetVal
+			else
 			{
-				if (strRetVal := ChangeResolution(targMonitorNum))
-				return % "Requested resolution change did not work. Reason: `n" strRetVal
-				else
+				if ((targMonitorNum == PrgLnchMon))
 				WinMover(PrgLnchOpt.Hwnd(), "d r")
-
 			}
+
 		}
 		else
 		return "Cancelled!"		

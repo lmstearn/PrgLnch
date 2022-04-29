@@ -7,7 +7,7 @@ SendMode Input  ; Recommended for new scripts due to superior speed & reliabilit
 SetWorkingDir %A_ScriptDir%
 ListLines, Off
 #KeyHistory 0
-#MaxMem 256
+#MaxMem 512
 AutoTrim, Off
 
 
@@ -55,14 +55,14 @@ Class ListBoxProps
 	GetItemHeight()
 	{
 	SendMessage, % this.LB_GETITEMHEIGHT, 0, 0, , % "ahk_id" this._hWnd
-	Return ErrorLevel
+	return ErrorLevel
 	}
 
 	SetItemHeight()
 	{
 	SendMessage, % this.LB_SETITEMHEIGHT, 0, % this._NewItemHeight, , % "ahk_id" this._hWnd
 	WinSet, Redraw, , % "ahk_id" this._hWnd
-	Return ErrorLevel
+	return ErrorLevel
 	}
 
 	GetItems()
@@ -70,14 +70,14 @@ Class ListBoxProps
 	lbItemArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 		if (!this.prgNo)
-		Msgbox, 8208,, Something broke: prgNo is zero in class!
+		Msgbox, 8208, LnchPad List, Something broke: PrgNo is zero in class!
 
 
 	SendMessage, % this.LB_GETSELCOUNT, 0, 0, , % "ahk_id" this._hWnd
 
 	wParam := ErrorLevel
-		If (wParam < 1)
-		Return wParam
+		if (wParam < 1)
+		return wParam
 
 	VarSetCapacity(lbSelItems, wParam * this.sizeOfDWORD, 0)
 
@@ -86,7 +86,7 @@ Class ListBoxProps
 		Loop, % wParam
 		lbItemArray[A_Index] := NumGet(lbSelItems, (A_Index - 1) * this.sizeOfDWORD, "UInt") + 1	
 	VarSetCapacity(lbSelItems, 0)
-	Return lbItemArray
+	return lbItemArray
 	}
 	GetOneItem()
 	{
@@ -98,26 +98,23 @@ Class ListBoxProps
 	lbItemArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	lbItemArray := this.GetItems()
 		for i in lbItemArray
-			{
-				if (tmp = lbItemArray[i])
-				{
-				tmp := lbItemArray[i]
-				Break
-				}
-			}
+		{
+			if (tmp == lbItemArray[i])
+			break
+		}
 
 	;LB_GETSEL: If an item is selected, the return value is greater than zero
 	SendMessage, % this.LB_GETSEL, % tmp - 1, 0, , % "ahk_id" this._hWnd
 	i := ErrorLevel
 		if (i)
-		Return tmp
+		return tmp
 		else
-		Return -tmp
+		return -tmp
 	}
 	Down()
 	{
 	tmp := this.GetOneItem()
-		if (tmp = this.prgNo)
+		if (tmp == this.prgNo)
 		SendMessage, % this.LB_SETSEL, True, 0, , % "ahk_id" this._hWnd
 		else
 		SendMessage, % this.LB_SETSEL, True, %tmp%, , % "ahk_id" this._hWnd
@@ -125,7 +122,7 @@ Class ListBoxProps
 	Up()
 	{
 	tmp := this.GetOneItem()
-		if (tmp = 1)
+		if (tmp == 1)
 		SendMessage, % this.LB_SETSEL, True, % this.prgNo - 1, , % "ahk_id" this._hWnd
 		else
 		SendMessage, % this.LB_SETSEL, True, % tmp - 2, , % "ahk_id" this._hWnd
@@ -157,7 +154,7 @@ tabGuiW := 0
 tabGuiH := 0
 GuiHwnd := 0
 
-
+fontDPI := 96 ; To be adjustment factor for windows setting
 mControl := 0
 buttonBkdChange := 0
 cancelSearchMsg := 0
@@ -271,7 +268,7 @@ Khakigrau := "746643"
 		if (InStr(A_LoopFileName, "PrgLnch.exe"))
 		{
 		tmp := 1
-		Break
+		break
 		}
 	}
 
@@ -288,8 +285,8 @@ lnchPadPID := DllCall("GetCurrentProcessId")
 
 	for tmp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
 	{
-		if (tmp = 2)
-		Break
+		if (tmp == 2)
+		break
 	}
 
 SelIniChoiceNamePrgLnch := strRetVal
@@ -297,7 +294,16 @@ SelIniChoiceNamePrgLnch := strRetVal
 
 ListBoxProps.Init() := PrgNo
 
-Gui, +LastFound +%WS_CLIPSIBLINGS% -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP%
+RegRead, fontDPI, HKEY_CURRENT_USER\Control Panel\Desktop\WindowMetrics, AppliedDPI 
+	if (ErrorLevel)
+	{
+	msgbox, 8192, Registry Access, The AppliedDPI value in registry is unavailable!`n`nAssuming default font scaling of 96.
+	fontDPI := 1
+	}
+	else
+	fontDPI := 96/fontDPI
+
+Gui, +LastFound +%WS_CLIPSIBLINGS% -DPIScale -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP%
 GuiHwnd := WinExist()
 
 
@@ -309,9 +315,7 @@ OnMessage(MsgSH, "ShellMessage")
 
 
 	loop, % maxGames
-	{
 	gameListStr .= gameList[A_Index] . "|"
-	}
 
 Gui, Add, Text, x0 y0 Center +E%WS_EX_TOPMOST% gsearchDrive vsearchDrive HWNDsearchDriveHwnd, % "&Search PC for " gameList[1] " Apps"
 Gui, Add, Text, Center gaddToLnchPad vaddToLnchPad HWNDaddToLnchPadHwnd wp, % "&Locate " gameList[1] " LnchPad Slot"
@@ -337,7 +341,7 @@ thisGuiH := floor(GetMonHeight(GuiHwnd))
 
 tmp := (thisGuiW > 1400)? ((thisGuiW > 1800)? 4: 2): 1
 
-Gui, Font, % "s" A_GuiFontSize + tmp
+Gui, Font, % "s" fontDPI * (A_GuiFontSize + tmp)
 
 GuiControl, Font, searchDrive
 GuiControl, Font, addToLnchPad
@@ -345,8 +349,16 @@ Gui, Font
 CtlColors.Attach(searchDriveHwnd, Red, "White")
 CtlColors.Attach(addToLnchPadHwnd, Red, "White")
 
-thisGuiW := floor(thisGuiW/2)
-thisGuiH := floor(thisGuiH/2)
+	; Font sizes scale up when resolution decreases
+	if (thisGuiW < 400)
+	thisGuiW := floor(2 * thisGuiW/3)
+	else
+	thisGuiW := floor(thisGuiW/2)
+
+	if (thisGuiH < 600)
+	thisGuiH := floor(2 * thisGuiH/3)
+	else
+	thisGuiH := floor(thisGuiH/2)
 
 
 Gui, Add, Tab2, x0 y0 w%thisguiW% h%thisguiH% vLnchPadTab gLnchPadTab AltSubmit HWNDLnchPadTabHwnd, % substr(gameListStr, 1, StrLen(gameListStr) - 1)
@@ -356,7 +368,7 @@ Gui Show, w%thisguiW% h%thisguiH% Hide,
 tabguiH := thisguiH - GetTabRibbonHeight(GuiHwnd)
 tabguiW := thisguiW - A_LastError
 
-
+tmp := (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
 
 	loop, % maxGames
 	{
@@ -364,57 +376,68 @@ tabguiW := thisguiW - A_LastError
 	Gui, Tab, %A_Index%
 
 	Gui, Add, ListBox, %LBS_MULTIPLESEL% x0 y0 vPrgIndex%A_Index% gPrgListBox HWNDPrgIndex%A_Index%Hwnd
-	ListBoxProps._hWnd := PrgIndex%A_Index%Hwnd
+	ListBoxProps.hWnd := PrgIndex%A_Index%Hwnd
 	; Not the best....
 	tmp := (thisGuiH > 520)? ((thisGuiH > 700)? 4: 3): (thisGuiH > 420)? 2: 1
-	Gui, Font, % "s" A_GuiFontSize + tmp
+	Gui, Font, % "s" fontDPI * (A_GuiFontSize + tmp)
 	GuiControl, Font, % PrgIndex%A_Index%Hwnd
+
+
 	Gui, Font
 	ListBoxProps.NewItemHeight := floor(3/2 * ListBoxProps.GetItemHeight())
 	ListBoxProps.SetItemHeight()
 
-	GuiControl, Move, PrgIndex%A_Index%, % "x" 11 * tabguiW/16 "y" tabguiH/4 "w" tabguiW/4 "h" (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
+		; Factor for low res
+		if (thisGuiH < 300)
+		tmp := tabguiH/6
+		else
+		tmp := tabguiH/4
+
+	GuiControl, Move, PrgIndex%A_Index%, % "x" 11.5 * tabguiW/16 "y" tmp " w" tabguiW/4 "h" (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
 
 	CtlColors.Attach(PrgIndex%A_Index%Hwnd, Pink, "White")
 
 
 	switch A_Index
 	{
-	case 1:
-	{
+		case 1:
+		{
 		tmp = LnchPadMorrowind.jpg
 		FileInstall LnchPadMorrowind.jpg, LnchPadMorrowind.jpg
-	}
-	case 2:
-	{
+		}
+		case 2:
+		{
 		tmp = LnchPadOblivion.jpg
 		FileInstall LnchPadOblivion.jpg, LnchPadOblivion.jpg
-	}
-	case 3:
-	{
+		}
+		case 3:
+		{
 		tmp = LnchPadSkyrim.jpg
 		FileInstall LnchPadSkyrim.jpg, LnchPadSkyrim.jpg
-	}
-	case 4:
-	{
+		}
+		case 4:
+		{
 		tmp = LnchPadFallout 3.jpg
 		FileInstall LnchPadFallout 3.jpg, LnchPadFallout 3.jpg
-	}
-	case 5:
-	{
+		}
+		case 5:
+		{
 		tmp = LnchPadFallout NV.jpg
 		FileInstall LnchPadFallout NV.jpg, LnchPadFallout NV.jpg
-	}
-	case 6:
-	{
+		}
+		case 6:
+		{
 		tmp = LnchPadFallout 4.jpg
 		FileInstall LnchPadFallout 4.jpg, LnchPadFallout 4.jpg
+		}
 	}
 
+	; more for uncompiled run- else disaster!
+	if (!(FileExist(A_ScriptDir . "\" . tmp)))
+	{
+	MsgBox, 8208, Game Image File, The file %tmp% cannot be accessed!`nQuitting LnchPad.
+	return
 	}
-
-
-
 
 
 
@@ -425,10 +448,10 @@ tabguiW := thisguiW - A_LastError
 
 
 	tmp := A_Index
+
 		loop, % prgNo
-		{
 		PrgIndexList .= "|" . prgName%tmp%[A_Index] . "|"
-		}
+
 	GuiControl, , prgIndex%A_Index%, % substr(prgIndexList, 1, StrLen(prgIndexList) - 1)
 
 
@@ -449,15 +472,15 @@ tabguiW := thisguiW - A_LastError
 
 ; 8 is default size of MS Shell Dlg for controls
 
-GuiControl, Move, searchDrive, % "x" thisguiW/6 "y" 3 * thisguiH/8 "w" A_GuiFontSize * 5 * thisguiW/(16 * 8) "h" A_GuiFontSize * thisguiH/(16 * 8)
+GuiControl, Move, searchDrive, % "x" thisguiW/16 "y" 11 * thisguiH/32 "w" A_GuiFontSize * 5 * thisguiW/(16 * 8) "h" A_GuiFontSize * thisguiH/(16 * 8)
 
-GuiControl, Move, addToLnchPad, % "x" thisguiW/6 "y" 5 * thisguiH/8 "w" A_GuiFontSize * 5 * thisguiW/(16 * 8) "h" A_GuiFontSize * thisguiH/(16 * 8)
+GuiControl, Move, addToLnchPad, % "x" thisguiW/16 "y" 5 * thisguiH/8 "w" A_GuiFontSize * 5 * thisguiW/(16 * 8) "h" A_GuiFontSize * thisguiH/(16 * 8)
 
 
 ControlGetPos, , , , tmp, , ahk_id %Drive1Hwnd%
 	loop % maxDrives
 	{
-	GuiControl, Move, Drive%A_Index%, % "x" thisguiW/2 "y" ((A_Index - 1) * 2 * tmp + (3 * thisguiH/8))
+	GuiControl, Move, Drive%A_Index%, % "x" 2*thisguiW/5 "y" ((A_Index - 1) * 2 * tmp + (3 * thisguiH/8))
 	CtlColors.Attach(Drive%A_Index%Hwnd, Yellow, "Black") ; CtlColors doesn't do text colour for checkbox/radio.
 	}
 
@@ -475,13 +498,13 @@ SetTaskBarIcon(GuiHwnd)
 WinSet, Redraw,, ahk_id %GuiHwnd%
 
 
-Return
+return
 
 
 
 gamePic:
 GuiControl, Move, % "HBITMAP:*" picH, % "x" GetTabRibbonHeight() "y" GetTabRibbonHeight(GuiHwnd, 1) "w" tabguiW "h" tabguiH
-Return
+return
 
 PrgListBox:
 Gui, Submit, Nohide
@@ -508,7 +531,7 @@ if (PrgIndex%tabStat%hwnd=PrgListBox_SelectedItem_last_hwnd && tabStat)
 	}
 }
 
-ListBoxProps._hWnd := PrgIndex%tabStat%Hwnd
+ListBoxProps.hWnd := PrgIndex%tabStat%Hwnd
 
 ListBox_SelectedItem := ListBoxProps.GetOneItem()
 
@@ -528,7 +551,7 @@ ListBox_SelectedItem := ListBoxProps.GetOneItem()
 
 
 PrgListBox_SelectedItem_last_hwnd:=PrgIndex%tabStat%hwnd
-Return
+return
 
 searchDrive:
 
@@ -569,14 +592,14 @@ GuiControlGet, strTmp, , searchDrive
 		searchStat := -1
 		tooltipDriveStr := ""
 
-		ListBoxProps._hWnd := PrgIndex%tabStat%Hwnd
+		ListBoxProps.hWnd := PrgIndex%tabStat%Hwnd
 		GuiControl, Choose, PrgIndex%tabStat%, 0
 		lboxSelTol := 0
 
 		setTimer SearchFiles, -1
 		}
 	}
-Return
+return
 SearchFiles:
 
 loop % maxDrives
@@ -622,8 +645,8 @@ currDrive := DriveLetter[A_Index]
 			if (FolderList[A_Index])
 			{
 				Progress, % 10 + (90 * A_Index//FolderList.Length())
-					if (searchStat = -2)
-					Break
+					if (searchStat == -2)
+					break
 				Loop, Files, % FolderList[A_Index] . "\*.exe", R
 				FileList .= A_LoopFileFullPath "`n"
 			}
@@ -633,39 +656,39 @@ currDrive := DriveLetter[A_Index]
 
 		Loop, parse, FileList, `n
 		{
-			if (A_LoopField = "")  ; Ignore the blank item at the end of the list.
+			if (A_LoopField == "")  ; Ignore the blank item at the end of the list.
 			continue
 			else
 			{
 				loop % prgNo
 				{
 				SplitPath, A_Loopfield, strTmp
-					if (strTmp = prgExe%tabStat%[A_Index])
+					if (strTmp == prgExe%tabStat%[A_Index])
 					{
 						if (!strTmp) ; trailing `n in fileList
-						Break
+						break
 						if (prgPath%tabStat%[A_Index])
 						{
-							if (multcopiesPrgWrn = 1)
-							Break
-							Else
+							if (multcopiesPrgWrn == 1)
+							break
+							else
 							{
-							If (!multcopiesPrgWrn)
+							if (!multcopiesPrgWrn)
 							{
-							MsgBox, 8195, Prg found on another Drive, % strTmp " was discovered on a previous drive.`n`nReply:`nYes: Keep the old Prg. (Warn like this next time) `nNo: Keep the old Prg (Recommended: This will not show again) `nCancel: Use " currDrive " instead (This will not show again)"
+							MsgBox, 8195, Duplicate Prg, % strTmp " was discovered on a previous drive.`n`nReply:`nYes: Use the " currDrive " drive instead (This will not show again)`nNo: Keep the old Prg. (Warn like this next time)`nCancel: Keep the old Prg (Recommended: This will not show again)"
 							GoSub StartProgress
 							Progress, 99
-								IfMsgBox, Yes
-								Break
+								IfMsgBox, No
+								break
 								else
 								{
-									IfMsgBox, No
+									IfMsgBox, Yes
 									{
-									multcopiesPrgWrn := 1
-									Break
+									multcopiesPrgWrn := 2
+									break
 									}
 									else
-									multcopiesPrgWrn := 2									
+									multcopiesPrgWrn := 1
 								}
 							}
 							prgPath%tabStat%[A_Index] := A_Loopfield
@@ -674,7 +697,7 @@ currDrive := DriveLetter[A_Index]
 							tmp := 1
 							}
 						}
-					Break
+					break
 					}
 				}
 			}
@@ -694,15 +717,15 @@ currDrive := DriveLetter[A_Index]
 				{
 				SplitPath, A_Loopfield, strTmp
 					if (!strTmp) ; trailing `n in fileList
-					Break
+					break
 
-					if (strTmp = prgExe%tabStat%[A_Index])
+					if (strTmp == prgExe%tabStat%[A_Index])
 					{
 					prgPath%tabStat%[A_Index] := A_Loopfield
 					prgPath%tabStat%bak[A_Index] := A_Loopfield
 					GuiControl, Choose, PrgIndex%tabStat%, %A_Index%
 					tmp := 1
-					Break
+					break
 					}
 				}
 			}
@@ -711,8 +734,8 @@ currDrive := DriveLetter[A_Index]
 		tooltipDriveStr .= currDrive . ","
 	}
 	Progress, Off
-		if (searchStat = -2)
-		Break
+		if (searchStat == -2)
+		break
 	}
 }
 
@@ -730,7 +753,7 @@ Process, priority, %lnchPadPID%, B
 
 resetSearch(searchStat, tabStat, gameList, maxDrives)
 cancelSearchMsg := 0
-Return
+return
 
 Drive:
 Gui, Submit, Nohide
@@ -740,20 +763,20 @@ tmp := substr(A_GuiControl, 0)
 	DriveLetter[tmp] := DriveLetterBak[tmp]
 	else
 	DriveLetter[tmp] := ""
-Return
+return
 
 overWriteIni:
 Gui, Submit, Nohide
 GuiControlGet, overWriteIniFile, , overWriteIni
 GuiControl, Focus, addToLnchPad
-Return
+return
 
 
 UpdateIni:
 Gui, Submit, Nohide
 overWriteIniFile := 0
 GuiControl, Focus, addToLnchPad
-Return
+return
 
 addToLnchPad:
 Gui, Submit, Nohide
@@ -772,7 +795,7 @@ GuiControlGet, strTmp, , addToLnchPad
 		if (!tmp)
 		{
 		Tooltip, Nothing to Add!
-		Return
+		return
 		}
 
 	tmp := 0
@@ -794,7 +817,7 @@ GuiControlGet, strTmp, , addToLnchPad
 				if (A_LoopField)
 				{
 				i++
-					if (A_LoopField = gameList[tabStat])
+					if (A_LoopField == gameList[tabStat])
 					{
 					tmp := 1
 					}
@@ -815,7 +838,7 @@ GuiControlGet, strTmp, , addToLnchPad
 					if (i > (PrgNo))
 					{
 					Tooltip, % "The LnchPad Preset Ini File already exists for " gameList[tabStat] ",`nhowever PrgLnch has no available slots!"
-					Return
+					return
 					}
 					else
 					{
@@ -837,7 +860,7 @@ GuiControlGet, strTmp, , addToLnchPad
 		else
 		{
 			Tooltip, There are no ini files to write to. Cannot continue!
-			Return
+			return
 		}
 	guiControl, , addToLnchPad, % "&Add to " gameList[tabStat] " LnchPad Slot"
 
@@ -878,8 +901,8 @@ GuiControlGet, strTmp, , addToLnchPad
 			
 			; Get def monitor data via coomand line
 			for tmp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
-				if (tmp = 1)
-				Break
+				if (tmp == 1)
+				break
 			
 				loop % PrgNo
 				{
@@ -893,7 +916,7 @@ GuiControlGet, strTmp, , addToLnchPad
 				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgVer
 				strTmp := "1,0,-1,-1,0,0,0"
 				IniWrite, %strTmp%, %gameIniPath%, Prg%A_Index%, PrgMisc
-				if (A_Index = floor(PrgNo/2))
+				if (A_Index == floor(PrgNo/2))
 				Progress, 25
 				}
 			}
@@ -902,10 +925,10 @@ GuiControlGet, strTmp, , addToLnchPad
 		tmp := 0
 			Loop, % PrgNo
 			{
-				if (iniNames[A_Index] = gameList[tabStat])
+				if (iniNames[A_Index] == gameList[tabStat])
 				{
 				tmp := A_Index
-				Break
+				break
 				}
 			}
 
@@ -917,7 +940,7 @@ GuiControlGet, strTmp, , addToLnchPad
 					{
 					tmp := A_Index
 					iniNames[tmp] := gameList[tabStat]
-					Break
+					break
 					}
 				}
 			}
@@ -944,7 +967,7 @@ GuiControlGet, strTmp, , addToLnchPad
 		else
 		{
 			; PrgLnch restart flag activated
-			if (SelIniChoiceNamePrgLnch = gameList[tabStat])
+			if (SelIniChoiceNamePrgLnch == gameList[tabStat])
 			SelIniChoiceNamePrgLnchUpdated := 1
 
 			if (strRetval)
@@ -954,7 +977,7 @@ GuiControlGet, strTmp, , addToLnchPad
 		}
 	}
 
-Return
+return
 
 AddToIniProc(prgNo, tabStat, gameIniPath, prgPathtabStat, prgUrltabStat, IniFileShortctSep)
 {
@@ -1041,7 +1064,7 @@ AllocatedtoSlotArrayCt := 0
 			Loop, % PrgNo
 			{
 				
-				if (strTmp = PrgPathWrittentoSlotArray[A_Index])
+				if (strTmp == PrgPathWrittentoSlotArray[A_Index])
 				tmp := 1
 			}
 
@@ -1053,7 +1076,7 @@ AllocatedtoSlotArrayCt := 0
 					{
 					AllocatedtoSlotArrayCt++
 					PrgPathNotWrittentoSlotArray[AllocatedtoSlotArrayCt] := strTmp
-					Break
+					break
 					}
 				}
 			}
@@ -1076,7 +1099,7 @@ AllocatedtoSlotArrayCt := 0
 					if (PrgUrl[A_Index])
 					IniWrite, % PrgUrl[A_Index], %gameIniPath%, Prg%A_Index%, PrgUrl
 				freeSlotArray[A_Index] := 1
-				Break
+				break
 				}
 			}
 		}
@@ -1106,7 +1129,7 @@ AllocatedtoSlotArrayCt := 0
 	}
 
 
-Return strRetVal
+return strRetVal
 
 
 }
@@ -1129,16 +1152,16 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 			IniWrite, %strTmp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
 			else
 			{
-			MsgBox, 8196, , % "The LnchPad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the LnchPads. `n"
+			MsgBox, 8196, LnchPad Ini Update, % "The LnchPad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the LnchPads. `n"
 				IfMsgBox, No
-				Return
+				return
 			}
 
 			if (Errorlevel)
 			{
-			MsgBox, 8196, , % "The following LnchPad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the LnchPads. `n"
+			MsgBox, 8196, LnchPad Ini Update, % "The following LnchPad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the LnchPads. `n"
 				IfMsgBox, No
-				Return
+				return
 			}
 		sleep, 20
 		}
@@ -1151,11 +1174,11 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	IniWrite, %strTmp%, %PrgLnchIni%, General, SelIniChoiceName
 	else
 	{
-	MsgBox, 8208, ,The PrgLnch ini file cannot be written to!
-	Return
+	MsgBox, 8208, LnchPad: Prglnch ini Update, The PrgLnch ini file cannot be written to!
+	return
 	}
 	if (Errorlevel)
-	MsgBox, 8192, , % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTmp
+	MsgBox, 8192, LnchPad: PrgLnch Ini Update, % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTmp
 	
 	
 	sleep, 20
@@ -1179,12 +1202,12 @@ Gui, Submit, Nohide
 
 	if (searchStat < 0)
 	{
-		if (searchStat = -1)
+		if (searchStat == -1)
 		{
 		GuiControl, Choose, LnchPadTab, % tabStat
 		Progress, -A
 		Progress, +A
-		Return
+		return
 		}
 		else
 		{
@@ -1245,18 +1268,18 @@ buttonBkdChange := 0 ; just in case
 	resetSearch(searchStat, tabStat, gameList, maxDrives)
 	}
 
-Return
+return
 
 StartProgress:
 Progress, off
 Progress, Hide
 W := thisGuiW /2
 H := thisGuiH /8
-if (buttonBkdChange = 1)
+if (buttonBkdChange == 1)
 Progress, A W%W% H%H% b p0 M,, Getting Headers. %currDrive%: ...,
 else
 Progress, A W%W% H%H% b p0 M,, Updating LnchPad Ini Slot: ...,
-Return
+return
 
 Esc::
 Quit:
@@ -1275,7 +1298,7 @@ CtlColors.Free()
 		}
 		catch tmp
 		{
-		MsgBox, 8192, ReLaunch, % "PrgLnch could not restart with error " tmp "."
+		MsgBox, 8192, PrgLnch ReLaunch, % "PrgLnch could not restart with error " tmp "."
 		}
 	}
 ExitApp
@@ -1294,7 +1317,7 @@ SM_CYEDGE := 46 ; assume 3D
 	{
 	SysGet, tmp, %SM_CYEDGE%
 		DetectHiddenWindows, On	
-		If WinExist("ahk_id " LnchPadTabHwnd)
+		if WinExist("ahk_id " LnchPadTabHwnd)
 		{
 		DetectHiddenWindows, Off
 		VarSetCapacity(rect, 16, 0)
@@ -1305,15 +1328,15 @@ SM_CYEDGE := 46 ; assume 3D
 		DllCall("GetClientRect", "Ptr", LnchPadTabHwnd, "Ptr", &rect)
 		W := W - NumGet(rect, 8, "int")
 		DllCall( "SetLastError", "Uint", W) 
-		Return % H - NumGet(rect, 12, "int") - WindozeBorder * tmp
+		return % H - NumGet(rect, 12, "int") - WindozeBorder * tmp
 		}
 		else
-		Msgbox, 8208,, Problem with Tab!
+		Msgbox, 8208, LnchPad Tabs, Problem with Tab display!
 	}
 	else
 	{
 	SysGet, tmp, %SM_CXEDGE%	
-	Return % tmp
+	return % tmp
 	}
 
 }
@@ -1328,7 +1351,7 @@ VarSetCapacity(LF, szLF := 60*((A_IsUnicode)? 2:1))
 DllCall("GetObject", "UInt", hFont, "Int", szLF, "UInt",&LF)
 hDC := DllCall("GetDC", "UInt", hwnd ), DPI := DllCall( "GetDeviceCaps", "UInt", hDC, "Int", 90)
 DllCall( "ReleaseDC", "Int", 0, "UInt", hDC ), S := Round((-NumGet(LF,0, "Int") * 72) / DPI) ; S is fonstsize
-Return DllCall( "MulDiv", "Int", &LF+28, "Int", 1, "Int", 1, "Str"), DllCall( "SetLastError", "UInt", S ) ; sneaky way of returning a second value without using function parameters
+return DllCall( "MulDiv", "Int", &LF+28, "Int", 1, "Int", 1, "Str"), DllCall( "SetLastError", "UInt", S ) ; sneaky way of returning a second value without using function parameters
 }
 
 
@@ -1336,20 +1359,20 @@ Return DllCall( "MulDiv", "Int", &LF+28, "Int", 1, "Int", 1, "Str"), DllCall( "S
 {
 Down::
 GuiControlGet, tmp, FocusV
-	if (tmp = (tmp := PrgIndex%tabStat%))
+	if (tmp == (tmp := PrgIndex%tabStat%))
 	ListBoxProps.Down()
-Return
+return
 Up::
 GuiControlGet, tmp, FocusV
-	if (tmp = (tmp := PrgIndex%tabStat%))
+	if (tmp == (tmp := PrgIndex%tabStat%))
 	ListBoxProps.Up()
-Return
+return
 }
 
 ~RButton::
 
 goSub chmRButton
-Return
+return
 
 chmRButton:
 
@@ -1383,7 +1406,7 @@ if (retVal) ; error
 
 		}
 	}
-Return
+return
 
 
 LBEX_ItemFromCursor(HLB)
@@ -1396,9 +1419,9 @@ LBEX_ItemFromCursor(HLB)
 	X := NumGet(Point, 0, "UShort") ; only 16 bits are used by LB_ITEMFROMPOINT
 	Y := NumGet(Point, 4, "UShort") << 16 ; only 16 bits are used by LB_ITEMFROMPOINT
 	SendMessage, %LB_ITEMFROMPOINT%, 0, % (X + Y), , ahk_id %HLB% ; msdn.microsoft.com/en-us/library/bb761323(v=vs.85).aspx
-		If (ErrorLevel & 0xFFFF0000) ; the HIWORD of the return value is one if the cursor is outside the client area.
-		Return 0
-	Return (ErrorLevel & 0xFFFF) + 1 ; the return value contains the 0-based index of the item in the LOWORD.
+		if (ErrorLevel & 0xFFFF0000) ; the HIWORD of the return value is one if the cursor is outside the client area.
+		return 0
+	return (ErrorLevel & 0xFFFF) + 1 ; the return value contains the 0-based index of the item in the LOWORD.
 }
 
 ;~LButton::
@@ -1408,7 +1431,7 @@ Global
 	if (buttonBkdChange)
 	return
 
-	if (Msg = WM_HELPMSG)
+	if (Msg == WM_HELPMSG)
 	WM_HELP(0, lParam, WM_HELPMSG, hWnd)
 	else
 	{
@@ -1422,7 +1445,7 @@ Global
 				GuiControlGet, tmp, , searchDrive
 					if (!InStr(tmp, "Cancel Search"))
 					resetSearch(searchStat, tabStat, gameList, maxDrives)
-				Return
+				return
 			}
 			if (InStr(tmp, "searchDrive" ))
 			{
@@ -1431,7 +1454,7 @@ Global
 			}
 			else
 			{
-				if (InStr(tmp, "addToLnchPad" ))
+				if (InStr(tmp, "addToLnchPad"))
 				{
 
 				CtlColors.Change(addToLnchPadHwnd, Vermilion, "White")
@@ -1456,14 +1479,13 @@ Global
 				if (InStr(mControl, "SysTabControl"))
 				{
 
-					if (searchStat = -1)
+					if (searchStat == -1)
 					{
 
-					MsgBox, 8193, , An operation is still active on the current tab.`n`nClick OK to cancel the operation and continue, or,`nCancel to wait until the operation has completed.
+					MsgBox, 8193, Active process on Tab, An operation is still active on the current tab.`n`nClick OK to cancel the operation and continue, or,`nCancel to wait until the operation has completed.
 						IfMsgBox, OK
-						{
 						searchStat := -2
-						}
+
 					gosub LnchPadTab
 
 					}
@@ -1472,25 +1494,25 @@ Global
 				else
 				{
 				WinGetClass, class, ahk_id %hWnd%
-					if (class="tooltips_class32")
+					if (class == "tooltips_class32")
 					ToolTip
 				}
 			}
 		}
 	}
 		
-Return
+return
 }
 MouseOffButton:
 	if (getKeyState("LButton", "P"))
-	Return
+	return
 MouseGetPos, , , , mControl ; mX relative to FORM
 ControlGetPos, cX, cY, cWidth, cHeight, % mControl, A
 GuiControlGet, tmp, Name, % mControl
-	if (buttonBkdChange = 1)
+	if (buttonBkdChange == 1)
 	{
 		if (InStr(tmp, "searchDrive" ))
-		Return
+		return
 
 		switch tabStat
 		{
@@ -1512,7 +1534,7 @@ GuiControlGet, tmp, Name, % mControl
 	else
 	{
 		if (InStr(tmp, "addToLnchPad"))
-		Return
+		return
 
 		switch tabStat
 		{
@@ -1532,15 +1554,15 @@ GuiControlGet, tmp, Name, % mControl
 	}
 buttonBkdChange := 0
 SetTimer, MouseOffButton, Off
-Return
+return
 
 GetDriveLetters(ByRef FATDrives)
 {
 ;https://autohotkey.com/board/topic/89345-physical-hard-drive-information/
-For Prt in (ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2").ExecQuery("Select * FROM Win32_LogicalDiskToPartition"),DP:=[])
+for Prt in (ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2").ExecQuery("Select * FROM Win32_LogicalDiskToPartition"),DP:=[])
     DP.Insert(RegExReplace(Prt.Antecedent " " Prt.Dependent,"^.*?""|"".*"))
 
-For Prp in (ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2").ExecQuery("Select * FROM Win32_LogicalDisk"),DINF:=[],i:=1)
+for Prp in (ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2").ExecQuery("Select * FROM Win32_LogicalDisk"),DINF:=[],i:=1)
     (f:=Prp.FileSystem) ? DINF.Insert(DP[i++] " FileSystem: " f " DriveLetter: " Prp.Name):
 
 ; Place Info in Disp ( Temp Display ) Variable.
@@ -1552,7 +1574,7 @@ DriveLetter := Object()
 FATDrivesTmp := ""
 FATDrivesTmp := Object()
 
-	For i in (DINF)
+	for i in (DINF)
 	{
 		if (InStr(DINF[i], "NTFS")) || (InStr(DINF[i], "FAT"))
 		{
@@ -1564,7 +1586,7 @@ FATDrivesTmp := Object()
 		;Disp.=DINF[i] "`r`n"
 	}
 FATDrives := join(FATDrivesTmp)
-Return DriveLetter
+return DriveLetter
 }
 ResetDrives(ByRef DriveLetterBak, ByRef DriveLetter, maxDrives)
 {
@@ -1607,13 +1629,13 @@ return substr(s, 2)
 
 KleenupLnchPadFiles()
 {
-namesToDel := ["LnchPadMorrowind.jpg", "LnchPadOblivion.jpg", "LnchPadSkyrim.jpg"]
+namesToDel := ["LnchPadMorrowind.jpg", "LnchPadOblivion.jpg", "LnchPadSkyrim.jpg", "LnchPadFallout 3.jpg", "LnchPadFallout NV.jpg", "LnchPadFallout 4.jpg"]
 
 ; Keep files if debugging
 if (!A_IsCompiled)
-Return
+return
 
-For eachNameToDel in namesToDel
+for eachNameToDel in namesToDel
 {
 	if (FileExist(namesToDel[A_Index]))
 	FileDelete, % namesToDel[A_Index]
@@ -1639,10 +1661,10 @@ return
 ;	-1, -2: root folder handle or info, -3, -4: path handle or info (To be done), -5,  Createfile root handle
 ;	 -6: Query Journal fail ,-7: volume handle or info, -8: USN journal handle
 ;
-; RETURN VALUE:
+; return VALUE:
 ;	filelist or empty string if error occured (also see 'num' parameter)
 
-ListMFTfiles(Drive, matchList = "", delim = "`n", byref numF = "")
+ListMFTfiles(Drive, matchList := "", delim := "`n", byref numF := "")
 {
 ; Fun fact: NTFS max files is 4,294,967,295  (2³² minus 1 file)
 ;Windows 2000 Change Journal Explained:  https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/bb742450(v=technet.10)
@@ -1665,7 +1687,7 @@ Global searchStat
 
 	hRoot := dllCall("CreateFile", "wstr", "\\.\" drive "\", "uint", 0, "uint", SHARE_RW, "uint", 0
 					, "uint", OPEN_EXISTING, "uint", FILE_FLAG_BACKUP_SEMANTICS, "uint", 0)
-		if(hRoot = -1)
+		if(hRoot == -1)
 		{
 		numF := -1
 		return
@@ -1685,7 +1707,7 @@ Global searchStat
 	;	Else it will not work on Windows Server 2012 running the Refs filesystem!
 	VarSetCapacity(fi, 52, 0)
 
-		if(dllCall("GetFileInformationByHandle", "uint", hRoot, "uint", &fi) != STATUS_SUCCESS)
+		if (dllCall("GetFileInformationByHandle", "uint", hRoot, "uint", &fi) != STATUS_SUCCESS)
 		{
 		dllCall("CloseHandle", "uint", hRoot)
 		numF := -2
@@ -1702,7 +1724,7 @@ Global searchStat
 
 	hJRoot := dllCall("CreateFile", "wstr", "\\.\" drive, "uint", GENERIC_RW, "uint", SHARE_RW, "uint", 0
 				, "uint", OPEN_EXISTING, "uint", FILE_FLAG_SEQUENTIAL_SCAN := 0x08000000, "uint", 0)
-		if(hJRoot = -1)
+		if(hJRoot == -1)
 		{
 		numF := -5
 		return
@@ -1719,7 +1741,7 @@ Global searchStat
 	; FSCTL_CREATE_USN_JOURNAL requires Admin privileges
 	; cb receives a null ptr- it seems the documentation wants it there as a dummy.
 
-		if(dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_CREATE_USN_JOURNAL := 0x000900e7, "Ptr", &cujd, "uint", 16, "uint*", 0, "uint", 0, "uint*", cb, "Ptr", 0) != STATUS_SUCCESS)
+		if (dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_CREATE_USN_JOURNAL := 0x000900e7, "Ptr", &cujd, "uint", 16, "uint*", 0, "uint", 0, "uint*", cb, "Ptr", 0) != STATUS_SUCCESS)
 		{
 		dllCall("CloseHandle", "uint", hJRoot)
 		numF := -6
@@ -1761,16 +1783,16 @@ An attempt is made to read from, create, delete, or modify the journal while a j
 	; see https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/a5bae3a3-9025-4f07-b70d-e2247b01faa6
 	; cb a pointer to a variable that receives the size of voldata, in bytes.
 		
-		if(dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_GET_NTFS_VOLUME_DATA := 0x00090064, "int*", 0, "uint", 0, "Ptr", &voldata, "uint", 96, "uint*", cb, "Ptr", 0) = STATUS_SUCCESS)
+		if (dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_GET_NTFS_VOLUME_DATA := 0x00090064, "int*", 0, "uint", 0, "Ptr", &voldata, "uint", 96, "uint*", cb, "Ptr", 0) == STATUS_SUCCESS)
 		{
-			if (cb = 96)
-				if(i := numget(voldata, 48))
+			if (cb == 96)
+				if (i := numget(voldata, 48))
 				mftFilesMax := numget(voldata, 56, "uint64")//i ;MftValidDataLength/BytesPerFileRecordSegment
 		}
 		else
 		{
 		numF := -7
-		Return
+		return
 		}
 	/*
 	Common errors
@@ -1837,7 +1859,7 @@ An attempt is made to write a USN record or to read the change journal while the
 
 	JournalMaxSize := numget(ujd, 40, "uint64") + numget(ujd, 48, "uint64") ;MaximumSize + AllocationDelta
 	JournalChunkSize := 0x100000 ;1MB chunk, ~10-20 read ops for 150k files
-		if(!mftFilesMax) ; then get an estimate (which might impact performance a little)
+		if (!mftFilesMax) ; then get an estimate (which might impact performance a little)
 		mftFilesMax := JournalMaxSize/JournalChunkSize ;
 
 	t1 := A_TickCount
@@ -1873,8 +1895,8 @@ ERROR_INVALID_PARAMETER
 One or more parameters is invalid e.g. handle supplied is not a volume handle.
 */
 		
-			if (searchStat = -2)
-			Return 0
+			if (searchStat == -2)
+			return 0
 			else
 			Progress, % (mftFiles*86)//mftFilesMax
 
@@ -1913,10 +1935,10 @@ One or more parameters is invalid e.g. handle supplied is not a volume handle.
 			ref := numget(pUSN + 8, "uint64") ;USN.FileReferenceNumber
 			refparent := numget(pUSN + 16, "uint64") ;USN.ParentFileReferenceNumber
 
-				if(isdir)
+				if (isdir)
 				{
 				v := dirDict[ref]
-					if(v = "") ;Not populated yet
+					if (v == "") ;Not populated yet
 					{
 					v := {}
 					v.files := {}
@@ -1935,7 +1957,7 @@ One or more parameters is invalid e.g. handle supplied is not a volume handle.
 					if fname contains %strTmp%
 					{
 					v := dirDict[refparent]
-						if(v = "")
+						if (v == "")
 						{
 						v := {}
 						dirDict[refparent] := {"files":v}
@@ -1974,7 +1996,7 @@ One or more parameters is invalid e.g. handle supplied is not a volume handle.
 	numF := 0
 
 	for dk, dv in dirDict
-		if(dv.files.getCapacity())
+		if (dv.files.getCapacity())
 		{
 			dir := _ListMFTfiles_resolveFolder(dirDict, dk)
 				for k, v in dv.files
@@ -2001,7 +2023,7 @@ One or more parameters is invalid e.g. handle supplied is not a volume handle.
 _ListMFTfiles_resolveFolder(byref dirDict, byref ddref)
 {
 	p := dirDict[ddref], pd := p.dir
-	if(!pd)
+	if (!pd)
 	{
 		pd := (p.parent ? _ListMFTfiles_resolveFolder(dirDict, p.parent) : "") p.name "\"
 		p.setCapacity("dir", strlen(pd )* 2) ; wchar_t
@@ -2062,16 +2084,16 @@ Static InitClass := CtlColors.ClassInit()
 ; ===================================================================================================================
 __New()
 { ; You must not instantiate this class!
-	If (This.InitClass == "!DONE!") { ; external call after class initialization
+	if (This.InitClass == "!DONE!") { ; external call after class initialization
 	This["!Access_Denied!"] := True
-Return False
+return False
 }
 }
 ; ----------------------------------------------------------------------------------------------------------------
 __Delete()
 {
-	If This["!Access_Denied!"]
-	Return
+	if This["!Access_Denied!"]
+	return
 This.Free() ; free GDI resources
 }
 ; ===================================================================================================================
@@ -2080,7 +2102,7 @@ This.Free() ; free GDI resources
 ClassInit()
 {
 CtlColors := New CtlColors
-Return "!DONE!"
+return "!DONE!"
 }
 ; ===================================================================================================================
 ; CheckBkColor    Internal check for parameter BkColor.
@@ -2089,15 +2111,15 @@ CheckBkColor(ByRef BkColor, Class)
 {
 This.ErrorMsg := ""
 
-	If (BkColor != "") && !This.HTML.HasKey(BkColor) && !RegExMatch(BkColor, "^[[:xdigit:]]{6}$")
+	if (BkColor != "") && !This.HTML.HasKey(BkColor) && !RegExMatch(BkColor, "^[[:xdigit:]]{6}$")
 	{
 	This.ErrorMsg := "Invalid parameter BkColor: " . BkColor
-	Return False
+	return False
 	}
 BkColor := BkColor = "" ? This.SYSCOLORS[Class]
 :  This.HTML.HasKey(BkColor) ? This.HTML[BkColor]
 :  "0x" . SubStr(BkColor, 5, 2) . SubStr(BkColor, 3, 2) . SubStr(BkColor, 1, 2)
-Return True
+return True
 }
 ; ===================================================================================================================
 ; CheckTxColor    Internal check for parameter TxColor.
@@ -2106,15 +2128,15 @@ CheckTxColor(ByRef TxColor)
 {
 This.ErrorMsg := ""
 
-	If (TxColor != "") && !This.HTML.HasKey(TxColor) && !RegExMatch(TxColor, "i)^[[:xdigit:]]{6}$")
+	if (TxColor != "") && !This.HTML.HasKey(TxColor) && !RegExMatch(TxColor, "i)^[[:xdigit:]]{6}$")
 	{
 	This.ErrorMsg := "Invalid parameter TextColor: " . TxColor
-	Return False
+	return False
 	}
 TxColor := TxColor = "" ? ""
 :  This.HTML.HasKey(TxColor) ? This.HTML[TxColor]
 :  "0x" . SubStr(TxColor, 5, 2) . SubStr(TxColor, 3, 2) . SubStr(TxColor, 1, 2)
-Return True
+return True
 }
 ; ===================================================================================================================
 ; Attach          Registers a control for coloring.
@@ -2122,7 +2144,7 @@ Return True
 ;                 BkColor     - HTML color name, 6-digit hexadecimal RGB value, or "" for default color
 ;                 ----------- Optional 
 ;                 TxColor     - HTML color name, 6-digit hexadecimal RGB value, or "" for default color
-; Return values:  On success  - True
+; return values:  On success  - True
 ;                 On failure  - False, CtlColors.ErrorMsg contains additional informations
 ; ===================================================================================================================
 Attach(HWND, BkColor, TxColor := "")
@@ -2139,7 +2161,7 @@ Static COLOR_3DFACE := 15, COLOR_WINDOW := 5
 This.ErrorMsg := ""
 
 ; Initialize default background colors on first call -------------------------------------------------------------
-	If (This.SYSCOLORS.Edit = "")
+	if (This.SYSCOLORS.Edit == "")
 	{
 	This.SYSCOLORS.Static := DllCall("User32.dll\GetSysColor", "Int", COLOR_3DFACE, "Uint")
 	This.SYSCOLORS.Edit := DllCall("User32.dll\GetSysColor", "Int", COLOR_WINDOW, "Uint")
@@ -2147,22 +2169,22 @@ This.ErrorMsg := ""
 	}
 
 	; Check colors ---------------------------------------------------------------------------------------------------
-	If (BkColor = "") && (TxColor = "")
+	If (BkColor == "") && (TxColor == "")
 	{
 	This.ErrorMsg := "Both parameters BkColor and TxColor are empty!"
-	Return False
+	return False
 	}
 
 	; Check HWND -----------------------------------------------------------------------------------------------------
-	If !(CtrlHwnd := HWND + 0) || !DllCall("User32.dll\IsWindow", "UPtr", HWND, "Uint")
+	if !(CtrlHwnd := HWND + 0) || !DllCall("User32.dll\IsWindow", "UPtr", HWND, "Uint")
 	{
 	This.ErrorMsg := "Invalid parameter HWND: " . HWND
-	Return False
+	return False
 	}
-	If This.Attached.HasKey(HWND)
+	if This.Attached.HasKey(HWND)
 	{
 	This.ErrorMsg := "Control " . HWND . " is already registered!"
-	Return False
+	return False
 	}
 
 Hwnds := [CtrlHwnd]
@@ -2172,20 +2194,20 @@ Classes := ""
 WinGetClass, CtrlClass, ahk_id %CtrlHwnd%
 This.ErrorMsg := "Unsupported control class: " . CtrlClass
 
-	If !ClassNames.HasKey(CtrlClass)
-	Return False
+	if !ClassNames.HasKey(CtrlClass)
+	return False
 ControlGet, CtrlStyle, Style, , , ahk_id %CtrlHwnd%
 
-	If (CtrlClass = "Edit")
+	if (CtrlClass == "Edit")
 	Classes := ["Edit", "Static"]
-	Else If (CtrlClass = "Button")
+	else if (CtrlClass == "Button")
 	{
-		IF (CtrlStyle & BS_RADIOBUTTON) || (CtrlStyle & BS_CHECKBOX)
+		if (CtrlStyle & BS_RADIOBUTTON) || (CtrlStyle & BS_CHECKBOX)
 		Classes := ["Static"]
-		Else
-		Return False
+		else
+		return False
 	}
-	Else If (CtrlClass = "ComboBox")
+	else if (CtrlClass == "ComboBox")
 	{
 	VarSetCapacity(CBBI, 40 + (A_PtrSize * 3), 0)
 	NumPut(40 + (A_PtrSize * 3), CBBI, 0, "Uint")
@@ -2195,37 +2217,37 @@ ControlGet, CtrlStyle, Style, , , ahk_id %CtrlHwnd%
 	Classes := ["Edit", "Static", "ListBox"]
 	}
 
-	If !IsObject(Classes)
+	if !IsObject(Classes)
 	Classes := [CtrlClass]
 
 	; Check background color -----------------------------------------------------------------------------------------
-	If (BkColor <> "Trans")
-		If !This.CheckBkColor(BkColor, Classes[1])
-		Return False
+	if (BkColor <> "Trans")
+		if !This.CheckBkColor(BkColor, Classes[1])
+		return False
 	; Check text color -----------------------------------------------------------------------------------------------
-	If !This.CheckTxColor(TxColor)
-	Return False
+	if !This.CheckTxColor(TxColor)
+	return False
 	; Activate message handling on the first call for a class --------------------------------------------------------
-	For I, V In Classes
+	for I, V In Classes
 	{
-	If (This.HandledMessages[V] = 0)
+	if (This.HandledMessages[V] == 0)
 	OnMessage(This.WM_CTLCOLOR[V], This.MessageHandler)
 	This.HandledMessages[V] += 1
 	}
 
 	; Store values for HWND ------------------------------------------------------------------------------------------
-	If (BkColor = "Trans")
+	if (BkColor == "Trans")
 	Brush := This.NullBrush
-	Else
+	else
 	Brush := DllCall("Gdi32.dll\CreateSolidBrush", "Uint", BkColor, "UPtr")
 
-	For I, V In Hwnds
+	for I, V In Hwnds
 	This.Attached[V] := {Brush: Brush, TxColor: TxColor, BkColor: BkColor, Classes: Classes, Hwnds: Hwnds}
 
 ; Redraw control -------------------------------------------------------------------------------------------------
 DllCall("User32.dll\InvalidateRect", "Ptr", HWND, "Ptr", 0, "Int", 1)
 This.ErrorMsg := ""
-Return True
+return True
 }
 ; ===================================================================================================================
 ; Change          Change control colors.
@@ -2233,7 +2255,7 @@ Return True
 ;                 BkColor     - HTML color name, 6-digit hexadecimal RGB value, or "" for default color
 ;                 ----------- Optional 
 ;                 TxColor     - HTML color name, 6-digit hexadecimal RGB value, or "" for default color
-; Return values:  On success  - True
+; return values:  On success  - True
 ;                 On failure  - False, CtlColors.ErrorMsg contains additional informations
 ; Remarks:        If the control isn't registered yet, Add() is called instead internally.
 ; ===================================================================================================================
@@ -2242,105 +2264,109 @@ Change(HWND, BkColor, TxColor := "")
 ; Check HWND -----------------------------------------------------------------------------------------------------
 This.ErrorMsg := ""
 HWND += 0
-	If !This.Attached.HasKey(HWND)
-	Return This.Attach(HWND, BkColor, TxColor)
+	if !This.Attached.HasKey(HWND)
+	return This.Attach(HWND, BkColor, TxColor)
 CTL := This.Attached[HWND]
 ; Check BkColor --------------------------------------------------------------------------------------------------
-	If (BkColor <> "Trans")
-		If !This.CheckBkColor(BkColor, CTL.Classes[1])
-		Return False
+	if (BkColor <> "Trans")
+		if !This.CheckBkColor(BkColor, CTL.Classes[1])
+		return False
 	; Check TxColor ------------------------------------------------------------------------------------------------
-	If !This.CheckTxColor(TxColor)
-	Return False
+	if !This.CheckTxColor(TxColor)
+	return False
 ; Store Colors ---------------------------------------------------------------------------------------------------
-	If (BkColor <> CTL.BkColor)
+	if (BkColor <> CTL.BkColor)
 	{
-		If (CTL.Brush)
+		if (CTL.Brush)
 		{
-		If (Ctl.Brush <> This.NullBrush)
-		DllCall("Gdi32.dll\DeleteObject", "Prt", CTL.Brush)
+			if (Ctl.Brush <> This.NullBrush)
+			DllCall("Gdi32.dll\DeleteObject", "Prt", CTL.Brush)
 		This.Attached[HWND].Brush := 0
 		}
 
-		If (BkColor = "Trans")
+		if (BkColor == "Trans")
 		Brush := This.NullBrush
-		Else
+		else
 		Brush := DllCall("Gdi32.dll\CreateSolidBrush", "Uint", BkColor, "UPtr")
 
-		For I, V In CTL.Hwnds
+		for I, V In CTL.Hwnds
 		{
 		This.Attached[V].Brush := Brush
 		This.Attached[V].BkColor := BkColor
 		}
 	}
-	For I, V In Ctl.Hwnds
+	for I, V In Ctl.Hwnds
 	This.Attached[V].TxColor := TxColor
 This.ErrorMsg := ""
 DllCall("User32.dll\InvalidateRect", "Ptr", HWND, "Ptr", 0, "Int", 1)
-Return True
+return True
 }
 ; ===================================================================================================================
 ; Detach          Stop control coloring.
 ; Parameters:     HWND        - HWND of the GUI control
-; Return values:  On success  - True
+; return values:  On success  - True
 ;                 On failure  - False, CtlColors.ErrorMsg contains additional informations
 ; ===================================================================================================================
 Detach(HWND)
 {
 This.ErrorMsg := ""
 HWND += 0
-	If This.Attached.HasKey(HWND)
+	if This.Attached.HasKey(HWND)
 	{
 	CTL := This.Attached[HWND].Clone()
-	If (CTL.Brush) && (CTL.Brush <> This.NullBrush)
+	if (CTL.Brush) && (CTL.Brush <> This.NullBrush)
 	DllCall("Gdi32.dll\DeleteObject", "Prt", CTL.Brush)
-		For I, V In CTL.Classes
+		for I, V In CTL.Classes
 		{
-			If This.HandledMessages[V] > 0
+			if This.HandledMessages[V] > 0
 			{
 			This.HandledMessages[V] -= 1
-				If This.HandledMessages[V] = 0
+				if This.HandledMessages[V] == 0
 				OnMessage(This.WM_CTLCOLOR[V], "")
 			}
 		}
-		For I, V In CTL.Hwnds
+		for I, V In CTL.Hwnds
 		This.Attached.Remove(V, "")
 
 	DllCall("User32.dll\InvalidateRect", "Ptr", HWND, "Ptr", 0, "Int", 1)
 	CTL := ""
-	Return True
+	return True
 	}
 This.ErrorMsg := "Control " . HWND . " is not registered!"
-Return False
+return False
 }
 ; ===================================================================================================================
 ; Free            Stop coloring for all controls and free resources.
-; Return values:  Always True.
+; return values:  Always True.
 ; ===================================================================================================================
 Free()
 {
-	For K, V In This.Attached
-		If (V.Brush) && (V.Brush <> This.NullBrush)
-		DllCall("Gdi32.dll\DeleteObject", "Ptr", V.Brush)
-
-	For K, V In This.HandledMessages
-	If (V > 0)
+	for K, V In This.Attached
 	{
-	OnMessage(This.WM_CTLCOLOR[K], "")
-	This.HandledMessages[K] := 0
+		if (V.Brush) && (V.Brush <> This.NullBrush)
+		DllCall("Gdi32.dll\DeleteObject", "Ptr", V.Brush)
+	}
+
+	for K, V In This.HandledMessages
+	{
+		if (V > 0)
+		{
+		OnMessage(This.WM_CTLCOLOR[K], "")
+		This.HandledMessages[K] := 0
+		}
 	}
 This.Attached := {}
-Return True
+return True
 }
 ; ===================================================================================================================
 ; IsAttached      Check if the control is registered for coloring.
 ; Parameters:     HWND        - HWND of the GUI control
-; Return values:  On success  - True
+; return values:  On success  - True
 ;                 On failure  - False
 ; ===================================================================================================================
 IsAttached(HWND)
 {
-Return This.Attached.HasKey(HWND)
+return This.Attached.HasKey(HWND)
 }
 
 
@@ -2354,30 +2380,30 @@ Return This.Attached.HasKey(HWND)
 CtlColors_OnMessage(HDC, HWND)
 {
 Critical
-	If CtlColors.IsAttached(HWND)
+	if CtlColors.IsAttached(HWND)
 	{
 	CTL := CtlColors.Attached[HWND]
-		If (CTL.TxColor != "")
+		if (CTL.TxColor != "")
 		DllCall("Gdi32.dll\SetTextColor", "Ptr", HDC, "Uint", CTL.TxColor)
 
-		If (CTL.BkColor = "Trans")
+		if (CTL.BkColor == "Trans")
 		DllCall("Gdi32.dll\SetBkMode", "Ptr", HDC, "Uint", 1) ; TRANSPARENT = 1
-		Else
+		else
 		DllCall("Gdi32.dll\SetBkColor", "Ptr", HDC, "Uint", CTL.BkColor)
-	Return CTL.Brush
+	return CTL.Brush
 	}
 }
 SetTaskBarIcon(Hwnd)
 {
-WM_SETICON:=0x80
-LR_LOADFROMFILE:=0x10
+WM_SETICON := 0x80
+LR_LOADFROMFILE := 0x10
 IconFile := A_ScriptDir . "\PrgLnch.ico"
 hIcon := DllCall("LoadImage", "uint", 0, "str", IconFile, "uint", 1, "int", 0, "int", 0, "uint", LR_LOADFROMFILE)
 
 	if (!hIcon)
 	{
-	MsgBox, 8192, Icon File, Icon file missing or invalid!
-	Return
+	MsgBox, 8192, Icon File, PrgLnch icon file missing or invalid!
+	return
 	}
 ;hIcon := Format("0x{:x}", hIcon + 0) : ; hIcon does not want hex formatting for ahk_id...
 SendMessage, %WM_SETICON%, 0, %hIcon%,, % "ahk_id " . Hwnd
@@ -2397,26 +2423,26 @@ local retVal := 0, tmp := 0
 ;This key must be set to 1!
 ;HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced >> EnableBalloonTips
 
-if (ItemHandle = searchDriveHwnd)
+if (ItemHandle == searchDriveHwnd)
 retVal := RunChm("LnchPad Setup`\LnchPad Setup", "SearchDrive")
 else
-if (ItemHandle = addToLnchPadHwnd)
+if (ItemHandle == addToLnchPadHwnd)
 retVal := RunChm("LnchPad Setup`\LnchPad Setup", "LocateSlot")
 else
-if (ItemHandle = UpdateIniHwnd)
+if (ItemHandle == UpdateIniHwnd)
 retVal := RunChm("LnchPad Setup`\LnchPad Setup", "UpdateExisting")
 else
-if (ItemHandle = overWriteIniHwnd)
+if (ItemHandle == overWriteIniHwnd)
 retVal := RunChm("LnchPad Setup`\LnchPad Setup", "overWriteExisting")
 else
 {
 	Loop, % maxGames
 	{
-		if (ItemHandle = PrgIndex%A_Index%Hwnd)
+		if (ItemHandle == PrgIndex%A_Index%Hwnd)
 		{
 		retVal := RunChm("LnchPad Setup`\LnchPad Setup", "Listbox")
 		tmp := 1
-		Break
+		break
 		}
 	}
 if (!tmp)
@@ -2426,9 +2452,9 @@ retVal := RunChm()
 if (retVal) ; error
 {
 	if (retVal < 0)
-	MsgBox, 8192, , Could not find the Help file. Has it, or the script been moved?
+	MsgBox, 8192, PrgLnch Help, Could not find the Help file. Has it, or the script been moved?
 	else
-	MsgBox, 8192, , There is a problem with the help file. Code: %retVal%.
+	MsgBox, 8192, PrgLnch Help, There is a problem with the help file. Code: %retVal%.
 }
 
 
@@ -2437,7 +2463,7 @@ RunChm(chmTopic := 0, Anchor := "", noActivate := 0)
 {
 x := 0, y := 0, w := 0, h := 0, tmp := 0, htmlHelp := "C:\Windows\hh.exe ms-its"
 
-if (!FileExist(A_ScriptDir . "\PrgLnch.chm"))
+if (!(FileExist(A_ScriptDir . "\PrgLnch.chm")))
 return -1
 
 ;Close existing
@@ -2447,7 +2473,7 @@ WinGet, tmp, List
 	i := tmp%A_Index%
 	WinGetTitle, strTmp, % "ahk_id " i
 
-		if (strTmp = "PrgLnch_Help")
+		if (strTmp == "PrgLnch_Help")
 		{
 		WinClose, ahk_id %i%
 		sizeSet := 1
@@ -2477,13 +2503,13 @@ tmp := 0
 	{
 	Sleep 30
 	tmp++
-		if (tmp = 1000)
+		if (tmp == 1000)
 		{
-		msgbox, 8196, Help Working?, Help has not started.`nReply:`n`nYes: Continue to wait.`nNo: Continue without waiting.
+		msgbox, 8196, LnchPad: PrgLnch Help, Help has not started.`nReply:`n`nYes: Continue to wait.`nNo: Continue without waiting.
 			IfMsgBox, Yes
 			tmp := 0
 			else
-			Break
+			break
 		}
 	} Until (WinActive("PrgLnch_Help"))
 
@@ -2496,7 +2522,7 @@ tmp := 0
 
 		; Too bad if we missed it
 		if (strTmp != "PrgLnch_Help")
-		Return retVal
+		return retVal
 
 	WinGet, tmp, MinMax
 	;Tablet mode perhaps? https://autohotkey.com/boards/viewtopic.php?f=6&t=15619
@@ -2520,10 +2546,10 @@ ShellMessage(wParam, lParam)
 {
 WinGetTitle, strTmp, ahk_id %lParam%
 ;HSHELL_WINDOWACTIVATED || HSHELL_RUDEAPPACTIVATED
-	if (wParam=4 || 32772)
+	if (wParam == 4 || wParam == 32772)
 	{
-	if (strTmp = "LnchPad Setup")
-	goSub chmRButton
+		if (strTmp == "LnchPad Setup")
+		goSub chmRButton
 	}
 }
 
@@ -2531,13 +2557,13 @@ GetMonWidth(GuiHwnd)
 {
 	SysGet, md, MonitorWorkArea, % GetPrgLnchMonNum(GuiHwnd)
 	dx := mdRight - mdleft
-	Return dx
+	return dx
 }
 GetMonHeight(GuiHwnd)
 {
 	SysGet, md, MonitorWorkArea, % GetPrgLnchMonNum(GuiHwnd)
 	dy := mdBottom - mdTop
-	Return dy
+	return dy
 }
 GetPrgLnchMonNum(Hwnd := 0)
 {
@@ -2579,8 +2605,8 @@ NumPut(40, monitorInfo)
 		; Compare location to determine the monitor index.
 		if (Hwnd)
 		{
-			if ((msLeft = mtLeft) and (msTop = mtTop)
-				and (msRight = mtRight) and (msBottom = mtBottom))
+			if ((msLeft == mtLeft) and (msTop == mtTop)
+				and (msRight == mtRight) and (msBottom == mtBottom))
 			{
 			msI := A_Index
 			break
@@ -2605,9 +2631,9 @@ VarSetCapacity(monitorInfo, 0)
 	{
 	strTemp := "Cannot retrieve Monitor info from the"
 		if (fromMouse)
-		MsgBox, 8192, , %strTemp% mouse cursor!
+		MsgBox, 8192, Monitor Error, %strTemp% mouse cursor!
 		else
-		MsgBox, 8192, , %strTemp% target window!
+		MsgBox, 8192, Monitor Error, %strTemp% target window!
 	return 1 ;hopefully this monitor is the one!
 	}
 }
