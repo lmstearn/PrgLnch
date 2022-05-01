@@ -6153,7 +6153,7 @@ oldSelIniChoiceName := selIniChoiceName
 KleenupPrgLnchFiles(RecycleDir := "")
 {
 static oneWarn := 0
-namesToDel := ["PrgLnch.ico", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat", "LnchPadInit.exe"]
+namesToDel := ["PrgLnch.ico", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat", "LnchPadInit.exe", "LnchPadMorrowind.jpg", "LnchPadOblivion.jpg", "LnchPadSkyrim.jpg", "LnchPadFallout 3.jpg", "LnchPadFallout NV.jpg", "LnchPadFallout 4.jpg"]
 
 temp := ""
 KleenupPrgLnchFiles := ""
@@ -12840,7 +12840,7 @@ fTemp := 0, retVal := 0
 		}
 		else
 		{
-			if (PrgLnchOpt.activeDispMonNamesNo > 1)
+			;if (PrgLnchOpt.activeDispMonNamesNo > 1)
 			SetTimer, RnChmWelcome, 3200
 
 			While (!(canonicalMonitorList := MonitorSelectProc(monitorOrder, canonicalMonitorList)))
@@ -14477,13 +14477,13 @@ instance := 0
 		vPosX := PrgLnch.X() + (PrgLnch.Width() - propW)/2
 		vPosY := Abs(PrgLnch.Y() - propH)
 		}
-		default:
+		default: ; "*" argument
 		{
 		instance := (action > 0)? action + 1: action - 1
 			if (instance < 0)
 			{
-			%SplashRef%(Splashy, {imagePath: "*", instance: -instance, mainText: "", subText: "", mainFontSize: 10, subFontSize: 10, vOnTop: 0, vImgW : vImgW, vImgH : vImgH}*)
-			%SplashRef%(Splashy, {imagePath: "*", instance: instance}*)
+			%SplashRef%(Splashy, {imagePath: "*", vHide : 1, instance: -instance, mainText: "", subText: "", mainFontSize: 10, subFontSize: 10, vOnTop: 0, vImgW : vImgW, vImgH : vImgH}*)
+			%SplashRef%(Splashy, {imagePath: "*", vHide : 1, instance: instance}*)
 			return
 			}
 			else
