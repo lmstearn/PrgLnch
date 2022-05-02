@@ -3227,6 +3227,12 @@ Class PrgLnch
 		
 	return This.PrgHwnd
 	}
+
+	64Bit()
+	{
+	return % (A_PtrSize == 8)? 1: 0 ; ONLY checks .exe bitness
+	}
+
 	SelIniChoicePath
 	{
 		set
@@ -3326,7 +3332,6 @@ Class PrgLnch
 	}
 
 
-(A_PtrSize == 8)? 64bit := 1: 64bit := 0 ; ONLY checks .exe bitness
 updateStatus := 1
 ; Filters
 WM_COPYDATA := 0x4A
@@ -6279,10 +6284,10 @@ retVal := 0
 local Size         := NumGet(lParam +  0, "uint")
 local ContextType  := NumGet(lParam +  4, "int")
 local CtrlId       := Numget(lParam +  8, "int")
-local ItemHandle   := Numget(lParam + 12 + 64bit * 4, "ptr")
-local ContextId    := NumGet(lParam + 16 + 64bit * 8, "uint")
-local MousePosX    := NumGet(lParam + 20 + 64bit * 8, "int")
-local MousePosY    := NumGet(lParam + 24 + 64bit * 8, "int")
+local ItemHandle   := Numget(lParam + 12 + PrgLnch.64Bit() * 4, "ptr")
+local ContextId    := NumGet(lParam + 16 + PrgLnch.64Bit() * 8, "uint")
+local MousePosX    := NumGet(lParam + 20 + PrgLnch.64Bit() * 8, "int")
+local MousePosY    := NumGet(lParam + 24 + PrgLnch.64Bit() * 8, "int")
 
 ;This key must be set to 1!
 ;HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced >> EnableBalloonTips
@@ -6959,7 +6964,7 @@ VarSetCapacity(pButtons, 4 * cButtons + A_PtrSize * cButtons, 0)
 
 
 ; TASKDIALOGCONFIG structure
-	if (A_PtrSize == 8) ; X64
+	if (PrgLnch.64Bit()) ; X64
 	{
 	NumPut(VarSetCapacity(TDC, 160, 0), TDC, 0, "UInt") ; cbSize
 	NumPut(hwndParent, TDC, 4, "Ptr") ; hwndParent
@@ -7727,7 +7732,7 @@ CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResInd
 Tooltip
 return
 
-CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, ByRef iDevNumArray, ByRef ResIndexList, ByRef allModes, setPrgLnchOptDefs := 0, oldCurrRes := 0)
+CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, ByRef iDevNumArray, ByRef ResIndexList, ByRef allModes, setPrgLnchOptDefs := 0, selCurrRes := 0)
 {
 static oldResStrng := [], oldTargMonitorNum := 0, oldAllModes := 0
 ; resArray and all others are one-based now
@@ -7736,7 +7741,7 @@ static oldResStrng := [], oldTargMonitorNum := 0, oldAllModes := 0
 	if (setPrgLnchOptDefs)
 	{
 	GetResInfo(targMonitorNum, 1, allModes, iDevNumArray, setPrgLnchOptDefs)
-	oldResStrng[targMonitorNum] := oldCurrRes
+	oldResStrng[targMonitorNum] := selCurrRes
 	}
 	else
 	{
@@ -7811,10 +7816,10 @@ static oldResStrng := [], oldTargMonitorNum := 0, oldAllModes := 0
 
 				if (PresetPropHwnd)
 				{
-					if ((PrgLnch.Monitor != targMonitorNum) || PrgLnchOpt.Fmode() || PrgLnchOpt.DynamicMode())
-					GuiControl, PrgLnchOpt:, currRes, %strTemp%
-					else
+					if (PrgLnch.Monitor == targMonitorNum && PrgLnchOpt.TestMode)
 					GuiControl, PrgLnchOpt:, currRes, % PrgLnchOpt.MonDefResStrng
+					else
+					GuiControl, PrgLnchOpt:, currRes, %strTemp%
 				}
 				else  ;Update all at PrgLnch Load
 				{
@@ -7929,7 +7934,7 @@ SetResDefaults(lnchStat, targMonitorNum, ByRef scrWidthDefArr, ByRef scrHeightDe
 	else
 	{
 	;Sets new defaults according to resolution changes when changing res
-		if (PrgLnchOpt.Fmode() || PrgLnchOpt.DynamicMode())
+		if (!PrgLnchOpt.TestMode())
 		{
 		CopyToFromRes(targMonitorNum, 1)
 		scrWidthDefArr[targMonitorNum] := PrgLnchOpt.scrWidthDef
@@ -8290,9 +8295,9 @@ else
 	Thread, NoTimers
 
 		if (resolveShortct)
-		FileSelectFile, strTemp, 1, % A_StartMenu "\Programs", Open a file or Shortcut, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.scr)
+		FileSelectFile, strTemp, 1, % A_StartMenu "\Programs", Open a file`, Shortcuts resolved, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.scr)
 		else
-		FileSelectFile, strTemp, 33, % A_StartMenu "\Programs", Open a file`, Shortcuts resolved, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.lnk; *.scr)
+		FileSelectFile, strTemp, 33, % A_StartMenu "\Programs", Open a file or Shortcut, (*.exe; *.bat; *.com; *.cmd; *.pif; *.ps1; *.msc; *.lnk; *.scr)
 
 	Thread, NoTimers, false
 
@@ -10126,7 +10131,7 @@ if (lnchPrgIndex > 0) ;Running
 	if (!FileExist(PrgPaths))
 	{
 	; https://www.autohotkey.com/boards/viewtopic.php?f=76&t=31269
-		if (A_Is64bitOS && A_PtrSize == 4)
+		if (A_Is64bitOS && !PrgLnch.64Bit())
 		{
 			if (!(disableRedirect := DllCall("Wow64DisableWow64FsRedirection", "Ptr*", oldRedirectionValue)))
 			return % PrgLnch.SelIniChoicePath . " does not exist and there is a redirection error!"
@@ -12363,7 +12368,7 @@ retVal := 0
 		OffsetdevMode := 0
 		offsetWORDStr := 32
 		}
-		;(A_PtrSize == 8)? 64bit := 1 : 64bit := 0 ; not required for DM
+		; PrgLnch.64Bit()   ?? ; not required for DM
 
 	cbdevMode := 92 + 32 + 32 + OffsetdevMode
 	VarSetCapacity(Device_Mode, cbdevMode, 0)
@@ -12840,7 +12845,7 @@ fTemp := 0, retVal := 0
 		}
 		else
 		{
-			;if (PrgLnchOpt.activeDispMonNamesNo > 1)
+			if (PrgLnchOpt.activeDispMonNamesNo > 1)
 			SetTimer, RnChmWelcome, 3200
 
 			While (!(canonicalMonitorList := MonitorSelectProc(monitorOrder, canonicalMonitorList)))
@@ -13367,7 +13372,7 @@ DefResNoMatchRes(noPrompt := 0)
 {
 defResMsg := 0
 
-	if (PrgLnchOpt.scrWidth == PrgLnchOpt.scrWidthDef && PrgLnchOpt.scrHeight == PrgLnchOpt.scrHeightDef)
+	if (PrgLnchOpt.scrWidth == PrgLnchOpt.scrWidthDef && PrgLnchOpt.scrHeight == PrgLnchOpt.scrHeightDef && PrgLnchOpt.scrFreq == PrgLnchOpt.scrFreqDef)
 	{
 
 		if (PrgLnchOpt.Fmode()) ;always change: Condition removed: (PrgLnchOpt.DynamicMode()
@@ -13377,7 +13382,7 @@ defResMsg := 0
 
 		if (noPrompt || defResMsg)
 		{
-			if (DefResMsg == 1)
+			if (defResMsg == 1)
 			return 1
 			else
 			return 0
@@ -13470,24 +13475,24 @@ if (Monitors.Count == Monitors.targetMonitorNum)
 	PrgLnchOpt.CurrMonStat := 0
 	return False
 	}
-	sizeOfmonitorHandleAndDesc := (A_IsUnicode ? 2 : 1) * 128 + (A_PtrSize == 8)? 8 : 4
-	VarSetCapacity(monitorHandleandDesc, sizeOfmonitorHandleandDesc, 0)
-	VarSetCapacity(physicalMonitorArray, numberOfPhysicalMonitors * sizeOfmonitorHandleandDesc, 0)
-
-	; Get Physical Monitor from handle
-	
-
 	OffsetDWORD := 4, OffsetUchar := 1
 
+	sizeOfmonitorHandleAndDesc := 128 * (A_IsUnicode ? 2 : 1) + ((PrgLnch.64Bit() + 1) * OffsetDWORD)
+
+	VarSetCapacity(monitorHandleandDesc, sizeOfmonitorHandleandDesc, 0)
+	VarSetCapacity(Physical_Monitor, numberOfPhysicalMonitors * sizeOfmonitorHandleandDesc, 0)
+	; Get Physical Monitor from handle
+
 	;NumPut(Physical_Monitor, Device_Mode, OffsetDWORD + offsetWORDStr, Ushort) ; initialise cbsize member
-	if (DllCall("dxva2\GetPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint", numberOfPhysicalMonitors, "Ptr", &physicalMonitorArray))
+	if (DllCall("dxva2\GetPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint", numberOfPhysicalMonitors, "Ptr", &Physical_Monitor))
 	{
+
 		Loop %numberOfPhysicalMonitors%
 		{
-			if (numberOfPhysicalMonitors > 1)
+			if (A_Index > 1)
 			outStr .= "`n"
 
-			physHand := NumGet(physicalMonitorArray[A_Index - 1], (A_Index - 1) * sizeOfmonitorHandleAndDesc)
+			physHand := NumGet(Physical_Monitor, (A_Index - 1) * sizeOfmonitorHandleAndDesc)
 			; 0 value Physical Monitor Handles are valid and common!!!
 			VarSetCapacity(MC_TIMING_REPORT, OffsetUchar + OffsetDWORD + OffsetDWORD)
 			retVal := DllCall("dxva2\GetTimingReport", "Ptr", physHand, "Ptr", &MC_TIMING_REPORT)
@@ -13495,9 +13500,9 @@ if (Monitors.Count == Monitors.targetMonitorNum)
 				if (retVal)
 				{
 				; Get Monitor description
-				temp := &physicalMonitorArray[A_Index - 1] + sizeOfmonitorHandleAndDesc
+				temp := &Physical_Monitor + (PrgLnch.64Bit() + 1) * OffsetDWORD + (A_Index - 1)*(sizeOfmonitorHandleAndDesc + (PrgLnch.64Bit() + 1) * OffsetDWORD)
 
-				temp := StrGet(temp, sizeOfmonitorHandleAndDesc)
+				temp := StrGet(temp, sizeOfmonitorHandleAndDesc, "UTF-16")
 
 				;Horizontal scan HZ
 				fTemp := NumGet(MC_TIMING_REPORT, 0, "Int")
