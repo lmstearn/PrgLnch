@@ -6915,7 +6915,7 @@ Static flags = 0x1011, TDF_VERIFICATION_FLAG_CHECKED = 0x0100, TDF_CALLBACK_TIME
 ; 0x1000000:	TDF_SIZE_TO_CONTENT
 
 
-	if (InStr(pageTitle, "Same Resolution") || pageTitle, "PrgLnch Installation")
+	if (InStr(pageTitle, "Same Resolution") || InStr(pageTitle, "PrgLnch Installation"))
 	flags |= TDF_VERIFICATION_FLAG_CHECKED
 	else
 	{
@@ -6970,15 +6970,26 @@ VarSetCapacity(pButtons, 4 * cButtons + A_PtrSize * cButtons, 0)
 	NumPut(hwndParent, TDC, 4, "Ptr") ; hwndParent
 	;  HINSTANCE
 	NumPut(flags, TDC, 20, "Int") ; dwflags
+	; common buttons (uint )
 	NumPut(&pageTitle, TDC, 28, "Ptr") ; pszWindowTitle
+	; Hicon
 	NumPut(&instructionTitle, TDC, 44, "Ptr") ; pszMainInstruction
 	NumPut(&description, TDC, 52, "Ptr") ; pszContent
 	NumPut(cButtons, TDC, 60, "UInt") ; cButtons
 	NumPut(&pButtons, TDC, 64, "Ptr") ; pButtons
+	; Default button (uint )
+	; radio button (uint )
+	; radio buttons
+	; Default radio button (uint )
 	NumPut(&checkText, TDC, 92, "Ptr") ; pszVerificationText
 	NumPut(&ExpandedText, TDC, 100, "Ptr") ; pszExpandedInformation
+	; expanded control text
+	; collapsed control text
+	; footer icon
 	NumPut(&FooterText, TDC, 132, "Ptr") ; pszFooter
 	NumPut(TDCallback, TDC, 140, "Ptr") ; pfCallback
+	; cb refdata
+	; width (uint)
 	}
 	else
 	{
@@ -6986,6 +6997,7 @@ VarSetCapacity(pButtons, 4 * cButtons + A_PtrSize * cButtons, 0)
 	NumPut(hwndParent, TDC, 4, Ptr) ; hwndParent
 	;  HINSTANCE
 	NumPut(flags, TDC, 12, "Int") ; dwflags
+	; uint common buttons
 	NumPut(&pageTitle, TDC, 20, "UInt") ; pszWindowTitle
 	NumPut(&instructionTitle, TDC, 28, "UInt") ; pszMainInstruction
 	NumPut(&description, TDC, 32, "UInt") ; pszContent
@@ -6997,11 +7009,7 @@ VarSetCapacity(pButtons, 4 * cButtons + A_PtrSize * cButtons, 0)
 	NumPut(TDCallback, TDC, 84, "UInt") ; pfCallback
 	}
 
-Switch (retVal := DllCall("Comctl32.dll\TaskDialogIndirect", "Ptr", &TDC
-	, "Int*", Button := 0
-	, "Int*", Radio := 0
-	, "Int*", Checked := 0))
-	
+Switch (retVal := DllCall("Comctl32.dll\TaskDialogIndirect", "Ptr", &TDC, "Int*", Button := 0, "Int*", Radio := 0, "Int*", Checked := 0, "UInt"))
 	{
 	Case E_OUTOFMEMORY:
 	retVal := "There is insufficient memory to complete the operation."
@@ -7012,11 +7020,13 @@ Switch (retVal := DllCall("Comctl32.dll\TaskDialogIndirect", "Ptr", &TDC
 	Case E_ACCESSDENIED:
 	retVal := "A general access denied error."
 	Default:
+	{
 		if (retVal)
 		{
 		retVal := "Com`/shell emitted a system resource error: " . Format("0x{1:x}", retVal)
 		}
-	; else: S_OK:
+		; else: S_OK
+	}
 	}
 
 	if (retVal)
@@ -7025,10 +7035,7 @@ Switch (retVal := DllCall("Comctl32.dll\TaskDialogIndirect", "Ptr", &TDC
 	return 0
 	}
 
-	if (DllCall("Kernel32.dll\GlobalFree", "Ptr", TDCallback))
-	MsgBox, 8208, Task Dialog, GlobalFree Failed
-
-Switch (Button)
+	Switch (Button)
 	{
 	Case 101:
 	retVal := 1
@@ -7045,9 +7052,12 @@ Switch (Button)
 	}
 	}
 
-
 	if (Checked)
 	retVal := -retVal
+
+	if (DllCall("Kernel32.dll\GlobalFree", "Ptr", TDCallback))
+	MsgBox, 8208, Task Dialog, GlobalFree Failed
+
 
 return retVal
 }
@@ -8567,13 +8577,13 @@ temp := 0
 			default:
 			strTemp2 := "th"
 			}
-
-		retVal := TaskDialog("Drag'n Drop Prg Replacement", "Replace the " . selPrgChoice . strTemp2 . " item in the Shortcut Slot list`ncontaining the existing PrgName " . """" . PrgChoiceNames[selPrgChoice] . """" . "`nwith the following Prg replacement file?`n" . """" . strTemp . """" . "", , "", "", "Replace selected Prg and Prg Name", "Replace selected Prg, but keep current Prg Name", "Cancel operation")
+		retVal := TaskDialog("Drag'n Drop Prg Replacement", "Replace the " . selPrgChoice . strTemp2 . " item in the Shortcut Slot list`ncontaining the existing PrgName " . """" . PrgChoiceNames[selPrgChoice] . """" . "`nwith the following Prg replacement file?`n" . """" . strTemp . """" . "", , "", "", "Replace selected Prg and Prg Name", "Replace selected Prg`, but keep current Prg Name", "Cancel operation")
 
 			switch (retVal)
 			{
 			case 1:
 			SplitPath, strTemp, , , , txtPrgChoice
+
 			case 3:
 			return
 			default:
@@ -8698,7 +8708,7 @@ strTemp := StrReplace(strPrgChoice, "|", "|", lTemp1)
 			strTemp := Substr(strPrgChoice, 1, lTemp) . "Prg" . A_Index
 
 			strTemp2 := Substr(strPrgChoice, lTemp + 1)
-			lTemp1 := InStr(strTemp2, "||") ;' yikes already checked! Null terminator removed?
+			lTemp1 := InStr(strTemp2, "||") ;'yikes already checked! Null terminator removed?
 				if (lTemp1)
 				strTemp2 := "|Prg" . A_Index + 1 . Substr(strTemp2, lTemp1 + 1)
 
