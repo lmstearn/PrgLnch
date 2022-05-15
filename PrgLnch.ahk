@@ -60,8 +60,6 @@ Class Splashy
 	Static parentHWnd := 0
 	Static updateFlag := -1
 	Static procEnd := 0
-	Static pToken := 0
-	Static hGDIPLUS := 0
 
 	Static parentClip := 0
 	Static downloadedPathNames := []
@@ -279,31 +277,37 @@ Class Splashy
 		PaintProc(hWnd := 0)
 		{
 		spr := 0	
+
+			if (!Splashy.procEnd)
+			{
+			;DllCall("UpdateWindow", "Ptr", hWnd) ;Too many paints ==> Instability & Crash!
+			return
+			}
+
+			if (!hWnd)
+			hWnd := Splashy.hWnd()
+
 			if (VarSetCapacity(PAINTSTRUCT, A_PtrSize + A_PtrSize + 56, 0)) ; hdc, rcPaint are pointers
 			{
-					if (!hWnd)
+			; DC validated
+			; if (!Splashy.procEnd)
+			; Invalidating PAINTSTRUCT and returning- the above is superior
+				if (DllCall("User32.dll\BeginPaint", "Ptr", hWnd, "Ptr", &PAINTSTRUCT, "UPtr"))
+				{
+					if (!spr)
 					{
-					hWnd := Splashy.hWnd()
-						if (!Splashy.procEnd)
-						spr := 1
-					}
-				; DC validated
-					if (DllCall("User32.dll\BeginPaint", "Ptr", hWnd, "Ptr", &PAINTSTRUCT, "UPtr"))
-					{
-						if (!spr)
-						{
-						static vDoDrawImg := 1 ;set This to 0 and the image won't be redrawn
-						static vDoDrawBgd := 1 ;set This to 0 and the background won't be redrawn
-						;return ;uncomment This line and the window will be blank
+					static vDoDrawImg := 1 ;set This to 0 and the image won't be redrawn
+					static vDoDrawBgd := 1 ;set This to 0 and the background won't be redrawn
+					;return ;uncomment This line and the window will be blank
 
-							if (vDoDrawImg)
-							Splashy.PaintDC()
+						if (vDoDrawImg)
+						Splashy.PaintDC()
 
-							if (vDoDrawBgd)
-							Splashy.DrawBackground()
-						}
+						if (vDoDrawBgd)
+						Splashy.DrawBackground()
 					}
-				DllCall("User32.dll\EndPaint", "Ptr", hWnd, "Ptr", &PAINTSTRUCT, "UPtr")
+				}
+			DllCall("User32.dll\EndPaint", "Ptr", hWnd, "Ptr", &PAINTSTRUCT, "UPtr")
 			}
 			else
 			msgbox, 8208, PAINTSTRUCT, Cannot paint!
@@ -1140,20 +1144,7 @@ Class Splashy
 
 		if (!This.hWndSaved[This.instance])
 		{
-			if (!This.hGDIPLUS)
-			{
-				if (This.hGDIPLUS := DllCall("LoadLibrary", "Str", "GdiPlus.dll", "Ptr"))
-				{
-				spr := 0
-				VarSetCapacity(SI, (A_PtrSize = 8 ? 24 : 16), 0), Numput(1, SI, 0, "Int")
-				DllCall("GdiPlus.dll\GdiplusStartup", "UPtr*", spr, "Ptr", &SI, "Ptr", 0)
-				; for return value see status enumeration in  gdiplustypes.h 
-				This.pToken := spr
-				}
-
-				if (!This.pToken)
-				msgbox, 8208, LoadLibrary, Critical GDIPLUS error!
-			}
+		This.GDIStartStop(1)
 
 		;Create Splashy window
 
@@ -2064,32 +2055,75 @@ Class Splashy
 	hBitmapOld := 0
 	;draw bitmap/icon onto GUI & call GetDC every paint
 
-	This.hDCWin := DllCall("user32\GetDC", "Ptr", This.hWndSaved[This.instance], "Ptr")
-
+	if (This.hDCWin := DllCall("user32\GetDC", "Ptr", This.hWndSaved[This.instance], "Ptr"))
+	{
 		Switch This.vImgType
 		{
 			case 0:
 			{
-				if (!(hDCCompat := DllCall("gdi32\CreateCompatibleDC", "Ptr", This.hDCWin, "Ptr")))
-				msgbox, 8208, Compat DC, DC could not be created!
+				Try
+				{
+				hDCCompat := DllCall("gdi32\CreateCompatibleDC", "Ptr", This.hDCWin, "Ptr")
+				}
+				Catch fTemp
+				{
+					if (!hDCCompat)
+					{
+						if (!(This.oneError))
+						msgbox, 262160, Compat DC, DC could not be created with %fTemp% !
+					}
+				}
+				Finally
+				{
+					if (!hDCCompat)
+					{
+						if (!(This.oneError))
+						This.oneError := 1
+					DllCall("GdiFlush", "Uint")
+					sleep -1
+					This.Procend := 0
+					}
+				}
+
+				if (!hDCCompat)
+				return
+
+
 				if (hBitmapOld := This.SelectObject(hDCCompat, This.hBitmap, "Bitmap"))
 				{
 					if (This.oldVImgW || This.oldVImgH || (This.actualVImgW != This.vImgW) || (This.actualVImgH != This.vImgH))
 					{
 						if (!DllCall("gdi32\StretchBlt", "Ptr", This.hDCWin, "Int", This.vImgX, "Int", This.vImgY, "Int", This.vImgW, "Int", This.vImgH, "Ptr", hDCCompat, "Int", 0, "Int", 0, "Int", This.actualVImgW, "Int", This.actualVImgH, "UInt", SRCCOPY))
-						msgbox, 8208, PaintDC, BitBlt Failed!
+						{
+							if (!(This.oneError))
+							{
+							msgbox, 262160, PaintDC, StretchBlt Failed!
+							This.oneError := 1
+							}
+						}
 					}
 					else
 					{
 						if (!DllCall("gdi32\BitBlt", "Ptr", This.hDCWin, "Int", This.vImgX, "Int", This.vImgY, "Int", This.vImgW, "Int", This.vImgH, "Ptr", hDCCompat, "Int", 0, "Int", 0, "UInt", SRCCOPY))
-						msgbox, 8208, PaintDC, BitBlt Failed!
+						{
+							if (!(This.oneError))
+							{
+							msgbox, 262160, PaintDC, BitBlt Failed!
+							This.oneError := 1
+							}
+						}
 					}
 
 				This.SelectObject(hDCCompat, hBitmapOld, "Old Bitmap")
 				}
+				else
+				{
+				;This.DeleteHandles()
+				sleep -1
+				}
 
 				if (!(DllCall("gdi32\DeleteDC", "Ptr", hDCCompat)))
-				msgbox, 8208, Compat DC, DC could not be deleted!
+				msgbox, 262160, Compat DC, DC could not be deleted!
 
 			}
 			case 1, 2: ;IMAGE_ICON := 1, IMAGE_CURSOR := 1
@@ -2104,7 +2138,11 @@ Class Splashy
 				*/
 			}
 		}
-		This.releaseDC(This.hWndSaved[This.instance], This.hDCWin)
+	This.releaseDC(This.hWndSaved[This.instance], This.hDCWin)
+	}
+	else
+	msgbox, 262160, GetDC, Handle from GetDC is zero or null!
+
 	}
 
 	DrawBackground()
@@ -2761,6 +2799,21 @@ Class Splashy
 	Return hICON
 	}
 
+
+	; suppress multiple GDI errors
+	; Here, the cause of errors in different functions has the same underlying cause:
+	; This script!
+	oneError
+	{
+		set
+		{
+		This._oneError := value
+		}
+		get
+		{
+		return This._oneError
+		}
+	}
 	vMovable
 	{
 		set
@@ -2787,16 +2840,36 @@ Class Splashy
 	SelectObject(hDC, hgdiobj, type)
 	{
 	static HGDI_ERROR := 0xFFFFFFFF
-
+	
+	Try
+	{
 	hRet := DllCall("Gdi32.dll\SelectObject", "Ptr", hDC, "Ptr", hgdiobj, "Ptr")
-
+	}
+	Catch fTemp
+	{
 		if (!hRet || hRet == HGDI_ERROR)
 		{
-		msgbox, 8208, GDI Object, % "Selection failed for " type "`nError code is: " . ((hRet == HGDI_ERROR)? "HGDI_ERROR: ": "Unknown: ") . "The errorLevel is " ErrorLevel ": " . A_LastError
-		return 0
+			if (!(This.oneError))
+			msgbox, 262160, GDI Object, % "Selection failed for " type "`nError code is: " . ((hRet == HGDI_ERROR)? "HGDI_ERROR: ": "Unknown: ") . "The errorLevel is " ErrorLevel ": " . A_LastError
 		}
-		else
-		return hRet
+	}
+	Finally
+	{
+		if (fTemp)
+		{
+			if (!(This.oneError))
+			This.oneError := 1
+		DllCall("CancelDC", "UPtr", hDC)
+		DllCall("GdiFlush", "Uint")
+		sleep -1
+		This.Procend := 0
+		}
+	}
+
+	if (fTemp)
+	return 0
+	else
+	return hRet
 	}
 
 	deleteObject(hDC, hgdiobj)
@@ -2804,10 +2877,31 @@ Class Splashy
 		if !DllCall("Gdi32.dll\DeleteObject", "Ptr", hObject)
 		msgbox, 8208, GDI Object, % "Deletion failed `nError code is: " . "ErrorLevel " ErrorLevel ": " . A_LastError
 	}
-		releaseDC(hWnd, hDC)
+	releaseDC(hWnd, hDC)
 	{
-		if !DllCall("ReleaseDC", "Ptr", hWnd, "UPtr", hDC)
-		msgbox, 8208, Device Context, % "Release failed `nError code is: " . "ErrorLevel " ErrorLevel ": " . A_LastError
+
+		Try
+		{
+		hRet := DllCall("ReleaseDC", "Ptr", hWnd, "UPtr", hDC)
+		}
+		Catch fTemp
+		{
+			if (!(This.oneError))
+			msgbox, 262160, Device Context, % "Release failed `nError code is: " . "ErrorLevel " ErrorLevel ": " . A_LastError
+		}
+		Finally
+		{
+			if (!hRet)
+			{
+				if (!(This.oneError))
+				This.oneError := 1
+			DllCall("CancelDC", "UPtr", hDC)
+			DllCall("GdiFlush", "Uint")
+			sleep -1
+			This.Procend := 0
+			}
+		}
+
 	}
 
 	SaveRestoreUserParms(Restore := 0)
@@ -2837,6 +2931,8 @@ Class Splashy
 			FileDelete, % value
 		}
 
+	DllCall("GdiFlush", "Uint")
+
 	This.SaveRestoreUserParms(1)
 
 	This.DeleteHandles()
@@ -2856,10 +2952,7 @@ Class Splashy
 	This.NewWndObj := ""
 	This.SubClassTextCtl(0, 1)
 
-	if (This.pToken)
-	DllCall("GdiPlus.dll\GdiplusShutdown", "Ptr", This.pToken)
-	if (This.hGDIPLUS)
-	DllCall("FreeLibrary", "Ptr", This.hGDIPLUS)
+	This.GDIStartStop()
 
 	;This.Delete("", chr(255))
 	This.SetCapacity(0)
@@ -2900,10 +2993,40 @@ Class Splashy
 			}
 		}
 	}
+	GDIStartStop(startGDI := 0)
+	{
+	Static pToken := 0, hGDIPLUS := 0
+
+		if (startGDI)
+		{
+
+			if (!hGDIPLUS)
+			{
+				if (This.hGDIPLUS := DllCall("LoadLibrary", "Str", "GdiPlus.dll", "Ptr"))
+				{
+				spr := 0
+				VarSetCapacity(SI, (A_PtrSize = 8 ? 24 : 16), 0), Numput(1, SI, 0, "Int")
+				DllCall("GdiPlus.dll\GdiplusStartup", "UPtr*", spr, "Ptr", &SI, "Ptr", 0)
+				; for return value see status enumeration in  gdiplustypes.h 
+				pToken := spr
+				}
+
+				if (!pToken)
+				msgbox, 8208, LoadLibrary, Critical GDIPLUS error!
+			}
+		}
+		else
+		{
+			if (pToken)
+			DllCall("GdiPlus.dll\GdiplusShutdown", "Ptr", pToken)
+			if (hGDIPLUS)
+			DllCall("FreeLibrary", "Ptr", hGDIPLUS)
+		hGDIPLUS := 0, pToken := 0
+		}
+	}
 	; ##################################################################################
 }
 ;=====================================================================================
-
 
 
 
@@ -4197,8 +4320,19 @@ return
 
 ;LnchPad invocation
 LnchPadConfig:
+Tooltip
+Thread, NoTimers
+
+	if (PrgUrl[selPrgChoice])
+	{
+	SetTimer, CheckVerPrg, Delete
+	GuiControl, PrgLnchOpt:, newVerPrg,
+	}
+
 SplashyProc("*LnchPadCfg")
+SetTimer, CheckVerPrg, Delete
 CloseChm()
+
 SetTimer, LnchPadSplashTimer, 300
 strTemp := LnchLnchPad(SelIniChoiceName)
 
@@ -6157,73 +6291,76 @@ oldSelIniChoiceName := selIniChoiceName
 
 KleenupPrgLnchFiles(RecycleDir := "")
 {
-static oneWarn := 0
 namesToDel := ["PrgLnch.ico", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat", "LnchPadInit.exe", "LnchPadMorrowind.jpg", "LnchPadOblivion.jpg", "LnchPadSkyrim.jpg", "LnchPadFallout 3.jpg", "LnchPadFallout NV.jpg", "LnchPadFallout 4.jpg"]
 
 temp := ""
+fTemp := 0
 KleenupPrgLnchFiles := ""
 
-
-
-	if (A_IsCompiled)
+	for eachNameToDel in namesToDel
 	{
-		if (oneWarn)
-		return
-		else
-		{
-		oneWarn := 1
-		IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, KeepFilesInDir
-			; Versioning:  IniSpaceCleaner moves this before ResMode
-			if (fTemp = "ERROR")
-			{
-			IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, KeepFilesInDir
-			fTemp := 0
-			}
+	strTemp := RecycleDir . namesToDel[A_Index]
 
+		if (FileExist(strTemp))
+		fTemp := 1
+	}
+
+	if (!fTemp || !A_IsCompiled) ; Keep files if debugging
+	return
+	else
+	{
+	IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, KeepFilesInDir
+		; Versioning:  IniSpaceCleaner moves this before ResMode
+		if (fTemp = "ERROR")
+		{
+		IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, KeepFilesInDir
+		fTemp := 0
+		}
+
+		if (fTemp)
+		{
 			if (fTemp == 1)
 			return
-			else
-			{
-				if (!fTemp)
-				{
-				retVal := TaskDialog("PrgLnch Installation", "PrgLnch non-essential program files exist in directory:`n`n" . """" . A_ScriptDir . """", , "As PrgLnch is distributed as a portable program, no formal installation`nis performed. The files can be removed, unless planning to use PrgLnch`nagain, in which case the files are best retained in the current directory.`n`nNeither the PrgLnch executable nor the PrgLnch ini file are flagged for removal.", , "Keep files", "Remove files")
-
-					if (retVal < 0)
-					{
-					temp := -retVal
-					IniWrite, %temp%, % PrgLnch.SelIniChoicePath, General, KeepFilesInDir
-					}
-					else
-					temp := retVal
-
-					if (temp == 1)
-					return
-				}
-			}
-		}
-	}
-	else	; Keep files if debugging
-	return
-
-for eachNameToDel in namesToDel
-{
-strTemp := RecycleDir . namesToDel[A_Index]
-
-	if (FileExist(strTemp))
-	{
-		if (RecycleDir)
-		{
-		KleenupPrgLnchFiles .= temp . namesToDel[A_Index]
-		FileRecycle, % strTemp
-			if (!temp)
-			temp := ", "
 		}
 		else
-		FileDelete, % namesToDel[A_Index]
-	}
-}
-return KleenupPrgLnchFiles
+		{
+			if (!RecycleDir)
+			{
+			retVal := TaskDialog("PrgLnch Installation", "PrgLnch non-essential program files exist in directory:`n`n" . """" . (RecycleDir?RecycleDir:A_ScriptDir) . """", , "As PrgLnch is distributed as a portable program, no formal installation`nis performed. The files can be removed, unless planning to use PrgLnch`nagain, in which case the files are best retained in the current directory.`n`nNeither the PrgLnch executable nor the PrgLnch ini file are flagged for removal.", , "Keep files", "Remove files")
 
+				if (retVal < 0)
+				{
+				fTemp := -retVal
+				IniWrite, %fTemp%, % PrgLnch.SelIniChoicePath, General, KeepFilesInDir
+				}
+				else
+				fTemp := retVal
+
+				if (fTemp == 1)
+				return
+			}
+		}
+
+		for eachNameToDel in namesToDel
+		{
+		strTemp := RecycleDir . namesToDel[A_Index]
+
+			if (FileExist(strTemp))
+			{
+				if (RecycleDir)
+				{
+				KleenupPrgLnchFiles .= temp . namesToDel[A_Index]
+
+				FileRecycle, % strTemp
+					if (!temp)
+					temp := ", "
+				}
+				else
+				FileDelete, % namesToDel[A_Index]
+			}
+		}
+		return KleenupPrgLnchFiles
+	}
 }
 
 FileCopy(Src, Dst, Overwrite := 0)
@@ -7913,7 +8050,7 @@ strTemp2 := ""
 	{
 		if (!noWrn)
 		{
-			IniRead, strTemp, % PrgLnch.SelIniChoicePath, General, ResClashMsg
+		IniRead, strTemp, % PrgLnch.SelIniChoicePath, General, ResClashMsg
 			if (!strTemp)
 			{
 			retVal := TaskDialog("Monitors", "Resolution mismatch issue", "", "Mismatch detected in desired resolution data for selected monitor!`n" . """" . strTemp2 . """" . "`n`nThis resolution is set for Prg in the Prglnch ini file and may instead apply to another monitor. Alternatively, differing frequency values appertaining to the same resolution preset is a common side-effect of some hardware. Excerpt from <A HREF=""https://support.microsoft.com/en-us/topic/screen-refresh-rate-in-windows-does-not-apply-the-user-selected-settings-on-monitors-tvs-that-report-specific-tv-compatible-timings-0a7a6a38-6c6a-2aec-debc-5183a76b9e1d"">MS Support</a>: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list of resolution modes.", , "Continue resolution checks")
@@ -9434,6 +9571,22 @@ SetTimer, NewThreadforDownload, Delete ;Cleanup
 CloseChm()
 PrgPropertiesClose()
 
+	if (WinExist("LnchPad Setup"))
+	{
+
+		if (PrgPID := PrgLnch.LnchPadPID)
+		{
+		WinClose, ahk_pid%PrgPID%
+		sleep, 100
+
+			if (WinExist("ahk_pid" . temp))
+			KillPrg(temp)
+		}
+		else
+		WinClose, LnchPad Setup
+	}
+
+
 strTemp := ""
 strTemp2 := ""
 loop % PrgNo
@@ -9487,6 +9640,7 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 				else
 				strTemp2 := "The following directory could not be scanned" . strTemp2
 			}
+
 			if (strTemp)
 			strTemp .= "`nAlso`," . strTemp
 
@@ -9500,7 +9654,7 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 
 			if (!fTemp && (strTemp2 || strTemp))
 			{
-			retVal := TaskDialog("PrgLnch Remnants", strTemp2 .  strTemp, "", ((strTemp2)? "The typical reason for the scan error is Prg removal`\relocation,`nor that the PrgLnch ini file originates from another device.`n": "") . ((strTemp)? "The file recycle notification is a problem with PrgLnch.": ""), , "Continue")
+			retVal := TaskDialog("PrgLnch Remnants", strTemp2 .  strTemp, "", ((strTemp2)? "The typical reason for the scan error is Prg removal`\relocation,`nor that the PrgLnch ini file originates from another device.`n": "") . ((strTemp)? "The file recycle notification indicates a problem with PrgLnch.": ""), , "Continue")
 				if (retVal < 1)
 				IniWrite, 1, % PrgLnch.SelIniChoicePath, General, PrgCleanOnExit
 			}
@@ -9508,20 +9662,6 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 	}
 
 ; Gui, Progrezz: Destroy ; automatic, as with PrgLnchOpt: PrgLnch
-	if (WinExist("LnchPad Setup"))
-	{
-
-		if (PrgPID := PrgLnch.LnchPadPID)
-		{
-		WinClose, ahk_pid%PrgPID%
-		sleep, 100
-
-			if (WinExist("ahk_pid" . temp))
-			KillPrg(temp)
-		}
-		else
-		WinClose, LnchPad Setup
-	}
 
 
 arrPowerPlanNames = ""
@@ -9787,11 +9927,11 @@ WM_HELPMSG := 0x0053
 LnchPrgLnch:
 Tooltip
 Thread, NoTimers
-if (PrgUrl[selPrgChoice])
-{
-SetTimer, CheckVerPrg, Delete
-GuiControl, PrgLnchOpt:, newVerPrg,
-}
+	if (PrgUrl[selPrgChoice])
+	{
+	SetTimer, CheckVerPrg, Delete
+	GuiControl, PrgLnchOpt:, newVerPrg,
+	}
 waitBreak := 1
 SetTimer, WatchSwitchBack, Delete
 SetTimer, WatchSwitchOut, Delete
