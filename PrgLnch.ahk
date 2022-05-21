@@ -3055,9 +3055,6 @@ Class PrgLnchOpt
 	{
 	static Title := "PrgLnch Options"
 	static PrgHwnd := ""
-	static DefScrWidth := 1920
-	static DefScrHeight := 1080
-	static DefScrFreq := 60
 	static adapterNames := ["", "", "", "", "", "", "", "", ""]
 	static monNames := ["", "", "", "", "", "", "", "", ""]
 
@@ -3209,10 +3206,7 @@ Class PrgLnchOpt
 		}
 		get
 		{
-			if (!(this._scrWidthDef))
-			this._scrWidthDef := this.DefScrWidth
-
-			return this._scrWidthDef
+		return this._scrWidthDef
 		}
 	}
 	scrHeightDef
@@ -3223,10 +3217,7 @@ Class PrgLnchOpt
 		}
 		get
 		{
-			if (!(this._scrHeightDef))
-			this._scrHeightDef := this.DefscrHeight
-			
-			return this._scrHeightDef
+		return this._scrHeightDef
 		}
 	}
 	scrFreqDef
@@ -3237,9 +3228,6 @@ Class PrgLnchOpt
 		}
 		get
 		{
-			if (!(this._scrFreqDef))
-			this._scrFreqDef := this.DefscrFreq
-
 		return this._scrFreqDef
 		}
 	}
@@ -8066,17 +8054,17 @@ SetResDefaults(lnchStat, targMonitorNum, ByRef scrWidthDefArr, ByRef scrHeightDe
 	if (SaveVars)
 	{
 		if (scrWidthDefArr[targMonitorNum]) ;no need if values have been read already
-			{
-			PrgLnchOpt.scrWidthDef := scrWidthDefArr[targMonitorNum]
-			PrgLnchOpt.scrHeightDef := scrHeightDefArr[targMonitorNum]
-			PrgLnchOpt.scrFreqDef := scrFreqDefArr[targMonitorNum]
-			}
+		{
+		PrgLnchOpt.scrWidthDef := scrWidthDefArr[targMonitorNum]
+		PrgLnchOpt.scrHeightDef := scrHeightDefArr[targMonitorNum]
+		PrgLnchOpt.scrFreqDef := scrFreqDefArr[targMonitorNum]
+		}
 		else ; on init: The defs in the class are initialised at least
-			{
-			scrWidthDefArr[targMonitorNum] := PrgLnchOpt.scrWidthDef
-			scrHeightDefArr[targMonitorNum] := PrgLnchOpt.scrHeightDef
-			scrFreqDefArr[targMonitorNum] := PrgLnchOpt.scrFreqDef
-			}
+		{
+		scrWidthDefArr[targMonitorNum] := PrgLnchOpt.scrWidth
+		scrHeightDefArr[targMonitorNum] := PrgLnchOpt.scrHeight
+		scrFreqDefArr[targMonitorNum] := PrgLnchOpt.scrFreq
+		}
 	}
 	else
 	{
@@ -10243,38 +10231,48 @@ if (lnchPrgIndex > 0) ;Running
 	(!temp)? PrgPrty := "B": (temp == 1)? PrgPrty := "H": PrgPrty := "N"
 	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 
-	if ((IsaPrgLnk > -1) && ((strRetVal := PrgPaths) != AssocQueryApp(PrgPaths))) ; must be an association
+	if (IsaPrgLnk > -1) ; not a directory link
 	{
-		if (IsaPrgLnk)
-		{
-			;Treat as regular association
-			If (PrgResolveShortcut[lnchPrgIndex])
-			IsaPrgLnk := 0
-
-			if (!IsaPrgLnk)
-			{
-			; "Easiest" way to use working dir for associations
-			SplitPath, PrgPaths,, wkDir
-			PrgPaths := AssocQueryApp(PrgPaths)
-			}
-
-		}
-		else
+		if ((strRetVal := PrgPaths) == AssocQueryApp(PrgPaths))
 		{
 		SplitPath, PrgPaths,, wkDir
-		PrgPaths := AssocQueryApp(PrgPaths, strRetVal)
+			if (IsaPrgLnk)
+			PrgLnkInflnchPrgIndex := wkDir		
+		}
+		else ; must be an association
+		{
 
-			if (PrgPaths)
+			if (IsaPrgLnk)
 			{
-				if (strRetVal)
+				;Treat as regular association
+				If (PrgResolveShortcut[lnchPrgIndex])
+				IsaPrgLnk := 0
+
+				if (!IsaPrgLnk)
 				{
-				PrgPathsAssocCommandLine := PrgPaths . A_Space . """" . strRetVal . """"
-				strRetVal := ""
+				; "Easiest" way to use working dir for associations
+				SplitPath, PrgPaths,, wkDir
+				PrgPaths := AssocQueryApp(PrgPaths)
 				}
+
 			}
 			else
-			return "Association Removed.`nThe Prg must have an association before it can be used."
-		
+			{
+			SplitPath, PrgPaths,, wkDir
+			PrgPaths := AssocQueryApp(PrgPaths, strRetVal)
+
+				if (PrgPaths)
+				{
+					if (strRetVal)
+					{
+					PrgPathsAssocCommandLine := PrgPaths . A_Space . """" . strRetVal . """"
+					strRetVal := ""
+					}
+				}
+				else
+				return "Association Removed.`nThe Prg must have an association before it can be used."
+			
+			}
 		}
 	}
 
@@ -10320,12 +10318,12 @@ if (lnchPrgIndex > 0) ;Running
 
 
 	;WinHide ahk_class Shell_TrayWnd ;Necessary?
+		; Not a directory or unresolved lnk
 		if (!Instr(PrgLnkInflnchPrgIndex, "|") && !Instr(PrgLnkInflnchPrgIndex, IniFileShortctSep))
 		{
 			; Problems with showing the PrgLnch gui?
 			if (targMonitorNum == PrgLnchMon)
 			{
-
 				if (PrgLnchOpt.scrWidth + 180 < PrgLnchOpt.scrWidthDef) ; 180 pixels might be enough?
 				{
 				IniRead, fTemp, % PrgLnch.SelIniChoicePath, General, LoseGuiChangeResWrn
@@ -10353,6 +10351,7 @@ if (lnchPrgIndex > 0) ;Running
 
 			;*************************************************
 			; Monitor Checks
+
 
 			if (DefResNoMatchRes())
 			{
@@ -10389,7 +10388,6 @@ if (lnchPrgIndex > 0) ;Running
 			return "No Game selected!"
 			}
 		}
-
 
 	;try
 	;{
