@@ -3654,7 +3654,7 @@ PrgLnchMon := 0 ; Device PrgLnch is run from
 PrgLnchOpt.dispMonNamesNo := 9 ;No more than 9 displays!?
 targMonitorNum := 1
 ResIndexList := ""
-
+PrgLnch.primaryMonitor := 0
 
 
 
@@ -3945,7 +3945,7 @@ Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHwnd
 	}
 
 
-GuiControl, PrgLnchOpt:, Monitors, % PrglnchOpt.GetDispMonNamesVal(targMonitorNum)
+GuiControl, PrgLnchOpt:, Monitors, % PrgLnchOpt.GetDispMonNamesVal(targMonitorNum)
 ;Build monitor list: the results shown in TogglePrgOptCtrls()below
 
 Loop % PrgLnchOpt.dispMonNamesNo
@@ -4713,7 +4713,7 @@ if (btchPrgPresetSel == temp) ; same preset as before
 		}
 		else
 		{
-			retVal := TaskDialog("Prg Presets", "Selected Preset contains active Prgs", , "If the active Prg is removed, Prglnch will continue to monitor`nthe (inactive) Prg if it is already included in another batch preset.", "", "Continue and remove the Preset`n(Prgs will not be cancelled)", "Do not remove the Preset")
+			retVal := TaskDialog("Prg Presets", "Selected Preset contains active Prgs", , "If the active Prg is removed, PrgLnch will continue to monitor`nthe (inactive) Prg if it is already included in another batch preset.", "", "Continue and remove the Preset`n(Prgs will not be cancelled)", "Do not remove the Preset")
 			if (retVal == 1)
 			{
 
@@ -4811,7 +4811,7 @@ else
 	sleep, 150
 		if (temp == "ERROR")
 		{
-		retVal := TaskDialog("Ini file", "File not found", , "The active ini file cannot be found. Has it been removed or modified in some way?`nIf it cannot be located, PrgLnch will attempt to recreate the file.`nOn continuation, if the Ini file is a LnchPad Slot, Prglnch will instead be restarted, so the file can be recreated.", "", "Try to read the file again", "Continue without the file")
+		retVal := TaskDialog("Ini file", "File not found", , "The active ini file cannot be found. Has it been removed or modified in some way?`nIf it cannot be located, PrgLnch will attempt to recreate the file.`nOn continuation, if the Ini file is a LnchPad Slot, PrgLnch will instead be restarted, so the file can be recreated.", "", "Try to read the file again", "Continue without the file")
 			if (retVal == 1)
 			Goto IniReadStart
 			else
@@ -6522,7 +6522,7 @@ local MousePosY    := NumGet(lParam + 24 + PrgLnch.64Bit() * 8, "int")
 	case newVerPrgHwnd:
 	retVal := RunChm("PrgLnch Config`\PrgLnch Config", "PrgUpdateStatus")
 	case BackToPrgLnchHwnd:
-	retVal := RunChm("PrgLnch Config`\PrgLnch Config", "BackToPrglnch")
+	retVal := RunChm("PrgLnch Config`\PrgLnch Config", "BackToPrgLnch")
 	default:
 	retVal := RunChm()
 	}
@@ -7226,7 +7226,7 @@ Static TDN_CREATED := 0, TDN_HYPERLINK_CLICKED := 3, TDN_TIMER := 4, TDN_EXPANDO
 			tdYpos := NumGet(rect, 4, "int")
 
 		VarSetCapacity(rect, 0)
-		Prglnch.TaskdialogHWnd := hWnd
+		PrgLnch.TaskdialogHWnd := hWnd
 		}
 		Case TDN_HYPERLINK_CLICKED:
 		{
@@ -7310,10 +7310,10 @@ TDNTimer(FuncName, hWndObj)
 }
 
 TaskDialogMonitor:
-	if (Prglnch.primaryMonitor != Prglnch.Monitor)
+	if (PrgLnch.primaryMonitor != PrgLnch.Monitor)
 	{
-		if (Prglnch.TaskdialogHWnd)
-		WinMover(Prglnch.TaskdialogHWnd)
+		if (PrgLnch.TaskdialogHWnd)
+		WinMover(PrgLnch.TaskdialogHWnd)
 		else
 		MsgBox, 8192, Task Dialog, Task Dialog in other monitor!
 	}
@@ -8076,7 +8076,7 @@ strTemp2 := ""
 		IniRead, strTemp, % PrgLnch.SelIniChoicePath, General, ResClashMsg
 			if (!strTemp)
 			{
-			retVal := TaskDialog("Monitors", "Resolution mismatch issue", "", "Mismatch detected in desired resolution data for selected monitor!`n" . """" . strTemp2 . """" . "`n`nThis resolution is set for Prg in the Prglnch ini file and may instead apply to another monitor. Alternatively, differing frequency values appertaining to the same resolution preset is a common side-effect of some hardware. Excerpt from <A HREF=""https://support.microsoft.com/en-us/topic/screen-refresh-rate-in-windows-does-not-apply-the-user-selected-settings-on-monitors-tvs-that-report-specific-tv-compatible-timings-0a7a6a38-6c6a-2aec-debc-5183a76b9e1d"">MS Support</a>: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list of resolution modes.", , "Continue resolution checks")
+			retVal := TaskDialog("Monitors", "Resolution mismatch issue", "", "Mismatch detected in desired resolution data for selected monitor!`n" . """" . strTemp2 . """" . "`n`nThis resolution is set for Prg in the PrgLnch ini file and may instead apply to another monitor. Alternatively, differing frequency values appertaining to the same resolution preset is a common side-effect of some hardware. Excerpt from <A HREF=""https://support.microsoft.com/en-us/topic/screen-refresh-rate-in-windows-does-not-apply-the-user-selected-settings-on-monitors-tvs-that-report-specific-tv-compatible-timings-0a7a6a38-6c6a-2aec-debc-5183a76b9e1d"">MS Support</a>: `n`n""In Windows 7 and newer versions of Windows, when a user selects 60Hz, the OS stores a value of 59.94Hz. However, 59Hz is shown in the Screen refresh rate in Control Panel, even though the user selected 60Hz."" `n`nThe current resolution mode might have also been set from the ""List all Compatible"" selection. The recommended action is to reselect the required screen resolution from the list of resolution modes.", , "Continue resolution checks")
 				if (retval < 0)
 				IniWrite, 1, % PrgLnch.SelIniChoicePath, General, ResClashMsg
 			}
@@ -9310,7 +9310,7 @@ CoordMode, Mouse, % strTemp
 		}
 		else
 		{
-		retVal := TaskDialog("Reposition Gui To Mouse", "Problem with locating a Prglnch form", , "Not a critical issue, but a sign that something`nin Windows isn't working for PrgLnch right now", "", "Quit Prglnch", "Do not quit PrgLnch")
+		retVal := TaskDialog("Reposition Gui To Mouse", "Problem with locating a PrgLnch form", , "Not a critical issue, but a sign that something`nin Windows isn't working for PrgLnch right now", "", "Quit PrgLnch", "Do not quit PrgLnch")
 			if (retVal == 1)
 			GoSub PrgLnchButtonQuit_PrgLnch
 		}
@@ -9555,7 +9555,7 @@ critical
 
 			if (!PrgTermExit)
 			{
-			PrgTermExit := TaskDialog("Active on Quit", temp . " still running!`n" . strTemp2, , "If the active Prgs in a Batch Preset are not cancelled before Prglnch Quit, they'll`nbe automatically re-assigned to the (selected) Preset if active on PrgLnch rerun.`nAs a general rule, whenever the " . """" . " Do not show this again" . """" . " option is checked,`nthis dialog can only be restored by manually editing the LnchPad Slot ini file.`nThis tends to happen more when the " . """" . "Close" . """" . " option is clicked.", , "Close " . strTemp, "Do not close " . strTemp . " (Recommended)")
+			PrgTermExit := TaskDialog("Active on Quit", temp . " still running!`n" . strTemp2, , "If the active Prgs in a Batch Preset are not cancelled before PrgLnch Quit, they'll`nbe automatically re-assigned to the (selected) Preset if active on PrgLnch rerun.`nAs a general rule, whenever the " . """" . " Do not show this again" . """" . " option is checked,`nthis dialog can only be restored by manually editing the LnchPad Slot ini file.`nThis tends to happen more when the " . """" . "Close" . """" . " option is clicked.", , "Close " . strTemp, "Do not close " . strTemp . " (Recommended)")
 				if (PrgTermExit < 0)
 				{
 				PrgTermExit := -PrgTermExit
@@ -10588,7 +10588,7 @@ else
 
 						if (PrgPIDtmp)
 						{
-						retVal := TaskDialog("Closing Prg", "Closing " . """" . temp . """" . "failed", , "A common explanation is that resources like program libraries or files have not been released by Prg, else Prg has no way out of a loop cycle.`nWhen all attempts by PrgLnch to close " . """" . temp . """" . " have failed, it will`nno longer be monitored by Prglnch until PrgLnch is next restarted.", "", "Attempt force termination", "Do not force terminate")
+						retVal := TaskDialog("Closing Prg", "Closing " . """" . temp . """" . "failed", , "A common explanation is that resources like program libraries or files have not been released by Prg, else Prg has no way out of a loop cycle.`nWhen all attempts by PrgLnch to close " . """" . temp . """" . " have failed, it will`nno longer be monitored by PrgLnch until PrgLnch is next restarted.", "", "Attempt force termination", "Do not force terminate")
 							if (retVal == 1)
 							KillPrg(PrgPIDtmp)
 							else
@@ -10904,7 +10904,7 @@ if (lnchStat == -1)
 WatchSwitchBack:
 
 Thread, Priority, -536870911
-;Problem is, this only deals with switching to and from Prglnch ATM . Not other apps.
+;Problem is, this only deals with switching to and from PrgLnch ATM . Not other apps.
 SetTitleMatchMode, 3
 
 if (WinActive(PrgLnch.Title) || WinActive(PrgLnchOpt.Title))
@@ -10932,7 +10932,7 @@ WatchSwitchOut:
 Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&t=29911
 
 
-	if (presetNoTest) ; in the Prglnch screen
+	if (presetNoTest) ; in the PrgLnch screen
 	{
 		timerBtch := 0
 		lastMonitorUsedInBatch := 0
@@ -11814,8 +11814,9 @@ hWnd := PrgLnchOpt.Hwnd()
 		if (iDevNumArray[A_Index] > 9)
 		{
 		iDevNumb += 1
-			if (iDevNumArray[A_Index] > 99)
-			Prglnch.primaryMonitor := SubStr(iDevNumArray[A_Index], 1, 1)
+		;Primary set once only
+			if (!PrgLnch.primaryMonitor && iDevNumArray[A_Index] > 99)
+			PrgLnch.primaryMonitor := -SubStr(iDevNumArray[A_Index], 1, 1)
 		}
 	}
 
@@ -12503,9 +12504,9 @@ retVal := 0
 
 			monName := StrGet(&DISPLAY_DEVICE + OffsetDWORD, offsetWORDStr)
 
-			PrglnchOpt.SetDispMonNamesVal(iDevNumb, monName)
+			PrgLnchOpt.SetDispMonNamesVal(iDevNumb, monName)
 			; adapter name	
-			PrglnchOpt.SetDispAdapterNamesVal(StrGet(&DISPLAY_DEVICE + OffsetDWORD + offsetWORDStr, offsetWORDStr))
+			PrgLnchOpt.SetDispAdapterNamesVal(StrGet(&DISPLAY_DEVICE + OffsetDWORD + offsetWORDStr, offsetWORDStr))
 
 			if (!monName)
 			{
@@ -12560,7 +12561,7 @@ retVal := 0
 	; Point of iChange is when initialising primary monitor, a different target monitor must not be confused with primary monitor.
 	; The fn actually has a 4th flags parm- EDS_RAWMODE might be worth another look.
 	if (iChange) ; DISPLAY_DEVICE.DeviceName
-	retVal := DllCall("EnumDisplaySettingsEx" . (A_IsUnicode? "W": "A"), "PTR", PrglnchOpt.GetDispMonNamesVal(targMonitorNum), "UInt", iMode, "PTR", &Device_Mode, "UInt", 0)
+	retVal := DllCall("EnumDisplaySettingsEx" . (A_IsUnicode? "W": "A"), "PTR", PrgLnchOpt.GetDispMonNamesVal(targMonitorNum), "UInt", iMode, "PTR", &Device_Mode, "UInt", 0)
 	else ; PrgLnch display device (0 will do for the fn)
 	retVal := DllCall("EnumDisplaySettingsEx" . (A_IsUnicode? "W": "A"), "PTR", 0, "UInt", iMode, "PTR", &Device_Mode, "UInt", 0)
 
@@ -12663,7 +12664,7 @@ Static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
 	;OffsetWORD of dmDisplayFixedOutput = 56
 
 
-	monName := PrglnchOpt.GetDispMonNamesVal(targMonitorNum)
+	monName := PrgLnchOpt.GetDispMonNamesVal(targMonitorNum)
 
 	;Ref SetDisplayConfig. The usual approach is to call with CD_TEST and if no error use CDS_UPDATEREGISTRY | CDS_NORESET. With 2 monitors, again call ChangeDisplaySettingsExto change settings.
 	retVal := DllCall("ChangeDisplaySettingsEx", "Ptr", &monName, "Ptr", &Device_Mode, "Ptr", 0, "UInt", CDSopt, "Ptr", 0)
@@ -13362,7 +13363,13 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 		PrgLnchOpt.scrFreq := ResArrayIn[PrgLnchOpt.OrderTargMonitorNum, 3, setPrgLnchOptDefs]
 		}
 		case 2:  ; 3: populate list
+		{
 		ResList := CheckResolutions(targMonitorNum, monitorOrder, allModes, ResArrayIn)
+
+			; Set the primary here
+			if (PrgLnch.primaryMonitor < 0)
+			PrgLnch.primaryMonitor := MonitorOrder[-(PrgLnch.primaryMonitor)]
+		}
 		case 3: ; check default (when switching monitors)
 		{
 		iModeCt := 1
@@ -13471,7 +13478,7 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 					fTemp := 1
 				}
 
-				if (monitorMsg && fTemp)
+				if (!monitorMsg && fTemp)
 				{
 				monitorMsg := 1
 				MsgBox, 8192, Monitor Setup, The default screen resolution for the current monitor is not correct,`nand its default refresh rate (frequency Hz) may not be reliable.`nCould be an issue with the initial monitor setup,`nor that the monitor was not available on Windows Bootup`n`n(A once per session notification that may apply to any other physical monitor attached to the desktop).
@@ -14692,8 +14699,8 @@ instance := 0
 
 	if (type == "*Loading" || type == "*Launching")
 	{
-		if (Prglnch.primaryMonitor != Prglnch.Monitor)
-		MovePrgToMonitor(Prglnch.Monitor, 0, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[1])
+		if (PrgLnch.primaryMonitor != PrgLnch.Monitor)
+		MovePrgToMonitor(PrgLnch.Monitor, 0, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[1])
 	}
 
 }
@@ -14735,10 +14742,10 @@ TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorN
 
 ctlEnable := (LNKFlag(PrgLnkInf[selPrgChoice]) == -1)? "Disable": "Enable"
 
-GuiControl, PrgLnchOpt:, Monitors, % PrglnchOpt.GetDispMonNamesVal(targMonitorNum)
+GuiControl, PrgLnchOpt:, Monitors, % PrgLnchOpt.GetDispMonNamesVal(targMonitorNum)
 			
 	; adapter name
-	;PrglnchOpt.GetDispAdapterNamesVa(targMonitorNum)
+	;PrgLnchOpt.GetDispAdapterNamesVa(targMonitorNum)
 
 	if (iDevNumArray[targMonitorNum] < 10) ;dec masks
 	{
@@ -15269,7 +15276,7 @@ IniProcStart:
 										{
 											if (iDevNumArray[A_Index] != iDevNumArrayIn[A_Index])
 											{
-											retVal := TaskDialog("Monitor configuration", "Informational: The current monitor config`ndiffers to the one read from the ini file", , "This usually occurs after monitors have been added or removed`,`nor the existing PrgLnch ini file has been generated on another device.`nThis is only an issue if the existing ini file is not to be overwritten.", "", "Continue to write the new configuration", "Quit Prglnch")
+											retVal := TaskDialog("Monitor configuration", "Informational: The current monitor config`ndiffers to the one read from the ini file", , "This usually occurs after monitors have been added or removed`,`nor the existing PrgLnch ini file has been generated on another device.`nThis is only an issue if the existing ini file is not to be overwritten.", "", "Continue to write the new configuration", "Quit PrgLnch")
 												if (retVal == 1)
 												Break
 												else
@@ -15282,7 +15289,7 @@ IniProcStart:
 									}
 									else
 									{
-									retVal := TaskDialog("Monitor configuration", "Informational: The current monitor config`ndiffers to the one read from the ini file", , "This usually occurs after monitors have been added or removed`,`nor the existing PrgLnch ini file has been generated on another device.`nThis is only an issue if the existing ini file is not to be overwritten.", "", "Continue to write the new configuration", "Quit Prglnch")
+									retVal := TaskDialog("Monitor configuration", "Informational: The current monitor config`ndiffers to the one read from the ini file", , "This usually occurs after monitors have been added or removed`,`nor the existing PrgLnch ini file has been generated on another device.`nThis is only an issue if the existing ini file is not to be overwritten.", "", "Continue to write the new configuration", "Quit PrgLnch")
 										if (retVal == 2)
 										{
 										KleenupPrgLnchFiles()
@@ -15303,7 +15310,7 @@ IniProcStart:
 									IniRead, lTemp, % PrgLnch.SelIniChoicePath, General, OnlyOneMonitor
 										if (!lTemp)
 										{
-										retVal := TaskDialog("Monitor configuration", "Reading Config: Only one logical monitor", , "Prglnch.ini reports at most one logical monitor attached!`nAssumed cause is driver removal, else corrupted ini file.`nInformational only- if driver has just been updated.", , "Continue loading Prglnch")
+										retVal := TaskDialog("Monitor configuration", "Reading Config: Only one logical monitor", , "PrgLnch.ini reports at most one logical monitor attached!`nAssumed cause is driver removal, else corrupted ini file.`nInformational only- if driver has just been updated.", , "Continue loading PrgLnch")
 											if (retVal < 0)
 											IniWrite, 1, % PrgLnch.SelIniChoicePath, General, OnlyOneMonitor
 										}
