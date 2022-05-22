@@ -3344,6 +3344,17 @@ Class PrgLnch
 	return % (A_PtrSize == 8)? 1: 0 ; ONLY checks .exe bitness
 	}
 
+	TaskdialogHWnd
+	{
+		set
+		{
+		this._TaskdialogHWnd := value
+		}
+		get
+		{
+		return this._TaskdialogHWnd
+		}
+	}
 	SelIniChoicePath
 	{
 		set
@@ -3353,6 +3364,17 @@ Class PrgLnch
 		get
 		{
 		return this._SelIniChoicePath
+		}
+	}
+	primaryMonitor
+	{
+		set
+		{
+		this._primaryMonitor := value
+		}
+		get
+		{
+		return this._primaryMonitor
 		}
 	}
 	Monitor
@@ -3631,14 +3653,10 @@ scrFreqDefArr := [0, 0, 0, 0, 0, 0, 0, 0, 0] ; frequencies == vertical refresh r
 PrgLnchMon := 0 ; Device PrgLnch is run from
 PrgLnchOpt.dispMonNamesNo := 9 ;No more than 9 displays!?
 targMonitorNum := 1
-primaryMon := 1 ; placeholder
 ResIndexList := ""
 
 
-	if (!A_IsUnicode)
-	msgbox, 8192 , Task Dialogs, Chinese Characters in ANSI Task Dialogs!
 
-SplashyProc("*Loading", 1)
 
 ;Done here, else complications with PrgLnch.Monitor
 Gui, PrgLnchOpt: New
@@ -3649,8 +3667,12 @@ GetDisplayData(, iDevNumArray, , , , , , -3)
 
 ; Can change
 
-PrgLnch.Monitor := GetPrgLnchMonNum(iDevNumArray, primaryMon, 1)
+PrgLnch.Monitor := GetPrgLnchMonNum(iDevNumArray, 1)
 
+	if (!A_IsUnicode)
+	msgbox, 8192 , Task Dialogs, Chinese Characters in ANSI Task Dialogs!
+
+SplashyProc("*Loading", 1)
 sleep 20
 SplashyProc("*Loading")
 
@@ -7060,8 +7082,10 @@ hwndParent := WinExist("A")
 	if (hwndParent != PrgLnch.PrgHwnd && hwndParent != PrgLnchOpt.PrgHwnd)
 	{
 	DetectHiddenWindows, On
-	if (!(WinExist("ahk_id" . PrgLnch.PrgHwnd) || WinExist("ahk_id" . PrgLnchOpt.PrgHwnd)))
-	MsgBox, 8192, Task Dialog, Informational: PrgLnch form AWOL:`nNo parent window for dialog.
+		if (WinExist("ahk_id" . PrgLnch.PrgHwnd) || WinExist("ahk_id" . PrgLnchOpt.PrgHwnd))
+		SetTimer TaskDialogMonitor, -300
+		else
+		MsgBox, 8192, Task Dialog, Informational: PrgLnch form AWOL:`nNo parent window for dialog.
 	DetectHiddenWindows, Off
 	hwndParent := 0
 	}
@@ -7202,6 +7226,7 @@ Static TDN_CREATED := 0, TDN_HYPERLINK_CLICKED := 3, TDN_TIMER := 4, TDN_EXPANDO
 			tdYpos := NumGet(rect, 4, "int")
 
 		VarSetCapacity(rect, 0)
+		Prglnch.TaskdialogHWnd := hWnd
 		}
 		Case TDN_HYPERLINK_CLICKED:
 		{
@@ -7284,6 +7309,16 @@ TDNTimer(FuncName, hWndObj)
 	, "int", tdxpos, "int", hWndNewObj.tdYpos, "int", 0, "int", 0, "uint", 0)
 }
 
+TaskDialogMonitor:
+	if (Prglnch.primaryMonitor != Prglnch.Monitor)
+	{
+		if (Prglnch.TaskdialogHWnd)
+		WinMover(Prglnch.TaskdialogHWnd)
+		else
+		MsgBox, 8192, Task Dialog, Task Dialog in other monitor!
+	}
+SetTimer TaskDialogMonitor, Delete
+return
 
 
 
@@ -10200,13 +10235,13 @@ return
 
 LnchPrgOff(prgIndex, lnchStat, PrgNames, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, ByRef PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, ByRef PrgMinMaxVar, ByRef PrgStyle, btchPowerName)
 {
-PrgLnchMon := 0, primaryMon := 0, disableRedirect := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0, PrgLnkInflnchPrgIndex := PrgLnkInf[lnchPrgIndex]
+PrgLnchMon := 0, disableRedirect := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0, PrgLnkInflnchPrgIndex := PrgLnkInf[lnchPrgIndex]
 temp := 0, fTemp := 0, strRetVal := "", wkDir := "", PrgPathsAssocCommandLine := ""
 
 Static ERROR_FILE_NOT_FOUND := 0x2, ERROR_ACCESS_DENIED := 0x5, ERROR_CANCELLED := 0x4C7
 
 
-PrgLnchMon := GetPrgLnchMonNum(iDevNumArray, primaryMon)
+PrgLnchMon := GetPrgLnchMonNum(iDevNumArray)
 
 if (PrgLnch.Monitor != PrgLnchMon)
 {
@@ -11756,7 +11791,7 @@ lTemp := 0
 return retVal
 }
 
-GetPrgLnchMonNum(iDevNumArray, ByRef primaryMon, fromMouse := 0)
+GetPrgLnchMonNum(iDevNumArray, fromMouse := 0)
 {
 iDevNumb := 0, monitorHandle := 0,  MONITOR_DEFAULTTONULL := 0, strTemp := ""
 
@@ -11780,7 +11815,7 @@ hWnd := PrgLnchOpt.Hwnd()
 		{
 		iDevNumb += 1
 			if (iDevNumArray[A_Index] > 99)
-			primaryMon := SubStr(iDevNumArray[A_Index], 1, 1)
+			Prglnch.primaryMonitor := SubStr(iDevNumArray[A_Index], 1, 1)
 		}
 	}
 
@@ -14596,11 +14631,11 @@ instance := 0
 	{
 		case "*Release":
 		{
-		if (action)
-		%SplashRef%(Splashy, {InitSplash: 1}*)
-		else
-		%SplashRef%(Splashy, {release: 1}*)
-		return
+			if (action)
+			%SplashRef%(Splashy, {InitSplash: 1}*)
+			else
+			%SplashRef%(Splashy, {release: 1}*)
+			return
 		}
 		case "*Loading":
 		{
@@ -14654,6 +14689,13 @@ instance := 0
 	loadW := Splashy.vImgW
 	loadH := Splashy.vImgH
 	}
+
+	if (type == "*Loading" || type == "*Launching")
+	{
+		if (Prglnch.primaryMonitor != Prglnch.Monitor)
+		MovePrgToMonitor(Prglnch.Monitor, 0, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[1])
+	}
+
 }
 
 WinMover(Hwnd, position := "hc vc", Width := 0, Height := 0, wdRatio := 1, htRatio := 1)
