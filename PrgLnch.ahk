@@ -3344,17 +3344,6 @@ Class PrgLnch
 	return % (A_PtrSize == 8)? 1: 0 ; ONLY checks .exe bitness
 	}
 
-	TaskdialogHWnd
-	{
-		set
-		{
-		this._TaskdialogHWnd := value
-		}
-		get
-		{
-		return this._TaskdialogHWnd
-		}
-	}
 	SelIniChoicePath
 	{
 		set
@@ -7079,12 +7068,10 @@ CustomButtons := []
 
 hwndParent := WinExist("A")
 ;	; Do not invoke .Hwnd() unless form is initialised
-	if (hwndParent != PrgLnch.PrgHwnd && hwndParent != PrgLnchOpt.PrgHwnd)
+	if (hwndParent != PrgLnch.PrgHwnd && hwndParent != PrgLnchOpt.PrgHwnd && hwndParent != Splashy.hWndSaved[1])
 	{
 	DetectHiddenWindows, On
-		if (WinExist("ahk_id" . PrgLnch.PrgHwnd) || WinExist("ahk_id" . PrgLnchOpt.PrgHwnd))
-		SetTimer TaskDialogMonitor, -300
-		else
+		if (!(WinExist("ahk_id" . PrgLnch.PrgHwnd) || WinExist("ahk_id" . PrgLnchOpt.PrgHwnd)))
 		MsgBox, 8192, Task Dialog, Informational: PrgLnch form AWOL:`nNo parent window for dialog.
 	DetectHiddenWindows, Off
 	hwndParent := 0
@@ -7226,7 +7213,7 @@ Static TDN_CREATED := 0, TDN_HYPERLINK_CLICKED := 3, TDN_TIMER := 4, TDN_EXPANDO
 			tdYpos := NumGet(rect, 4, "int")
 
 		VarSetCapacity(rect, 0)
-		PrgLnch.TaskdialogHWnd := hWnd
+
 		}
 		Case TDN_HYPERLINK_CLICKED:
 		{
@@ -7308,18 +7295,6 @@ TDNTimer(FuncName, hWndObj)
 	DllCall("SetWindowPos", "uint", hWndNewObj.hWnd, "uint", hwnd_prev
 	, "int", tdxpos, "int", hWndNewObj.tdYpos, "int", 0, "int", 0, "uint", 0)
 }
-
-TaskDialogMonitor:
-	if (PrgLnch.primaryMonitor != PrgLnch.Monitor)
-	{
-		if (PrgLnch.TaskdialogHWnd)
-		WinMover(PrgLnch.TaskdialogHWnd)
-		else
-		MsgBox, 8192, Task Dialog, Task Dialog in other monitor!
-	}
-SetTimer TaskDialogMonitor, Delete
-return
-
 
 
 
