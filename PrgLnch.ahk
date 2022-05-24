@@ -5947,14 +5947,14 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 		{
 		FileInstall LnchPadInit.exe, LnchPadInit.exe
 		Sleep, 600
+		}
 
-			if (!A_IsAdmin)
-			{
-			retVal := TaskDialog("LnchPad Setup Elevated", "Admin is required for full functionality", , "", "", "Restart LnchPad Setup as Admin", "Try it without Admin")
-				if (retVal == 1)
-				strTemp2 := "*runAs " . strTemp2
-			SplashyProc("*LnchPadCfg")
-			}
+		if (!A_IsAdmin)
+		{
+		retVal := TaskDialog("LnchPad Setup Elevated", "Admin is required for full functionality", , "", "", "Restart LnchPad Setup as Admin", "Try it without Admin")
+			if (retVal == 1)
+			strTemp2 := "*runAs " . strTemp2
+		SplashyProc("*LnchPadCfg")
 		}
 
 	strTemp := PrgLnchOpt.scrWidthDef . "," . PrgLnchOpt.scrHeightDef . "," . PrgLnchOpt.scrFreqDef . "," . 0
