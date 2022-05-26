@@ -70,7 +70,7 @@ Class ListBoxProps
 	lbItemArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 		if (!this.prgNo)
-		Msgbox, 8208, LnchPad List, Something broke: PrgNo is zero in class!
+		Msgbox, 8208, LnchPad List, Something broke: prgNo is zero in class!
 
 
 	SendMessage, % this.LB_GETSELCOUNT, 0, 0, , % "ahk_id" this._hWnd
@@ -154,7 +154,7 @@ tabGuiW := 0
 tabGuiH := 0
 GuiHwnd := 0
 
-fontDPI := 96 ; To be adjustment factor for windows setting
+
 mControl := 0
 buttonBkdChange := 0
 cancelSearchMsg := 0
@@ -294,15 +294,6 @@ SelIniChoiceNamePrgLnch := strRetVal
 
 ListBoxProps.Init() := PrgNo
 
-RegRead, fontDPI, HKEY_CURRENT_USER\Control Panel\Desktop\WindowMetrics, AppliedDPI 
-	if (ErrorLevel)
-	{
-	msgbox, 8192, Registry Access, The AppliedDPI value in registry is unavailable!`n`nAssuming default font scaling of 96.
-	fontDPI := 1
-	}
-	else
-	fontDPI := 96/fontDPI
-
 Gui, +LastFound +%WS_CLIPSIBLINGS% -DPIScale -MaximizeBox -MinimizeBox +OwnDialogs +E%WS_EX_CONTEXTHELP%
 GuiHwnd := WinExist()
 
@@ -341,7 +332,7 @@ thisGuiH := floor(GetMonHeight(GuiHwnd))
 
 tmp := (thisGuiW > 1400)? ((thisGuiW > 1800)? 4: 2): 1
 
-Gui, Font, % "s" fontDPI * (A_GuiFontSize + tmp)
+Gui, Font, % "s" A_GuiFontSize + tmp
 
 GuiControl, Font, searchDrive
 GuiControl, Font, addToLnchPad
@@ -349,16 +340,8 @@ Gui, Font
 CtlColors.Attach(searchDriveHwnd, Red, "White")
 CtlColors.Attach(addToLnchPadHwnd, Red, "White")
 
-	; Font sizes scale up when resolution decreases
-	if (thisGuiW < 400)
-	thisGuiW := floor(2 * thisGuiW/3)
-	else
-	thisGuiW := floor(thisGuiW/2)
-
-	if (thisGuiH < 600)
-	thisGuiH := floor(2 * thisGuiH/3)
-	else
-	thisGuiH := floor(thisGuiH/2)
+thisGuiW := floor(thisGuiW/2)
+thisGuiH := floor(thisGuiH/2)
 
 
 Gui, Add, Tab2, x0 y0 w%thisguiW% h%thisguiH% vLnchPadTab gLnchPadTab AltSubmit HWNDLnchPadTabHwnd, % substr(gameListStr, 1, StrLen(gameListStr) - 1)
@@ -368,7 +351,7 @@ Gui Show, w%thisguiW% h%thisguiH% Hide,
 tabguiH := thisguiH - GetTabRibbonHeight(GuiHwnd)
 tabguiW := thisguiW - A_LastError
 
-tmp := (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
+
 
 	loop, % maxGames
 	{
@@ -376,24 +359,16 @@ tmp := (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
 	Gui, Tab, %A_Index%
 
 	Gui, Add, ListBox, %LBS_MULTIPLESEL% x0 y0 vPrgIndex%A_Index% gPrgListBox HWNDPrgIndex%A_Index%Hwnd
-	ListBoxProps.hWnd := PrgIndex%A_Index%Hwnd
+	ListBoxProps._hWnd := PrgIndex%A_Index%Hwnd
 	; Not the best....
 	tmp := (thisGuiH > 520)? ((thisGuiH > 700)? 4: 3): (thisGuiH > 420)? 2: 1
-	Gui, Font, % "s" fontDPI * (A_GuiFontSize + tmp)
+	Gui, Font, % "s" A_GuiFontSize + tmp
 	GuiControl, Font, % PrgIndex%A_Index%Hwnd
-
-
 	Gui, Font
 	ListBoxProps.NewItemHeight := floor(3/2 * ListBoxProps.GetItemHeight())
 	ListBoxProps.SetItemHeight()
 
-		; Factor for low res
-		if (thisGuiH < 300)
-		tmp := tabguiH/6
-		else
-		tmp := tabguiH/4
-
-	GuiControl, Move, PrgIndex%A_Index%, % "x" 11.5 * tabguiW/16 "y" tmp " w" tabguiW/4 "h" (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
+	GuiControl, Move, PrgIndex%A_Index%, % "x" 11.5 * tabguiW/16 "y" tabguiH/4 "w" tabguiW/4 "h" (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
 
 	CtlColors.Attach(PrgIndex%A_Index%Hwnd, Pink, "White")
 
@@ -531,7 +506,7 @@ if (PrgIndex%tabStat%hwnd=PrgListBox_SelectedItem_last_hwnd && tabStat)
 	}
 }
 
-ListBoxProps.hWnd := PrgIndex%tabStat%Hwnd
+ListBoxProps._hWnd := PrgIndex%tabStat%Hwnd
 
 ListBox_SelectedItem := ListBoxProps.GetOneItem()
 
@@ -592,7 +567,7 @@ GuiControlGet, strTmp, , searchDrive
 		searchStat := -1
 		tooltipDriveStr := ""
 
-		ListBoxProps.hWnd := PrgIndex%tabStat%Hwnd
+		ListBoxProps._hWnd := PrgIndex%tabStat%Hwnd
 		GuiControl, Choose, PrgIndex%tabStat%, 0
 		lboxSelTol := 0
 
@@ -675,7 +650,7 @@ currDrive := DriveLetter[A_Index]
 							{
 							if (!multcopiesPrgWrn)
 							{
-							MsgBox, 8195, Duplicate Prg, % strTmp " was discovered on a previous drive.`n`nReply:`nYes: Use the " currDrive " drive instead (This will not show again)`nNo: Keep the old Prg. (Warn like this next time)`nCancel: Keep the old Prg (Recommended: This will not show again)"
+							MsgBox, 8195, Prg found on another Drive, % strTmp " was discovered on a previous drive.`n`nReply:`nYes: Use the " currDrive " drive instead (This will not show again)`nNo: Keep the old Prg. (Warn like this next time)`nCancel: Keep the old Prg (Recommended: This will not show again)"
 							GoSub StartProgress
 							Progress, 99
 								IfMsgBox, No
@@ -711,6 +686,7 @@ currDrive := DriveLetter[A_Index]
 	filelist := ListMFTfiles(currDrive, prgExe%tabStat%,, retVal)
 		if (filelist)
 		{
+
 			Loop, parse, filelist, `n
 			{
 				loop % prgNo
@@ -1152,14 +1128,14 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 			IniWrite, %strTmp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
 			else
 			{
-			MsgBox, 8196, LnchPad Ini Update, % "The LnchPad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the LnchPads. `n"
+			MsgBox, 8196, , % "The LnchPad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the LnchPads. `n"
 				IfMsgBox, No
 				return
 			}
 
 			if (Errorlevel)
 			{
-			MsgBox, 8196, LnchPad Ini Update, % "The following LnchPad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the LnchPads. `n"
+			MsgBox, 8196, , % "The following LnchPad file could not be written to:`n" IniChoiceNames[A_Index] "`n`nReply:`nYes: Continue updating the others (Recommended) `nNo: Quit updating the LnchPads. `n"
 				IfMsgBox, No
 				return
 			}
@@ -1174,11 +1150,11 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	IniWrite, %strTmp%, %PrgLnchIni%, General, SelIniChoiceName
 	else
 	{
-	MsgBox, 8208, LnchPad: Prglnch ini Update, The PrgLnch ini file cannot be written to!
+	MsgBox, 8208, ,The PrgLnch ini file cannot be written to!
 	return
 	}
 	if (Errorlevel)
-	MsgBox, 8192, LnchPad: PrgLnch Ini Update, % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTmp
+	MsgBox, 8192, , % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTmp
 	
 	
 	sleep, 20
@@ -1298,7 +1274,7 @@ CtlColors.Free()
 		}
 		catch tmp
 		{
-		MsgBox, 8192, PrgLnch ReLaunch, % "PrgLnch could not restart with error " tmp "."
+		MsgBox, 8192, ReLaunch, % "PrgLnch could not restart with error " tmp "."
 		}
 	}
 ExitApp
@@ -1331,7 +1307,7 @@ SM_CYEDGE := 46 ; assume 3D
 		return % H - NumGet(rect, 12, "int") - WindozeBorder * tmp
 		}
 		else
-		Msgbox, 8208, LnchPad Tabs, Problem with Tab display!
+		Msgbox, 8208,, Problem with Tab!
 	}
 	else
 	{
@@ -1482,10 +1458,11 @@ Global
 					if (searchStat == -1)
 					{
 
-					MsgBox, 8193, Active process on Tab, An operation is still active on the current tab.`n`nClick OK to cancel the operation and continue, or,`nCancel to wait until the operation has completed.
+					MsgBox, 8193, , An operation is still active on the current tab.`n`nClick OK to cancel the operation and continue, or,`nCancel to wait until the operation has completed.
 						IfMsgBox, OK
+						{
 						searchStat := -2
-
+						}
 					gosub LnchPadTab
 
 					}
@@ -1670,23 +1647,28 @@ ListMFTfiles(Drive, matchList := "", delim := "`n", byref numF := "")
 ;Windows 2000 Change Journal Explained:  https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/bb742450(v=technet.10)
 ;Nfts Workings: https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2003/cc781134(v=ws.10)
 ;=== init
+	Static FILE_FLAG_BACKUP_SEMANTICS := 0x2000000, FILE_FLAG_SEQUENTIAL_SCAN := 0x08000000
+	Static FSCTL_CREATE_USN_JOURNAL := 0x000900e7, FSCTL_GET_NTFS_VOLUME_DATA := 0x000900F4
+	Static FSCTL_QUERY_USN_JOURNAL := 0x000900f4, FSCTL_ENUM_USN_DATA := 0x000900b3
+	Static SHARE_RW := 3 ;FILE_SHARE_READ | FILE_SHARE_WRITE 
+	Static GENERIC_RW := 0xC0000000 ;GENERIC_READ | GENERIC_WRITE
+	Static sz_voldata := 96, DWORDLONG_SIZE := 8, STATUS_SUCCESS := 1, OPEN_EXISTING := 3
+
+	Global searchStat
+
 	t0 := A_TickCount
 	strTmp := ""
 	Drive := Drive . ":"
-	OPEN_EXISTING := 3
-	FILE_FLAG_BACKUP_SEMANTICS := 0x2000000
-	SHARE_RW := 3 ;FILE_SHARE_READ | FILE_SHARE_WRITE
-	GENERIC_RW := 0xC0000000 ;GENERIC_READ | GENERIC_WRITE
-	DWORDLONG_SIZE := 8
-	STATUS_SUCCESS := 1
+
+	
 
 	;Thread, NoTimers & Critical prevents the searchStat interrupt below
 
-Global searchStat
-;=== get root folder ("\") refnumber
+
+	;=== get root folder ("\") refnumber
 
 	hRoot := dllCall("CreateFile", "wstr", "\\.\" drive "\", "uint", 0, "uint", SHARE_RW, "uint", 0
-					, "uint", OPEN_EXISTING, "uint", FILE_FLAG_BACKUP_SEMANTICS, "uint", 0)
+					, "uint", OPEN_EXISTING, "uint", FILE_FLAG_BACKUP_SEMANTICS, "Ptr", 0, "Ptr")
 		if(hRoot == -1)
 		{
 		numF := -1
@@ -1723,7 +1705,7 @@ Global searchStat
 ;=== open volume
 
 	hJRoot := dllCall("CreateFile", "wstr", "\\.\" drive, "uint", GENERIC_RW, "uint", SHARE_RW, "uint", 0
-				, "uint", OPEN_EXISTING, "uint", FILE_FLAG_SEQUENTIAL_SCAN := 0x08000000, "uint", 0)
+				, "uint", OPEN_EXISTING, "uint", FILE_FLAG_SEQUENTIAL_SCAN, "Ptr")
 		if(hJRoot == -1)
 		{
 		numF := -5
@@ -1741,7 +1723,8 @@ Global searchStat
 	; FSCTL_CREATE_USN_JOURNAL requires Admin privileges
 	; cb receives a null ptr- it seems the documentation wants it there as a dummy.
 
-		if (dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_CREATE_USN_JOURNAL := 0x000900e7, "Ptr", &cujd, "uint", 16, "uint*", 0, "uint", 0, "uint*", cb, "Ptr", 0) != STATUS_SUCCESS)
+		if (dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_CREATE_USN_JOURNAL
+		, "Ptr", &cujd, "uint", 16, "Ptr", 0, "uint", 0, "uint*", cb, "Ptr", 0) != STATUS_SUCCESS)
 		{
 		dllCall("CloseHandle", "uint", hJRoot)
 		numF := -6
@@ -1762,7 +1745,7 @@ An attempt is made to read from, create, delete, or modify the journal while a j
 
 ;=== estimate overall number of files
 
-	;NTFS_VOLUME_DATA_BUFFER
+	; NTFS_VOLUME_DATA_BUFFER (is not documented in MS Docs anymore)
 	;	0	LARGE_INTEGER (unique) VolumeSerialNumber;
 	;	8	LARGE_INTEGER NumberSectors;
 	;	16	LARGE_INTEGER TotalClusters (used and free) ;
@@ -1777,17 +1760,18 @@ An attempt is made to read from, create, delete, or modify the journal while a j
 	;	72	LARGE_INTEGER Mft2StartLcn (starting logical cluster number of the master file table mirror);
 	;	80	LARGE_INTEGER MftZoneStart (starting logical cluster number of the master file table zone);
 	;	88	LARGE_INTEGER MftZoneEnd (ending logical cluster number of the master file table zone);
-	VarSetCapacity(voldata, 96, 0)
+
+	VarSetCapacity(voldata, sz_voldata, 0)
 	mftFiles := 0
 	mftFilesMax := 0
 	; see https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/a5bae3a3-9025-4f07-b70d-e2247b01faa6
 	; cb a pointer to a variable that receives the size of voldata, in bytes.
-		
-		if (dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_GET_NTFS_VOLUME_DATA := 0x00090064, "int*", 0, "uint", 0, "Ptr", &voldata, "uint", 96, "uint*", cb, "Ptr", 0) == STATUS_SUCCESS)
+
+		if (dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_GET_NTFS_VOLUME_DATA
+		, "Ptr", 0, "uint", 0, "Ptr", &voldata, "uint", sz_voldata, "uint*", cb, "Ptr", 0) == STATUS_SUCCESS)
 		{
-			if (cb == 96)
-				if (i := numget(voldata, 48))
-				mftFilesMax := numget(voldata, 56, "uint64")//i ;MftValidDataLength/BytesPerFileRecordSegment
+			if (i := numget(voldata, 48, "uint64"))
+			mftFilesMax := numget(voldata, 56, "uint64")//i ;MftValidDataLength/BytesPerFileRecordSegment
 		}
 		else
 		{
@@ -1833,7 +1817,8 @@ An attempt is made to read from, create, delete, or modify the journal while a j
 	;	72	LONGLONG RangeTrackFileSizeThreshold (File size threshold to start tracking range for files with equal or larger size, valid when flags above := 1)
 	VarSetCapacity(ujd, 56, 0)
 	; cb a pointer to a variable that receives the size of ujd, in bytes.
-		if( dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_QUERY_USN_JOURNAL := 0x000900f4, "uint*", 0, "uint", 0, "Ptr", &ujd, "uint", 56, "uint*", cb, "Ptr", 0) != STATUS_SUCCESS)
+		if( dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_QUERY_USN_JOURNAL
+		, "Ptr", 0, "uint", 0, "Ptr", &ujd, "uint", 56, "uint*", cb, "Ptr", 0) != STATUS_SUCCESS)
 		{
 		dllCall("CloseHandle", "uint", hJRoot)
 		numF := -8
@@ -1882,7 +1867,8 @@ An attempt is made to write a USN record or to read the change journal while the
 	VarSetCapacity(med, 24, 0)
 	numput(numget(ujd, 16, "uint64"), med, 16, "uint64") ;med.HighUsn=ujd.NextUsn
 		; Outer loop is through JournalChunkSize. cb a pointer to a variable that receives the size of med, in bytes.
-		while(dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_ENUM_USN_DATA := 0x000900b3, "Ptr", &med, "uint", 24, "Ptr", &pData, "uint", DWORDLONG_SIZE + JournalChunkSize, "uint*", cb, "Ptr", 0))
+		while(dllCall("DeviceIoControl", "uint", hJRoot, "uint", FSCTL_ENUM_USN_DATA
+		, "Ptr", &med, "uint", 24, "Ptr", &pData, "uint", DWORDLONG_SIZE + JournalChunkSize, "uint*", cb, "Ptr", 0))
 		{
 
 /*
@@ -1945,7 +1931,7 @@ One or more parameters is invalid e.g. handle supplied is not a volume handle.
 					}
 				v.setCapacity(4) ;MaxItems: 4th value 'dir' is created later in resolveFolder()
 				v.setCapacity("name", fnsize), v.name := fname
-				v.setCapacity("parent", strlen(refparent)), v.parent := refparent
+				v.setCapacity("parent", strlen(refparent) << 1), v.parent := refparent
 				; "Windows computes the file reference number as follows: 48 bits are the index of the file's primary record in the master file table (MFT), and the other 16 bits are a sequence number"
 				; The following bit shift will fail for nested directories of > Some_To_be_Tested_Value (20 at least). If the bits in a refparent are joined, its length looks to be pretty much the same irrespective of its distance from Root.
 				;v.setCapacity("parent", strlen(refparent)<<1), v.parent := refparent
@@ -1972,7 +1958,7 @@ One or more parameters is invalid e.g. handle supplied is not a volume handle.
 				}
 			
 			; Numget: "Do not pass a variable reference if the variable contains the target address; in that case, pass an expression such as MyVar+0"
-			i := numget(pUSN + 0) ;USN.RecordLength
+			i := numget(pUSN + 0, "UInt") ;USN.RecordLength
 			pUSN += i
 			cb -= i
 			}
@@ -2452,9 +2438,9 @@ retVal := RunChm()
 if (retVal) ; error
 {
 	if (retVal < 0)
-	MsgBox, 8192, PrgLnch Help, Could not find the Help file. Has it, or the script been moved?
+	MsgBox, 8192, , Could not find the Help file. Has it, or the script been moved?
 	else
-	MsgBox, 8192, PrgLnch Help, There is a problem with the help file. Code: %retVal%.
+	MsgBox, 8192, , There is a problem with the help file. Code: %retVal%.
 }
 
 
@@ -2505,7 +2491,7 @@ tmp := 0
 	tmp++
 		if (tmp == 1000)
 		{
-		msgbox, 8196, LnchPad: PrgLnch Help, Help has not started.`nReply:`n`nYes: Continue to wait.`nNo: Continue without waiting.
+		msgbox, 8196, Help Working?, Help has not started.`nReply:`n`nYes: Continue to wait.`nNo: Continue without waiting.
 			IfMsgBox, Yes
 			tmp := 0
 			else
@@ -2631,9 +2617,9 @@ VarSetCapacity(monitorInfo, 0)
 	{
 	strTemp := "Cannot retrieve Monitor info from the"
 		if (fromMouse)
-		MsgBox, 8192, Monitor Error, %strTemp% mouse cursor!
+		MsgBox, 8192, , %strTemp% mouse cursor!
 		else
-		MsgBox, 8192, Monitor Error, %strTemp% target window!
+		MsgBox, 8192, , %strTemp% target window!
 	return 1 ;hopefully this monitor is the one!
 	}
 }
