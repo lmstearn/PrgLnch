@@ -289,6 +289,7 @@ lnchPadPID := DllCall("GetCurrentProcessId")
 		break
 	}
 
+; The "active" slot, in current selection in PrgLnch
 SelIniChoiceNamePrgLnch := strRetVal
 
 
@@ -637,7 +638,7 @@ currDrive := DriveLetter[A_Index]
 		}
 		Progress, 10
 
-		FileList := ""  ; Initialize to be blank.
+		fileList := ""  ; Initialize to be blank.
 
 		Loop % FolderList.Length()
 		{
@@ -647,13 +648,13 @@ currDrive := DriveLetter[A_Index]
 					if (searchStat == -2)
 					break
 				Loop, Files, % FolderList[A_Index] . "\*.exe", R
-				FileList .= A_LoopFileFullPath "`n"
+				fileList .= A_LoopFileFullPath "`n"
 			}
 		}
 
 
 
-		Loop, parse, FileList, `n
+		Loop, parse, fileList, `n
 		{
 			if (A_LoopField == "")  ; Ignore the blank item at the end of the list.
 			continue
@@ -707,19 +708,21 @@ currDrive := DriveLetter[A_Index]
 	}
 	else
 	{
-	filelist := ListMFTfiles(currDrive, prgExe%tabStat%,, retVal)
-		if (filelist)
+	fileList := ListMFTfiles(currDrive, prgExe%tabStat%,, retVal)
+
+		if (fileList)
 		{
 
-			Loop, parse, filelist, `n
+			Loop, parse, fileList, `n
 			{
 				loop % prgNo
 				{
 				SplitPath, A_Loopfield, strTmp
 					if (!strTmp) ; trailing `n in fileList
 					break
-
-					if (strTmp == prgExe%tabStat%[A_Index])
+				tmp := StrLen(prgExe%tabStat%[A_Index])
+				strTmp := Substr(strTmp, StrLen(strTmp) - tmp + 1)
+					if (InStr(strTmp, prgExe%tabStat%[A_Index]))
 					{
 					prgPath%tabStat%[A_Index] := A_Loopfield
 					prgPath%tabStat%bak[A_Index] := A_Loopfield
@@ -782,6 +785,8 @@ addToLnchPad:
 Gui, Submit, Nohide
 Tooltip
 GuiControlGet, strTmp, , addToLnchPad
+gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
+
 	if (InStr(strTmp, "Locate"))
 	{
 	tmp := 0
@@ -802,10 +807,13 @@ GuiControlGet, strTmp, , addToLnchPad
 		Loop, Files, % A_ScriptDir . "\*.ini"
 		{
 			if (A_LoopFileName)
-			tmp++
+			{
+			tmp:= 1
+			break
+			}
 		}
 
-		if (tmp)
+		if (tmp && FileExist(PrgLnchIniPath))
 		{
 		IniRead, strTmp, %PrgLnchIniPath%, General, IniChoiceNames
 		tmp := 0
@@ -814,28 +822,32 @@ GuiControlGet, strTmp, , addToLnchPad
 			Loop, Parse, strTmp, CSV, %A_Space%%A_Tab%
 			{
 			iniNames[A_Index] := A_LoopField
+
 				if (A_LoopField)
 				{
 				i++
 					if (A_LoopField == gameList[tabStat])
-					{
-					tmp := 1
-					}
+					tmp++
 				}
 			}
 
-			if (tmp && FileExist(PrgLnchIniPath))
+			if (tmp)
 			{
-			GuiControl, Show, overWriteIni
-			GuiControl, Show, UpdateIni
-			GuiControl,, overWriteIni, % overWriteIniFile
-			GuiControl,, UpdateIni, % !overWriteIniFile
+				if (FileExist(gameIniPath)) ; game ini exists!
+				{
+				GuiControl, Show, overWriteIni
+				GuiControl, Show, UpdateIni
+				GuiControl,, overWriteIni, % overWriteIniFile
+				GuiControl,, UpdateIni, % !overWriteIniFile
+				}
+				else
+				overWriteIniFile := 1
 			}
 			else
 			{
-				if (FileExist(PrgLnchIniPath))
+				if (FileExist(gameIniPath))
 				{
-					if (i > (PrgNo))
+					if (i == PrgNo)
 					{
 					Tooltip, % "The LnchPad Preset Ini File already exists for " gameList[tabStat] ",`nhowever PrgLnch has no available slots!"
 					return
@@ -849,18 +861,13 @@ GuiControlGet, strTmp, , addToLnchPad
 					}
 				}
 				else
-				{
 				overWriteIniFile := 1
-				GuiControl, Show, overWriteIni
-				GuiControl,, overWriteIni, % overWriteIniFile	
-				
-				}
 			}
 		}
 		else
 		{
-			Tooltip, There are no ini files to write to. Cannot continue!
-			return
+		Tooltip, The PrgLnch ini file is missing. Cannot continue!
+		return
 		}
 	guiControl, , addToLnchPad, % "&Add to " gameList[tabStat] " LnchPad Slot"
 
@@ -869,7 +876,7 @@ GuiControlGet, strTmp, , addToLnchPad
 	{
 	GoSub StartProgress
 	strRetVal := ""
-	gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
+
 	strTmp := (FileExist(gameIniPath))? gameList[tabStat]:
 
 		if (overWriteIniFile)
@@ -899,10 +906,12 @@ GuiControlGet, strTmp, , addToLnchPad
 			IniWrite, %A_Space%, %gameIniPath%, Prgs, StartupPrgName
 			IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIniStartup
 			
-			; Get def monitor data via coomand line
-			for tmp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
-				if (tmp == 1)
-				break
+			; Get def monitor res data via command line
+				for tmp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
+				{
+					if (tmp == 1)
+					break
+				}
 			
 				loop % PrgNo
 				{
@@ -914,10 +923,10 @@ GuiControlGet, strTmp, , addToLnchPad
 				IniWrite, %strRetVal%, %gameIniPath%, Prg%A_Index%, PrgRes
 				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgUrl
 				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgVer
-				strTmp := "1,0,-1,-1,0,0,0"
+				strTmp := "1,0,0,-1,-1,0,0,0"
 				IniWrite, %strTmp%, %gameIniPath%, Prg%A_Index%, PrgMisc
-				if (A_Index == floor(PrgNo/2))
-				Progress, 25
+					if (A_Index == floor(PrgNo/2))
+					Progress, 25
 				}
 			}
 		Progress, 40
@@ -1063,7 +1072,6 @@ AllocatedtoSlotArrayCt := 0
 		{
 			Loop, % PrgNo
 			{
-				
 				if (strTmp == PrgPathWrittentoSlotArray[A_Index])
 				tmp := 1
 			}
@@ -1106,6 +1114,7 @@ AllocatedtoSlotArrayCt := 0
 	}
 
 	strRetVal := ""
+
 	if (oldWrittentoSlotArrayCt && !AllocatedtoSlotArrayCt)
 	strRetVal := "1All of the " . oldWrittentoSlotArrayCt . " Prg entries were updated!"
 	else
@@ -1114,17 +1123,23 @@ AllocatedtoSlotArrayCt := 0
 		strRetVal := "None of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the LnchPad Slot!"
 		else
 		{
-			if (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt < AllocatedtoSlotArrayCt)
-			{
-				if (oldWrittentoSlotArrayCt)
-				strRetVal := "1Existing Prgs updated: " . oldWrittentoSlotArrayCt . "`nOnly "
-				else
-				strRetVal := "1Only "
-			
-			strRetVal .= (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt) . " of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the LnchPad Slot!"
-			}
+
+			if (!oldWrittentoSlotArrayCt && WrittentoSlotArrayCt == AllocatedtoSlotArrayCt)
+			strRetVal := "1All " . WrittentoSlotArrayCt . " Prg entries added!"
 			else
-			strRetVal := "Weird_Error: Should never get to this!"
+			{
+				if (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt < AllocatedtoSlotArrayCt)
+				{
+					if (oldWrittentoSlotArrayCt)
+					strRetVal := "1Existing Prgs updated: " . oldWrittentoSlotArrayCt . "`nOnly "
+					else
+					strRetVal := "1Only "
+
+				strRetVal .= (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt) . " of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the LnchPad Slot!"
+				}
+				else
+				strRetVal := "Weird_Error: Slot allocations did not work!"
+			}
 		}
 	}
 
@@ -1137,10 +1152,31 @@ return strRetVal
 
 UpdateAllIni(PrgNo, iniSel, PrgLnchIni, IniChoiceNames)
 {
-spr := "", strTmp := ""
+spr := "", strTmp := "", tmp := 0
 IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
-	strTmp := (IniChoiceNames[iniSel])? IniChoiceNames[iniSel]: A_Space
+strTmp := (IniChoiceNames[iniSel])? IniChoiceNames[iniSel]: A_Space
+
+	; inipad slot currently selected?
+	if (FileExist(PrgLnchIni))
+	IniRead, existSelIniChoiceName, %PrgLnchIni%, General, SelIniChoiceName
+	
+	if (existSelIniChoiceName == "ERROR")
+	existSelIniChoiceName := ""
+
+	if (existSelIniChoiceName)
+	{
+		Loop % PrgNo
+		{
+			if (IniChoiceNames[A_Index] == existSelIniChoiceName)
+			{
+			tmp := 1
+			break
+			}
+		}
+	}
+
+
 
 	Loop % PrgNo
 	{
@@ -1149,7 +1185,10 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		spr .= IniChoiceNames[A_Index] . ","
 		IniChoicePaths[A_Index] := A_ScriptDir . "\" . IniChoiceNames[A_Index] . ".ini"
 			if (FileExist(IniChoicePaths[A_Index]))
-			IniWrite, %strTmp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
+			{
+				if (tmp)
+				IniWrite, %strTmp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
+			}
 			else
 			{
 			MsgBox, 8196, LnchPad Ini Update, % "The LnchPad file " . """" . IniChoiceNames[A_Index] . ".ini " . """" . " does not exist.`n`nReply:`nYes: Attempt to update the others (Recommended) `nNo: Quit updating the LnchPads. `n"
@@ -1171,7 +1210,10 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	}
 	
 	if (FileExist(PrgLnchIni))
-	IniWrite, %strTmp%, %PrgLnchIni%, General, SelIniChoiceName
+	{
+		if (tmp)
+		IniWrite, %strTmp%, %PrgLnchIni%, General, SelIniChoiceName
+	}
 	else
 	{
 	MsgBox, 8208, LnchPad: Prglnch ini Update, The PrgLnch ini file cannot be written to!
@@ -1289,16 +1331,25 @@ CtlColors.Free()
 
 	if (SelIniChoiceNamePrgLnchUpdated)
 	{
-	MsgBox, 8192, LnchPad Slot Changed, % "Current LnchPad Slot has changed!`nClick Ok for PrgLnch cold relaunch."
-	; cold  start
-		try
+	SetTitleMatchMode, 3
+	WinGet, tmp, PID , PrgLnch
+		if (tmp)
 		{
-		
-		Run, % """" . A_ScriptDir . "\PrgLnch.exe" . """" . " /restart ", %A_ScriptDir%
-		}
-		catch tmp
-		{
-		MsgBox, 8192, PrgLnch ReLaunch, % "PrgLnch could not restart with error " tmp "."
+		MsgBox, 8193, LnchPad Slot Changed, % "Current LnchPad Slot has been modified in PrgLnch!`n`PrgLnch should relaunch if the Slot has any active Prgs.`n`nClick Ok for PrgLnch relaunch, or Cancel to continue."
+		; cold  start
+			IfMsgBox, OK
+			{
+			Process, Close , %tmp%
+			sleep 30
+				try
+				{
+				Run, % """" . A_ScriptDir . "\PrgLnch.exe" . """" . " /restart ", %A_ScriptDir%, UseErrorLevel
+				}
+				catch tmp
+				{
+				MsgBox, 8192, PrgLnch ReLaunch, % "PrgLnch has a problem with restart.`n`Error: " A_LastError "."
+				}
+			}
 		}
 	}
 ExitApp
@@ -1633,14 +1684,14 @@ return substr(s, 2)
 ; matchList:
 ;	comma separated list of search strings
 ; delim:
-;	filelist delimiter, default is newline `n
+;	fileList delimiter, default is newline `n
 ; num:
 ;	variable that receives number of files returned or error status when trying to obtain:
 ;	-1, -2: root folder handle or info, -3, -4: path handle or info (To be done), -5,  Createfile root handle
 ;	 -6: Query Journal fail ,-7: volume handle or info, -8: USN journal handle
 ;
 ; return VALUE:
-;	filelist or empty string if error occured (also see 'num' parameter)
+;	fileList or empty string if error occured (also see 'num' parameter)
 
 ListMFTfiles(Drive, matchList := "", delim := "`n", byref numF := "")
 {
@@ -1977,7 +2028,7 @@ One or more parameters is invalid e.g. handle supplied is not a volume handle.
 
 
 ;=== connect files to parent folders & build new cache
-	VarSetCapacity(filelist, numF*200) ;average full filepath ~100 widechars
+	VarSetCapacity(fileList, numF*200) ;average full filepath ~100 widechars
 	numF := 0
 
 	for dk, dv in dirDict
@@ -1985,23 +2036,27 @@ One or more parameters is invalid e.g. handle supplied is not a volume handle.
 		{
 			dir := _ListMFTfiles_resolveFolder(dirDict, dk)
 				for k, v in dv.files
-				filelist .= dir v delim, numF++ ; trailing ~n
+				{
+				fileList .= drive . dir . v . delim
+				numF++ ; trailing ~n
+				}
 		}
 
 	dirDict=
-	VarSetCapacity(filelist, -1) ;Specify -1 for RequestedCapacity to update the variable's internally-stored string length to the length of its current contents.
+	VarSetCapacity(fileList, -1) ;Specify -1 for RequestedCapacity to update the variable's internally-stored string length to the length of its current contents.
 
 	t3:=A_TickCount
 	Progress, 98
 
 ;=== sort
-	Sort, filelist, D%delim%
+	Sort, fileList, D%delim%
 
 
 	t4:=A_TickCount
 	;Msgbox, 8192,, % "init`tenum`twinapi`tconnect`tsort`ttotal, ms`n" (t1-t0) "`t" t1b "`t" (t2-t1-t1b) "`t" (t3-t2) "`t" (t4-t3) "`t" (t4-t0) "`n`ndirs:`t" numD "`nfiles:`t" numF
 	Progress, 100
-	return filelist
+
+	return fileList
 
 }
 

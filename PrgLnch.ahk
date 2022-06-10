@@ -62,6 +62,7 @@ Class Splashy
 	Static procEnd := 0
 
 	Static parentClip := 0
+	Static firstInstanceParent := []
 	Static downloadedPathNames := []
 	Static downloadedUrlNames := []
 	Static NewWndObj := {}
@@ -276,12 +277,18 @@ Class Splashy
 
 		PaintProc(hWnd := 0)
 		{
-		spr := 0	
+		spr := 0
 
 			if (!Splashy.procEnd)
 			{
 			;DllCall("UpdateWindow", "Ptr", hWnd) ;Too many paints ==> Instability & Crash!
-			return
+				if (Splashy.firstInstanceParent[Splashy.instance])
+				return
+				else
+				{
+					if (Splashy.parent && (!Splashy.mainTextHWnd[Splashy.instance] && !Splashy.subTextHWnd[Splashy.instance]))
+					spr := 1
+				}
 			}
 
 			if (!hWnd)
@@ -290,12 +297,12 @@ Class Splashy
 			if (VarSetCapacity(PAINTSTRUCT, A_PtrSize + A_PtrSize + 56, 0)) ; hdc, rcPaint are pointers
 			{
 			; DC validated
-			; if (!Splashy.procEnd)
 			; Invalidating PAINTSTRUCT and returning- the above is superior
 				if (DllCall("User32.dll\BeginPaint", "Ptr", hWnd, "Ptr", &PAINTSTRUCT, "UPtr"))
 				{
 					if (!spr)
 					{
+
 					static vDoDrawImg := 1 ;set This to 0 and the image won't be redrawn
 					static vDoDrawBgd := 1 ;set This to 0 and the background won't be redrawn
 					;return ;uncomment This line and the window will be blank
@@ -1196,6 +1203,10 @@ Class Splashy
 		{
 			if (This.parent)
 			{
+				if (This.hWndSaved[This.instance])
+				firstInstanceParent[This.instance] := 0
+				else
+				firstInstanceParent[This.instance] := 1
 
 			; Somehow co-ordinates go wrong if the position is not obtained here
 				if (!init)
@@ -3343,7 +3354,17 @@ Class PrgLnch
 	{
 	return % (A_PtrSize == 8)? 1: 0 ; ONLY checks .exe bitness
 	}
-
+	PrgLnchIni
+	{
+		set
+		{
+		this._PrgLnchIni := value
+		}
+		get
+		{
+		return this._PrgLnchIni
+		}
+	}
 	SelIniChoicePath
 	{
 		set
@@ -3622,8 +3643,8 @@ strTemp := ""
 strTemp2 := ""
 ;Prevents unecessary extra reads when this counter exceeds 4
 inputOnceOnly := 0
-PrgLnchIni := A_ScriptDir . "\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
-PrgLnch.SelIniChoicePath := PrgLnchIni
+PrgLnch.PrgLnchIni := A_ScriptDir . "\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
+PrgLnch.SelIniChoicePath := PrgLnch.PrgLnchIni
 SelIniChoiceName = PrgLnch
 selIniNameSprIniSlot := ""
 oldSelIniChoiceName := ""
@@ -3669,44 +3690,44 @@ SplashyProc("*Loading")
 	GoSub PrgLnchButtonQuit_PrgLnch
 
 
-	if (FileExist(PrgLnchIni))
+	if (FileExist(PrgLnch.PrgLnchIni))
 	{
-	IniSpaceCleaner(PrgLnchIni, 1) ;  fix old version
+	IniSpaceCleaner(PrgLnch.PrgLnchIni, 1) ;  fix old version
 	sleep, 90
 
 	strTemp := ""
 	strTemp2 := ""
 	temp := 0
 
-	for temp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
-	{
-		if (temp == 1)
-		strTemp := strRetVal ; dealt with after Iniproc
-		else
+		for temp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
 		{
-			if (temp == 2)
+			if (temp == 1)
+			strTemp := strRetVal ; dealt with after Iniproc
+			else
 			{
-				if (InStr(strRetVal, "|"))
+				if (temp == 2)
 				{
-				SelIniChoiceName := SubStr(strRetVal, InStr(strRetVal, "|",,0) + 1)
-				oldSelIniChoiceName := SubStr(strRetVal, 1, InStr(strRetVal, "|",,0) - 1)
-					if (oldSelIniChoiceName != "PrgLnch")
-					oldSelIniChoicePath := A_ScriptDir . "\" . oldSelIniChoiceName . ".ini"
+					if (InStr(strRetVal, "|"))
+					{
+					SelIniChoiceName := SubStr(strRetVal, InStr(strRetVal, "|",,0) + 1)
+					oldSelIniChoiceName := SubStr(strRetVal, 1, InStr(strRetVal, "|",,0) - 1)
+						if (oldSelIniChoiceName != "PrgLnch")
+						oldSelIniChoicePath := A_ScriptDir . "\" . oldSelIniChoiceName . ".ini"
+					}
+					else
+					{
+					SelIniChoiceName := strRetVal
+						if (strRetVal != "PrgLnch")
+						Break
+					}
 				}
 				else
-				{
-				SelIniChoiceName := strRetVal
-					if (strRetVal != "PrgLnch")
-					Break
-				}
+				selIniNameSprIniSlot := strRetVal
 			}
-			else
-			selIniNameSprIniSlot := strRetVal
 		}
-	}
 
-	IniProcIniFileStart()
-}
+	oldSelIniChoiceName := IniProcIniFileStart(iniSel, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+	}
 
 IniProc()
 ; No screen parms yet
@@ -4339,7 +4360,7 @@ strTemp := LnchLnchPad(SelIniChoiceName)
 	{
 	;Problem with script directory
 	SetTimer, LnchPadSplashTimer, Delete
-	IniProcIniFileStart()
+	oldSelIniChoiceName := IniProcIniFileStart(iniSel, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 	GuiControl, PrgLnch:, IniChoice,
 	GuiControl, PrgLnch:, IniChoice, %strIniChoice%
 	GuiControl, PrgLnch: Choosestring, IniChoice, % SelIniChoiceName
@@ -4352,11 +4373,16 @@ return
 LnchPadSplashTimer:
 SetTitleMatchMode, 3
 SetTimer, LnchPadSplashTimer, 20
+Thread, NoTimers
 
-	If (WinActive("LnchPad Setup"))
+	if (WinExist("LnchPad Setup"))
 	{
-	SetTimer, LnchPadSplashTimer, Delete
 	SplashyProc("*Release")
+	GuiControl, PrgLnch: Disable, LnchPadConfig
+	GuiControl, PrgLnch: Hide, IniChoice
+	Thread, NoTimers, False
+	SetTimer, LnchPadWaitTimer, 500
+	SetTimer, LnchPadSplashTimer, Delete
 	}
 	else
 	{
@@ -4380,6 +4406,25 @@ SetTimer, LnchPadSplashTimer, 20
 				}
 			}
 		}
+	}
+return
+
+
+LnchPadWaitTimer:
+	if (!(WinExist("LnchPad Setup")))
+	{
+	SetTimer, LnchPadWaitTimer, Delete
+	lTemp := iniSel
+	;strTmp := SelIniChoiceName
+	;iniSel := 0
+	oldSelIniChoiceName := IniProcIniFileStart(iniSel, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+	;iniSel := lTemp
+	;oldSelIniChoiceName := selIniChoiceName := strTmp
+	GuiControl, PrgLnch: Enable, LnchPadConfig
+	GuiControl, PrgLnch:, IniChoice,
+	GuiControl, PrgLnch:, IniChoice, %strIniChoice%
+	GuiControl, PrgLnch: Choosestring, IniChoice, % selIniChoiceName
+	GuiControl, PrgLnch: Show, IniChoice
 	}
 return
 
@@ -4807,7 +4852,7 @@ else
 			{
 				if (SelIniChoiceName == "PrgLnch")
 				{
-				IniProcIniFileStart()
+				oldSelIniChoiceName := IniProcIniFileStart(iniSel, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 				IniProc()
 				}
 				else
@@ -5527,7 +5572,7 @@ else
 		else ; Clicked here
 		{
 		iniSel := retVal + 1
-		ControlGetText,iniTxtPadChoice,,ahk_id %IniChoiceHwnd% ; "GuiControlGet, iniTxtPadChoice, PrgLnch:, IniChoice" fails when empty
+		ControlGetText, iniTxtPadChoice,, ahk_id %IniChoiceHwnd% ; "GuiControlGet, iniTxtPadChoice, PrgLnch:, IniChoice" fails when empty
 
 			if (iniTxtPadChoice)
 			{
@@ -5540,11 +5585,11 @@ else
 		GuiControl, PrgLnch:, GoConfigVar, % "&" GoConfigTxt
 
 		strRetVal := WorkingDirectory(A_ScriptDir, 1)
-		If (strRetVal)
+		if (strRetVal)
 		MsgBox, 8192, Script Directory, % strRetVal "`nCannot load LnchPad file!"
 		else
 		{
-		IniRead, fTemp, %PrgLnchIni%, General, DefPresetSettings
+		IniRead, fTemp, % PrgLnch.PrgLnchIni, General, DefPresetSettings
 
 			if (ChkPrgNames(iniTxtPadChoice, PrgNo, "Ini"))
 			{
@@ -5576,7 +5621,7 @@ else
 					{
 					SelIniChoiceName = PrgLnch
 					; Update all ini files
-					UpdateAllIni(PrgNo, iniSel, PrgLnchIni, SelIniChoiceName, IniChoiceNames, temp)
+					UpdateAllIni(PrgNo, iniSel, SelIniChoiceName, IniChoiceNames, temp)
 					RestartPrgLnch(0, SelIniChoiceName, iniTxtPadChoice)
 					}
 				}
@@ -5585,7 +5630,7 @@ else
 			{
 				if (FileExist(iniTxtPadChoice . ".ini"))
 				{
-				UpdateAllIni(PrgNo, iniSel, PrgLnchIni, iniTxtPadChoice, IniChoiceNames, fTemp)
+				UpdateAllIni(PrgNo, iniSel, iniTxtPadChoice, IniChoiceNames, fTemp)
 				RestartPrgLnch(0, iniTxtPadChoice)
 				}
 				else
@@ -5642,7 +5687,7 @@ GoConfigTxt = Prg Config
 return retVal
 }
 
-UpdateAllIni(PrgNo, iniSel, PrgLnchIni, SelIniChoiceName, IniChoiceNames, DefPresetSettings := 0)
+UpdateAllIni(PrgNo, iniSel, SelIniChoiceName, IniChoiceNames, DefPresetSettings := 0)
 {
 spr := "", strTemp := ""
 IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
@@ -5677,8 +5722,8 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		}
 	}
 	
-	if (FileExist(PrgLnchIni))
-	IniWrite, %strTemp%, %PrgLnchIni%, General, SelIniChoiceName
+	if (FileExist(PrgLnch.PrgLnchIni))
+	IniWrite, %strTemp%, % PrgLnch.PrgLnchIni, General, SelIniChoiceName
 	else
 	{
 	MsgBox, 8208, Ini File,The PrgLnch ini file cannot be written to!
@@ -5699,7 +5744,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		sleep, 10
 		}
 	}
-	IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
+	IniWrite, %spr%, % PrgLnch.PrgLnchIni, General, IniChoiceNames
 	sleep, 10
 
 	Loop % PrgNo
@@ -5712,28 +5757,28 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		}
 	}
 	if (DefPresetSettings)
-	IniWrite, %DefPresetSettings%, %PrgLnchIni%, General, DefPresetSettings
+	IniWrite, %DefPresetSettings%, % PrgLnch.PrgLnchIni, General, DefPresetSettings
 	sleep, 10
 }
 
 
-IniProcIniFile(iniSel, ByRef SelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, defPresetSettings := 0,removeIni := 0, forcePrgLnchRead := 0)
+IniProcIniFile(iniSel, ByRef SelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice, defPresetSettings := 0, removeIni := 0, forcePrgLnchRead := 0)
 {
 strTemp := "", spr := "", strRetVal := "", lTemp := 0
-PrgLnchPath := A_ScriptDir . "\" . SubStr(A_ScriptName, 1, -3 ) . "ini"
-if (iniSel)
-{
-	if (removeIni)
+
+	if (iniSel)
 	{
-	strTemp := "Ini" . iniSel
-	SelIniChoiceName = PrgLnch
-	IniChoiceNames[iniSel] := strTemp
-	}
-	else
-	{
-	IniChoiceNames[iniSel] := SelIniChoiceName
-	strTemp := SelIniChoiceName
-	}
+		if (removeIni)
+		{
+		strTemp := "Ini" . iniSel
+		SelIniChoiceName = PrgLnch
+		IniChoiceNames[iniSel] := strTemp
+		}
+		else
+		{
+		IniChoiceNames[iniSel] := SelIniChoiceName
+		strTemp := SelIniChoiceName
+		}
 
 	lTemp := InStr(strIniChoice, "|", false, 1, iniSel)
 
@@ -5742,69 +5787,75 @@ if (iniSel)
 	lTemp := InStr(strIniChoice, "|", false, lTemp + 1)
 	strIniChoice := spr . SubStr(strIniChoice, lTemp)
 
-	UpdateAllIni(PrgNo, iniSel, PrgLnchPath, SelIniChoiceName, IniChoiceNames, defPresetSettings)
-}
-else ; Read in names
-{
-PrgLnch.SelIniChoicePath := A_ScriptDir . "\" . SelIniChoiceName . ".ini"
-
-;Update PrgLnch.ini & SelIniChoiceName.ini with IniChoiceNames list
-IniRead, strTemp, % PrgLnch.SelIniChoicePath, General, SelIniChoiceName
-sleep 30
-IniRead, spr, % PrgLnch.SelIniChoicePath, General, IniChoiceNames
-
-If (!strTemp || forcePrgLnchRead)
-strTemp = PrgLnch
-
-if (!FileExist(A_ScriptDir . "\" . strTemp . ".ini"))
-strRetVal := "Ini file for " . """" . strTemp . """" . " not found!"
-
-if (strTemp == "Error" && spr == "Error")
-; *Assume*  old version of PrgLnch
-strRetVal .= "Ini file for " . """" . strTemp . """" . "cannot be read!"
-
-if (!strRetVal)
-{
-	if (spr != "Error")
+	UpdateAllIni(PrgNo, iniSel, SelIniChoiceName, IniChoiceNames, defPresetSettings)
+	}
+	else ; Read in names
 	{
-	; Reset all
-		if (strTemp != "PrgLnch" && strTemp != "Error")
+		if (SelIniChoiceName)
 		{
-		SelIniChoiceName := strTemp
 		PrgLnch.SelIniChoicePath := A_ScriptDir . "\" . SelIniChoiceName . ".ini"
+
+		;Update PrgLnch.ini & SelIniChoiceName.ini with IniChoiceNames list
+		IniRead, strTemp, % PrgLnch.SelIniChoicePath, General, SelIniChoiceName
 		}
+		else
+		PrgLnch.SelIniChoicePath := PrgLnch.PrgLnchIni
+
+		if (!strTemp || forcePrgLnchRead)
+		strTemp := "PrgLnch"
 
 
-	strIniChoice := "|"
-		Loop, Parse, spr, CSV, %A_Space%%A_Tab%
+		if (!FileExist(A_ScriptDir . "\" . strTemp . ".ini"))
+		strRetVal := "Ini file for " . """" . strTemp . """" . " not found!"
+
+	sleep 30
+	IniRead, spr, % PrgLnch.SelIniChoicePath, General, IniChoiceNames
+
+
+		if (strTemp == "Error" && spr == "Error")
+		; *Assume*  old version of PrgLnch
+		strRetVal .= "Ini file for " . """" . strTemp . """" . "cannot be read!"
+
+		if (!strRetVal)
 		{
-			if (A_LoopField)
-			{
-			lTemp := 1
-			IniChoiceNames[A_Index] := A_LoopField
-			;SplitPath, A_LoopField, , , , strTemp
-			strIniChoice .= A_LoopField . "|"
-			}
+			if (spr == "Error")
+			strRetVal := "LnchPad file for " . """" . strTemp . """" . "is in error- Reverting to PrgLnch.ini."
 			else
 			{
-			IniChoiceNames[A_Index] := "Ini" . A_Index
-			strIniChoice .= IniChoiceNames[A_Index] . "|"
+			; Reset all
+				if (strTemp != "PrgLnch" && strTemp != "Error")
+				{
+				SelIniChoiceName := strTemp
+				PrgLnch.SelIniChoicePath := A_ScriptDir . "\" . SelIniChoiceName . ".ini"
+				}
+
+			strIniChoice := "|"
+				Loop, Parse, spr, CSV, %A_Space%%A_Tab%
+				{
+					if (A_LoopField)
+					{
+					lTemp := 1
+					IniChoiceNames[A_Index] := A_LoopField
+					;SplitPath, A_LoopField, , , , strTemp
+					strIniChoice .= A_LoopField . "|"
+					}
+					else
+					{
+					IniChoiceNames[A_Index] := "Ini" . A_Index
+					strIniChoice .= IniChoiceNames[A_Index] . "|"
+					}
+				}
+
+				if (!lTemp)
+				SplitPath, % PrgLnch.SelIniChoicePath, , , , SelIniChoiceName
+
 			}
 		}
 
-		if (!lTemp)
-		SplitPath, % PrgLnch.SelIniChoicePath, , , , SelIniChoiceName
-
-
 	}
-	else
-	strRetVal := "LnchPad file for " . """" . strTemp . """" . "is in error- Reverting to PrgLnch.ini."
-}
-
-}
 return strRetVal
 }
-WriteIniChoiceNames(IniChoiceNames, PrgNo, ByRef strIniChoice, PrgLnchIni)
+WriteIniChoiceNames(IniChoiceNames, PrgNo, ByRef strIniChoice)
 {
 spr := ""
 strIniChoice := "|" ; Global variable
@@ -5823,8 +5874,43 @@ strIniChoice := "|" ; Global variable
 		}
 	}
 spr := Substr(spr, 1, InStr(spr, ",",, 0) -1)
-IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
+IniWrite, %spr%, % PrgLnch.PrgLnchIni, General, IniChoiceNames
 }
+
+IniProcIniFileStart(ByRef iniSel, ByRef SelIniChoiceName, ByRef IniChoiceNames, PrgNo, ByRef strIniChoice)
+{
+strRetVal := IniProcIniFile(0, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
+
+	if (strRetVal)
+	{
+	msgbox, 8192 , LnchPad Ini File, % strRetVal
+	oldSelIniChoiceName := selIniChoiceName
+	IniProcIniFile(0, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, , , (PrgLnch.SelIniChoicePath == PrgLnch.PrgLnchIni))
+		Loop, % PrgNo
+		{
+			if (IniChoiceNames[A_Index] == oldSelIniChoiceName)
+			{
+			IniChoiceNames[A_Index] := "Ini" . A_Index
+			inisel := A_Index
+			Break
+			}
+		}
+	WriteIniChoiceNames(IniChoiceNames, PrgNo, strIniChoice)
+	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, SelIniChoiceName
+	}
+
+	Loop % PrgNo
+	{
+		if (IniChoiceNames[A_Index] == SelIniChoiceName)
+		{
+		iniSel := A_Index
+		Break
+		}
+	}
+
+return selIniChoiceName
+}
+
 
 FindFreeLnchPadSlot(PrgNo, IniChoiceNames)
 {
@@ -6249,44 +6335,6 @@ PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByR
 		}
 	}
 }
-
-
-IniProcIniFileStart()
-{
-Global
-strRetVal := IniProcIniFile(0, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
-
-	if (strRetVal)
-	{
-	msgbox, 8192 , LnchPad Ini File, % strRetVal
-	oldSelIniChoiceName := selIniChoiceName
-	PrgLnch.SelIniChoicePath := PrgLnchIni
-	IniProcIniFile(0, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice, , , (PrgLnch.SelIniChoicePath == PrgLnchIni))
-		Loop, % PrgNo
-		{
-			if (IniChoiceNames[A_Index] == oldSelIniChoiceName)
-			{
-			IniChoiceNames[A_Index] := "Ini" . A_Index
-			inisel := A_Index
-			Break
-			}
-		}
-	WriteIniChoiceNames(IniChoiceNames, PrgNo, strIniChoice, PrgLnchIni)
-	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, SelIniChoiceName
-	}
-
-
-oldSelIniChoiceName := selIniChoiceName
-	Loop % PrgNo
-	{
-		if (IniChoiceNames[A_Index] == SelIniChoiceName)
-		{
-		iniSel := A_Index
-		Break
-		}
-	}
-}
-
 
 KleenupPrgLnchFiles(RecycleDir := "")
 {
@@ -12730,8 +12778,8 @@ WS_EX_CONTEXTHELP := 0x00000400
 	gui, MonitorSelectDlg: -MaximizeBox -MinimizeBox HWNDhWndMonitorSelectDlg +E%WS_EX_CONTEXTHELP% 
 	Gui, MonitorSelectDlg: Font, cTeal Bold, s10
 
-	gui, MonitorSelectDlg: add, text, % "w" . 3 * height . " h" . height/2, Verify Device Numbers
-	GuiControl, MonitorSelectDlg: +Center, Verify Device Numbers
+	gui, MonitorSelectDlg: add, text, % "w" . 3 * height . " h" . height/2, Verify Devices
+	GuiControl, MonitorSelectDlg: +Center, Verify Devices
 
 	gui, MonitorSelectDlg: Font
 
@@ -12774,21 +12822,6 @@ WS_EX_CONTEXTHELP := 0x00000400
 		SplashyProc("*", -A_Index)
 	return 0
 
-
-	GuiMonitorSelectDlgAccept:
-	acceptDlg := 1
-
-		loop % PrgLnchOpt.activeDispMonNamesNo
-		{
-		canonicalMonitorListOut[trackMonNames[A_Index]] := monitors[A_Index]
-		resultResolutionMons[A_Index] := trackMonNames[A_Index]
-		SplashyProc("*", -A_Index)
-		}
-
-	gui, MonitorSelectDlg: Destroy
-	return canonicalMonitorListOut
-
-
 	GuiMonitorSelect:
 	gui, MonitorSelectDlg: submit, nohide
 	fTemp := subStr(A_GuiControl, 0)
@@ -12800,6 +12833,8 @@ WS_EX_CONTEXTHELP := 0x00000400
 
 	SplashyProc("*", fTemp, trackMonNames[fTemp], monitors[trackMonNames[fTemp]])
 	MovePrgToMonitor(fTemp, 0, 0, 0, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[fTemp + 1])
+
+	Splashy.NewWndProc.PaintProc()
 
 		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
@@ -12818,6 +12853,19 @@ WS_EX_CONTEXTHELP := 0x00000400
 		}
 	GuiControl, MonitorSelectDlg: Enabled, Accept
 	return
+
+	GuiMonitorSelectDlgAccept:
+	acceptDlg := 1
+
+		loop % PrgLnchOpt.activeDispMonNamesNo
+		{
+		canonicalMonitorListOut[trackMonNames[A_Index]] := monitors[A_Index]
+		resultResolutionMons[A_Index] := trackMonNames[A_Index]
+		SplashyProc("*", -A_Index)
+		}
+
+	gui, MonitorSelectDlg: Destroy
+	return canonicalMonitorListOut
 
 }
 
@@ -14652,8 +14700,8 @@ instance := 0
 		instance := (action > 0)? action + 1: action - 1
 			if (instance < 0)
 			{
-			%SplashRef%(Splashy, {imagePath: "*", vHide : 1, instance: -instance, mainText: "", subText: "", mainFontSize: 10, subFontSize: 10, vOnTop: 0, vImgW : vImgW, vImgH : vImgH}*)
-			%SplashRef%(Splashy, {imagePath: "*", vHide : 1, instance: instance}*)
+			%SplashRef%(Splashy, {imagePath: "*", vHide: 1, instance: -instance, mainText: "", subText: "", mainFontSize: 10, subFontSize: 10, vOnTop: 0, vImgW: vImgW, vImgH: vImgH}*)
+			%SplashRef%(Splashy, {imagePath: "*", vHide: 1, instance: instance}*)
 			return
 			}
 			else
@@ -14664,7 +14712,7 @@ instance := 0
 		}
 	}
 
-%SplashRef%(Splashy, {imagePath: type, vHide : vHide, instance: instance, vPosX : vPosX, vPosY : vPosY, vImgW : vImgW, vImgH : vImgH}*)
+%SplashRef%(Splashy, {imagePath: type, vHide: vHide, instance: instance, vPosX: vPosX, vPosY: vPosY, vImgW: vImgW, vImgH: vImgH}*)
 
 	if (!loadW)
 	{
@@ -14984,9 +15032,9 @@ IniProcStart:
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgVersionError
 
 
-	IniWrite, %SelIniChoiceName%, %PrgLnchIni%, General, SelIniChoiceName
+	IniWrite, %SelIniChoiceName%, % PrgLnch.PrgLnchIni General, SelIniChoiceName
 
-	WriteIniChoiceNames(IniChoiceNames, PrgNo, strIniChoice, PrgLnchIni)
+	WriteIniChoiceNames(IniChoiceNames, PrgNo, strIniChoice)
 
 	IniWrite, % (defPrgStrng)? defPrgStrng: "None", % PrgLnch.SelIniChoicePath, Prgs, StartupPrgName
 
@@ -16185,41 +16233,40 @@ Global
 Thread, NoTimers
 Local temp := 0, strTemp := PrgPID . ",", strTemp2 := "", full_command_line := ""
 
-if (chgPreset)
-{
-
-; Get Pidmaster values and current Preset name & separate "|" with target Preset
-	loop % PrgNo
+	if (chgPreset)
 	{
-	strTemp .= PrgPIDMast[A_Index] . "`,"
+
+	; Get Pidmaster values and current Preset name & separate "|" with target Preset
+		loop % PrgNo
+		strTemp .= PrgPIDMast[A_Index] . "`,"
+
+
+	strTemp := SubStr(strTemp, 1, strLen(strTemp) - 1)
+	chgPreset := oldSelIniChoiceName . "|" . chgPreset
+
+		if (SprIniSlot)
+		strTemp := % ((A_IsCompiled)? """": """ """) . strTemp . """ """ . chgPreset . """ """ . SprIniSlot . """"
+		else
+		strTemp := % ((A_IsCompiled)? """": """ """) . strTemp . """ """ . chgPreset . """"
+
 	}
-
-strTemp := SubStr(strTemp, 1, strLen(strTemp) - 1)
-chgPreset := oldSelIniChoiceName . "|" . chgPreset
-
-	if (SprIniSlot)
-	strTemp := % ((A_IsCompiled)? """": """ """) . strTemp . """ """ . chgPreset . """ """ . SprIniSlot . """"
 	else
-	strTemp := % ((A_IsCompiled)? """": """ """) . strTemp . """ """ . chgPreset . """"
-
-}
-else
-{
-
-	loop % maxBatchPrgs
 	{
-	temp := A_Index
+
 		loop % maxBatchPrgs
 		{
-		strTemp .= PrgListPID%temp%[A_Index] . "`,"
+		temp := A_Index
+			loop % maxBatchPrgs
+			{
+			strTemp .= PrgListPID%temp%[A_Index] . "`,"
+			}
+		strTemp := SubStr(strTemp, 1, strLen(strTemp) - 1)
+		strTemp .= "|"
 		}
-	strTemp := SubStr(strTemp, 1, strLen(strTemp) - 1)
-	strTemp .= "|"
-	}
 
-chgPreset := SelIniChoiceName . "|" . SelIniChoiceName
-strTemp := % ((A_IsCompiled)? """": """ """) . strTemp . """ """ . chgPreset . """"
-}
+	chgPreset := SelIniChoiceName . "|" . SelIniChoiceName
+	strTemp := % ((A_IsCompiled)? """": """ """) . strTemp . """ """ . chgPreset . """"
+	}
 
 strTemp2 := (AsAdmin)? "*RunAs ": ""
 full_command_line := DllCall("GetCommandLine", "str") ; no Parms: "str" is Cdecl returnType
@@ -16230,11 +16277,11 @@ full_command_line := DllCall("GetCommandLine", "str") ; no Parms: "str" is Cdecl
 
 		try
 		{
-		if (A_IsCompiled)
-		strTemp2 .= """" . A_ScriptFullPath . """" . " /restart " . strTemp
-		else
-		strTemp2 .= """" . A_AhkPath . """" . " /restart " . """" . A_ScriptFullPath . strTemp
-		; restart may not work if LOAD phase of script is not completed- test it!!!
+			if (A_IsCompiled)
+			strTemp2 .= """" . A_ScriptFullPath . """" . " /restart " . strTemp
+			else
+			strTemp2 .= """" . A_AhkPath . """" . " /restart " . """" . A_ScriptFullPath . strTemp
+			; restart may not work if LOAD phase of script is not completed- test it!!!
 
 		Run, %strTemp2%, %A_ScriptDir%
 		}
