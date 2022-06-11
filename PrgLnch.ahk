@@ -6336,6 +6336,26 @@ PidMaster(PrgNo, currBatchNo, btchPrgPresetSel, PrgBatchInibtchPrgPresetSel, ByR
 	}
 }
 
+
+CloseLnchpad()
+{
+	if (WinExist("LnchPad Setup"))
+	{
+
+		if (PrgPID := PrgLnch.LnchPadPID)
+		{
+		WinClose, ahk_pid%PrgPID%
+		sleep, 100
+
+			if (WinExist("ahk_pid" . PrgPID))
+			KillPrg(PrgPID)
+		}
+		else
+		WinClose, LnchPad Setup
+	}
+}
+
+
 KleenupPrgLnchFiles(RecycleDir := "")
 {
 namesToDel := ["PrgLnch.ico", "PrgLnch.chm", "PrgLnch.chw", "taskkillPrg.bat", "LnchPadInit.exe", "LnchPadMorrowind.jpg", "LnchPadOblivion.jpg", "LnchPadSkyrim.jpg", "LnchPadFallout 3.jpg", "LnchPadFallout NV.jpg", "LnchPadFallout 4.jpg"]
@@ -9616,22 +9636,7 @@ critical
 SetTimer, NewThreadforDownload, Delete ;Cleanup
 CloseChm()
 PrgPropertiesClose()
-
-	if (WinExist("LnchPad Setup"))
-	{
-
-		if (PrgPID := PrgLnch.LnchPadPID)
-		{
-		WinClose, ahk_pid%PrgPID%
-		sleep, 100
-
-			if (WinExist("ahk_pid" . temp))
-			KillPrg(temp)
-		}
-		else
-		WinClose, LnchPad Setup
-	}
-
+CloseLnchpad()
 
 strTemp := ""
 strTemp2 := ""
@@ -10447,6 +10452,7 @@ if (lnchPrgIndex > 0) ;Running
 			}
 		}
 
+	CloseLnchpad()
 	;try
 	;{
 	Run, %PrgPaths%, % (IsaPrgLnk)? PrgLnkInflnchPrgIndex: wkDir, % "UseErrorLevel" ((IsaPrgLnk == -1)? "": (PrgRnMinMax[lnchPrgIndex])? ((PrgRnMinMax[lnchPrgIndex] > 0)? "Max": ""): "Min"), PrgPIDtmp

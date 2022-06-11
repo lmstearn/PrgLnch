@@ -897,38 +897,9 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 		{
 		; Clear data in new file
 		Progress, 10
+
 			if (overWriteIniFile)
-			{
-				loop % maxBatchPrgs
-				IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIni%A_Index%
-
-			IniWrite, %A_Space%, %gameIniPath%, Prgs, PresetNames
-			IniWrite, %A_Space%, %gameIniPath%, Prgs, StartupPrgName
-			IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIniStartup
-			
-			; Get def monitor res data via command line
-				for tmp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
-				{
-					if (tmp == 1)
-					break
-				}
-			
-				loop % PrgNo
-				{
-				IniDelete, %gameIniPath%, Prg%A_Index%
-
-				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgName
-				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgPath
-				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgCmdLine
-				IniWrite, %strRetVal%, %gameIniPath%, Prg%A_Index%, PrgRes
-				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgUrl
-				IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgVer
-				strTmp := "1,0,0,-1,-1,0,0,0"
-				IniWrite, %strTmp%, %gameIniPath%, Prg%A_Index%, PrgMisc
-					if (A_Index == floor(PrgNo/2))
-					Progress, 25
-				}
-			}
+			CreateIniData(PrgNo, maxBatchPrgs, gameIniPath)
 		Progress, 40
 		strRetVal := AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, prgUrl%tabStat%, IniFileShortctSep)
 		tmp := 0
@@ -987,6 +958,43 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 	}
 
 return
+
+CreateIniData(PrgNo, maxBatchPrgs, gameIniPath)
+{
+	loop % maxBatchPrgs
+	IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIni%A_Index%
+
+IniWrite, %A_Space%, %gameIniPath%, Prgs, PresetNames
+IniWrite, %A_Space%, %gameIniPath%, Prgs, StartupPrgName
+IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIniStartup
+
+; Get def monitor res data via command line
+	for tmp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
+	{
+		if (tmp == 1)
+		break
+	}
+
+;Get primary monitor if non-standard config
+IniRead, monitorOrder, %gameIniPath%, General, monitorOrder
+monitorOrder := SubStr(monitorOrder, 1, 1)
+
+	loop % PrgNo
+	{
+	IniDelete, %gameIniPath%, Prg%A_Index%
+
+	IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgName
+	IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgPath
+	IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgCmdLine
+	IniWrite, %strRetVal%, %gameIniPath%, Prg%A_Index%, PrgRes
+	IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgUrl
+	IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgVer
+	strTmp := monitorOrder . ",0,0,-1,-1,0,0,0"
+	IniWrite, %strTmp%, %gameIniPath%, Prg%A_Index%, PrgMisc
+		if (A_Index == floor(PrgNo/2))
+		Progress, 25
+	}
+}
 
 AddToIniProc(prgNo, tabStat, gameIniPath, prgPathtabStat, prgUrltabStat, IniFileShortctSep)
 {
