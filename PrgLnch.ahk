@@ -4414,12 +4414,7 @@ LnchPadWaitTimer:
 	if (!(WinExist("LnchPad Setup")))
 	{
 	SetTimer, LnchPadWaitTimer, Delete
-	lTemp := iniSel
-	;strTmp := SelIniChoiceName
-	;iniSel := 0
 	oldSelIniChoiceName := IniProcIniFileStart(iniSel, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
-	;iniSel := lTemp
-	;oldSelIniChoiceName := selIniChoiceName := strTmp
 	GuiControl, PrgLnch: Enable, LnchPadConfig
 	GuiControl, PrgLnch:, IniChoice,
 	GuiControl, PrgLnch:, IniChoice, %strIniChoice%
@@ -5703,7 +5698,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		IniChoicePaths[A_Index] := A_ScriptDir . "\" . IniChoiceNames[A_Index] . ".ini"
 		
 
-		if (FileExist(IniChoicePaths[A_Index]))
+			if (FileExist(IniChoicePaths[A_Index]))
 			IniWrite, %strTemp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
 			else
 			{
@@ -5729,6 +5724,7 @@ IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	MsgBox, 8208, Ini File,The PrgLnch ini file cannot be written to!
 	return
 	}
+
 	if (Errorlevel)
 	MsgBox, 8192, Ini File, % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTemp
 	
@@ -10502,16 +10498,17 @@ if (lnchPrgIndex > 0) ;Running
 		if (Instr(PrgPaths, "DOSBox.exe"))
 		InitDOSBoxGameDir(PrgPaths, 1)
 
+	WinWait, ahk_pid %PrgPIDtmp%
 	Process, Priority, PrgPIDtmp, % PrgPrty
 	;Add to PID list
 
-	Sleep 200
+	Sleep 50
 	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
-	Sleep 150
+	Sleep 50
 
 		if (lnchStat == 1)
 		PrgMonPID[PrgPIDtmp] := targMonitorNum
-
+	SetWinDelay, 200
 	if (outStr := MovePrgToMonitor(targMonitorNum, PrgPIDtmp, PrgMinMaxVar, PrgStyle, PrgBordless, disableRedirect, oldRedirectionValue, PrgNames, lnchPrgIndex, borderToggle))
 	return outStr
 	;WinShow ahk_class Shell_TrayWnd
@@ -10617,7 +10614,7 @@ else
 
 						if (PrgPIDtmp)
 						{
-						retVal := TaskDialog("Closing Prg", "Closing " . """" . temp . """" . "failed", , "A common explanation is that resources like program libraries or files have not been released by Prg, else Prg has no way out of a loop cycle.`nWhen all attempts by PrgLnch to close " . """" . temp . """" . " have failed, it will`nno longer be monitored by PrgLnch until PrgLnch is next restarted.", "", "Attempt force termination", "Do not force terminate")
+						retVal := TaskDialog("Closing Prg", "Closing " . """" . temp . """" . "failed", , "A common explanation is that resources like program libraries or files have not been released by Prg, else Prg has no way out of a loop cycle.`nIf PrgLnch fails to close " . """" . temp . """" . ", it will no longer be monitored by PrgLnch until PrgLnch is next restarted.", "", "Attempt force termination", "Do not force terminate")
 							if (retVal == 1)
 							KillPrg(PrgPIDtmp)
 							else
@@ -12589,8 +12586,11 @@ retVal := 0
 
 	; Point of iChange is when initialising primary monitor, a different target monitor must not be confused with primary monitor.
 	; The fn actually has a 4th flags parm- EDS_RAWMODE might be worth another look.
+	;if (iChange) ; DISPLAY_DEVICE.DeviceName
+
+	monName := PrgLnchOpt.GetDispMonNamesVal(targMonitorNum)
 	if (iChange) ; DISPLAY_DEVICE.DeviceName
-	retVal := DllCall("EnumDisplaySettingsEx" . (A_IsUnicode? "W": "A"), "PTR", PrgLnchOpt.GetDispMonNamesVal(targMonitorNum), "UInt", iMode, "PTR", &Device_Mode, "UInt", 0)
+	retVal := DllCall("EnumDisplaySettingsEx" . (A_IsUnicode? "W": "A"), "PTR", &monName, "UInt", iMode, "PTR", &Device_Mode, "UInt", 0)
 	else ; PrgLnch display device (0 will do for the fn)
 	retVal := DllCall("EnumDisplaySettingsEx" . (A_IsUnicode? "W": "A"), "PTR", 0, "UInt", iMode, "PTR", &Device_Mode, "UInt", 0)
 
@@ -15038,7 +15038,7 @@ IniProcStart:
 	IniWrite, %A_Space%, % PrgLnch.SelIniChoicePath, General, PrgVersionError
 
 
-	IniWrite, %SelIniChoiceName%, % PrgLnch.PrgLnchIni General, SelIniChoiceName
+	IniWrite, % (SelIniChoiceName)?SelIniChoiceName:A_Space, % PrgLnch.PrgLnchIni, General, SelIniChoiceName
 
 	WriteIniChoiceNames(IniChoiceNames, PrgNo, strIniChoice)
 
