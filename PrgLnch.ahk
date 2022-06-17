@@ -8129,6 +8129,8 @@ SetResDefaults(lnchStat, targMonitorNum, ByRef scrWidthDefArr, ByRef scrHeightDe
 	{
 		if (scrWidthDefArr[targMonitorNum]) ;no need if values have been read already
 		{
+		; These values are overridden by the default check in GetResInfo called in CheckModesFunc,
+		; however they are required when changing monitors (iDevNo)
 		PrgLnchOpt.scrWidthDef := scrWidthDefArr[targMonitorNum]
 		PrgLnchOpt.scrHeightDef := scrHeightDefArr[targMonitorNum]
 		PrgLnchOpt.scrFreqDef := scrFreqDefArr[targMonitorNum]
@@ -8661,8 +8663,8 @@ borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResol
 
 StoreFetchPrgRes(1, selPrgChoice, PrgLnkInf, targMonitorNum)
 SetResDefaults(0, targMonitorNum, scrWidthDefArr, scrHeightDefArr, scrFreqDefArr, 1)
-
 CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
+
 TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResOnClose, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgBordless, PrgLnchHide, 1)
 
 GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
@@ -10493,12 +10495,18 @@ if (lnchPrgIndex > 0) ;Running
 				return outStr
 			}
 		}
+		else
+		{
+			; wait for a window
+			if (PrgPIDtmp)
+			WinWait, ahk_pid %PrgPIDtmp%,, 10000
+		}
 
 
 		if (Instr(PrgPaths, "DOSBox.exe"))
 		InitDOSBoxGameDir(PrgPaths, 1)
 
-	WinWait, ahk_pid %PrgPIDtmp%
+
 	Process, Priority, PrgPIDtmp, % PrgPrty
 	;Add to PID list
 
@@ -10654,18 +10662,22 @@ return 0
 MovePrgToMonitor(targMonitorNum, PrgPIDtmp, ByRef PrgMinMaxVar, ByRef PrgStyle, PrgBordless, disableRedirect, oldRedirectionValue, PrgNames, lnchPrgIndex, borderToggle, targHWnd := 0)
 {
 ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
+hWndArray := []
+hWndArrayPID := []
+
 DetectHiddenWindows, On
 
 	if (targHWnd)
 	WinGetPos, x, y, w, h, % "ahk_id" targHWnd
 	else
 	{
-	WinGet, temp, MinMax, ahk_pid%PrgPIDtmp%
+	WinGet, minMaxVar, MinMax, ahk_pid%PrgPIDtmp%
 
-		if (temp)
-		WinRestore, ahk_pid%PrgPIDtmp%
+		if (minMaxVar)
+		WinRestore, ahk_pid %PrgPIDtmp%
 
-	WinGetPos, x, y, w, h, % "ahk_pid" PrgPIDtmp
+	WinGet, firstPIDhWnd, ID, ahk_pid %PrgPIDtmp%
+	WinGetPos, x, y, w, h, ahk_pid %PrgPIDtmp%
 	}
 
 	if (w || h)
@@ -10680,12 +10692,14 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 	outStr := "Incorrect destination co-ordinates.`nIf the monitor has just been configured, a reboot may resolve the issue."
 		if (disableRedirect && oldRedirectionValue)
 		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+	DetectHiddenWindows, Off
 	return outStr
 	}
 ; Consider the (default) window co-ords in another monitor from a previous run here
 ; don't bother moving if the window is already located in the destination monitor
 	if (fTemp && !(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom))
 	{
+
 		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
 			; no need to check source monitor if same as dest monitor
@@ -10706,36 +10720,89 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 	dx := mdLeft + (x-msLeft)*(mdw/msw)
 	dy := mdTop + (y-msTop)*(mdh/msh)
 
-		; not for the Splashy monitor guis
-		if (!targHWnd && wp_IsResizable())
-		{
-		w := Round(w*(mdw/msw))
-		h := Round(h*(mdh/msh))
-		}
-
 	; Move window, using resolution difference to scale co-ordinates.
-
-		try
+		if (targHWnd)
 		{
-		fTemp := 1
-		WinMove, % (targHWnd)? "ahk_id" . targHWnd: "ahk_pid" . PrgPIDtmp, , %dx%, %dy%, %w%, %h%
-		}
-		catch x
-		{
-		sleep, 20
-		WinGetPos, x, y, w, h, % (targHWnd)? "ahk_id" . targHWnd: "ahk_pid" . PrgPIDtmp
-			if (w || h)
+			try
 			{
-				if (x == dx && y == dy)
+			fTemp := 1
+			WinMove, ahk_id %targHWnd%, , %dx%, %dy%, %w%, %h%
+			}
+			catch x
+			{
+			sleep, 20
+			WinGetPos, x, y, w, h, ahk_id %targHWnd%
+				if (w || h)
 				{
-				MsgBox, 8192, Moving Prg, % " Move Window failed for " (targHWnd)? targHWnd: PrgNames[lnchPrgIndex]
-				fTemp := 0
+					if (x == dx && y == dy)
+					{
+					MsgBox, 8192, Moving Prg, % " Move Window failed for " targHWnd "."
+					fTemp := 0
+					}
 				}
 			}
 		}
-
-		if (!targHWnd)
+		else
 		{
+		; not for the Splashy monitor guis
+		hWndArray := WinEnum()
+		fTemp := 1
+		ffTemp := 1
+
+			while(temp := hWndArray[fTemp])
+			{
+			WinGet, lTemp, PID, ahk_id %temp%
+				if (lTemp == PrgPIDtmp)
+				{
+				hWndArrayPID[ffTemp] := temp
+					if (firstPIDhWnd == temp)
+					firstPIDIndex := ffTemp
+				ffTemp++
+				}
+			fTemp++
+			}
+
+			if (wp_IsResizable())
+			{
+			w := Round(w*(mdw/msw))
+			h := Round(h*(mdh/msh))
+			}
+		temp := 1
+			While(lTemp := hWndArrayPID[temp])
+			{
+				try
+				{
+				fTemp := 1
+					if (temp == firstPIDIndex)
+					WinMove, ahk_id %firstPIDhWnd%, , %dx%, %dy%, %w%, %h%
+					else
+					{
+					sleep 1000
+					lTemp := "0x" . Splashy.ToBase(lTemp, 16)
+					WinMove, ahk_id %lTemp%, , %dx%, %dy%
+					}
+				}
+				catch x
+				{
+				; worry about main window only
+					if (temp == firstPIDIndex)
+					{
+					sleep, 20
+					WinGetPos, x, y, w, h, ahk_pid %PrgPIDtmp%
+						if (w || h)
+						{
+							if (x == dx && y == dy)
+							{
+							msgBox, 8192, Moving Prg, % " Move Window failed for " PrgNames[lnchPrgIndex] "."
+							fTemp := 0
+							break
+							}
+						}
+					}
+				}
+			temp++
+			}
+
 			if (w || h)
 			{
 			dx := Round(dx + w/2)
@@ -10745,6 +10812,7 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 				else
 				fTemp := 1
 			}
+		
 		}
 	}
 
@@ -10752,11 +10820,11 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 
 
 	; Restore min/max
-	if (temp == 1)
+	if (minMaxVar == 1)
 	WinMaximize, % (targHWnd)? "ahk_id" . targHWnd: "ahk_pid" . PrgPIDtmp
 	else
 	{
-		if (temp == -1)
+		if (minMaxVar == -1)
 		WinMinimize, % (targHWnd)? "ahk_id" . targHWnd: "ahk_pid" . PrgPIDtmp
 	}
 
@@ -10774,6 +10842,57 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 DetectHiddenWindows, Off
 return 0
 }
+
+WinEnum(hwnd:=0, lParam:=0) ;// lParam (internal, used by callback)
+{
+	static pWinEnum := "X" ; pWinEnum will be pointer to WinEnum
+	
+	; Eventinfo parameter is omitted in the RegisterCallback function below, so A_EventInfo defaults to Address of WinEnum
+	if (A_EventInfo != pWinEnum)
+	{
+			if (pWinEnum == "X")
+			pWinEnum := RegisterCallback(A_ThisFunc, "F", 2)
+			; A_ThisFunc: name of function this is called from (i.e. WinEnum).
+			; "F" is fast. The "2 "is number of params in WinEnum decl above
+
+		if (hwnd)
+		{
+			;// not a window handle, could be a WinTitle parameter
+			if !DllCall("IsWindow", "Ptr", hwnd)
+			{
+				prev_DHW := A_DetectHiddenWindows
+				prev_TMM := A_TitleMatchMode
+				DetectHiddenWindows On
+				SetTitleMatchMode 2
+				hwnd := WinExist(hwnd)
+				DetectHiddenWindows %prev_DHW%
+				SetTitleMatchMode %prev_TMM%
+			}
+		}
+		out := []
+		; The function calls...
+		if hwnd
+			DllCall("EnumChildWindows", "Ptr", hwnd, "Ptr", pWinEnum, "Ptr", &out)
+			; &out: An application-defined value to be passed to the callback function.
+		else
+			DllCall("EnumWindows", "Ptr", pWinEnum, "Ptr", &out)
+		return out ; now pass the info over to the callback function...
+	}
+
+	; Callback returns with lParam initialised as address(?) of out. lParam is the door to our window loot!
+	; The Callback - either EnumWindowsProc or EnumChildProc e.g.: 
+	; BOOL CALLBACK EnumChildProc( _In_ HWND   hwnd, _In_ LPARAM lParam) is not required to be explicitly declared in the script
+	; EnumChildProc is a placeholder for the application-defined function name, WinEnum
+
+	; In the next line it's object := Object(address) with + 0 to force evaluation
+	; Same as Push- https://www.autohotkey.com/docs/objects/Object.htm#Push
+	ObjPush(Object(lParam + 0), hwnd)
+	; If desired, check the contents of the array with something like msgbox % " First window " Object(lParam + 0)[1] " Second window " Object(lParam + 0)[2]  ...etc...
+	; (aside note: address := Object(object) is another usage of Object())
+
+	return true
+}
+
 
 
 InitDOSBoxGameDir(PrgPaths, InitDOSBoxGame := 0)
@@ -13376,9 +13495,10 @@ static monitorMsg := 0, ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -
 static checkDefMissing := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 Static ResArrayIn := [[], [], []], monitorOrder := [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
+ResArray := []
 ResList := "", Strng := ""
 
-fTemp := 0, iModeCt := 0, iModeval := 0
+fTemp := 0, iModeCt := 0
 scrWidth := 0, scrHeight := 0, scrDPI := 0, scrInterlace := 0, scrFreq := 0
 scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, scrFreqLast := 0
 
@@ -13399,10 +13519,9 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 			if (PrgLnch.primaryMonitor < 0)
 			PrgLnch.primaryMonitor := MonitorOrder[-(PrgLnch.primaryMonitor)]
 		}
-		case 3: ; check default (when switching monitors)
+		case 3: ; check the defaults just set in the next case block when switching monitors
 		{
 		iModeCt := 1
-
 		ResArray := ResArrayIn[PrgLnchOpt.OrderTargMonitorNum]
 		
 		ResTmpArray := []
@@ -13418,7 +13537,7 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 				;For "Incompatible" resolution detection: check if the current settings are missing from the list and replace it .
 				if (!checkDefMissing[targMonitorNum] && PrgLnchOpt.scrWidthDef && (scrWidth > PrgLnchOpt.scrWidthDef))
 				{
-					if ((!FindResMatch(iModeCt + 1, ResArray)) || (scrWidthLast != PrgLnchOpt.scrWidthDef))
+					if ((!FindResMatch(iModeCt + 1, ResArray)) && (scrWidthLast != PrgLnchOpt.scrWidthDef))
 					{
 					ResTmpArray[1].Push(PrgLnchOpt.scrWidthDef)
 					ResTmpArray[2].Push(PrgLnchOpt.scrHeightDef)
@@ -13464,7 +13583,6 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 					ResTmpArray[1].Push(scrWidth)
 					ResTmpArray[2].Push(scrHeight)
 					ResTmpArray[3].Push(scrFreq)
-					iModeVal++
 					}
 				}
 				else
@@ -13489,8 +13607,8 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 		}
 		Default: ; Get default res
 		{
-		;imodeVal == 0 caches the data for EnumSettings
-			if (!GetDisplayData(targMonitorNum, , , , , , , iModeval, (PrgLnch.Monitor != targMonitorNum)))
+		;iModeCt == 0 caches the data for EnumSettings
+			if (!GetDisplayData(targMonitorNum, , , , , , , iModeCt, (PrgLnch.Monitor != targMonitorNum)))
 			MsgBox, 8192, Display Data, Display data could not be cached!
 			if (!GetDisplayData(targMonitorNum, , scrWidth, scrHeight, scrFreq, scrInterlace, scrDPI, (PrgLnch.regoVar)? ENUM_REGISTRY_SETTINGS: ENUM_CURRENT_SETTINGS, (PrgLnch.Monitor != targMonitorNum)))
 			MsgBox, 8192, Display Data, % "PrgLnch could not retrieve information on " ((PrgLnch.Monitor == targMonitorNum)? "the monitor from which it was launched!": "monitor " targMonitorNum)
