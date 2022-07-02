@@ -8867,15 +8867,21 @@ strTemp := strTemp2 := ""
 	}
 	else
 	{
-		if (InStr(inputStr, A_Space))
+		if (InStr(inputStr, A_Space) && Instr(PrgPaths, "-editor -notimeout"))
 		{
+		; OBSE hates quoted arguments!
 			Loop, Parse, inputStr, %A_Space%
 			{
-			strTemp .= A_Space . A_LoopField
-			strTemp2 := A_LoopField 
+				if (A_Index == 1)
+				strTemp2 .= A_Space . A_LoopField
+				else
+				strTemp2 := A_LoopField . A_Space
+
+			strTemp .= StrReplace(strTemp2, A_LoopField, chr(34) . A_LoopField . chr(34))
 			}
-		strTemp := StrReplace(strTemp, strTemp2, chr(34) . strTemp2 . chr(34))
 		}
+	strTemp := StrReplace(strTemp, chr(34) . chr(34), A_Space)
+
 	}
 
 return % (strTemp)? strTemp: inputStr
@@ -9750,6 +9756,7 @@ scrWidthDefArr = ""
 scrHeightDefArr = ""
 scrFreqDefArr = ""
 
+ReplaceSystemCursor()
 DopowerPlan()
 
 OnMessage(0x112, "WM_SYSCOMMAND", 0)
@@ -10458,7 +10465,6 @@ if (lnchPrgIndex > 0) ;Running
 	;}
 	;catch temp
 	;{
-
 		if (A_LastError)
 		{
 		sleep, 30
@@ -10497,9 +10503,92 @@ if (lnchPrgIndex > 0) ;Running
 		}
 		else
 		{
+		Critical
+		ReplaceSystemCursor(,"IDC_WAIT")
+			if (Instr(PrgPaths, "Wrye Bash.exe"))
+			{
+			;proc := "Wrye Bash.exe"
+			temp := 0
+			fTemp := 0
+				while (fTemp < 2)
+				{
+				fTemp := 0
+					for proc in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process")
+					{
+						strTemp := proc.Name
+
+						if (InStr(strTemp, "Wrye Bash.exe"))
+						{
+						fTemp++
+							if (proc.ProcessId != PrgPIDtmp)
+							{
+							temp := proc.ProcessId
+							}
+						}
+					}
+				sleep 500
+				}
+			PrgPIDtmp := temp
+			WinWait, ahk_pid %PrgPIDtmp%,, 20000
+			;msgbox % "PrgPIDtmp " PrgPIDtmp " proc.Name " proc.Name " strTemp " strTemp " proc.ProcessId " proc.ProcessId " fTemp " fTemp
+			}
+			else
+			{
 			; wait for a window
-			if (PrgPIDtmp)
-			WinWait, ahk_pid %PrgPIDtmp%,, 10000
+				if (Instr(PrgPaths, "-editor -notimeout"))
+				{
+				temp := 0
+					while (!temp)
+					{
+						for proc in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process")
+						{
+						strTemp := proc.Name
+
+							if (InStr(strTemp, "TESConstructionSet.exe"))
+							temp := proc.ProcessId
+						}
+					sleep 500
+					}
+				PrgPIDtmp := temp
+				WinWait, ahk_pid %PrgPIDtmp%,, 20000
+sleep 6000
+
+/*
+WinGet, winIDs, List, TES Construction Set
+Loop, %winIDs%
+{
+OutputVar1 := OutputVar := winIDs%A_Index%
+WinGetClass, OutputVar, % "ahk_id" OutputVar
+WinGetTitle, OutputVar1, % "ahk_id" OutputVar1
+StrTemp := "Window " winIDs%A_Index% " Class " OutputVar " Title " OutputVar1 "`n"
+}
+
+OutputVar := winIDs%A_Index%
+winGet, fTemp, PID, TES Construction Set
+msgbox % StrTemp . "`nCS Pid :" fTemp " PrgPIDtmp: " PrgPIDtmp
+ReplaceSystemCursor()
+return
+
+WinGet, firstPIDhWnd, ID, ahk_pid %PrgPIDtmp%
+hWndArray := []
+hWndArray := WinEnum(firstPIDhWnd)
+fTemp := 1
+while (hWndArray[fTemp])
+{
+WinGetClass, OutputVar, % "ahk_id" hWndArray[fTemp]
+WinGetTitle, OutputVar1, % "ahk_id" hWndArray[fTemp]
+StrTemp := "Window " hWndArray[fTemp] " Class " OutputVar " Title " OutputVar1 "`n"
+fTemp++
+}
+*/
+
+				}
+				else
+				{
+				if (PrgPIDtmp)
+				WinWait, ahk_pid %PrgPIDtmp%,, 1000
+				}
+			}
 		}
 
 
@@ -10522,7 +10611,7 @@ if (lnchPrgIndex > 0) ;Running
 	;WinShow ahk_class Shell_TrayWnd
 
 	; Set power here rather than at the beginning
-		if (currBatchno == 1 & lnchStat == 1)
+		if (currBatchno == 1 && lnchStat == 1)
 		{
 			if (btchPowerName)
 			DopowerPlan(btchPowerName)
@@ -10598,6 +10687,15 @@ else
 			{
 			PrgPaths := ExtractPrgPath(-lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IniFileShortctSep, IsaPrgLnk)
 			temp := GetProcFromPath(PrgPaths)
+
+			winGet, fTemp, PID, TES Construction Set
+			if (fTemp && PrgPIDtmp == fTemp)
+			{
+			winGet, fTemp, ID, TES Construction Set
+			WinClose, ahk_id %fTemp%
+			return
+			}
+			else
 			Process, Exist, %PrgPIDtmp%
 				if (ErrorLevel)
 				{
@@ -10608,6 +10706,7 @@ else
 				WinClose, ahk_pid %PrgPIDtmp%
 				sleep 220
 				;Try again
+				
 				Process, Exist, %PrgPIDtmp%
 					if (ErrorLevel)
 					{
@@ -10677,6 +10776,57 @@ DetectHiddenWindows, On
 		WinRestore, ahk_pid %PrgPIDtmp%
 
 	WinGet, firstPIDhWnd, ID, ahk_pid %PrgPIDtmp%
+WinGetClass, OutputVar, ahk_id %firstPIDhWnd%
+WinGetTitle, OutputVar1, ahk_id %firstPIDhWnd%
+;msgbox % "Window " firstPIDhWnd " Class " OutputVar " Title " OutputVar1
+/*
+TES Construction Set
+Class: TES Construction Set
+
+Render Window
+Class: MonitorClass
+
+Object Window
+Class: FaceClass
+
+Cell View
+Class ViewerClass
+
+3 windows of (UnTitled)
+Class tooltips_class32
+
+(UnTitled)
+Class ComboLBox
+
+MSCTFIME UI
+Class: MSCTFIME UI
+
+Default IME
+Class: IME
+
+*/
+	Process, Exist, %PrgPIDtmp%
+		if (ErrorLevel)
+		{
+			if (!firstPIDhWnd)
+			WinWait, ahk_pid %PrgPIDtmp%,, 20000
+
+			if (!firstPIDhWnd)
+			{
+			ReplaceSystemCursor()
+			MsgBox, 8192, Moving Prg, Cannot find window to move!
+			return
+			}
+		}
+		else
+		{
+			if (!firstPIDhWnd)
+			{
+			ReplaceSystemCursor()
+			outStr := "Process ended, and unable to find window to move."
+			return outStr
+			}
+		}
 	WinGetPos, x, y, w, h, ahk_pid %PrgPIDtmp%
 	}
 
@@ -10693,6 +10843,8 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 		if (disableRedirect && oldRedirectionValue)
 		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 	DetectHiddenWindows, Off
+	if (!targHWnd)
+	ReplaceSystemCursor()
 	return outStr
 	}
 ; Consider the (default) window co-ords in another monitor from a previous run here
@@ -10749,35 +10901,81 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 		fTemp := 1
 		ffTemp := 1
 
+		WinGet, strTemp, ProcessName, ahk_pid %PrgPIDtmp%
+			if (InStr(strTemp, "TESConstructionSet.exe"))
+			{
+
 			while(temp := hWndArray[fTemp])
 			{
 			WinGet, lTemp, PID, ahk_id %temp%
+			;temp := "0x" . Splashy.ToBase(temp, 16)
+				if (lTemp == PrgPIDtmp)
+				{
+				WinGetClass, strTemp, ahk_id %temp%
+					if (Instr(strTemp, "TES Construction Set"))
+					{
+					firstPIDhWnd := temp
+					firstPIDIndex := ffTemp
+					}
+
+				hWndArrayPID[ffTemp] := temp
+/*
+if (firstPIDhWnd == temp)
+{
+WinGetClass, OutputVar, ahk_id %temp%
+WinGetTitle, OutputVar1, ahk_id %temp%
+msgbox % "firstPIDhWnd = temp yay: Window " temp " Class " OutputVar " Title " OutputVar1
+}
+else
+{
+WinGetClass, OutputVar, ahk_id %temp%
+WinGetTitle, OutputVar1, ahk_id %temp%
+msgbox % "Window " temp " Class " OutputVar " Title " OutputVar1
+}
+*/
+
+				ffTemp++
+				}
+			fTemp++
+			}
+			}
+			else
+			{
+			while(temp := hWndArray[fTemp])
+			{
+			WinGet, lTemp, PID, ahk_id %temp%
+			;temp := "0x" . Splashy.ToBase(temp, 16)
 				if (lTemp == PrgPIDtmp)
 				{
 				hWndArrayPID[ffTemp] := temp
+
 					if (firstPIDhWnd == temp)
 					firstPIDIndex := ffTemp
 				ffTemp++
 				}
 			fTemp++
 			}
-
+			}
+;msgbox % "Finish: Window " temp " Class " OutputVar " Title " OutputVar1
+;ReplaceSystemCursor()
+;return
 			if (wp_IsResizable())
 			{
 			w := Round(w*(mdw/msw))
 			h := Round(h*(mdh/msh))
 			}
 		temp := 1
+
 			While(lTemp := hWndArrayPID[temp])
 			{
 				try
 				{
+				sleep 1000
 				fTemp := 1
 					if (temp == firstPIDIndex)
 					WinMove, ahk_id %firstPIDhWnd%, , %dx%, %dy%, %w%, %h%
 					else
 					{
-					sleep 1000
 					lTemp := "0x" . Splashy.ToBase(lTemp, 16)
 					WinMove, ahk_id %lTemp%, , %dx%, %dy%
 					}
@@ -10840,6 +11038,8 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 	;WinMove, A ,, mswLeft + (mswRight - mswLeft) // 2 - W // 2, mswTop + (mswBottom - mswTop) // 2 - H // 2
 
 DetectHiddenWindows, Off
+	if (!targHWnd)
+	ReplaceSystemCursor()
 return 0
 }
 
@@ -10871,7 +11071,7 @@ WinEnum(hwnd:=0, lParam:=0) ;// lParam (internal, used by callback)
 		}
 		out := []
 		; The function calls...
-		if hwnd
+		if (hwnd)
 			DllCall("EnumChildWindows", "Ptr", hwnd, "Ptr", pWinEnum, "Ptr", &out)
 			; &out: An application-defined value to be passed to the callback function.
 		else
@@ -14497,6 +14697,47 @@ PrgURLGui(ByRef PrgUrl, ByRef PrgUrlTest, SelPrgChoice, NoSaveURL := 0)
 
 
 ;Misc functions
+ReplaceSystemCursor(current := "", new := "")
+{
+static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
+	, SysCursors := { IDC_APPSTARTING: 32650
+					, IDC_ARROW      : 32512
+					, IDC_CROSS      : 32515
+					, IDC_HAND       : 32649
+					, IDC_HELP       : 32651
+					, IDC_IBEAM      : 32513
+					, IDC_NO         : 32648
+					, IDC_SIZEALL    : 32646
+					, IDC_SIZENESW   : 32643
+					, IDC_SIZENWSE   : 32642
+					, IDC_SIZEWE     : 32644
+					, IDC_SIZENS     : 32645 
+					, IDC_UPARROW    : 32516
+					, IDC_WAIT       : 32514 }
+	strTemp := ""
+	if (current || new)
+	{
+		if (!current)
+		current := "IDC_" . A_Cursor
+
+		if (!(hCursor := DllCall("LoadCursor", "Ptr", 0, "UInt", SysCursors[new], "Ptr")))
+		return
+
+	; consider for flags:
+	; LR_DEFAULTSIZE := 0x00000040
+		if (!(hCopy := DllCall("CopyImage", "Ptr", hCursor, "UInt", IMAGE_CURSOR, "Int", 0, "Int", 0, "UInt", 0, "Ptr")))
+		return
+
+	; Redefine/replace current cursor
+		if (!DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", SysCursors[current]))
+		MsgBox, 8192, Set System Cursor, % "Could not set cursor to " . SysCursors[new] . "!"
+	}
+	else ; Reload system cursors
+	{
+		if (!(DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)))
+		MsgBox, 8192, Set System Cursor, Could not restore system cursor!
+	}
+}
 SetEditCueBanner(HWND, Cue, IsCombo := 0)
 {
 ; requires AHL_L: JustMe
