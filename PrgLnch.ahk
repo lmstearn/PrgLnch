@@ -3748,7 +3748,8 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 		if FileExist("PrgLnch.ico")
 		Menu, Tray, Icon, PrgLnch.ico
 	FileInstall PrgLnch.chm, PrgLnch.chm
-	sleep, 300
+	UnBlockFile("PrgLnch.chm")
+
 	; init LnchPad here
 	IniProcIniFile(0, SelIniChoiceName, IniChoiceNames, PrgNo, strIniChoice)
 	oldSelIniChoiceName := selIniChoiceName
@@ -6024,11 +6025,10 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 	else
 	{
 	strTemp2 := A_ScriptDir . "\LnchPadInit.exe"
-
 		if (!FileExist(strTemp2))
 		{
 		FileInstall LnchPadInit.exe, LnchPadInit.exe
-		Sleep, 600
+		UnBlockFile(strTemp2)
 		}
 
 		if (!A_IsAdmin)
@@ -14738,6 +14738,21 @@ static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
 		MsgBox, 8192, Set System Cursor, Could not restore system cursor!
 	}
 }
+UnBlockFile(fName)
+{
+	While (!FileExist(fName))
+	{
+	Sleep, 100
+		if (A_Index == 20)
+		break
+	}
+
+; fix unblock flag in case of URLZONE_UNTRUSTED.
+FileRead ZoneId, %fName%:Zone.Identifier:$DATA 
+	if (!ErrorLevel && ZoneId != "")
+	FileDelete %fName%:Zone.Identifier:$DATA
+}
+
 SetEditCueBanner(HWND, Cue, IsCombo := 0)
 {
 ; requires AHL_L: JustMe

@@ -76,6 +76,7 @@ Class ListBoxProps
 	SendMessage, % this.LB_GETSELCOUNT, 0, 0, , % "ahk_id" this._hWnd
 
 	wParam := ErrorLevel
+
 		if (wParam < 1)
 		return wParam
 
@@ -135,6 +136,9 @@ WM_HELPMSG := 0x0053
 WS_EX_CONTEXTHELP := 0x00000400
 
 gameList := ["Morrowind", "Oblivion", "Skyrim", "Fallout 3", "Fallout NV", "Fallout 4", "", "", "", "", "", ""]
+gameExes := ["MGEXEgui.exe", "obse_loader.exe", "SKSE_loader.exe", "Fallout3.exe", "nvse_loader.exe", "f4se_loader.exe", "", "", "", "", "", ""]
+gameFallBackExes := ["Morrowind.exe", "Oblivion.exe", "SkyrimSE.exe|Skyrim.exe|SkyrimTESV.exe", "", "FalloutNV.exe", "Fallout4.exe", "", "", "", "", "", ""]
+; FO3.exe, "avoid fose_loader.exe!"
 iniNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
 PrgLnchIniPath := A_ScriptDir . "\PrgLnch.ini"
@@ -176,16 +180,16 @@ i := 0
 
 prgName1 := ["Wrye Mash", "MLOX", "TESTool", "Bsa Browser", "MWEdit", "MMOG", "TESAME", "TESPCD", "Enchanted Editor", "MEN Combat MG", "TESFiles 3.1", "Groundcover GP"]
 prgName2 := ["Wrye Bash", "BOSS", "Construction Set Extender", "TES4Edit", "BSA Commander", "Multi Purpose Gui", "Landscape LOD Generator", "NifSkope", "TES4LODGen", "DDSOpt", "Merge Plugins", "Land Magic"]
-prgName3 := ["Wrye Bash", "Mod Organizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "DynDOLOD", "NifSkope.exe", "Skyrim Performance Monitor 64", "xTranslator", "HKXCmd PS UI", "SSELODGen"]
+prgName3 := ["Wrye Bash", "Mod Organizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "DynDOLOD", "NifSkope.exe", "Skyrim Performance Monitor 64", "xTranslator", "Creation Kit", "SSELODGen"]
 prgName4 := ["Wrye Flash", "Fallout Mod Manager", "Garden of Eden Creation Kit", "FO3Edit", "LOOT", "FO3LODGen", "Merge Plugins", "NifSkope", "BSArch", "Fallout 3 Configator", "FO3Dump", "Nifty Automagic Dismember Tool"]
 prgName5 := ["Wrye Flash", "Fallout Mod Manager", "Garden of Eden Creation Kit", "FNVEdit", "LOOT", "FNVLODGen", "Merge Plugins", "NifSkope", "BSArch", "New Vegas Configator", "GECK PowerUp for NV", "FO3 Save Import Utility"]
-prgName6 := ["Wrye Bash", "Mod Organizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "Fallout 4 Config Tool", "NifSkope", "Fallout Performance Monitor 64", "xTranslator", "Bsa Browser", "Material Editor"]
+prgName6 := ["Wrye Bash", "Mod Organizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "Fallout 4 Config Tool", "NifSkope", "Creation Kit", "xTranslator", "Bsa Browser", "Material Editor"]
 prgExe1 := ["Wrye Mash.exe", "mlox.exe", "TESTool.exe", "BSA Browser.exe", "MWEdit.exe", "mmog.exe", "TES Advanced Mod Editor.exe", "tespcdv031.exe", "Enchanted.exe", "MENCMG.exe", "TESFiles.exe", "Grass.exe"]
-prgExe2 := ["Wrye Bash.exe", "BOSS.exe", "TESConstructionSetOld.exe", "TES4Edit.exe", "bsacmd.exe", "mpgui.exe", "tes4ll.exe", "NifSkope.exe", "TES4LODGen.exe", "DDSOpt X64.exe", "MergePlugins.exe", "LandMagic.exe"]
-prgExe3 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "SSEEdit.exe", "bae.exe", "BodySlideX64.exe", "DynDOLOD.exe", "NifSkope.exe", "PerformanceMonitor64.exe", "xTranslator.exe", "hkxcmd.exe", "SSELODGen.exe"]
+prgExe2 := ["Wrye Bash.exe", "BOSS.exe", "TESConstructionSet.exe", "TES4Edit.exe", "bsacmd.exe", "mpgui.exe", "tes4ll.exe", "NifSkope.exe", "TES4LODGen.exe", "DDSOpt X64.exe", "MergePlugins.exe", "LandMagic.exe"]
+prgExe3 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "SSEEdit.exe", "bae.exe", "BodySlideX64.exe", "DynDOLOD.exe", "NifSkope.exe", "PerformanceMonitor64.exe", "xTranslator.exe", "CreationKit.exe", "SSELODGen.exe"]
 prgExe4 := ["Wrye Flash.exe", "fomm.exe", "Geck.exe", "FO3Edit.exe", "Loot.exe", "FO3LODGen.exe", "MergePlugins.exe", "NifSkope.exe", "bsarch.exe", "FO3Configator.exe", "FO3Dump.exe", "nifty.exe"]
 prgExe5 := ["Wrye Flash.exe", "fomm.exe", "Geck.exe", "FNVEdit.exe", "Loot.exe", "FNVLODGen.exe", "MergePlugins.exe", "NifSkope.exe", "bsarch.exe", "NVConfigator.exe", "geckpu-nv.exe", "FO3 Save Importer.exe"]
-prgExe6 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "FO4Edit.exe", "bae.exe", "BodySlideX64.exe", "Fallout4ConfigTool.exe", "NifSkope.exe", "PerformanceMonitor64.exe", "xTranslator.exe ", "BSA Browser.exe", "Material Editor.exe "]
+prgExe6 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "FO4Edit.exe", "bae.exe", "BodySlideX64.exe", "Fallout4ConfigTool.exe", "NifSkope.exe", "CreationKit.exe", "xTranslator.exe ", "BSA Browser.exe", "Material Editor.exe "]
 prgPath1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath3 := ["", "", "", "", "", "", "", "", "", "", "", ""]
@@ -206,10 +210,10 @@ prgUrl5 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl6 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgInfUrl1 := ["https://www.nexusmods.com/morrowind/mods/45439", "https://www.nexusmods.com/morrowind/mods/43001", "http://web.archive.org/web/20040617055545/http://www34.brinkster.com/ghostwheel/TESTool.htm", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "http://mwedit.sourceforge.net", "http://abitoftaste.altervista.org/morrowind/index2.php?option=downloads&no_comp=1&no_html=1&task=download&id=53&Itemid=50&-download-MMOG-Morrowind-Merged-Objects-Generator", "http://mw.modhistory.com/download-95-5289", "https://www.nexusmods.com/morrowind/mods/3874", "http://mw.modhistory.com/download--1662", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=63&Itemid=50&-MEN-Combat-Merged-Generator", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=90&Itemid=50&-TESFiles-3-1", "http://www.nexusmods.com/morrowind/mods/43907"]
 prgInfUrl2 := ["https://www.nexusmods.com/oblivion/mods/22368", "https://boss-developers.github.io", "https://www.nexusmods.com/oblivion/mods/36370", "http://tes5edit.github.io", "https://www.nexusmods.com/oblivion/mods/3311", "https://www.nexusmods.com/oblivion/mods/41447", "https://www.nexusmods.com/oblivion/mods/40549", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/oblivion/mods/15781", "https://www.nexusmods.com/skyrim/mods/5755", "https://github.com/matortheeternal/merge-plugins", "https://www.nexusmods.com/oblivion/mods/30519"]
-prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://www.nexusmods.com/skyrimspecialedition/mods/6194", "https://loot.github.io", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrimspecialedition/mods/201", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrimspecialedition/mods/3826", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrim/mods/83200", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
+prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://www.nexusmods.com/skyrimspecialedition/mods/6194", "https://loot.github.io", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrimspecialedition/mods/201", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrimspecialedition/mods/3826", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://store.steampowered.com/app/1946180/Skyrim_Special_Edition_Creation_Kit", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
 prgInfUrl4 := ["https://www.nexusmods.com/fallout3/mods/11336", "https://www.nexusmods.com/newvegas/mods/54991", "http://geck.bethsoft.com/index.php?title=Garden_of_Eden_Creation_Kit", "https://www.nexusmods.com/fallout3/mods/637", "https://loot.github.io", "https://www.nexusmods.com/fallout3/mods/21174", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/fallout3/mods/6769", "http://modsreloaded.com/fo3dump", "https://www.nexusmods.com/fallout3/mods/2631"]
 prgInfUrl5 := ["https://www.nexusmods.com/newvegas/mods/35003", "https://www.nexusmods.com/newvegas/mods/54991", "http://geck.bethsoft.com/index.php?title=Garden_of_Eden_Creation_Kit", "https://www.nexusmods.com/newvegas/mods/34703", "https://loot.github.io", "https://www.nexusmods.com/newvegas/mods/58562", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/newvegas/mods/40442", "https://www.nexusmods.com/newvegas/mods/36290", "https://www.nexusmods.com/newvegas/mods/37649"]
-prgInfUrl6 := ["https://www.nexusmods.com/fallout4/mods/20032", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io", "https://www.nexusmods.com/fallout4/mods/2737", "https://www.nexusmods.com/fallout4/mods/78", "https://www.nexusmods.com/fallout4/mods/25", "https://www.nexusmods.com/fallout4/mods/102", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/fallout4/mods/1762", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "https://www.nexusmods.com/fallout4/mods/3635"]
+prgInfUrl6 := ["https://www.nexusmods.com/fallout4/mods/20032", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io", "https://www.nexusmods.com/fallout4/mods/2737", "https://www.nexusmods.com/fallout4/mods/78", "https://www.nexusmods.com/fallout4/mods/25", "https://www.nexusmods.com/fallout4/mods/102", "http://niftools.sourceforge.net/wiki/NifSkope", "https://store.steampowered.com/app/1946160/Fallout_4_Creation_Kit", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "https://www.nexusmods.com/fallout4/mods/3635"]
 listboxIndices := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 WS_CLIPSIBLINGS := 0x4000000
 WS_EX_TOPMOST := 0x8
@@ -293,12 +297,12 @@ lnchPadPID := DllCall("GetCurrentProcessId")
 SelIniChoiceNamePrgLnch := strRetVal
 
 
-ListBoxProps.Init() := PrgNo
+ListBoxProps.Init() := prgNo
 
 RegRead, fontDPI, HKEY_CURRENT_USER\Control Panel\Desktop\WindowMetrics, AppliedDPI 
 	if (ErrorLevel)
 	{
-	msgbox, 8192, Registry Access, The AppliedDPI value in registry is unavailable!`n`nAssuming default font scaling of 96.
+	msgbox, 8192, Registry Access, The Applied DPI value in registry is unavailable!`n`nAssuming default font scaling of 96.
 	fontDPI := 1
 	}
 	else
@@ -327,10 +331,13 @@ Gui, Add, Text, Center gaddToLnchPad vaddToLnchPad HWNDaddToLnchPadHwnd wp, % "&
 	guiControl, Hide, Drive%A_Index%
 	}
 
-Gui, Add, Radio, goverWriteIni voverWriteIni HWNDoverWriteIniHwnd, Overwrite existing Slot with PrgLnch defaults
-Gui, Add, Radio, gUpdateIni vUpdateIni HWNDUpdateIniHwnd, Update existing Ini File with acquired Prg info.
+Gui, Add, Radio, gOverWriteIni voverWriteIni HWNDoverWriteIniHwnd, Overwrite existing Slot with PrgLnch defaults
+Gui, Add, Radio, gUpdateIni vupdateIni HWNDupdateIniHwnd, Update existing Ini File with acquired Prg info.
+Gui, Add, Checkbox, gAddGameShortCut vaddGameShortCut HWNDaddGameShortCutHwnd, Include shortcut to game extender
+
 GuiControl, Hide, overWriteIni
-GuiControl, Hide, UpdateIni
+GuiControl, Hide, updateIni
+GuiControl, Hide, addGameShortCut
 
 
 
@@ -369,11 +376,10 @@ Gui Show, w%thisguiW% h%thisguiH% Hide,
 tabguiH := thisguiH - GetTabRibbonHeight(GuiHwnd)
 tabguiW := thisguiW - A_LastError
 
-tmp := (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
+tmp := (prgNo + 1/2) * ListBoxProps.GetItemHeight()
 
 	loop, % maxGames
 	{
-	PrgIndexList := ""
 	Gui, Tab, %A_Index%
 
 	Gui, Add, ListBox, %LBS_MULTIPLESEL% x0 y0 vPrgIndex%A_Index% gPrgListBox HWNDPrgIndex%A_Index%Hwnd
@@ -393,7 +399,7 @@ tmp := (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
 		else
 		tmp := tabguiH/4
 
-	GuiControl, Move, PrgIndex%A_Index%, % "x" 11.5 * tabguiW/16 "y" tmp " w" tabguiW/4 "h" (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
+	GuiControl, Move, PrgIndex%A_Index%, % "x" 11.5 * tabguiW/16 "y" tmp " w" tabguiW/4 "h" (prgNo + 1/2) * ListBoxProps.GetItemHeight()
 
 	CtlColors.Attach(PrgIndex%A_Index%Hwnd, Pink, "White")
 
@@ -447,21 +453,7 @@ tmp := (PrgNo + 1/2) * ListBoxProps.GetItemHeight()
 
 
 
-	tmp := A_Index
-
-		loop, % prgNo
-		PrgIndexList .= "|" . prgName%tmp%[A_Index] . "|"
-
-	GuiControl, , prgIndex%A_Index%, % substr(prgIndexList, 1, StrLen(prgIndexList) - 1)
-
-
-	GuiControl, , prgIndex%A_Index%, % prgIndexList
-
-	GuiControl, Choose, PrgIndex%A_Index%, 0
-	; Alternate for deselect all items:
-	; LB_SETSEL:= 0x185
-	; SendMessage, %LB_SETSEL%, 0, -1, , % "ahk_id" PrgIndex%tabStat%hwnd
-
+	PopulateGameList(prgNo, A_Index, prgName%A_Index%)
 	
 	gosub gamePic
 
@@ -484,10 +476,12 @@ ControlGetPos, , , , tmp, , ahk_id %Drive1Hwnd%
 	CtlColors.Attach(Drive%A_Index%Hwnd, Yellow, "Black") ; CtlColors doesn't do text colour for checkbox/radio.
 	}
 
-CtlColors.Attach(UpdateIniHwnd, Yellow, "Black")
+CtlColors.Attach(updateIniHwnd, Yellow, "Black")
 CtlColors.Attach(overWriteIniHwnd, Yellow, "Black")
-GuiControl, Move, UpdateIni, % "x" thisguiW/6 "y" 3 * thisguiH/4
+CtlColors.Attach(addGameShortCutHwnd, Yellow, "Black")
+GuiControl, Move, updateIni, % "x" thisguiW/6 "y" 3 * thisguiH/4
 GuiControl, Move, overWriteIni, % "x" thisguiW/6 "y" 4 * thisguiH/5
+GuiControl, Move, addGameShortCut, % "x" thisguiW/6 "y" 9 * thisguiH/10
 
 tabStat := 1
 GoSub LnchPadTab
@@ -499,8 +493,6 @@ WinSet, Redraw,, ahk_id %GuiHwnd%
 
 
 return
-
-
 
 gamePic:
 GuiControl, Move, % "HBITMAP:*" picH, % "x" GetTabRibbonHeight() "y" GetTabRibbonHeight(GuiHwnd, 1) "w" tabguiW "h" tabguiH
@@ -517,27 +509,30 @@ lboxSelTol++
 resetSearch(searchStat, tabStat, gameList, maxDrives)
 
 
-if (PrgIndex%tabStat%hwnd=PrgListBox_SelectedItem_last_hwnd && tabStat)
+if (PrgIndex%tabStat%hwnd == PrgListBox_SelectedItem_last_hwnd && tabStat)
 {
 	; tolerance of clicks
-	if (lboxSelTol > PrgNo)
+	if (lboxSelTol > prgNo)
 	{
 	GuiControl, Choose, PrgIndex%tabStat%, 0
-		loop % PrgNo
+		loop % prgNo
 		{
-		prgPath%tabStat%[A_Index] := 0
+		prgPath%tabStat%[A_Index] := ""
 		}
 	ToolTip Max Clicks on Listbox. Switch Tabs or Redo Search!
 	}
 }
 
-ListBoxProps.hWnd := PrgIndex%tabStat%Hwnd
-
 ListBox_SelectedItem := ListBoxProps.GetOneItem()
 
+	if (addGameShortCutVar)
+	addGameShortCutVar := Abs(addGameShortCutVar)
+
 	if (ListBox_SelectedItem > 0)
+	{
 	; Restore
-	prgPath%tabStat%[ListBox_SelectedItem] := prgPath%tabStat%bak[ListBox_SelectedItem]
+		if (addGameShortCutVar != ListBox_SelectedItem)
+		prgPath%tabStat%[ListBox_SelectedItem] := prgPath%tabStat%bak[ListBox_SelectedItem]
 
 		; Following deselection not required for LBS_MULTIPLESEL listboxes
 		;if (ListBox_SelectedItem = ListBox_SelectedItem_last)
@@ -545,12 +540,22 @@ ListBox_SelectedItem := ListBoxProps.GetOneItem()
 			;LB_SETSEL:=0x185
 			;SendMessage, LB_SETSEL, 0, %ListBox_SelectedItem%, , ahk_id %hwndListBox%
 		;}
+	}
 	else
-	prgPath%tabStat%[-ListBox_SelectedItem] := 0
+	{
+	; LB_GETCARETINDEX := 0x019F
+	SendMessage, 0x019F, 0, 0, , % "ahk_id" . PrgIndex%tabStat%Hwnd
+	tmp := ErrorLevel + 1
+
+		if (tmp == addGameShortCutVar)
+		GuiControl, Choose, PrgIndex%tabStat%, %tmp%
+		else
+		prgPath%tabStat%[-ListBox_SelectedItem] := ""
+	}
 ; Want backup array
 
 
-PrgListBox_SelectedItem_last_hwnd:=PrgIndex%tabStat%hwnd
+PrgListBox_SelectedItem_last_hwnd := PrgIndex%tabStat%hwnd
 return
 
 searchDrive:
@@ -592,15 +597,27 @@ GuiControlGet, strTmp, , searchDrive
 		searchStat := -1
 		tooltipDriveStr := ""
 
-		ListBoxProps.hWnd := PrgIndex%tabStat%Hwnd
 		GuiControl, Choose, PrgIndex%tabStat%, 0
 		lboxSelTol := 0
 
 		setTimer SearchFiles, -1
 		}
 	}
+
 return
+
+
 SearchFiles:
+
+;must reset game shortcut
+PopulateGameList(prgNo, tabStat, prgName%tabStat%)
+loop %PrgNo%
+prgPath%tabStat%[A_Index] := ""
+
+GuiControl, , addGameShortCut, 0
+GuiControl, Hide, addGameShortCut
+GuiControl, Hide, overWriteIni
+GuiControl, Hide, updateIni
 
 loop % maxDrives
 {
@@ -614,7 +631,7 @@ currDrive := DriveLetter[A_Index]
 
 	if (InStr(FATDrives, currDrive))
 	{
-	; Slow method
+	; Slow slow method
 	FolderList := ""
 	FolderList := Object()
 
@@ -663,10 +680,13 @@ currDrive := DriveLetter[A_Index]
 				loop % prgNo
 				{
 				SplitPath, A_Loopfield, strTmp
-					if (strTmp == prgExe%tabStat%[A_Index])
+					if (!strTmp) ; trailing `n in fileList
+					break
+				tmp := StrLen(prgExe%tabStat%[A_Index])
+				strTmp := Substr(strTmp, StrLen(strTmp) - tmp + 1)
+
+					if (InStr(strTmp, prgExe%tabStat%[A_Index]))
 					{
-						if (!strTmp) ; trailing `n in fileList
-						break
 						if (prgPath%tabStat%[A_Index])
 						{
 							if (multcopiesPrgWrn == 1)
@@ -709,10 +729,11 @@ currDrive := DriveLetter[A_Index]
 	else
 	{
 	fileList := ListMFTfiles(currDrive, prgExe%tabStat%,, retVal)
+	foundFallBack := 0
+	addGameShortCutVar := 0
 
 		if (fileList)
 		{
-
 			Loop, parse, fileList, `n
 			{
 				loop % prgNo
@@ -720,18 +741,42 @@ currDrive := DriveLetter[A_Index]
 				SplitPath, A_Loopfield, strTmp
 					if (!strTmp) ; trailing `n in fileList
 					break
-				tmp := StrLen(prgExe%tabStat%[A_Index])
-				strTmp := Substr(strTmp, StrLen(strTmp) - tmp + 1)
-					if (InStr(strTmp, prgExe%tabStat%[A_Index]))
+					if (addGameShortCutVar > 0)
 					{
-					prgPath%tabStat%[A_Index] := A_Loopfield
-					prgPath%tabStat%bak[A_Index] := A_Loopfield
-					GuiControl, Choose, PrgIndex%tabStat%, %A_Index%
-					tmp := 1
-					break
+						if (addGameShortCutVar == A_Index)
+						{
+							if (strTmp == gameExes[tabStat])
+							{
+							prgPath%tabStat%[A_Index] := A_Loopfield
+							addGameShortCutVar := -addGameShortCutVar
+							}
+							else
+							{
+								if (strTmp == gameFallBackExes[tabStat])
+								{
+								prgPath%tabStat%[A_Index] := A_Loopfield
+								foundFallBack := 1
+								}
+							}
+						}
+					}
+					else
+					{
+					tmp := StrLen(prgExe%tabStat%[A_Index])
+					strTmp := Substr(strTmp, StrLen(strTmp) - tmp + 1)
+						if (InStr(strTmp, prgExe%tabStat%[A_Index]))
+						{
+						prgPath%tabStat%[A_Index] := A_Loopfield
+						prgPath%tabStat%bak[A_Index] := A_Loopfield
+						GuiControl, Choose, PrgIndex%tabStat%, %A_Index%
+						tmp := 1
+						break
+						}
 					}
 				}
 			}
+				if (foundFallBack == 1)
+				addGameShortCutVar := -addGameShortCutVar
 		}
 		else
 		tooltipDriveStr .= currDrive . ","
@@ -768,7 +813,7 @@ tmp := substr(A_GuiControl, 0)
 	DriveLetter[tmp] := ""
 return
 
-overWriteIni:
+OverWriteIni:
 Gui, Submit, Nohide
 GuiControlGet, overWriteIniFile, , overWriteIni
 GuiControl, Focus, addToLnchPad
@@ -781,6 +826,14 @@ overWriteIniFile := 0
 GuiControl, Focus, addToLnchPad
 return
 
+AddGameShortCut:
+Gui, Submit, Nohide
+GuiControlGet, addGameShortCutVar, , addGameShortCut
+GameShortcutBiz(prgNo, addGameShortCutVar, tabStat, gameList, PrgName%tabStat%, PrgIndex%tabStat%)
+prgPath%tabStat%[addGameShortCutVar] := gameExes[tabStat]
+GuiControl, Focus, addToLnchPad
+Return
+
 addToLnchPad:
 Gui, Submit, Nohide
 Tooltip
@@ -790,7 +843,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 	if (InStr(strTmp, "Locate"))
 	{
 	tmp := 0
-		loop % PrgNo
+		loop % prgNo
 		{
 		; Case of user deselection
 			if (prgPath%tabStat%[A_Index])
@@ -836,18 +889,18 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 				if (FileExist(gameIniPath)) ; game ini exists!
 				{
 				GuiControl, Show, overWriteIni
-				GuiControl, Show, UpdateIni
+				GuiControl, Show, updateIni
 				GuiControl,, overWriteIni, % overWriteIniFile
-				GuiControl,, UpdateIni, % !overWriteIniFile
+				GuiControl,, updateIni, % !overWriteIniFile
 				}
-				else
+				else ; The ini file is referenced in Prglnch.ini but does not exist
 				overWriteIniFile := 1
 			}
 			else
 			{
 				if (FileExist(gameIniPath))
 				{
-					if (i == PrgNo)
+					if (i == prgNo)	; The ini file for this game has no reference in Prglnch.ini
 					{
 					Tooltip, % "The LnchPad Preset Ini File already exists for " gameList[tabStat] ",`nhowever PrgLnch has no available slots!"
 					return
@@ -855,14 +908,15 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 					else
 					{
 					GuiControl, Show, overWriteIni
-					GuiControl, Show, UpdateIni
+					GuiControl, Show, updateIni
 					GuiControl,, overWriteIni, % overWriteIniFile
-					GuiControl,, UpdateIni, % !overWriteIniFile
+					GuiControl,, updateIni, % !overWriteIniFile
 					}
 				}
 				else
 				overWriteIniFile := 1
 			}
+		GuiControl, Show, addGameShortCut
 		}
 		else
 		{
@@ -899,11 +953,11 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 		Progress, 10
 
 			if (overWriteIniFile)
-			CreateIniData(PrgNo, maxBatchPrgs, gameIniPath)
+			CreateIniData(prgNo, maxBatchPrgs, gameIniPath)
 		Progress, 40
 		strRetVal := AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, prgUrl%tabStat%, IniFileShortctSep)
 		tmp := 0
-			Loop, % PrgNo
+			Loop, % prgNo
 			{
 				if (iniNames[A_Index] == gameList[tabStat])
 				{
@@ -914,7 +968,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 
 			if (!tmp)
 			{
-				Loop, % PrgNo
+				Loop, % prgNo
 				{
 					if (!iniNames[A_Index])
 					{
@@ -932,13 +986,15 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 			strRetVal := "LnchPad Slots full! Cannot continue!"
 
 		}
+
 	sleep, 100
 	Progress, 100
 	overWriteIniFile := 0
-	GuiControl,, UpdateIni, 0
 	GuiControl,, overWriteIni, 0
+	GuiControl,, updateIni, 0
 	GuiControl, Hide, overWriteIni
-	GuiControl, Hide, UpdateIni
+	GuiControl, Hide, updateIni
+	GuiControl, Hide, addGameShortCut
 	guiControl, , addToLnchPad, % "&Locate " gameList[tabStat] " LnchPad Slot"
 	Progress, Off
 
@@ -959,7 +1015,110 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 
 return
 
-CreateIniData(PrgNo, maxBatchPrgs, gameIniPath)
+PopulateGameList(prgNo, tabStat, prgNameTabStat, gameName := "", index := 0)
+{
+PrgIndexList := ""
+
+	if (index)
+	{
+		loop, % prgNo
+		{
+		if (A_Index == index)
+		PrgIndexList .= "|" . gameName . "|"
+		else
+		PrgIndexList .= "|" . prgNameTabStat[A_Index] . "|"
+		}
+	}
+	else
+	{
+		loop, % prgNo
+		PrgIndexList .= "|" . prgNameTabStat[A_Index] . "|"
+	}
+
+;GuiControl, , prgIndex%tabStat%, % prgIndexList
+GuiControl, , prgIndex%tabStat%, % substr(prgIndexList, 1, StrLen(prgIndexList) - 1)
+
+GuiControl, Choose, PrgIndex%tabStat%, 0
+
+; Alternate for deselect all items:
+; LB_SETSEL:= 0x185
+; SendMessage, %LB_SETSEL%, 0, -1, , % "ahk_id" PrgIndex%tabStat%hwnd
+}
+
+GameShortcutBiz(prgNo, ByRef addGameShortCut, tabStat, gameList, PrgNametabStat, PrgIndextabStat)
+{
+static tabStatOld := 0, prgIndexReplaced := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+prgNameSelected := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgSelectedIndices := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+tmp := 0
+
+	prgSelectedIndices := ListBoxProps.GetItems()
+
+	if (addGameShortCut)
+	{
+
+		for i in prgSelectedIndices
+		{
+		tmp := prgSelectedIndices[i]
+
+			strTemp := prgNameSelected[tmp] := PrgNametabStat[tmp]
+				if (strTemp == gameList[tabStat])
+				;already allocated
+				return
+		}
+
+	tmp := 0
+		loop %prgNo%
+		{
+			if (!prgNameSelected[A_Index])
+			{
+			prgIndexReplaced[tabStat] := A_Index
+			break
+			}
+		}
+
+		if (prgIndexReplaced[tabStat])
+		{
+		PopulateGameList(prgNo, tabStat, prgNameTabStat, gameList[tabStat], prgIndexReplaced[tabStat])
+			loop %prgNo%
+			{
+			tmp := prgIndexReplaced[tabStat] == A_Index
+				if (prgNameSelected[A_Index] || tmp)
+				{
+				GuiControl, Choose, PrgIndex%tabStat%, %A_Index%
+					if (tmp)
+					addGameShortCut := A_Index
+				}
+			}
+		}
+		else
+		{
+		; no available slots
+		MsgBox, 8192, LnchPad Slots, LnchPad slots full!
+		}
+
+	}
+	else
+	{
+		for i in prgSelectedIndices
+		{
+		tmp := prgSelectedIndices[i]
+		prgNameSelected[tmp] := PrgNametabStat[tmp]
+		}
+
+	PopulateGameList(prgNo, tabStat, prgNameTabStat, PrgNametabStat[prgIndexReplaced[tabStat]], prgIndexReplaced[tabStat])
+
+		loop %prgNo%
+		{
+			if (prgNameSelected[A_Index] && prgIndexReplaced[tabStat] != A_Index)
+			GuiControl, Choose, PrgIndex%tabStat%, %A_Index%
+		}
+	}
+
+}
+
+CreateIniData(prgNo, maxBatchPrgs, gameIniPath)
 {
 	loop % maxBatchPrgs
 	IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIni%A_Index%
@@ -979,7 +1138,7 @@ IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIniStartup
 IniRead, monitorOrder, %gameIniPath%, General, monitorOrder
 monitorOrder := SubStr(monitorOrder, 1, 1)
 
-	loop % PrgNo
+	loop % prgNo
 	{
 	IniDelete, %gameIniPath%, Prg%A_Index%
 
@@ -991,7 +1150,7 @@ monitorOrder := SubStr(monitorOrder, 1, 1)
 	IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgVer
 	strTmp := monitorOrder . ",0,0,-1,-1,0,0,0"
 	IniWrite, %strTmp%, %gameIniPath%, Prg%A_Index%, PrgMisc
-		if (A_Index == floor(PrgNo/2))
+		if (A_Index == floor(prgNo/2))
 		Progress, 25
 	}
 }
@@ -1073,12 +1232,12 @@ oldWrittentoSlotArrayCt := WrittentoSlotArrayCt
 
 ; Fine - we may want commandline Parms as well- e.g. Wrye Bash.exe -debug
 AllocatedtoSlotArrayCt := 0
-	loop, % PrgNo
+	loop, % prgNo
 	{
 	tmp := 0
 		if (strTmp := prgPathtabStat[A_Index])
 		{
-			Loop, % PrgNo
+			Loop, % prgNo
 			{
 				if (strTmp == PrgPathWrittentoSlotArray[A_Index])
 				tmp := 1
@@ -1086,7 +1245,7 @@ AllocatedtoSlotArrayCt := 0
 
 			if (!tmp)
 			{
-				Loop, % PrgNo
+				Loop, % prgNo
 				{
 					if (!PrgPathWrittentoSlotArray[A_Index])
 					{
@@ -1104,7 +1263,7 @@ AllocatedtoSlotArrayCt := 0
 	{
 		if (strTmp := PrgPathNotWrittentoSlotArray[A_Index])
 		{
-			Loop, % PrgNo
+			Loop, % prgNo
 			{
 				if (!freeSlotArray[A_Index])
 				{
@@ -1131,22 +1290,26 @@ AllocatedtoSlotArrayCt := 0
 		strRetVal := "None of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the LnchPad Slot!"
 		else
 		{
-
 			if (!oldWrittentoSlotArrayCt && WrittentoSlotArrayCt == AllocatedtoSlotArrayCt)
 			strRetVal := "1All " . WrittentoSlotArrayCt . " Prg entries added!"
 			else
 			{
-				if (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt < AllocatedtoSlotArrayCt)
-				{
-					if (oldWrittentoSlotArrayCt)
-					strRetVal := "1Existing Prgs updated: " . oldWrittentoSlotArrayCt . "`nOnly "
-					else
-					strRetVal := "1Only "
-
-				strRetVal .= (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt) . " of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the LnchPad Slot!"
-				}
+				if (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt == AllocatedtoSlotArrayCt)
+				strRetVal := "1Existing Prgs updated: " . oldWrittentoSlotArrayCt . ", and " . AllocatedtoSlotArrayCt . " new Prg entries were written to the LnchPad Slot!"
 				else
-				strRetVal := "Weird_Error: Slot allocations did not work!"
+				{
+					if (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt < AllocatedtoSlotArrayCt)
+					{
+						if (oldWrittentoSlotArrayCt)
+						strRetVal := "1Existing Prgs updated: " . oldWrittentoSlotArrayCt . "`nOnly "
+						else
+						strRetVal := "1Only "
+
+					strRetVal .= (WrittentoSlotArrayCt - oldWrittentoSlotArrayCt) . " of the new " . AllocatedtoSlotArrayCt . " Prg entries could be written to the LnchPad Slot!"
+					}
+					else
+					strRetVal := "Error: Slot Allocations reported an error: try again."
+				}
 			}
 		}
 	}
@@ -1158,7 +1321,7 @@ return strRetVal
 }
 
 
-UpdateAllIni(PrgNo, iniSel, PrgLnchIni, IniChoiceNames)
+UpdateAllIni(prgNo, iniSel, PrgLnchIni, IniChoiceNames)
 {
 spr := "", strTmp := "", tmp := 0
 IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
@@ -1174,7 +1337,7 @@ strTmp := (IniChoiceNames[iniSel])? IniChoiceNames[iniSel]: A_Space
 
 	if (existSelIniChoiceName)
 	{
-		Loop % PrgNo
+		Loop % prgNo
 		{
 			if (IniChoiceNames[A_Index] == existSelIniChoiceName)
 			{
@@ -1186,7 +1349,7 @@ strTmp := (IniChoiceNames[iniSel])? IniChoiceNames[iniSel]: A_Space
 
 
 
-	Loop % PrgNo
+	Loop % prgNo
 	{
 		if (IniChoiceNames[A_Index])
 		{
@@ -1234,7 +1397,7 @@ strTmp := (IniChoiceNames[iniSel])? IniChoiceNames[iniSel]: A_Space
 	sleep, 20
 	; Trim last ","
 	spr := SubStr(spr, 1, StrLen(spr) - 1)
-	Loop % PrgNo
+	Loop % prgNo
 	{
 		if (IniChoicePaths[A_Index] && FileExist(IniChoicePaths[A_Index]))
 		{
@@ -1270,45 +1433,63 @@ SearchSelectedClicked := 0
 lboxSelTol := 0
 GuiControlGet, tabStat, , LnchPadTab
 
+ControlGet, strTmp, List,,, % "ahk_id" PrgIndex%tabStat%Hwnd
+
+tmp := 0
+	Loop, Parse, strTmp, `n
+	{
+		if (A_LoopField == gameList[tabStat])
+		{
+		tmp := 1
+		break
+		}
+	}
+
+	if (tmp)
+	GuiControl, , addGameShortCut, 1
+	else
+	GuiControl, , addGameShortCut, 0
+
+ListBoxProps.hWnd := PrgIndex%tabStat%Hwnd
 
 switch tabStat
 {
-case 1:
-{
-CtlColors.Change(PrgIndex1Hwnd, Chocolate, "Yellow")
-CtlColors.Change(searchDriveHwnd, Chocolate, "Yellow")
-CtlColors.Change(addToLnchPadHwnd, Chestnut, "Yellow")
-}
-case 2:
-{
-CtlColors.Change(PrgIndex2Hwnd, Taupe, "Goldenrod")
-CtlColors.Change(searchDriveHwnd, Taupe, "Goldenrod")
-CtlColors.Change(addToLnchPadHwnd, Khakigrau, "Goldenrod")
-}
-case 3:
-{
-CtlColors.Change(PrgIndex3Hwnd, Black, "Silver")
-CtlColors.Change(searchDriveHwnd, Black, "Silver")
-CtlColors.Change(addToLnchPadHwnd, Onyx, "Silver")
-}
-case 4:
-{
-CtlColors.Change(PrgIndex4Hwnd, Steingrau, "Goldenrod")
-CtlColors.Change(searchDriveHwnd, Steingrau, "Goldenrod")
-CtlColors.Change(addToLnchPadHwnd, Feldgrau, "Goldenrod")
-}
-case 5:
-{
-CtlColors.Change(PrgIndex5Hwnd, Auburn, "Yellow")
-CtlColors.Change(searchDriveHwnd, Auburn, "Yellow")
-CtlColors.Change(addToLnchPadHwnd, Vermilion, "Yellow")
-}
-case 6:
-{
-CtlColors.Change(PrgIndex6Hwnd, Steingrau, "White")
-CtlColors.Change(searchDriveHwnd, Steingrau, "White")
-CtlColors.Change(addToLnchPadHwnd, Khakigrau, "White")
-}
+	case 1:
+	{
+	CtlColors.Change(PrgIndex1Hwnd, Chocolate, "Yellow")
+	CtlColors.Change(searchDriveHwnd, Chocolate, "Yellow")
+	CtlColors.Change(addToLnchPadHwnd, Chestnut, "Yellow")
+	}
+	case 2:
+	{
+	CtlColors.Change(PrgIndex2Hwnd, Taupe, "Goldenrod")
+	CtlColors.Change(searchDriveHwnd, Taupe, "Goldenrod")
+	CtlColors.Change(addToLnchPadHwnd, Khakigrau, "Goldenrod")
+	}
+	case 3:
+	{
+	CtlColors.Change(PrgIndex3Hwnd, Black, "Silver")
+	CtlColors.Change(searchDriveHwnd, Black, "Silver")
+	CtlColors.Change(addToLnchPadHwnd, Onyx, "Silver")
+	}
+	case 4:
+	{
+	CtlColors.Change(PrgIndex4Hwnd, Steingrau, "Goldenrod")
+	CtlColors.Change(searchDriveHwnd, Steingrau, "Goldenrod")
+	CtlColors.Change(addToLnchPadHwnd, Feldgrau, "Goldenrod")
+	}
+	case 5:
+	{
+	CtlColors.Change(PrgIndex5Hwnd, Auburn, "Yellow")
+	CtlColors.Change(searchDriveHwnd, Auburn, "Yellow")
+	CtlColors.Change(addToLnchPadHwnd, Vermilion, "Yellow")
+	}
+	case 6:
+	{
+	CtlColors.Change(PrgIndex6Hwnd, Steingrau, "White")
+	CtlColors.Change(searchDriveHwnd, Steingrau, "White")
+	CtlColors.Change(addToLnchPadHwnd, Khakigrau, "White")
+	}
 }
 buttonBkdChange := 0 ; just in case
 
@@ -1325,10 +1506,10 @@ Progress, off
 Progress, Hide
 W := thisGuiW /2
 H := thisGuiH /8
-if (buttonBkdChange == 1)
-Progress, A W%W% H%H% b p0 M,, Getting Headers. %currDrive%: ...,
-else
-Progress, A W%W% H%H% b p0 M,, Updating LnchPad Ini Slot: ...,
+	if (buttonBkdChange == 1)
+	Progress, A W%W% H%H% b p0 M,, Getting Headers. %currDrive%: ...,
+	else
+	Progress, A W%W% H%H% b p0 M,, Updating LnchPad Ini Slot: ...,
 return
 
 Esc::
@@ -1671,10 +1852,12 @@ guiControl, , searchDrive, % "&Search PC for " gameList[tabStat] " Apps"
 GuiControl,, addToLnchPad, % "&Locate " gameList[tabStat] " LnchPad Slot"
 
 overWriteIniFile := 1
-GuiControl,, UpdateIni, 0
 GuiControl,, overWriteIni, 0
+GuiControl,, updateIni, 0
+;addGameShortCut value changed on tab switch
 GuiControl, Hide, overWriteIni
-GuiControl, Hide, UpdateIni
+GuiControl, Hide, updateIni
+GuiControl, Hide, addGameShortCut
 
 }
 
@@ -2477,7 +2660,7 @@ else
 if (ItemHandle == addToLnchPadHwnd)
 retVal := RunChm("LnchPad Setup`\LnchPad Setup", "LocateSlot")
 else
-if (ItemHandle == UpdateIniHwnd)
+if (ItemHandle == updateIniHwnd)
 retVal := RunChm("LnchPad Setup`\LnchPad Setup", "UpdateExisting")
 else
 if (ItemHandle == overWriteIniHwnd)
