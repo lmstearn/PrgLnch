@@ -137,8 +137,9 @@ WS_EX_CONTEXTHELP := 0x00000400
 
 gameList := ["Morrowind", "Oblivion", "Skyrim", "Fallout 3", "Fallout NV", "Fallout 4", "", "", "", "", "", ""]
 gameExes := ["MGEXEgui.exe", "obse_loader.exe", "SKSE_loader.exe", "Fallout3.exe", "nvse_loader.exe", "f4se_loader.exe", "", "", "", "", "", ""]
-gameFallBackExes := ["Morrowind.exe", "Oblivion.exe", "SkyrimSE.exe|Skyrim.exe|SkyrimTESV.exe", "", "FalloutNV.exe", "Fallout4.exe", "", "", "", "", "", ""]
+gameFallBackExes := ["Morrowind.exe", "Oblivion.exe", "SkyrimSE.exe|Skyrim.exe|SkyrimTESV.exe", "fose_loader.exe", "FalloutNV.exe", "Fallout4.exe", "", "", "", "", "", ""]
 ; FO3.exe, "avoid fose_loader.exe!"
+gameExesFullPath := ["", "", "", "", "", "", "", "", "", "", "", ""]
 iniNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
 PrgLnchIniPath := A_ScriptDir . "\PrgLnch.ini"
@@ -181,14 +182,14 @@ i := 0
 prgName1 := ["Wrye Mash", "MLOX", "TESTool", "Bsa Browser", "MWEdit", "MMOG", "TESAME", "TESPCD", "Enchanted Editor", "MEN Combat MG", "TESFiles 3.1", "Groundcover GP"]
 prgName2 := ["Wrye Bash", "BOSS", "Construction Set Extender", "TES4Edit", "BSA Commander", "Multi Purpose Gui", "Landscape LOD Generator", "NifSkope", "TES4LODGen", "DDSOpt", "Merge Plugins", "Land Magic"]
 prgName3 := ["Wrye Bash", "Mod Organizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "DynDOLOD", "NifSkope.exe", "Skyrim Performance Monitor 64", "xTranslator", "Creation Kit", "SSELODGen"]
-prgName4 := ["Wrye Flash", "Fallout Mod Manager", "Garden of Eden Creation Kit", "FO3Edit", "LOOT", "FO3LODGen", "Merge Plugins", "NifSkope", "BSArch", "Fallout 3 Configator", "FO3Dump", "Nifty Automagic Dismember Tool"]
-prgName5 := ["Wrye Flash", "Fallout Mod Manager", "Garden of Eden Creation Kit", "FNVEdit", "LOOT", "FNVLODGen", "Merge Plugins", "NifSkope", "BSArch", "New Vegas Configator", "GECK PowerUp for NV", "FO3 Save Import Utility"]
+prgName4 := ["Wrye Flash", "Fallout Mod Manager", "Garden of Eden CK Extender", "FO3Edit", "LOOT", "FO3LODGen", "Merge Plugins", "NifSkope", "BSArch", "Fallout 3 Configator", "FO3Dump", "Nifty Automagic Dismember Tool"]
+prgName5 := ["Wrye Flash", "Fallout Mod Manager", "Garden of Eden CK Extender", "FNVEdit", "LOOT", "FNVLODGen", "Merge Plugins", "NifSkope", "BSArch", "New Vegas Configator", "FaceGen Exchange", "FO3 Save Import Utility"]
 prgName6 := ["Wrye Bash", "Mod Organizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "Fallout 4 Config Tool", "NifSkope", "Creation Kit", "xTranslator", "Bsa Browser", "Material Editor"]
 prgExe1 := ["Wrye Mash.exe", "mlox.exe", "TESTool.exe", "BSA Browser.exe", "MWEdit.exe", "mmog.exe", "TES Advanced Mod Editor.exe", "tespcdv031.exe", "Enchanted.exe", "MENCMG.exe", "TESFiles.exe", "Grass.exe"]
-prgExe2 := ["Wrye Bash.exe", "BOSS.exe", "TESConstructionSet.exe", "TES4Edit.exe", "bsacmd.exe", "mpgui.exe", "tes4ll.exe", "NifSkope.exe", "TES4LODGen.exe", "DDSOpt X64.exe", "MergePlugins.exe", "LandMagic.exe"]
+prgExe2 := ["Wrye Bash.exe", "boss.exe", "TESConstructionSet.exe", "TES4Edit.exe", "bsacmd.exe", "mpgui.exe", "tes4ll.exe", "NifSkope.exe", "TES4LODGen.exe", "DDSOpt X64.exe", "MergePlugins.exe", "LandMagic.exe"]
 prgExe3 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "SSEEdit.exe", "bae.exe", "BodySlideX64.exe", "DynDOLOD.exe", "NifSkope.exe", "PerformanceMonitor64.exe", "xTranslator.exe", "CreationKit.exe", "SSELODGen.exe"]
-prgExe4 := ["Wrye Flash.exe", "fomm.exe", "Geck.exe", "FO3Edit.exe", "Loot.exe", "FO3LODGen.exe", "MergePlugins.exe", "NifSkope.exe", "bsarch.exe", "FO3Configator.exe", "FO3Dump.exe", "nifty.exe"]
-prgExe5 := ["Wrye Flash.exe", "fomm.exe", "Geck.exe", "FNVEdit.exe", "Loot.exe", "FNVLODGen.exe", "MergePlugins.exe", "NifSkope.exe", "bsarch.exe", "NVConfigator.exe", "geckpu-nv.exe", "FO3 Save Importer.exe"]
+prgExe4 := ["Wrye Flash.exe", "fomm.exe", "GECK.exe", "FO3Edit.exe", "Loot.exe", "FO3LODGen.exe", "MergePlugins.exe", "NifSkope.exe", "bsarch.exe", "FO3Configator.exe", "FO3Dump.exe", "nifty.exe"]
+prgExe5 := ["Wrye Flash.exe", "fomm.exe", "GECK.exe", "FNVEdit.exe", "Loot.exe", "FNVLODGen.exe", "MergePlugins.exe", "NifSkope.exe", "bsarch.exe", "NVConfigator.exe", "FaceGen Exchange.exe", "FO3 Save Importer.exe"]
 prgExe6 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "FO4Edit.exe", "bae.exe", "BodySlideX64.exe", "Fallout4ConfigTool.exe", "NifSkope.exe", "CreationKit.exe", "xTranslator.exe ", "BSA Browser.exe", "Material Editor.exe "]
 prgPath1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
@@ -202,6 +203,12 @@ prgPath3bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath4bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath5bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgPath6bak := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgCmd1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgCmd2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgCmd3 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgCmd4 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgCmd5 := ["", "", "", "", "", "", "", "", "", "", "", ""]
+prgCmd6 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl1 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl2 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl3 := ["", "", "", "", "", "", "", "", "", "", "", ""]
@@ -211,8 +218,8 @@ prgUrl6 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgInfUrl1 := ["https://www.nexusmods.com/morrowind/mods/45439", "https://www.nexusmods.com/morrowind/mods/43001", "http://web.archive.org/web/20040617055545/http://www34.brinkster.com/ghostwheel/TESTool.htm", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "http://mwedit.sourceforge.net", "http://abitoftaste.altervista.org/morrowind/index2.php?option=downloads&no_comp=1&no_html=1&task=download&id=53&Itemid=50&-download-MMOG-Morrowind-Merged-Objects-Generator", "http://mw.modhistory.com/download-95-5289", "https://www.nexusmods.com/morrowind/mods/3874", "http://mw.modhistory.com/download--1662", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=63&Itemid=50&-MEN-Combat-Merged-Generator", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=90&Itemid=50&-TESFiles-3-1", "http://www.nexusmods.com/morrowind/mods/43907"]
 prgInfUrl2 := ["https://www.nexusmods.com/oblivion/mods/22368", "https://boss-developers.github.io", "https://www.nexusmods.com/oblivion/mods/36370", "http://tes5edit.github.io", "https://www.nexusmods.com/oblivion/mods/3311", "https://www.nexusmods.com/oblivion/mods/41447", "https://www.nexusmods.com/oblivion/mods/40549", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/oblivion/mods/15781", "https://www.nexusmods.com/skyrim/mods/5755", "https://github.com/matortheeternal/merge-plugins", "https://www.nexusmods.com/oblivion/mods/30519"]
 prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://www.nexusmods.com/skyrimspecialedition/mods/6194", "https://loot.github.io", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrimspecialedition/mods/201", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrimspecialedition/mods/3826", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://store.steampowered.com/app/1946180/Skyrim_Special_Edition_Creation_Kit", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
-prgInfUrl4 := ["https://www.nexusmods.com/fallout3/mods/11336", "https://www.nexusmods.com/newvegas/mods/54991", "http://geck.bethsoft.com/index.php?title=Garden_of_Eden_Creation_Kit", "https://www.nexusmods.com/fallout3/mods/637", "https://loot.github.io", "https://www.nexusmods.com/fallout3/mods/21174", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/fallout3/mods/6769", "http://modsreloaded.com/fo3dump", "https://www.nexusmods.com/fallout3/mods/2631"]
-prgInfUrl5 := ["https://www.nexusmods.com/newvegas/mods/35003", "https://www.nexusmods.com/newvegas/mods/54991", "http://geck.bethsoft.com/index.php?title=Garden_of_Eden_Creation_Kit", "https://www.nexusmods.com/newvegas/mods/34703", "https://loot.github.io", "https://www.nexusmods.com/newvegas/mods/58562", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/newvegas/mods/40442", "https://www.nexusmods.com/newvegas/mods/36290", "https://www.nexusmods.com/newvegas/mods/37649"]
+prgInfUrl4 := ["https://www.nexusmods.com/fallout3/mods/11336", "https://www.nexusmods.com/newvegas/mods/54991", "https://www.nexusmods.com/fallout3/mods/23425", "https://www.nexusmods.com/fallout3/mods/637", "https://loot.github.io", "https://www.nexusmods.com/fallout3/mods/21174", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/fallout3/mods/6769", "http://modsreloaded.com/fo3dump", "https://www.nexusmods.com/fallout3/mods/2631"]
+prgInfUrl5 := ["https://www.nexusmods.com/newvegas/mods/35003", "https://www.nexusmods.com/newvegas/mods/54991", "https://www.nexusmods.com/newvegas/mods/64888", "https://www.nexusmods.com/newvegas/mods/34703", "https://loot.github.io", "https://www.nexusmods.com/newvegas/mods/58562", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/newvegas/mods/40442", "", "https://www.nexusmods.com/newvegas/mods/37649"]
 prgInfUrl6 := ["https://www.nexusmods.com/fallout4/mods/20032", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io", "https://www.nexusmods.com/fallout4/mods/2737", "https://www.nexusmods.com/fallout4/mods/78", "https://www.nexusmods.com/fallout4/mods/25", "https://www.nexusmods.com/fallout4/mods/102", "http://niftools.sourceforge.net/wiki/NifSkope", "https://store.steampowered.com/app/1946160/Fallout_4_Creation_Kit", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "https://www.nexusmods.com/fallout4/mods/3635"]
 listboxIndices := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 WS_CLIPSIBLINGS := 0x4000000
@@ -525,9 +532,6 @@ if (PrgIndex%tabStat%hwnd == PrgListBox_SelectedItem_last_hwnd && tabStat)
 
 ListBox_SelectedItem := ListBoxProps.GetOneItem()
 
-	if (addGameShortCutVar)
-	addGameShortCutVar := Abs(addGameShortCutVar)
-
 	if (ListBox_SelectedItem > 0)
 	{
 	; Restore
@@ -611,8 +615,14 @@ SearchFiles:
 
 ;must reset game shortcut
 PopulateGameList(prgNo, tabStat, prgName%tabStat%)
-loop %PrgNo%
-prgPath%tabStat%[A_Index] := ""
+
+	loop %PrgNo%
+	{
+	prgPath%tabStat%[A_Index] := ""
+	prgPath%tabStat%bak[A_Index] := ""
+	prgCmd%tabStat%[A_Index] := ""
+	prgUrl%tabStat%[A_Index] := ""
+	}
 
 GuiControl, , addGameShortCut, 0
 GuiControl, Hide, addGameShortCut
@@ -626,6 +636,8 @@ currDrive := DriveLetter[A_Index]
 	if (currDrive)
 	{
 	tmp := 0
+	fallBackNotFound := 1
+	gameNotFound := 1
 
 	GoSub StartProgress
 
@@ -682,55 +694,68 @@ currDrive := DriveLetter[A_Index]
 				SplitPath, A_Loopfield, strTmp
 					if (!strTmp) ; trailing `n in fileList
 					break
-				tmp := StrLen(prgExe%tabStat%[A_Index])
-				strTmp := Substr(strTmp, StrLen(strTmp) - tmp + 1)
-
-					if (InStr(strTmp, prgExe%tabStat%[A_Index]))
+					if (gameNotFound && strTmp == gameExes[tabStat])
 					{
-						if (prgPath%tabStat%[A_Index])
+					gameExesFullPath[tabStat] := A_Loopfield
+					fallBackNotFound := 0
+					gameNotFound := 0
+					}
+					else
+					{
+						if (gameNotFound && fallBackNotFound && strTmp == gameFallBackExes[tabStat])
 						{
-							if (multcopiesPrgWrn == 1)
-							break
-							else
+						gameExesFullPath[tabStat] := A_Loopfield
+						fallBackNotFound := 0
+						}
+						else
+						{
+							if (strTmp == prgExe%tabStat%[A_Index])
 							{
-							if (!multcopiesPrgWrn)
-							{
-							MsgBox, 8195, Duplicate Prg, % strTmp " was discovered on a previous drive.`n`nReply:`nYes: Use the " currDrive " drive instead (This will not show again)`nNo: Keep the old Prg. (Warn like this next time)`nCancel: Keep the old Prg (Recommended: This will not show again)"
-							GoSub StartProgress
-							Progress, 99
-								IfMsgBox, No
-								break
-								else
+								if (prgPath%tabStat%[A_Index])
 								{
-									IfMsgBox, Yes
-									{
-									multcopiesPrgWrn := 2
+									if (multcopiesPrgWrn == 1)
 									break
-									}
 									else
-									multcopiesPrgWrn := 1
+									{
+										if (!multcopiesPrgWrn)
+										{
+										MsgBox, 8195, Duplicate Prg, % strTmp " was discovered on a previous drive.`n`nReply:`nYes: Use the " currDrive " drive instead (This will not show again)`nNo: Keep the old Prg. (Warn like this next time)`nCancel: Keep the old Prg (Recommended: This will not show again)"
+										GoSub StartProgress
+										Progress, 99
+											IfMsgBox, No
+											break
+											else
+											{
+												IfMsgBox, Yes
+												{
+												multcopiesPrgWrn := 2
+												break
+												}
+												else
+												multcopiesPrgWrn := 1
+											}
+										}
+									prgPath%tabStat%[A_Index] := A_Loopfield
+									prgPath%tabStat%bak[A_Index] := A_Loopfield
+									GuiControl, Choose, PrgIndex%tabStat%, %A_Index%
+									tmp := 1
+									}
 								}
-							}
-							prgPath%tabStat%[A_Index] := A_Loopfield
-							prgPath%tabStat%bak[A_Index] := A_Loopfield
-							GuiControl, Choose, PrgIndex%tabStat%, %A_Index%
-							tmp := 1
+							break
 							}
 						}
-					break
 					}
 				}
 			}
 		}
+
 		if (!tmp)
 		tooltipDriveStr .= currDrive . ","
 	FolderList.SetCapacity(0)
 	}
 	else
 	{
-	fileList := ListMFTfiles(currDrive, prgExe%tabStat%,, retVal)
-	foundFallBack := 0
-	addGameShortCutVar := 0
+	fileList := ListMFTfiles(currDrive, prgExe%tabStat%, "," . gameExes[tabStat] . "," . gameFallBackExes[tabStat],, retVal)
 
 		if (fileList)
 		{
@@ -739,44 +764,35 @@ currDrive := DriveLetter[A_Index]
 				loop % prgNo
 				{
 				SplitPath, A_Loopfield, strTmp
-					if (!strTmp) ; trailing `n in fileList
+					if (!(strTmp)) ; trailing `n in fileList
 					break
-					if (addGameShortCutVar > 0)
+					if (gameNotFound && (strTmp == gameExes[tabStat]))
 					{
-						if (addGameShortCutVar == A_Index)
-						{
-							if (strTmp == gameExes[tabStat])
-							{
-							prgPath%tabStat%[A_Index] := A_Loopfield
-							addGameShortCutVar := -addGameShortCutVar
-							}
-							else
-							{
-								if (strTmp == gameFallBackExes[tabStat])
-								{
-								prgPath%tabStat%[A_Index] := A_Loopfield
-								foundFallBack := 1
-								}
-							}
-						}
+					gameExesFullPath[tabStat] := A_Loopfield
+					fallBackNotFound := 0
+					gameNotFound := 0
 					}
 					else
 					{
-					tmp := StrLen(prgExe%tabStat%[A_Index])
-					strTmp := Substr(strTmp, StrLen(strTmp) - tmp + 1)
-						if (InStr(strTmp, prgExe%tabStat%[A_Index]))
+						if (gameNotFound && fallBackNotFound && (strTmp == gameFallBackExes[tabStat]))
 						{
-						prgPath%tabStat%[A_Index] := A_Loopfield
-						prgPath%tabStat%bak[A_Index] := A_Loopfield
-						GuiControl, Choose, PrgIndex%tabStat%, %A_Index%
-						tmp := 1
-						break
+						gameExesFullPath[tabStat] := A_Loopfield
+						fallBackNotFound := 0
+						}
+						else
+						{
+							if (strTmp == prgExe%tabStat%[A_Index])
+							{
+							prgPath%tabStat%[A_Index] := A_Loopfield
+							prgPath%tabStat%bak[A_Index] := A_Loopfield
+							GuiControl, Choose, PrgIndex%tabStat%, %A_Index%
+							tmp := 1
+							break
+							}
 						}
 					}
 				}
 			}
-				if (foundFallBack == 1)
-				addGameShortCutVar := -addGameShortCutVar
 		}
 		else
 		tooltipDriveStr .= currDrive . ","
@@ -830,7 +846,15 @@ AddGameShortCut:
 Gui, Submit, Nohide
 GuiControlGet, addGameShortCutVar, , addGameShortCut
 GameShortcutBiz(prgNo, addGameShortCutVar, tabStat, gameList, PrgName%tabStat%, PrgIndex%tabStat%)
-prgPath%tabStat%[addGameShortCutVar] := gameExes[tabStat]
+
+	if (addGameShortCutVar > 0)
+	prgPath%tabStat%[addGameShortCutVar] := gameExesFullPath[tabStat]
+	else
+	{
+	prgPath%tabStat%[-addGameShortCutVar] := ""
+	addGameShortCutVar := 0
+	}
+
 GuiControl, Focus, addToLnchPad
 Return
 
@@ -916,7 +940,9 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 				else
 				overWriteIniFile := 1
 			}
-		GuiControl, Show, addGameShortCut
+
+			if (gameExesFullPath[tabStat])
+			GuiControl, Show, addGameShortCut
 		}
 		else
 		{
@@ -955,7 +981,37 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 			if (overWriteIniFile)
 			CreateIniData(prgNo, maxBatchPrgs, gameIniPath)
 		Progress, 40
-		strRetVal := AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, prgUrl%tabStat%, IniFileShortctSep)
+
+			; Fix editor extenders
+			if (tabStat = 2)
+			{
+				loop % PrgNo
+				{
+					if (Instr(prgPath%tabStat%[A_Index], "TESConstructionSet.exe") && Instr(gameExesFullPath[tabStat], "obse_loader.exe"))
+					{
+					prgPath%tabStat%[A_Index] := gameExesFullPath[tabStat]
+					prgCmd%tabStat%[A_Index] := "-editor" 
+					break
+					}
+				}
+			}
+			if (tabStat = 4)
+			{
+				loop % PrgNo
+				{
+					if (Instr(prgPath%tabStat%[A_Index], "GECK.exe"))
+					{
+					SplitPath, % gameExesFullPath[tabStat], , strTmp
+					;ASSUME fose_loader.exe exists for Geck.exe, the Garden of Eden Creation Kit
+					prgPath%tabStat%[A_Index] := strTmp . "\fose_loader.exe"
+					prgCmd%tabStat%[A_Index] := "-editor" 
+					break
+					}
+				}
+			}
+
+
+		strRetVal := AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, prgCmd%tabStat%, prgUrl%tabStat%, IniFileShortctSep)
 		tmp := 0
 			Loop, % prgNo
 			{
@@ -1114,6 +1170,7 @@ tmp := 0
 			if (prgNameSelected[A_Index] && prgIndexReplaced[tabStat] != A_Index)
 			GuiControl, Choose, PrgIndex%tabStat%, %A_Index%
 		}
+	addGameShortCut := -prgIndexReplaced[tabStat]
 	}
 
 }
@@ -1155,7 +1212,7 @@ monitorOrder := SubStr(monitorOrder, 1, 1)
 	}
 }
 
-AddToIniProc(prgNo, tabStat, gameIniPath, prgPathtabStat, prgUrltabStat, IniFileShortctSep)
+AddToIniProc(prgNo, tabStat, gameIniPath, prgPathtabStat, prgCmdtabStat, prgUrltabStat, IniFileShortctSep)
 {
 WrittentoSlotArrayCt := 0
 AllocatedtoSlotArrayCt := 0
@@ -1166,7 +1223,6 @@ strRetVal := ""
 PrgPathWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgPathNotWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
 freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-
 
 	loop % prgNo
 	{
@@ -1209,6 +1265,8 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 					WrittentoSlotArrayCt++
 					PrgPathWrittentoSlotArray[WrittentoSlotArrayCt] := prgPathStr
 					IniWrite, % strTmp . prgPathStr, %gameIniPath%, Prg%tmp%, PrgPath
+						if (prgCmdtabStat[A_Index])
+						IniWrite, % prgCmdtabStat[A_Index], %gameIniPath%, Prg%tmp%, PrgCmdLine
 						if (prgUrltabStat[A_Index])
 						IniWrite, % prgUrltabStat[A_Index], %gameIniPath%, Prg%tmp%, PrgUrl
 						; Else: Policy: existing urls not erased.
@@ -1884,7 +1942,7 @@ return substr(s, 2)
 ; return VALUE:
 ;	fileList or empty string if error occured (also see 'num' parameter)
 
-ListMFTfiles(Drive, matchList := "", delim := "`n", byref numF := "")
+ListMFTfiles(Drive, matchList1 := "", matchList2 := "", delim := "`n", byref numF := "")
 {
 ; Fun fact: NTFS max files is 4,294,967,295  (2³² minus 1 file)
 ;Windows 2000 Change Journal Explained:  https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/bb742450(v=technet.10)
@@ -2131,7 +2189,7 @@ One or more parameters is invalid e.g. handle supplied is not a volume handle.
 		t1a := A_TickCount
 		
 
-		strTmp := join(matchList)
+		strTmp := join(matchList1) . matchList2
 		pUSN := &pData + DWORDLONG_SIZE ; &pData: A pointer to the output buffer that ***receives a USN*** followed by zero or more USN_RECORD_V2 or USN_RECORD_V3 structures so...
 										; The USN first received may not be the same as the USN in following the USN_RECORD structure. A USN is DWORDLONG.
 			while (cb > DWORDLONG_SIZE) ;cb decrements by USN.RecordLength as pUSN increments by USN.RecordLength
@@ -2157,6 +2215,7 @@ One or more parameters is invalid e.g. handle supplied is not a volume handle.
 			;	60	WCHAR FileName[1] (name of the file or directory associated with this record in Unicode format. This file or directory name is of variable length);
 			;	USN_RECORD_V4 record is only output when range tracking is turned on. Suitable tor Win8.1+, the structure varies from the above e.g. TimeStamp
 			fnsize := numget(pUSN + 56, "ushort")
+
 			fname := strget(pUSN + 60, fnsize//2, "UTF-16")
 			isdir := numget(pUSN + 52) & 0x10 ;USN.FileAttributes & FILE_ATTRIBUTE_DIRECTORY
 			ref := numget(pUSN + 8, "uint64") ;USN.FileReferenceNumber
@@ -2236,7 +2295,7 @@ One or more parameters is invalid e.g. handle supplied is not a volume handle.
 	dirDict=
 	VarSetCapacity(fileList, -1) ;Specify -1 for RequestedCapacity to update the variable's internally-stored string length to the length of its current contents.
 
-	t3:=A_TickCount
+	t3 := A_TickCount
 	Progress, 98
 
 ;=== sort
