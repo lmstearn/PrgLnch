@@ -10,6 +10,75 @@ ListLines, Off
 #MaxMem 512
 AutoTrim, Off
 
+Class LnchPadProps
+{
+	Morrowind
+	{
+		set
+		{
+		this._Morrowind := value
+		}
+		get
+		{
+		return this._Morrowind
+		}
+	}
+	Oblivion
+	{
+		set
+		{
+		this._Oblivion := value
+		}
+		get
+		{
+		return this._Oblivion
+		}
+	}
+	Fallout3
+	{
+		set
+		{
+		this._Fallout3 := value
+		}
+		get
+		{
+		return this._Fallout3
+		}
+	}
+	Fallout4
+	{
+		set
+		{
+		this._Fallout4 := value
+		}
+		get
+		{
+		return this._Fallout4
+		}
+	}
+	FalloutNV
+	{
+		set
+		{
+		this._FalloutNV := value
+		}
+		get
+		{
+		return this._FalloutNV
+		}
+	}
+	SSE
+	{
+		set
+		{
+		this._SSE := value
+		}
+		get
+		{
+		return this._SSE
+		}
+	}
+}
 
 Class ListBoxProps
 {
@@ -130,6 +199,7 @@ Class ListBoxProps
 	}
 }
 
+
 OnMessage(0x201, "WM_LBUTTONDOWN")
 OnMessage(0x0053, "WM_Help")
 WM_HELPMSG := 0x0053
@@ -137,8 +207,10 @@ WS_EX_CONTEXTHELP := 0x00000400
 
 gameList := ["Morrowind", "Oblivion", "Skyrim", "Fallout 3", "Fallout NV", "Fallout 4", "", "", "", "", "", ""]
 gameExes := ["MGEXEgui.exe", "obse_loader.exe", "SKSE_loader.exe", "Fallout3.exe", "nvse_loader.exe", "f4se_loader.exe", "", "", "", "", "", ""]
-gameFallBackExes := ["Morrowind.exe", "Oblivion.exe", "SkyrimSE.exe|Skyrim.exe|SkyrimTESV.exe", "fose_loader.exe", "FalloutNV.exe", "Fallout4.exe", "", "", "", "", "", ""]
+gameFallBackExes := ["Morrowind.exe", "Oblivion.exe", "SkyrimSE.exe", "fose_loader.exe", "FalloutNV.exe", "Fallout4.exe", "", "", "", "", "", ""]
 ; FO3.exe, "avoid fose_loader.exe!"
+; Skyrim.exe and SkyrimTESV.exe ???
+
 gameExesFullPath := ["", "", "", "", "", "", "", "", "", "", "", ""]
 iniNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
@@ -179,13 +251,13 @@ currDrive := ""
 tmp := 0
 i := 0
 
-prgName1 := ["Wrye Mash", "MLOX", "TESTool", "Bsa Browser", "MWEdit", "MMOG", "TESAME", "TESPCD", "Enchanted Editor", "MEN Combat MG", "TESFiles 3.1", "Groundcover GP"]
+prgName1 := ["Wrye Mash", "MLOX", "Morrowind Code Patch", "Bsa Browser", "MWEdit", "TES3Merge", "TESAME", "TESPCD", "Enchanted Editor", "Morrowind Resources Scanner", "Overunity", "MW Mesh Generator"]
 prgName2 := ["Wrye Bash", "BOSS", "Construction Set Extender", "TES4Edit", "BSA Commander", "Multi Purpose Gui", "Landscape LOD Generator", "NifSkope", "TES4LODGen", "DDSOpt", "Merge Plugins", "Land Magic"]
 prgName3 := ["Wrye Bash", "Mod Organizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "DynDOLOD", "NifSkope.exe", "Skyrim Performance Monitor 64", "xTranslator", "Creation Kit", "SSELODGen"]
 prgName4 := ["Wrye Flash", "Fallout Mod Manager", "Garden of Eden CK Extender", "FO3Edit", "LOOT", "FO3LODGen", "Merge Plugins", "NifSkope", "BSArch", "Fallout 3 Configator", "FO3Dump", "Nifty Automagic Dismember Tool"]
 prgName5 := ["Wrye Flash", "Fallout Mod Manager", "Garden of Eden CK Extender", "FNVEdit", "LOOT", "FNVLODGen", "Merge Plugins", "NifSkope", "BSArch", "New Vegas Configator", "FaceGen Exchange", "FO3 Save Import Utility"]
 prgName6 := ["Wrye Bash", "Mod Organizer", "LOOT", "xEdit", "Bethesda Archive Extractor", "BodySlide", "Fallout 4 Config Tool", "NifSkope", "Creation Kit", "xTranslator", "Bsa Browser", "Material Editor"]
-prgExe1 := ["Wrye Mash.exe", "mlox.exe", "TESTool.exe", "BSA Browser.exe", "MWEdit.exe", "mmog.exe", "TES Advanced Mod Editor.exe", "tespcdv031.exe", "Enchanted.exe", "MENCMG.exe", "TESFiles.exe", "Grass.exe"]
+prgExe1 := ["Wrye Mash.exe", "mlox.exe", "Morrowind Code Patch.exe", "BSA Browser.exe", "MWEdit.exe", "TES3Merge.exe", "TES Advanced Mod Editor.exe", "tespcdv031.exe", "Enchanted.exe", "tes3cmd.exe", "Overunity.exe", "Grass.exe"]
 prgExe2 := ["Wrye Bash.exe", "boss.exe", "TESConstructionSet.exe", "TES4Edit.exe", "bsacmd.exe", "mpgui.exe", "tes4ll.exe", "NifSkope.exe", "TES4LODGen.exe", "DDSOpt X64.exe", "MergePlugins.exe", "LandMagic.exe"]
 prgExe3 := ["Wrye Bash.exe", "ModOrganizer.exe", "Loot.exe", "SSEEdit.exe", "bae.exe", "BodySlideX64.exe", "DynDOLOD.exe", "NifSkope.exe", "PerformanceMonitor64.exe", "xTranslator.exe", "CreationKit.exe", "SSELODGen.exe"]
 prgExe4 := ["Wrye Flash.exe", "fomm.exe", "GECK.exe", "FO3Edit.exe", "Loot.exe", "FO3LODGen.exe", "MergePlugins.exe", "NifSkope.exe", "bsarch.exe", "FO3Configator.exe", "FO3Dump.exe", "nifty.exe"]
@@ -215,11 +287,11 @@ prgUrl3 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl4 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl5 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgUrl6 := ["", "", "", "", "", "", "", "", "", "", "", ""]
-prgInfUrl1 := ["https://www.nexusmods.com/morrowind/mods/45439", "https://www.nexusmods.com/morrowind/mods/43001", "http://web.archive.org/web/20040617055545/http://www34.brinkster.com/ghostwheel/TESTool.htm", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "http://mwedit.sourceforge.net", "http://abitoftaste.altervista.org/morrowind/index2.php?option=downloads&no_comp=1&no_html=1&task=download&id=53&Itemid=50&-download-MMOG-Morrowind-Merged-Objects-Generator", "http://mw.modhistory.com/download-95-5289", "https://www.nexusmods.com/morrowind/mods/3874", "http://mw.modhistory.com/download--1662", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=63&Itemid=50&-MEN-Combat-Merged-Generator", "https://abitoftaste.altervista.org/morrowind/index.php?option=downloads&task=info&id=90&Itemid=50&-TESFiles-3-1", "http://www.nexusmods.com/morrowind/mods/43907"]
+prgInfUrl1 := ["https://www.nexusmods.com/morrowind/mods/45439", "https://github.com/rfuzzo/mlox", "https://www.nexusmods.com/morrowind/mods/19510", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "http://mwedit.sourceforge.net", "https://www.nexusmods.com/morrowind/mods/46870", "http://mw.modhistory.com/download-95-5289", "https://www.nexusmods.com/morrowind/mods/3874", "http://mw.modhistory.com/download--1662", "https://mw.modhistory.com/download-p2-i25-95", "https://mw.modhistory.com/download-95-15293", "https://www.nexusmods.com/morrowind/mods/23065"]
 prgInfUrl2 := ["https://www.nexusmods.com/oblivion/mods/22368", "https://boss-developers.github.io", "https://www.nexusmods.com/oblivion/mods/36370", "http://tes5edit.github.io", "https://www.nexusmods.com/oblivion/mods/3311", "https://www.nexusmods.com/oblivion/mods/41447", "https://www.nexusmods.com/oblivion/mods/40549", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/oblivion/mods/15781", "https://www.nexusmods.com/skyrim/mods/5755", "https://github.com/matortheeternal/merge-plugins", "https://www.nexusmods.com/oblivion/mods/30519"]
 prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://www.nexusmods.com/skyrimspecialedition/mods/6194", "https://loot.github.io", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrimspecialedition/mods/201", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrimspecialedition/mods/3826", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://store.steampowered.com/app/1946180/Skyrim_Special_Edition_Creation_Kit", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
 prgInfUrl4 := ["https://www.nexusmods.com/fallout3/mods/11336", "https://www.nexusmods.com/newvegas/mods/54991", "https://www.nexusmods.com/fallout3/mods/23425", "https://www.nexusmods.com/fallout3/mods/637", "https://loot.github.io", "https://www.nexusmods.com/fallout3/mods/21174", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/fallout3/mods/6769", "http://modsreloaded.com/fo3dump", "https://www.nexusmods.com/fallout3/mods/2631"]
-prgInfUrl5 := ["https://www.nexusmods.com/newvegas/mods/35003", "https://www.nexusmods.com/newvegas/mods/54991", "https://www.nexusmods.com/newvegas/mods/64888", "https://www.nexusmods.com/newvegas/mods/34703", "https://loot.github.io", "https://www.nexusmods.com/newvegas/mods/58562", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/newvegas/mods/40442", "", "https://www.nexusmods.com/newvegas/mods/37649"]
+prgInfUrl5 := ["https://www.nexusmods.com/newvegas/mods/35003", "https://www.nexusmods.com/newvegas/mods/54991", "https://www.nexusmods.com/newvegas/mods/64888", "https://www.nexusmods.com/newvegas/mods/34703", "https://loot.github.io", "https://www.nexusmods.com/newvegas/mods/58562", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/newvegas/mods/40442", "https://www.nexusmods.com/newvegas/mods/36471", "https://www.nexusmods.com/newvegas/mods/37649"]
 prgInfUrl6 := ["https://www.nexusmods.com/fallout4/mods/20032", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io", "https://www.nexusmods.com/fallout4/mods/2737", "https://www.nexusmods.com/fallout4/mods/78", "https://www.nexusmods.com/fallout4/mods/25", "https://www.nexusmods.com/fallout4/mods/102", "http://niftools.sourceforge.net/wiki/NifSkope", "https://store.steampowered.com/app/1946160/Fallout_4_Creation_Kit", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "https://www.nexusmods.com/fallout4/mods/3635"]
 listboxIndices := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 WS_CLIPSIBLINGS := 0x4000000
@@ -328,6 +400,8 @@ OnMessage(MsgSH, "ShellMessage")
 
 	loop, % maxGames
 	gameListStr .= gameList[A_Index] . "|"
+
+GetGamePaths()
 
 Gui, Add, Text, x0 y0 Center +E%WS_EX_TOPMOST% gsearchDrive vsearchDrive HWNDsearchDriveHwnd, % "&Search PC for " gameList[1] " Apps"
 Gui, Add, Text, Center gaddToLnchPad vaddToLnchPad HWNDaddToLnchPadHwnd wp, % "&Locate " gameList[1] " LnchPad Slot"
@@ -501,6 +575,25 @@ WinSet, Redraw,, ahk_id %GuiHwnd%
 
 return
 
+GetGamePaths()
+{
+tmp := ""
+SetRegView 32
+RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Morrowind, Installed Path
+LnchPadProps.Morrowind := RTrim(tmp, "\")
+RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Oblivion, Installed Path
+LnchPadProps.Oblivion := RTrim(tmp, "\")
+RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Fallout3, Installed Path
+LnchPadProps.Fallout3 := RTrim(tmp, "\")
+RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Fallout4, Installed Path
+LnchPadProps.Fallout4 := RTrim(tmp, "\")
+RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\FalloutNV, Installed Path
+LnchPadProps.FalloutNV := RTrim(tmp, "\")
+
+SetRegView 64
+RegRead, SSE, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Skyrim Special Edition, Installed Path
+LnchPadProps.SSE := RTrim(tmp, "\")
+}
 gamePic:
 GuiControl, Move, % "HBITMAP:*" picH, % "x" GetTabRibbonHeight() "y" GetTabRibbonHeight(GuiHwnd, 1) "w" tabguiW "h" tabguiH
 return
@@ -811,7 +904,44 @@ currDrive := DriveLetter[A_Index]
 	Tooltip, % strTmp
 	}
 	else
+	{
 	searchStat := 1
+
+	; Fix Wrye Bash
+		loop %PrgNo%
+		{
+			if (InStr(prgPath%tabStat%[A_Index], "Wrye Bash.exe"))
+			{
+			SplitPath, % gameExesFullPath[tabStat] , , strTmp
+
+				if (!InStr(prgPath%tabStat%[A_Index], strTmp))
+				break ; Wrye Bash is for this game!
+
+				if (InStr(prgPath%tabStat%[A_Index], LnchPadProps.Oblivion))
+				{
+				strTmp := LnchPadProps.Oblivion . "\Mopy\Wrye Bash.exe"
+					if (FileExist(strTmp))
+					prgPath%tabStat%[A_Index] := strTmp
+				break
+				}
+				if (InStr(prgPath%tabStat%[A_Index], LnchPadProps.Fallout4))
+				{
+				strTmp := LnchPadProps.Fallout4 . "\Mopy\Wrye Bash.exe"
+					if (FileExist(strTmp))
+					prgPath%tabStat%[A_Index] := strTmp
+				break
+				}
+				if (InStr(prgPath%tabStat%[A_Index], LnchPadProps.SSE))
+				{
+				strTmp := LnchPadProps.SSE . "\Mopy\Wrye Bash.exe"
+					if (FileExist(strTmp))
+					prgPath%tabStat%[A_Index] := strTmp
+				break
+				}
+			}
+		}
+	
+	}
 
 Process, priority, %lnchPadPID%, B
 
@@ -972,7 +1102,10 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 		}
 
 		if (ErrorLevel)
-		strRetVal := "Problem with " . gameList[tabStat] . ".ini. Cannot continue!"
+		{
+		strRetVal := "Problem with " . gameList[tabStat] . ".ini file. Cannot continue!"
+		return
+		}
 		else
 		{
 		; Clear data in new file
@@ -982,36 +1115,111 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 			CreateIniData(prgNo, maxBatchPrgs, gameIniPath)
 		Progress, 40
 
-			; Fix editor extenders
-			if (tabStat = 2)
+
+; Check installs
+	switch tabStat
+	{
+		case 1:
+		{
+			if (LnchPadProps.Morrowind)
 			{
-				loop % PrgNo
+			strTmp := gameExesFullPath[tabStat]
+			SplitPath, strTmp, , strTmp
+				if (strTmp != LnchPadProps.Morrowind)
+				strRetVal := "`nMorrowind registry install path not the same as given executable path."
+			}
+			else
+			strRetVal := "`nMorrowind is not installed."
+		}
+		case 2:
+		{
+			if (LnchPadProps.Oblivion)
+			{
+			strTmp := gameExesFullPath[tabStat]
+			SplitPath, strTmp, , strTmp
+				if (strTmp != LnchPadProps.Oblivion)
+				strRetVal := "`nOblivion registry install path not the same as given executable path."
+			}
+			else
+			strRetVal := "`nOblivion is not installed."
+
+			; Fix editor extender
+			loop % PrgNo
+			{
+				if (Instr(prgPath%tabStat%[A_Index], "TESConstructionSet.exe") && Instr(gameExesFullPath[tabStat], "obse_loader.exe"))
 				{
-					if (Instr(prgPath%tabStat%[A_Index], "TESConstructionSet.exe") && Instr(gameExesFullPath[tabStat], "obse_loader.exe"))
-					{
-					prgPath%tabStat%[A_Index] := gameExesFullPath[tabStat]
-					prgCmd%tabStat%[A_Index] := "-editor" 
-					break
-					}
+				prgPath%tabStat%[A_Index] := gameExesFullPath[tabStat]
+				prgCmd%tabStat%[A_Index] := "-editor" 
+				break
 				}
 			}
-			if (tabStat = 4)
+		}
+		case 3:
+		{
+			if (LnchPadProps.SSE)
 			{
-				loop % PrgNo
+			strTmp := gameExesFullPath[tabStat]
+			SplitPath, strTmp, , strTmp
+				if (strTmp != LnchPadProps.SSE)
+				strRetVal := "`nSSE registry install path not the same as given executable path."
+			}
+			else
+			strRetVal := "`nSSE is not installed."
+		}
+		case 4:
+		{
+			if (LnchPadProps.Fallout3)
+			{
+			strTmp := gameExesFullPath[tabStat]
+			SplitPath, strTmp, , strTmp
+				if (strTmp != LnchPadProps.Fallout3)
+				strRetVal := "`nFallout 3 registry install path not the same as given executable path."
+			}
+			else
+			strRetVal := "`nFallout 3 is not installed."
+
+			; Fix editor extender
+			loop % PrgNo
+			{
+				if (Instr(prgPath%tabStat%[A_Index], "GECK.exe"))
 				{
-					if (Instr(prgPath%tabStat%[A_Index], "GECK.exe"))
-					{
-					SplitPath, % gameExesFullPath[tabStat], , strTmp
-					;ASSUME fose_loader.exe exists for Geck.exe, the Garden of Eden Creation Kit
-					prgPath%tabStat%[A_Index] := strTmp . "\fose_loader.exe"
-					prgCmd%tabStat%[A_Index] := "-editor" 
-					break
-					}
+				strTmp := gameExesFullPath[tabStat]
+				SplitPath, strTmp, , strTmp
+				;ASSUME fose_loader.exe exists for Geck.exe, the Garden of Eden Creation Kit
+				prgPath%tabStat%[A_Index] := strTmp . "\fose_loader.exe"
+				prgCmd%tabStat%[A_Index] := "-editor" 
+				break
 				}
 			}
+		}
+		case 5:
+		{
+			if (LnchPadProps.FalloutNV)
+			{
+			strTmp := gameExesFullPath[tabStat]
+			SplitPath, strTmp, , strTmp
+				if (strTmp != LnchPadProps.FalloutNV)
+				strRetVal := "`nFallout New Vegas registry install path not the same as given executable path."
+			}
+			else
+			strRetVal := "`nFallout New Vegas is not installed."
+		}
+		case 6:
+		{
+			if (LnchPadProps.Fallout4)
+			{
+			strTmp := gameExesFullPath[tabStat]
+			SplitPath, strTmp, , strTmp
+				if (strTmp != LnchPadProps.Fallout4)
+				strRetVal := "`nFallout 4 registry install path not the same as given executable path."
+			}
+			else
+			strRetVal := "`nFallout 4 is not installed."
+		}
 
+	}
 
-		strRetVal := AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, prgCmd%tabStat%, prgUrl%tabStat%, IniFileShortctSep)
+		strRetVal := AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, prgCmd%tabStat%, prgUrl%tabStat%, IniFileShortctSep) . strRetVal
 		tmp := 0
 			Loop, % prgNo
 			{
@@ -1118,8 +1326,8 @@ tmp := 0
 		{
 		tmp := prgSelectedIndices[i]
 
-			strTemp := prgNameSelected[tmp] := PrgNametabStat[tmp]
-				if (strTemp == gameList[tabStat])
+			strTmp := prgNameSelected[tmp] := PrgNametabStat[tmp]
+				if (strTmp == gameList[tabStat])
 				;already allocated
 				return
 		}
@@ -2857,7 +3065,7 @@ GetMonHeight(GuiHwnd)
 }
 GetPrgLnchMonNum(Hwnd := 0)
 {
-iDevNumb := 9, monitorHandle := 0,  MONITOR_DEFAULTTONULL := 0, strTemp := ""
+iDevNumb := 9, monitorHandle := 0,  MONITOR_DEFAULTTONULL := 0, strTmp := ""
 VarSetCapacity(monitorInfo, 40)
 NumPut(40, monitorInfo)
 
@@ -2919,11 +3127,11 @@ VarSetCapacity(monitorInfo, 0)
 	return msI
 	else ; should never get here
 	{
-	strTemp := "Cannot retrieve Monitor info from the"
+	strTmp := "Cannot retrieve Monitor info from the"
 		if (fromMouse)
-		MsgBox, 8192, Monitor Error, %strTemp% mouse cursor!
+		MsgBox, 8192, Monitor Error, %strTmp% mouse cursor!
 		else
-		MsgBox, 8192, Monitor Error, %strTemp% target window!
+		MsgBox, 8192, Monitor Error, %strTmp% target window!
 	return 1 ;hopefully this monitor is the one!
 	}
 }

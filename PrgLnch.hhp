@@ -1,0 +1,20 @@
+[OPTIONS]
+Auto Index=Yes
+Compatibility=1.1 or later
+Compiled file=PrgLnch.chm
+Contents file=PrgLnch.hhc
+Default topic=Welcome.htm
+Display compile progress=No
+Full-text search=Yes
+Index file=PrgLnch.hhk
+Language=0xc09 English (Australia)
+Title=PrgLnch_Help
+
+
+[FILES]
+Notepad.jpg
+Help.jpg
+Shortcut.jpg
+
+[INFOTYPES]
+

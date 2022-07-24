@@ -10507,7 +10507,6 @@ if (lnchPrgIndex > 0) ;Running
 		ReplaceSystemCursor(,"IDC_WAIT")
 			if (Instr(PrgPaths, "Wrye Bash.exe"))
 			{
-			;proc := "Wrye Bash.exe"
 			temp := 0
 			fTemp := 0
 				while (fTemp < 2)
@@ -10530,7 +10529,6 @@ if (lnchPrgIndex > 0) ;Running
 				}
 			PrgPIDtmp := temp
 			WinWait, ahk_pid %PrgPIDtmp%,, 20000
-			;msgbox % "PrgPIDtmp " PrgPIDtmp " proc.Name " proc.Name " strTemp " strTemp " proc.ProcessId " proc.ProcessId " fTemp " fTemp
 			}
 			else
 			{
@@ -10551,37 +10549,7 @@ if (lnchPrgIndex > 0) ;Running
 					}
 				PrgPIDtmp := temp
 				WinWait, ahk_pid %PrgPIDtmp%,, 20000
-sleep 6000
-
-/*
-WinGet, winIDs, List, TES Construction Set
-Loop, %winIDs%
-{
-OutputVar1 := OutputVar := winIDs%A_Index%
-WinGetClass, OutputVar, % "ahk_id" OutputVar
-WinGetTitle, OutputVar1, % "ahk_id" OutputVar1
-StrTemp := "Window " winIDs%A_Index% " Class " OutputVar " Title " OutputVar1 "`n"
-}
-
-OutputVar := winIDs%A_Index%
-winGet, fTemp, PID, TES Construction Set
-msgbox % StrTemp . "`nCS Pid :" fTemp " PrgPIDtmp: " PrgPIDtmp
-ReplaceSystemCursor()
-return
-
-WinGet, firstPIDhWnd, ID, ahk_pid %PrgPIDtmp%
-hWndArray := []
-hWndArray := WinEnum(firstPIDhWnd)
-fTemp := 1
-while (hWndArray[fTemp])
-{
-WinGetClass, OutputVar, % "ahk_id" hWndArray[fTemp]
-WinGetTitle, OutputVar1, % "ahk_id" hWndArray[fTemp]
-StrTemp := "Window " hWndArray[fTemp] " Class " OutputVar " Title " OutputVar1 "`n"
-fTemp++
-}
-*/
-
+				sleep 6000
 				}
 				else
 				{
@@ -10919,21 +10887,6 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 					}
 
 				hWndArrayPID[ffTemp] := temp
-/*
-if (firstPIDhWnd == temp)
-{
-WinGetClass, OutputVar, ahk_id %temp%
-WinGetTitle, OutputVar1, ahk_id %temp%
-msgbox % "firstPIDhWnd = temp yay: Window " temp " Class " OutputVar " Title " OutputVar1
-}
-else
-{
-WinGetClass, OutputVar, ahk_id %temp%
-WinGetTitle, OutputVar1, ahk_id %temp%
-msgbox % "Window " temp " Class " OutputVar " Title " OutputVar1
-}
-*/
-
 				ffTemp++
 				}
 			fTemp++
@@ -10941,24 +10894,21 @@ msgbox % "Window " temp " Class " OutputVar " Title " OutputVar1
 			}
 			else
 			{
-			while(temp := hWndArray[fTemp])
-			{
-			WinGet, lTemp, PID, ahk_id %temp%
-			;temp := "0x" . Splashy.ToBase(temp, 16)
-				if (lTemp == PrgPIDtmp)
+				while(temp := hWndArray[fTemp])
 				{
-				hWndArrayPID[ffTemp] := temp
+				WinGet, lTemp, PID, ahk_id %temp%
+				;temp := "0x" . Splashy.ToBase(temp, 16)
+					if (lTemp == PrgPIDtmp)
+					{
+					hWndArrayPID[ffTemp] := temp
 
-					if (firstPIDhWnd == temp)
-					firstPIDIndex := ffTemp
-				ffTemp++
+						if (firstPIDhWnd == temp)
+						firstPIDIndex := ffTemp
+					ffTemp++
+					}
+				fTemp++
 				}
-			fTemp++
 			}
-			}
-;msgbox % "Finish: Window " temp " Class " OutputVar " Title " OutputVar1
-;ReplaceSystemCursor()
-;return
 			if (wp_IsResizable())
 			{
 			w := Round(w*(mdw/msw))
