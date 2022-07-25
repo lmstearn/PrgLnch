@@ -1115,6 +1115,18 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 			CreateIniData(prgNo, maxBatchPrgs, gameIniPath)
 		Progress, 40
 
+		; In case addGameShortCut was not clicked
+		loop % PrgNo
+		{
+			if (gameExesFullPath[tabStat] == prgPath%tabStat%[A_Index])
+			{
+				if (!addGameShortCutVar)
+				prgPath%tabStat%[A_Index] := ""
+			break
+			}
+		}
+	strTmp := gameExesFullPath[tabStat]
+	SplitPath, strTmp, , strTmp
 
 ; Check installs
 	switch tabStat
@@ -1123,9 +1135,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 		{
 			if (LnchPadProps.Morrowind)
 			{
-			strTmp := gameExesFullPath[tabStat]
-			SplitPath, strTmp, , strTmp
-				if (strTmp != LnchPadProps.Morrowind)
+				if (strTmp && strTmp != LnchPadProps.Morrowind)
 				strRetVal := "`nMorrowind registry install path not the same as given executable path."
 			}
 			else
@@ -1135,9 +1145,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 		{
 			if (LnchPadProps.Oblivion)
 			{
-			strTmp := gameExesFullPath[tabStat]
-			SplitPath, strTmp, , strTmp
-				if (strTmp != LnchPadProps.Oblivion)
+				if (strTmp && strTmp != LnchPadProps.Oblivion)
 				strRetVal := "`nOblivion registry install path not the same as given executable path."
 			}
 			else
@@ -1149,7 +1157,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 				if (Instr(prgPath%tabStat%[A_Index], "TESConstructionSet.exe") && Instr(gameExesFullPath[tabStat], "obse_loader.exe"))
 				{
 				prgPath%tabStat%[A_Index] := gameExesFullPath[tabStat]
-				prgCmd%tabStat%[A_Index] := "-editor" 
+				prgCmd%tabStat%[A_Index] := "-editor"
 				break
 				}
 			}
@@ -1158,9 +1166,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 		{
 			if (LnchPadProps.SSE)
 			{
-			strTmp := gameExesFullPath[tabStat]
-			SplitPath, strTmp, , strTmp
-				if (strTmp != LnchPadProps.SSE)
+				if (strTmp && strTmp != LnchPadProps.SSE)
 				strRetVal := "`nSSE registry install path not the same as given executable path."
 			}
 			else
@@ -1170,9 +1176,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 		{
 			if (LnchPadProps.Fallout3)
 			{
-			strTmp := gameExesFullPath[tabStat]
-			SplitPath, strTmp, , strTmp
-				if (strTmp != LnchPadProps.Fallout3)
+				if (strTmp && strTmp != LnchPadProps.Fallout3)
 				strRetVal := "`nFallout 3 registry install path not the same as given executable path."
 			}
 			else
@@ -1196,9 +1200,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 		{
 			if (LnchPadProps.FalloutNV)
 			{
-			strTmp := gameExesFullPath[tabStat]
-			SplitPath, strTmp, , strTmp
-				if (strTmp != LnchPadProps.FalloutNV)
+				if (strTmp && strTmp != LnchPadProps.FalloutNV)
 				strRetVal := "`nFallout New Vegas registry install path not the same as given executable path."
 			}
 			else
@@ -1208,9 +1210,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 		{
 			if (LnchPadProps.Fallout4)
 			{
-			strTmp := gameExesFullPath[tabStat]
-			SplitPath, strTmp, , strTmp
-				if (strTmp != LnchPadProps.Fallout4)
+				if (strTmp && strTmp != LnchPadProps.Fallout4)
 				strRetVal := "`nFallout 4 registry install path not the same as given executable path."
 			}
 			else
@@ -1426,7 +1426,6 @@ WrittentoSlotArrayCt := 0
 AllocatedtoSlotArrayCt := 0
 prgPathtabStatCt := 0
 strTmp := ""
-strTmp2 := ""
 strRetVal := ""
 PrgPathWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgPathNotWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
@@ -1435,7 +1434,7 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	loop % prgNo
 	{
 	IniRead, strTmp, %gameIniPath%, Prg%A_Index%, PrgPath
-	IniRead, strTmp2, %gameIniPath%, Prg%A_Index%, PrgUrl
+	; Reading and comparing existingPrgCmdLine & PrgUrl possible, but a bit complicated
 	; Check each PrgPath in the ini. Also consider name check:
 	; IniRead, SelIniChoiceName, %PrgLnchIniPath%, Prg%A_Index%, PrgName ,,, if (InStr(SelIniChoiceName, gameList[tabStat]))
 
@@ -1537,8 +1536,10 @@ AllocatedtoSlotArrayCt := 0
 				IniWrite, % strTmp, %gameIniPath%, Prg%A_Index%, PrgPath
 				SplitPath, strTmp ,,,, SelIniChoiceName
 				IniWrite, %SelIniChoiceName%, %gameIniPath%, Prg%A_Index%, PrgName
-					if (PrgUrl[A_Index])
-					IniWrite, % PrgUrl[A_Index], %gameIniPath%, Prg%A_Index%, PrgUrl
+					if (prgCmdtabStat[A_Index])
+					IniWrite, % prgCmdtabStat[A_Index], %gameIniPath%, Prg%A_Index%, PrgCmdLine
+					if (prgUrltabStat[A_Index])
+					IniWrite, % prgUrltabStat[A_Index], %gameIniPath%, Prg%A_Index%, PrgUrl
 				freeSlotArray[A_Index] := 1
 				break
 				}
