@@ -234,6 +234,7 @@ GuiHwnd := 0
 fontDPI := 96 ; To be adjustment factor for windows setting
 mControl := 0
 buttonBkdChange := 0
+currDrive := ""
 cancelSearchMsg := 0
 SearchSelectedClicked := 0
 searchstat := 0
@@ -243,11 +244,13 @@ multcopiesPrgWrn := 0
 overWriteIniFile := 0
 IniFileShortctSep := "?" ; Change if different in Main!
 SelIniChoiceNamePrgLnchUpdated := 0
-retVal := 0
+addGameShortCutIndex := 0 ; game path control variables
+addGameShortCutLB := 0
 
+
+retVal := 0
 strTmp := ""
 strRetVal := ""
-currDrive := ""
 tmp := 0
 i := 0
 
@@ -575,25 +578,6 @@ WinSet, Redraw,, ahk_id %GuiHwnd%
 
 return
 
-GetGamePaths()
-{
-tmp := ""
-SetRegView 32
-RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Morrowind, Installed Path
-LnchPadProps.Morrowind := RTrim(tmp, "\")
-RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Oblivion, Installed Path
-LnchPadProps.Oblivion := RTrim(tmp, "\")
-RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Fallout3, Installed Path
-LnchPadProps.Fallout3 := RTrim(tmp, "\")
-RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Fallout4, Installed Path
-LnchPadProps.Fallout4 := RTrim(tmp, "\")
-RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\FalloutNV, Installed Path
-LnchPadProps.FalloutNV := RTrim(tmp, "\")
-
-SetRegView 64
-RegRead, SSE, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Skyrim Special Edition, Installed Path
-LnchPadProps.SSE := RTrim(tmp, "\")
-}
 gamePic:
 GuiControl, Move, % "HBITMAP:*" picH, % "x" GetTabRibbonHeight() "y" GetTabRibbonHeight(GuiHwnd, 1) "w" tabguiW "h" tabguiH
 return
@@ -628,7 +612,7 @@ ListBox_SelectedItem := ListBoxProps.GetOneItem()
 	if (ListBox_SelectedItem > 0)
 	{
 	; Restore
-		if (addGameShortCutVar != ListBox_SelectedItem)
+		if (addGameShortCutLB != ListBox_SelectedItem)
 		prgPath%tabStat%[ListBox_SelectedItem] := prgPath%tabStat%bak[ListBox_SelectedItem]
 
 		; Following deselection not required for LBS_MULTIPLESEL listboxes
@@ -644,7 +628,7 @@ ListBox_SelectedItem := ListBoxProps.GetOneItem()
 	SendMessage, 0x019F, 0, 0, , % "ahk_id" . PrgIndex%tabStat%Hwnd
 	tmp := ErrorLevel + 1
 
-		if (tmp == addGameShortCutVar)
+		if (tmp == addGameShortCutLB)
 		GuiControl, Choose, PrgIndex%tabStat%, %tmp%
 		else
 		prgPath%tabStat%[-ListBox_SelectedItem] := ""
@@ -974,16 +958,34 @@ return
 
 AddGameShortCut:
 Gui, Submit, Nohide
-GuiControlGet, addGameShortCutVar, , addGameShortCut
-GameShortcutBiz(prgNo, addGameShortCutVar, tabStat, gameList, PrgName%tabStat%, PrgIndex%tabStat%)
+GuiControlGet, addGameShortCutLB, , addGameShortCut
+GameShortcutBiz(prgNo, addGameShortCutLB, tabStat, gameList, PrgName%tabStat%, PrgIndex%tabStat%)
 
-	if (addGameShortCutVar > 0)
-	prgPath%tabStat%[addGameShortCutVar] := gameExesFullPath[tabStat]
+	if (addGameShortCutLB > 0)
+	{
+	addGameShortCutIndex := 0
+		loop %PrgNo%
+		{
+			if (prgPath%tabStat%[A_Index] == "")
+			{
+			addGameShortCutIndex := A_Index
+			prgPath%tabStat%[addGameShortCutIndex] := gameExesFullPath[tabStat]
+			break
+			}
+		}
+		if (!addGameShortCutIndex)
+		MsgBox, 8192, % "Shortcut to " . gameList[tabStat], No room for game!
+	}
 	else
 	{
-	prgPath%tabStat%[-addGameShortCutVar] := ""
-	addGameShortCutVar := 0
+	prgPath%tabStat%[addGameShortCutIndex] := ""
+	; Because "-editor" pops in when testing for game just before AddToIniProc
+	prgCmd%tabStat%[addGameShortCutIndex] := ""
+	prgUrl%tabStat%[addGameShortCutIndex] := ""
+	addGameShortCutLB := 0
+	addGameShortCutIndex := 0
 	}
+msgbox % "prgPath%tabStat%[7] " prgPath%tabStat%[7] " addGameShortCutIndex " addGameShortCutIndex " AddGameShortCutLB " AddGameShortCutLB
 
 GuiControl, Focus, addToLnchPad
 Return
@@ -1116,13 +1118,15 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 		Progress, 40
 
 		; In case addGameShortCut was not clicked
-		loop % PrgNo
+		if (!addGameShortCutLB)
 		{
-			if (gameExesFullPath[tabStat] == prgPath%tabStat%[A_Index])
+			loop % PrgNo
 			{
-				if (!addGameShortCutVar)
+				if (gameExesFullPath[tabStat] == prgPath%tabStat%[A_Index] && (PrgCmd%tabStat%[A_Index] != "-editor"))
+				{
 				prgPath%tabStat%[A_Index] := ""
-			break
+				break
+				}
 			}
 		}
 	strTmp := gameExesFullPath[tabStat]
@@ -1187,11 +1191,12 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 			{
 				if (Instr(prgPath%tabStat%[A_Index], "GECK.exe"))
 				{
+				;FO3.exe, "avoid fose_loader.exe!" to launch game
 				strTmp := gameExesFullPath[tabStat]
 				SplitPath, strTmp, , strTmp
 				;ASSUME fose_loader.exe exists for Geck.exe, the Garden of Eden Creation Kit
 				prgPath%tabStat%[A_Index] := strTmp . "\fose_loader.exe"
-				prgCmd%tabStat%[A_Index] := "-editor" 
+				prgCmd%tabStat%[A_Index] := "-editor"
 				break
 				}
 			}
@@ -1219,7 +1224,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 
 	}
 
-		strRetVal := AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, prgCmd%tabStat%, prgUrl%tabStat%, IniFileShortctSep) . strRetVal
+		strRetVal := AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, prgCmd%tabStat%, prgUrl%tabStat%, addGameShortCutIndex, IniFileShortctSep) . strRetVal
 		tmp := 0
 			Loop, % prgNo
 			{
@@ -1279,6 +1284,26 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 
 return
 
+GetGamePaths()
+{
+tmp := ""
+SetRegView 32
+RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Morrowind, Installed Path
+LnchPadProps.Morrowind := RTrim(tmp, "\")
+RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Oblivion, Installed Path
+LnchPadProps.Oblivion := RTrim(tmp, "\")
+RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Fallout3, Installed Path
+LnchPadProps.Fallout3 := RTrim(tmp, "\")
+RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Fallout4, Installed Path
+LnchPadProps.Fallout4 := RTrim(tmp, "\")
+RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\FalloutNV, Installed Path
+LnchPadProps.FalloutNV := RTrim(tmp, "\")
+
+SetRegView 64
+RegRead, SSE, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Skyrim Special Edition, Installed Path
+LnchPadProps.SSE := RTrim(tmp, "\")
+}
+
 PopulateGameList(prgNo, tabStat, prgNameTabStat, gameName := "", index := 0)
 {
 PrgIndexList := ""
@@ -1309,7 +1334,7 @@ GuiControl, Choose, PrgIndex%tabStat%, 0
 ; SendMessage, %LB_SETSEL%, 0, -1, , % "ahk_id" PrgIndex%tabStat%hwnd
 }
 
-GameShortcutBiz(prgNo, ByRef addGameShortCut, tabStat, gameList, PrgNametabStat, PrgIndextabStat)
+GameShortcutBiz(prgNo, ByRef addGameShortCut, tabStat, gameList, PrgNameTabStat, PrgIndexTabStat)
 {
 static tabStatOld := 0, prgIndexReplaced := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
@@ -1317,7 +1342,7 @@ prgNameSelected := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgSelectedIndices := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 tmp := 0
 
-	prgSelectedIndices := ListBoxProps.GetItems()
+prgSelectedIndices := ListBoxProps.GetItems()
 
 	if (addGameShortCut)
 	{
@@ -1326,7 +1351,7 @@ tmp := 0
 		{
 		tmp := prgSelectedIndices[i]
 
-			strTmp := prgNameSelected[tmp] := PrgNametabStat[tmp]
+			strTmp := prgNameSelected[tmp] := PrgNameTabStat[tmp]
 				if (strTmp == gameList[tabStat])
 				;already allocated
 				return
@@ -1368,10 +1393,10 @@ tmp := 0
 		for i in prgSelectedIndices
 		{
 		tmp := prgSelectedIndices[i]
-		prgNameSelected[tmp] := PrgNametabStat[tmp]
+		prgNameSelected[tmp] := PrgNameTabStat[tmp]
 		}
 
-	PopulateGameList(prgNo, tabStat, prgNameTabStat, PrgNametabStat[prgIndexReplaced[tabStat]], prgIndexReplaced[tabStat])
+	PopulateGameList(prgNo, tabStat, prgNameTabStat, PrgNameTabStat[prgIndexReplaced[tabStat]], prgIndexReplaced[tabStat])
 
 		loop %prgNo%
 		{
@@ -1380,7 +1405,6 @@ tmp := 0
 		}
 	addGameShortCut := -prgIndexReplaced[tabStat]
 	}
-
 }
 
 CreateIniData(prgNo, maxBatchPrgs, gameIniPath)
@@ -1420,7 +1444,7 @@ monitorOrder := SubStr(monitorOrder, 1, 1)
 	}
 }
 
-AddToIniProc(prgNo, tabStat, gameIniPath, prgPathtabStat, prgCmdtabStat, prgUrltabStat, IniFileShortctSep)
+AddToIniProc(prgNo, tabStat, gameIniPath, prgPathtabStat, prgCmdtabStat, prgUrltabStat, addGameShortCutIndex, IniFileShortctSep)
 {
 WrittentoSlotArrayCt := 0
 AllocatedtoSlotArrayCt := 0
@@ -1534,8 +1558,20 @@ AllocatedtoSlotArrayCt := 0
 				{
 				WrittentoSlotArrayCt++
 				IniWrite, % strTmp, %gameIniPath%, Prg%A_Index%, PrgPath
-				SplitPath, strTmp ,,,, SelIniChoiceName
-				IniWrite, %SelIniChoiceName%, %gameIniPath%, Prg%A_Index%, PrgName
+					; Problematic if other prgs have "-editor" in their command line
+					if (((tabStat == 2) || (tabStat == 4)) && prgCmdtabStat[A_Index] == "-editor")
+					{
+						if (tabStat == 2)
+						IniWrite, "TES Construction Set", %gameIniPath%, Prg%A_Index%, PrgName
+						else
+						IniWrite, "G.E.C.K", %gameIniPath%, Prg%A_Index%, PrgName
+					}
+					else
+					{
+					SplitPath, strTmp ,,,, SelIniChoiceName					
+					IniWrite, %SelIniChoiceName%, %gameIniPath%, Prg%A_Index%, PrgName
+					}
+
 					if (prgCmdtabStat[A_Index])
 					IniWrite, % prgCmdtabStat[A_Index], %gameIniPath%, Prg%A_Index%, PrgCmdLine
 					if (prgUrltabStat[A_Index])
