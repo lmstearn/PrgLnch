@@ -3475,7 +3475,6 @@ Class PrgLnch
 	}
 
 
-updateStatus := 1
 ; Filters
 WM_COPYDATA := 0x4A
 WM_COPYGLOBALDATA := 0x0049
@@ -3549,6 +3548,7 @@ PrgStyle := 0 ;Storage for styles
 PrgMinMaxVar := 0 ; -1 Min, 0 in Between, 1 Max
 PrgIntervalLnch := -1
 PrgUrlTest := "" ;temp URL to be verified in "Save URL"
+updateStatus := 1 ; download control
 borderToggle := 0 ; Borderless styles applied or no
 UrlPrgIsCompressed := 0
 batchPrgNo := 0 ;actually no of Prgs configured
@@ -3591,11 +3591,11 @@ PresetNamesBak := ["", "", "", "", "", ""]
 IniChoiceNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 arrPowerPlanNames := []
 btchPowerNames := ["Default", "Default", "Default", "Default", "Default", "Default"]
-Loop %maxBatchPrgs%
-{
-PrgBatchIni%A_Index% := [0, 0, 0, 0, 0, 0]
-PrgListPID%A_Index% := [0, 0, 0, 0, 0, 0] ; NS = not started
-}
+	Loop %maxBatchPrgs%
+	{
+	PrgBatchIni%A_Index% := [0, 0, 0, 0, 0, 0]
+	PrgListPID%A_Index% := [0, 0, 0, 0, 0, 0] ; NS = not started
+	}
 disclaimtxt := "Welcome to the PrgLnch Disclaimer Dialog! `n`nTHE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE... `n`nBy clicking ""Yes"" you accept the above terms of usage."
 disclaimer := 0
 
@@ -3747,7 +3747,7 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 	FileInstall PrgLnch.ico, PrgLnch.ico
 		if FileExist("PrgLnch.ico")
 		Menu, Tray, Icon, PrgLnch.ico
-	FileInstall PrgLnch.chm, PrgLnch.chm
+	FileInstall PrgLnch.chm, PrgLnch.chm, 1 ; may exist in testing
 	UnBlockFile("PrgLnch.chm")
 
 	; init LnchPad here
@@ -3763,7 +3763,7 @@ msgbox, 8196 , Disclaimer, % disclaimtxt
 else
 {
 	if (!FileExist("PrgLnch.chm"))
-	FileInstall PrgLnch.chm, PrgLnch.chm, 1
+	FileInstall PrgLnch.chm, PrgLnch.chm
 sleep, 120
 	if (A_Min < 22) ; Do this approx every 3 runs
 	IniSpaceCleaner(PrgLnch.SelIniChoicePath)
@@ -6025,7 +6025,13 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 	else
 	{
 	strTemp2 := A_ScriptDir . "\LnchPadInit.exe"
-		if (!FileExist(strTemp2))
+		if (FileExist(strTemp2))
+		{
+		; no version checking, however this is good enough
+			if (!SelIniChoiceName)
+			FileInstall LnchPadInit.exe, LnchPadInit.exe, 1
+		}
+		else
 		{
 		FileInstall LnchPadInit.exe, LnchPadInit.exe
 		UnBlockFile(strTemp2)

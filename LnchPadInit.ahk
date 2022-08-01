@@ -78,6 +78,24 @@ Class LnchPadProps
 		return this._SSE
 		}
 	}
+	GetCurrent(tabStat)
+	{
+		switch tabStat
+		{
+			case 1:
+			return this.Morrowind
+			case 2:
+			return this.Oblivion
+			case 3:
+			return this.SSE
+			case 4:
+			return this.Fallout3
+			case 5:
+			return this.FalloutNV
+			case 6:
+			return this.Fallout4
+		}
+	}
 }
 
 Class ListBoxProps
@@ -208,6 +226,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 gameList := ["Morrowind", "Oblivion", "Skyrim", "Fallout 3", "Fallout NV", "Fallout 4", "", "", "", "", "", ""]
 gameExes := ["MGEXEgui.exe", "obse_loader.exe", "SKSE_loader.exe", "Fallout3.exe", "nvse_loader.exe", "f4se_loader.exe", "", "", "", "", "", ""]
 gameFallBackExes := ["Morrowind.exe", "Oblivion.exe", "SkyrimSE.exe", "fose_loader.exe", "FalloutNV.exe", "Fallout4.exe", "", "", "", "", "", ""]
+
 ; FO3.exe, "avoid fose_loader.exe!"
 ; Skyrim.exe and SkyrimTESV.exe ???
 
@@ -901,26 +920,17 @@ currDrive := DriveLetter[A_Index]
 				if (!InStr(prgPath%tabStat%[A_Index], strTmp))
 				break ; Wrye Bash is for this game!
 
-				if (InStr(prgPath%tabStat%[A_Index], LnchPadProps.Oblivion))
+				
+				if (tabStat == 2 || tabStat == 3 || tabStat == 6)
 				{
-				strTmp := LnchPadProps.Oblivion . "\Mopy\Wrye Bash.exe"
-					if (FileExist(strTmp))
-					prgPath%tabStat%[A_Index] := strTmp
-				break
-				}
-				if (InStr(prgPath%tabStat%[A_Index], LnchPadProps.Fallout4))
-				{
-				strTmp := LnchPadProps.Fallout4 . "\Mopy\Wrye Bash.exe"
-					if (FileExist(strTmp))
-					prgPath%tabStat%[A_Index] := strTmp
-				break
-				}
-				if (InStr(prgPath%tabStat%[A_Index], LnchPadProps.SSE))
-				{
-				strTmp := LnchPadProps.SSE . "\Mopy\Wrye Bash.exe"
-					if (FileExist(strTmp))
-					prgPath%tabStat%[A_Index] := strTmp
-				break
+				strTmp := LnchPadProps.GetCurrent(tabStat)
+					if (InStr(prgPath%tabStat%[A_Index], strTmp))
+					{
+					strTmp .= "\Mopy\Wrye Bash.exe"
+						if (FileExist(strTmp))
+						prgPath%tabStat%[A_Index] := strTmp
+					break
+					}
 				}
 			}
 		}
@@ -985,7 +995,6 @@ GameShortcutBiz(prgNo, addGameShortCutLB, tabStat, gameList, PrgName%tabStat%, P
 	addGameShortCutLB := 0
 	addGameShortCutIndex := 0
 	}
-msgbox % "prgPath%tabStat%[7] " prgPath%tabStat%[7] " addGameShortCutIndex " addGameShortCutIndex " AddGameShortCutLB " AddGameShortCutLB
 
 GuiControl, Focus, addToLnchPad
 Return
@@ -1133,29 +1142,15 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 	SplitPath, strTmp, , strTmp
 
 ; Check installs
+
 	switch tabStat
 	{
 		case 1:
-		{
-			if (LnchPadProps.Morrowind)
-			{
-				if (strTmp && strTmp != LnchPadProps.Morrowind)
-				strRetVal := "`nMorrowind registry install path not the same as given executable path."
-			}
-			else
-			strRetVal := "`nMorrowind is not installed."
-		}
+		strRetVal := "`nMorrowind"
 		case 2:
 		{
-			if (LnchPadProps.Oblivion)
-			{
-				if (strTmp && strTmp != LnchPadProps.Oblivion)
-				strRetVal := "`nOblivion registry install path not the same as given executable path."
-			}
-			else
-			strRetVal := "`nOblivion is not installed."
-
-			; Fix editor extender
+		strRetVal := "`nOblivion"
+		; Fix editor extender
 			loop % PrgNo
 			{
 				if (Instr(prgPath%tabStat%[A_Index], "TESConstructionSet.exe") && Instr(gameExesFullPath[tabStat], "obse_loader.exe"))
@@ -1167,26 +1162,11 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 			}
 		}
 		case 3:
-		{
-			if (LnchPadProps.SSE)
-			{
-				if (strTmp && strTmp != LnchPadProps.SSE)
-				strRetVal := "`nSSE registry install path not the same as given executable path."
-			}
-			else
-			strRetVal := "`nSSE is not installed."
-		}
+		strRetVal := "`nSSE"
 		case 4:
 		{
-			if (LnchPadProps.Fallout3)
-			{
-				if (strTmp && strTmp != LnchPadProps.Fallout3)
-				strRetVal := "`nFallout 3 registry install path not the same as given executable path."
-			}
-			else
-			strRetVal := "`nFallout 3 is not installed."
-
-			; Fix editor extender
+		strRetVal := "`nFallout 3"
+		; Fix editor extender
 			loop % PrgNo
 			{
 				if (Instr(prgPath%tabStat%[A_Index], "GECK.exe"))
@@ -1202,29 +1182,25 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 			}
 		}
 		case 5:
-		{
-			if (LnchPadProps.FalloutNV)
-			{
-				if (strTmp && strTmp != LnchPadProps.FalloutNV)
-				strRetVal := "`nFallout New Vegas registry install path not the same as given executable path."
-			}
-			else
-			strRetVal := "`nFallout New Vegas is not installed."
-		}
+		strRetVal := "`nFallout New Vegas"
 		case 6:
-		{
-			if (LnchPadProps.Fallout4)
-			{
-				if (strTmp && strTmp != LnchPadProps.Fallout4)
-				strRetVal := "`nFallout 4 registry install path not the same as given executable path."
-			}
-			else
-			strRetVal := "`nFallout 4 is not installed."
-		}
-
+		strRetVal := "`nFallout 4"
 	}
 
-		strRetVal := AddToIniProc(prgNo, tabStat, gameIniPath, prgPath%tabStat%, prgCmd%tabStat%, prgUrl%tabStat%, addGameShortCutIndex, IniFileShortctSep) . strRetVal
+	if (tmp := LnchPadProps.GetCurrent(tabStat))
+	{
+		if (strTmp && (strTmp != tmp))
+		strRetVal .= " registry install path not the same as given executable path."
+		else
+		strRetVal := ""
+		
+	}
+	else
+	strRetVal .= " is not installed."
+
+
+
+		strRetVal := AddToIniProc(prgNo, tabStat, gameExes[tabStat], gameIniPath, prgPath%tabStat%, prgCmd%tabStat%, prgUrl%tabStat%, addGameShortCutIndex, IniFileShortctSep) . strRetVal
 		tmp := 0
 			Loop, % prgNo
 			{
@@ -1444,7 +1420,7 @@ monitorOrder := SubStr(monitorOrder, 1, 1)
 	}
 }
 
-AddToIniProc(prgNo, tabStat, gameIniPath, prgPathtabStat, prgCmdtabStat, prgUrltabStat, addGameShortCutIndex, IniFileShortctSep)
+AddToIniProc(prgNo, tabStat, gameExestabStat, gameIniPath, prgPathtabStat, prgCmdtabStat, prgUrltabStat, addGameShortCutIndex, IniFileShortctSep)
 {
 WrittentoSlotArrayCt := 0
 AllocatedtoSlotArrayCt := 0
@@ -1454,6 +1430,8 @@ strRetVal := ""
 PrgPathWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgPathNotWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
 freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+gameShortcut := (addGameShortCutIndex)?(LnchPadProps.GetCurrent(tabStat) . "\" . gameExestabStat):""
 
 	loop % prgNo
 	{
@@ -1483,29 +1461,72 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 			strTmp := ""
 			}
 
-		tmp := A_Index				
+		tmp := A_Index
+			if (gameExestabStat == (SelIniChoiceName . ".exe")) ; check string twice saves unnecessary inireads
+			IniRead, prgStr, %gameIniPath%, Prg%A_Index%, PrgCmdLine
+
+
+		; The following loops check that the filename in the path strings correspond.
+		if (gameExestabStat == (SelIniChoiceName . ".exe") && prgStr != "-editor")
+		{
+			if (!addGameShortCutIndex)
+			continue
 
 			loop % prgNo
 			{
-				if (prgPathStr := prgPathtabStat[A_Index])
+				if (prgStr := prgPathtabStat[A_Index])
 				{
-				;  Not handling associations here
-				SplitPath, % prgPathStr ,,,, strRetVal
-					if (InStr(SelIniChoiceName, strRetVal) || InStr(strRetVal, SelIniChoiceName))
+					if (prgStr == gameShortcut && prgCmdtabStat[A_Index] != "-editor")
 					{
-					WrittentoSlotArrayCt++
-					PrgPathWrittentoSlotArray[WrittentoSlotArrayCt] := prgPathStr
-					IniWrite, % strTmp . prgPathStr, %gameIniPath%, Prg%tmp%, PrgPath
-						if (prgCmdtabStat[A_Index])
-						IniWrite, % prgCmdtabStat[A_Index], %gameIniPath%, Prg%tmp%, PrgCmdLine
-						if (prgUrltabStat[A_Index])
-						IniWrite, % prgUrltabStat[A_Index], %gameIniPath%, Prg%tmp%, PrgUrl
-						; Else: Policy: existing urls not erased.
+					SplitPath, % prgStr ,,,, strRetVal
+						if (InStr(SelIniChoiceName, strRetVal) || InStr(strRetVal, SelIniChoiceName))
+						{
+						WrittentoSlotArrayCt++
+						PrgPathWrittentoSlotArray[WrittentoSlotArrayCt] := "**"
+						IniWrite, % strTmp . prgStr, %gameIniPath%, Prg%tmp%, PrgPath
+							if (prgCmdtabStat[A_Index])
+							IniWrite, % prgCmdtabStat[A_Index], %gameIniPath%, Prg%tmp%, PrgCmdLine
+							if (prgUrltabStat[A_Index])
+							IniWrite, % prgUrltabStat[A_Index], %gameIniPath%, Prg%tmp%, PrgUrl
+							; Else: Policy: existing urls not erased.
+							; Make the element unique
+							prgPathtabStat[A_Index] := "**"
+							break
+						}
 					}
 				}
 			}
-			
+
 		}
+		else
+		{
+			loop % prgNo
+			{
+				if (prgStr := prgPathtabStat[A_Index])
+				{
+					if (prgStr == gameShortcut && prgCmdtabStat[A_Index] != "-editor")
+					continue
+					else
+					{
+					;  Not handling associations here
+					SplitPath, % prgStr ,,,, strRetVal
+						if (InStr(SelIniChoiceName, strRetVal) || InStr(strRetVal, SelIniChoiceName))
+						{
+						WrittentoSlotArrayCt++
+						PrgPathWrittentoSlotArray[WrittentoSlotArrayCt] := prgStr
+						IniWrite, % strTmp . prgStr, %gameIniPath%, Prg%tmp%, PrgPath
+							if (prgCmdtabStat[A_Index])
+							IniWrite, % prgCmdtabStat[A_Index], %gameIniPath%, Prg%tmp%, PrgCmdLine
+							if (prgUrltabStat[A_Index])
+							IniWrite, % prgUrltabStat[A_Index], %gameIniPath%, Prg%tmp%, PrgUrl
+							; Else: Policy: existing urls not erased.
+						}
+					}
+				}
+			}
+		}	
+		}
+		
 	}
 
 	loop % prgNo
@@ -1518,22 +1539,36 @@ freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ;AdjustedprgPathtabStatCt := prgPathtabStatCt - 
 oldWrittentoSlotArrayCt := WrittentoSlotArrayCt
 
-
 ; Fine - we may want commandline Parms as well- e.g. Wrye Bash.exe -debug
 AllocatedtoSlotArrayCt := 0
+
+	loop, % prgNo
+	{
+		if (addGameShortCutIndex && (strTmp := prgPathtabStat[A_Index] ) && (strTmp == gameShortcut) && (prgCmdtabStat[A_Index] != "-editor"))
+		prgPathtabStat[A_Index] := "??"
+	}
+
+
 	loop, % prgNo
 	{
 	tmp := 0
 		if (strTmp := prgPathtabStat[A_Index])
 		{
-			Loop, % prgNo
+			if (strTmp == "**")
+			continue
+
+			loop, % prgNo
 			{
 				if (strTmp == PrgPathWrittentoSlotArray[A_Index])
+				{
 				tmp := 1
+				break
+				}
 			}
 
 			if (!tmp)
 			{
+
 				Loop, % prgNo
 				{
 					if (!PrgPathWrittentoSlotArray[A_Index])
@@ -1552,19 +1587,41 @@ AllocatedtoSlotArrayCt := 0
 	{
 		if (strTmp := PrgPathNotWrittentoSlotArray[A_Index])
 		{
-			Loop, % prgNo
+			; revert to game path
+			if (strTmp == "??")
+			strTmp := gameShortcut
+
+			loop, % prgNo
 			{
 				if (!freeSlotArray[A_Index])
 				{
 				WrittentoSlotArrayCt++
+
 				IniWrite, % strTmp, %gameIniPath%, Prg%A_Index%, PrgPath
-					; Problematic if other prgs have "-editor" in their command line
-					if (((tabStat == 2) || (tabStat == 4)) && prgCmdtabStat[A_Index] == "-editor")
+
+					; Problematic if non TES prgs have "-editor" in their command line
+					if (strTmp == gameShortcut)
 					{
-						if (tabStat == 2)
-						IniWrite, "TES Construction Set", %gameIniPath%, Prg%A_Index%, PrgName
+						if (prgCmdtabStat[A_Index] == "-editor")
+						{
+							switch tabStat
+							{
+							case 2:
+							IniWrite, "TES Construction Set", %gameIniPath%, Prg%A_Index%, PrgName
+							case 4:
+							IniWrite, "G.E.C.K", %gameIniPath%, Prg%A_Index%, PrgName
+							default:
+							{
+							SplitPath, strTmp ,,,, SelIniChoiceName					
+							IniWrite, %SelIniChoiceName%, %gameIniPath%, Prg%A_Index%, PrgName
+							}
+							}
+						}
 						else
-						IniWrite, "G.E.C.K", %gameIniPath%, Prg%A_Index%, PrgName
+						{
+						if (addGameShortCutIndex)
+						IniWrite, %gameExestabStat%, %gameIniPath%, Prg%A_Index%, PrgName
+						}
 					}
 					else
 					{
