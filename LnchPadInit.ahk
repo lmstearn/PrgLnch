@@ -1200,7 +1200,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 
 
 
-		strRetVal := AddToIniProc(prgNo, tabStat, gameExes[tabStat], gameIniPath, prgPath%tabStat%, prgCmd%tabStat%, prgUrl%tabStat%, addGameShortCutIndex, IniFileShortctSep) . strRetVal
+		strRetVal := AddToIniProc(prgNo, tabStat, gameList[tabStat], gameExes[tabStat], gameIniPath, prgPath%tabStat%, prgCmd%tabStat%, prgUrl%tabStat%, addGameShortCutIndex, IniFileShortctSep) . strRetVal
 		tmp := 0
 			Loop, % prgNo
 			{
@@ -1385,12 +1385,15 @@ prgSelectedIndices := ListBoxProps.GetItems()
 
 CreateIniData(prgNo, maxBatchPrgs, gameIniPath)
 {
+
+IniWrite, None, %gameIniPath%, Prgs, StartupPrgName
+IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIniStartup
+IniWrite, %A_Space%, %gameIniPath%, Prgs, PresetNames
+
 	loop % maxBatchPrgs
 	IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIni%A_Index%
 
-IniWrite, %A_Space%, %gameIniPath%, Prgs, PresetNames
-IniWrite, %A_Space%, %gameIniPath%, Prgs, StartupPrgName
-IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIniStartup
+
 
 ; Get def monitor res data via command line
 	for tmp, strRetVal in A_Args  ; For each parameter (or file dropped onto a script):
@@ -1398,10 +1401,11 @@ IniWrite, %A_Space%, %gameIniPath%, Prgs, PrgBatchIniStartup
 		if (tmp == 1)
 		break
 	}
-
 ;Get primary monitor if non-standard config
 IniRead, monitorOrder, %gameIniPath%, General, monitorOrder
 monitorOrder := SubStr(monitorOrder, 1, 1)
+strTmp := monitorOrder . ",0,0,-1,-1,0,0,0"
+
 
 	loop % prgNo
 	{
@@ -1413,14 +1417,13 @@ monitorOrder := SubStr(monitorOrder, 1, 1)
 	IniWrite, %strRetVal%, %gameIniPath%, Prg%A_Index%, PrgRes
 	IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgUrl
 	IniWrite, %A_Space%, %gameIniPath%, Prg%A_Index%, PrgVer
-	strTmp := monitorOrder . ",0,0,-1,-1,0,0,0"
 	IniWrite, %strTmp%, %gameIniPath%, Prg%A_Index%, PrgMisc
 		if (A_Index == floor(prgNo/2))
 		Progress, 25
 	}
 }
 
-AddToIniProc(prgNo, tabStat, gameExestabStat, gameIniPath, prgPathtabStat, prgCmdtabStat, prgUrltabStat, addGameShortCutIndex, IniFileShortctSep)
+AddToIniProc(prgNo, tabStat, gameListtabStat, gameExestabStat, gameIniPath, prgPathtabStat, prgCmdtabStat, prgUrltabStat, addGameShortCutIndex, IniFileShortctSep)
 {
 WrittentoSlotArrayCt := 0
 AllocatedtoSlotArrayCt := 0
@@ -1607,9 +1610,9 @@ AllocatedtoSlotArrayCt := 0
 							switch tabStat
 							{
 							case 2:
-							IniWrite, "TES Construction Set", %gameIniPath%, Prg%A_Index%, PrgName
+							IniWrite, TES Construction Set, %gameIniPath%, Prg%A_Index%, PrgName
 							case 4:
-							IniWrite, "G.E.C.K", %gameIniPath%, Prg%A_Index%, PrgName
+							IniWrite, G.E.C.K, %gameIniPath%, Prg%A_Index%, PrgName
 							default:
 							{
 							SplitPath, strTmp ,,,, SelIniChoiceName					
@@ -1620,7 +1623,7 @@ AllocatedtoSlotArrayCt := 0
 						else
 						{
 						if (addGameShortCutIndex)
-						IniWrite, %gameExestabStat%, %gameIniPath%, Prg%A_Index%, PrgName
+						IniWrite, % "*" . gameListtabStat , %gameIniPath%, Prg%A_Index%, PrgName
 						}
 					}
 					else
