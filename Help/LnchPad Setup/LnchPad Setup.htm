@@ -10,9 +10,6 @@
 <BODY>
 <h1>LnchPad Setup</h1>
 <p>This utility allows for a quick inclusion of modding tools for Bethesda Games (and possibly <a href="PrgLnch FAQ.htm#games">others</a>) into PrgLnch. A tab is allocated to a search page for each game. The first button performs a drive search, the second creates/updates a <a href="PrgLnch Batch/PrgLnch Batch.htm#LnchPadSlots">LnchPad Slot</a>.
-<br><br>
-<STRONG>Note:</STRONG><B><I> Before launching a batch in PrgLnch, please refer to </I></B><a href="PrgLnch FAQ.htm#BethesdaBatches">What is the Best Way...</a> 
-<br><br>
 </p>
 <table class="info">
 <tr href="#" id="SearchDrive">
@@ -30,13 +27,23 @@
 <tr href="#" id="UpdateExisting">
 <td>Update Existing Slot...
 </td>
-<td>From the Listbox, updates the paths and <a href="PrgLnch Config/PrgLnch Config.htm#UrlName">Urls</a> for existing Prgs in the <a PrgLnch Batch/PrgLnch Batch.htm#LnchPadSlots">Slot</a>, and, if the Slot has <a href="PrgLnch FAQ.htm#Limitations">enough room</a>, adds in new Prgs.
+<td>For all currently selected items in the Listbox, updates the paths and <a href="PrgLnch Config/PrgLnch Config.htm#UrlName">Urls</a> for existing Prgs in the <a PrgLnch Batch/PrgLnch Batch.htm#LnchPadSlots">Slot</a>, and, if the Slot has <a href="PrgLnch FAQ.htm#Limitations">enough room</a>, adds in new Prgs.<br>
+<STRONG>Note:</STRONG>This is only an add/update facility, to <I>remove</I> recently added entries written to the Slot, use the following option.
 </td>
 </tr>
 <tr href="#" id="overWriteExisting">
 <td>Overwrite Existing Slot...
 </td>
 <td>Removes the existing <a PrgLnch Batch/PrgLnch Batch.htm#LnchPadSlots">Slot</a> and initialises a new one for inclusion of Prgs from the Listbox. Used only if there are issues with the current Slot.
+</td>
+</tr>
+<tr href="#" id="includeGame">
+<td>Include shortcut to game (extender)...
+</td>
+<td>Visible only if the game is present, the check adds a shortcut to the game. The Prg name is the game title prefixed with an asterisk, and is linked to a detected game extender launcher, else, to the pathname of the game itself.
+<br><br>
+<STRONG>Note:</STRONG><B><I> Before launching a batch in PrgLnch, please refer to </I></B><a href="PrgLnch FAQ.htm#BethesdaBatches">What is the Best Way...</a> 
+<br><br>
 </td>
 </tr>
 <tr href="#" id="Listbox">
