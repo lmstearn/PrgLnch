@@ -9118,7 +9118,7 @@ GuiControl, PrgLnchOpt: -ReadOnly, UpdturlPrgLnch
 				if (ErrorLevel)
 				{
 				PrgPth := AssocQueryApp(PrgPth)
-					If (PrgPth)
+					if (PrgPth)
 					{
 					FileGetVersion, PrgverOld, % PrgPth
 						if (ErrorLevel)
@@ -10510,6 +10510,7 @@ if (lnchPrgIndex > 0) ;Running
 		else
 		{
 		Critical
+		SetWinDelay, 150
 		ReplaceSystemCursor(,"IDC_WAIT")
 			if (Instr(PrgPaths, "Wrye Bash.exe"))
 			{
@@ -10534,7 +10535,7 @@ if (lnchPrgIndex > 0) ;Running
 				sleep 500
 				}
 			PrgPIDtmp := temp
-			WinWait, ahk_pid %PrgPIDtmp%,, 20000
+			WinWait, , splitterWindow, 30
 			}
 			else
 			{
@@ -10551,16 +10552,16 @@ if (lnchPrgIndex > 0) ;Running
 							if (InStr(strTemp, "TESConstructionSet.exe"))
 							temp := proc.ProcessId
 						}
-					sleep 500
+					sleep 300
 					}
-				PrgPIDtmp := temp
-				WinWait, ahk_pid %PrgPIDtmp%,, 20000
-				sleep 6000
+				PrgPIDtmp := temp 
+				WinWaitActive, , TES Construction Set, 10
+				sleep 2000
 				}
 				else
 				{
 				if (PrgPIDtmp)
-				WinWait, ahk_pid %PrgPIDtmp%,, 1000
+				WinWait, ahk_pid %PrgPIDtmp%,, 10
 				}
 			}
 		}
@@ -10579,11 +10580,11 @@ if (lnchPrgIndex > 0) ;Running
 
 		if (lnchStat == 1)
 		PrgMonPID[PrgPIDtmp] := targMonitorNum
-	SetWinDelay, 200
-	if (outStr := MovePrgToMonitor(targMonitorNum, PrgPIDtmp, PrgMinMaxVar, PrgStyle, PrgBordless, disableRedirect, oldRedirectionValue, PrgNames, lnchPrgIndex, borderToggle))
-	return outStr
-	;WinShow ahk_class Shell_TrayWnd
 
+		if (outStr := MovePrgToMonitor(targMonitorNum, PrgPIDtmp, PrgMinMaxVar, PrgStyle, PrgBordless, disableRedirect, oldRedirectionValue, PrgNames, lnchPrgIndex, borderToggle))
+		return outStr
+	;WinShow ahk_class Shell_TrayWnd
+	SetWinDelay, 100 ; Default
 	; Set power here rather than at the beginning
 		if (currBatchno == 1 && lnchStat == 1)
 		{
@@ -10735,6 +10736,8 @@ return 0
 MovePrgToMonitor(targMonitorNum, PrgPIDtmp, ByRef PrgMinMaxVar, ByRef PrgStyle, PrgBordless, disableRedirect, oldRedirectionValue, PrgNames, lnchPrgIndex, borderToggle, targHWnd := 0)
 {
 ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, mdRight := 0, mdLeft := 0, mdBottom := 0, mdTop := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
+monRatioW := 1, monRatioH := 1
+isTESConstructionSet := 0
 hWndArray := []
 hWndArrayPID := []
 
@@ -10744,15 +10747,14 @@ DetectHiddenWindows, On
 	WinGetPos, x, y, w, h, % "ahk_id" targHWnd
 	else
 	{
+	ReplaceSystemCursor()
+	ReplaceSystemCursor(,"IDC_WAIT")
+
 	WinGet, minMaxVar, MinMax, ahk_pid%PrgPIDtmp%
 
 		if (minMaxVar)
 		WinRestore, ahk_pid %PrgPIDtmp%
 
-	WinGet, firstPIDhWnd, ID, ahk_pid %PrgPIDtmp%
-WinGetClass, OutputVar, ahk_id %firstPIDhWnd%
-WinGetTitle, OutputVar1, ahk_id %firstPIDhWnd%
-;msgbox % "Window " firstPIDhWnd " Class " OutputVar " Title " OutputVar1
 /*
 TES Construction Set
 Class: TES Construction Set
@@ -10779,11 +10781,12 @@ Default IME
 Class: IME
 
 */
+	WinGet, firstPIDhWnd, ID, ahk_pid %PrgPIDtmp%
 	Process, Exist, %PrgPIDtmp%
 		if (ErrorLevel)
 		{
 			if (!firstPIDhWnd)
-			WinWait, ahk_pid %PrgPIDtmp%,, 20000
+			WinWait, ahk_pid %PrgPIDtmp%,, 10
 
 			if (!firstPIDhWnd)
 			{
@@ -10800,8 +10803,9 @@ Class: IME
 			outStr := "Process ended, and unable to find window to move."
 			return outStr
 			}
+		; Getting here has happened before - the window is orphaned.
 		}
-	WinGetPos, x, y, w, h, ahk_pid %PrgPIDtmp%
+	WinGetPos, x, y, w, h, ahk_id %firstPIDhWnd%
 	}
 
 	if (w || h)
@@ -10809,7 +10813,8 @@ Class: IME
 	else
 	fTemp := 0
 
-SysGet, md, MonitorWorkArea, % targMonitorNum
+
+SysGet, md, MonitorWorkArea, %targMonitorNum%
 
 	if (!((mdLeft - mdRight) && (mdTop - mdBottom)))
 	{
@@ -10817,15 +10822,15 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 		if (disableRedirect && oldRedirectionValue)
 		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 	DetectHiddenWindows, Off
-	if (!targHWnd)
-	ReplaceSystemCursor()
+		if (!targHWnd)
+		ReplaceSystemCursor()
 	return outStr
 	}
 ; Consider the (default) window co-ords in another monitor from a previous run here
 ; don't bother moving if the window is already located in the destination monitor
 	if (fTemp && !(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom))
 	{
-
+	fTemp := 0
 		loop % PrgLnchOpt.activeDispMonNamesNo
 		{
 			; no need to check source monitor if same as dest monitor
@@ -10834,17 +10839,27 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 			{
 			SysGet, ms, MonitorWorkArea, % A_Index
 				if (x >= msLeft && x <= msRight && y >= msTop && y <= msBottom)
+				{
+				fTemp++
 				break
+				}
 			}
 		}
 
 	mdw := mdRight - mdLeft, mdh := mdBottom - mdTop
-	msw := msRight - msLeft, msh := msBottom - msTop
+		if (fTemp)
+		{
+		msw := msRight - msLeft, msh := msBottom - msTop
 
-
-	; Calculate new size for new monitor.
-	dx := mdLeft + (x-msLeft)*(mdw/msw)
-	dy := mdTop + (y-msTop)*(mdh/msh)
+		; Calculate new size for new monitor.
+		dx := mdLeft + (x - msLeft) * (mdw/msw)
+		dy := mdTop + (y - msTop) * (mdh/msh)
+		}
+		else ; prg isn't located in a monitor- possibly a result of DWM doing funky things
+		{
+		dx := mdLeft
+		dy := mdTop
+		}
 
 	; Move window, using resolution difference to scale co-ordinates.
 		if (targHWnd)
@@ -10874,32 +10889,38 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 		hWndArray := WinEnum()
 		fTemp := 1
 		ffTemp := 1
+		strTemp := ""
 
-		WinGet, strTemp, ProcessName, ahk_pid %PrgPIDtmp%
+			if (PrgPIDtmp)
+			WinGet, strTemp, ProcessName, ahk_pid %PrgPIDtmp%
+			; strTmp could also be zero if the window is orphaned, 
+
 			if (InStr(strTemp, "TESConstructionSet.exe"))
 			{
+			isTESConstructionSet := 1
 
-			while(temp := hWndArray[fTemp])
-			{
-			WinGet, lTemp, PID, ahk_id %temp%
-			;temp := "0x" . Splashy.ToBase(temp, 16)
-				if (lTemp == PrgPIDtmp)
+				while(temp := hWndArray[fTemp])
 				{
-				WinGetClass, strTemp, ahk_id %temp%
-					if (Instr(strTemp, "TES Construction Set"))
+				WinGet, lTemp, PID, ahk_id %temp%
+				;temp := "0x" . Splashy.ToBase(temp, 16)
+					if (lTemp == PrgPIDtmp)
 					{
-					firstPIDhWnd := temp
-					firstPIDIndex := ffTemp
-					}
+					WinGetClass, strTemp, ahk_id %temp%
+						if (Instr(strTemp, "TES Construction Set"))
+						{
+						firstPIDhWnd := temp
+						firstPIDIndex := ffTemp
+						}
 
-				hWndArrayPID[ffTemp] := temp
-				ffTemp++
+					hWndArrayPID[ffTemp] := temp
+					ffTemp++
+					}
+				fTemp++
 				}
-			fTemp++
-			}
 			}
 			else
 			{
+
 				while(temp := hWndArray[fTemp])
 				{
 				WinGet, lTemp, PID, ahk_id %temp%
@@ -10915,19 +10936,32 @@ SysGet, md, MonitorWorkArea, % targMonitorNum
 				fTemp++
 				}
 			}
-			if (wp_IsResizable())
-			{
-			w := Round(w*(mdw/msw))
-			h := Round(h*(mdh/msh))
-			}
+
 		temp := 1
 
 			While(lTemp := hWndArrayPID[temp])
 			{
 				try
 				{
-				sleep 1000
+				lTemp := "0x" . Splashy.ToBase(hWndArrayPID[temp], 16)
+
+					if (wp_IsResizable(lTemp))
+					{
+						if (msw)
+						monRatioW := mdw/msw
+						if (msh)
+						monRatioH := mdh/msh
+
+
+						w := Round(w * monRatioW)
+						h := Round(h * monRatioH)
+					}
+
+				;GetHWndCoords(dx, dy, w, h, hWndArrayPID, temp)
+				sleep 50
 				fTemp := 1
+				;if (isTESConstructionSet)
+				;GetTSCoords(dx, dy)
 					if (temp == firstPIDIndex)
 					WinMove, ahk_id %firstPIDhWnd%, , %dx%, %dy%, %w%, %h%
 					else
@@ -12431,14 +12465,14 @@ Author(s):
     Original - Lexikos - http://www.autohotkey.com/forum/topic21703.html
 ===============================================================================
 */
-wp_IsResizable()
+wp_IsResizable(hWnd)
 {
-WS_SIZEBOX := 0x00040000
-WinGetClass, Class
+Static WS_SIZEBOX := 0x00040000
+WinGetClass, Class, ahk_id %hWnd%
 	if (Class in Chrome_XPFrame,MozillaUIWindowClass,IEFrame,OpWindow)
 	return true
-	WinGet, CurrStyle, Style
-	return (CurrStyle & WS_SIZEBOX)
+WinGet, CurrStyle, Style, ahk_id %hWnd%
+return (CurrStyle & WS_SIZEBOX)
 }
 
 BordlessProc(targMonitorNum, ByRef PrgMinMaxVar, ByRef PrgStyle, PrgBordless, selPrgChoice, PrgPID, queryOnly := 0, dxVal := 0, dyVal:= 0)

@@ -1131,7 +1131,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 		{
 			loop % PrgNo
 			{
-				if (gameExesFullPath[tabStat] == prgPath%tabStat%[A_Index] && (PrgCmd%tabStat%[A_Index] != "-editor"))
+				if (gameExesFullPath[tabStat] == prgPath%tabStat%[A_Index] && (!inStr(PrgCmd%tabStat%[A_Index], "-editor")))
 				{
 				prgPath%tabStat%[A_Index] := ""
 				break
@@ -1156,7 +1156,7 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 				if (Instr(prgPath%tabStat%[A_Index], "TESConstructionSet.exe") && Instr(gameExesFullPath[tabStat], "obse_loader.exe"))
 				{
 				prgPath%tabStat%[A_Index] := gameExesFullPath[tabStat]
-				prgCmd%tabStat%[A_Index] := "-editor"
+				prgCmd%tabStat%[A_Index] := "-editor -notimeout"
 				break
 				}
 			}
@@ -1434,7 +1434,7 @@ PrgPathWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgPathNotWrittentoSlotArray := ["", "", "", "", "", "", "", "", "", "", "", ""]
 freeSlotArray := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-gameShortcut := (addGameShortCutIndex)?(LnchPadProps.GetCurrent(tabStat) . "\" . gameExestabStat):""
+gameShortcut := LnchPadProps.GetCurrent(tabStat) . "\" . gameExestabStat
 
 	loop % prgNo
 	{
@@ -1470,7 +1470,7 @@ gameShortcut := (addGameShortCutIndex)?(LnchPadProps.GetCurrent(tabStat) . "\" .
 
 
 		; The following loops check that the filename in the path strings correspond.
-		if (gameExestabStat == (SelIniChoiceName . ".exe") && prgStr != "-editor")
+		if (gameExestabStat == (SelIniChoiceName . ".exe") && (!inStr(prgStr, "-editor")))
 		{
 			if (!addGameShortCutIndex)
 			continue
@@ -1479,7 +1479,7 @@ gameShortcut := (addGameShortCutIndex)?(LnchPadProps.GetCurrent(tabStat) . "\" .
 			{
 				if (prgStr := prgPathtabStat[A_Index])
 				{
-					if (prgStr == gameShortcut && prgCmdtabStat[A_Index] != "-editor")
+					if (prgStr == gameShortcut && (!inStr(prgCmdtabStat[A_Index], "-editor")))
 					{
 					SplitPath, % prgStr ,,,, strRetVal
 						if (InStr(SelIniChoiceName, strRetVal) || InStr(strRetVal, SelIniChoiceName))
@@ -1507,7 +1507,7 @@ gameShortcut := (addGameShortCutIndex)?(LnchPadProps.GetCurrent(tabStat) . "\" .
 			{
 				if (prgStr := prgPathtabStat[A_Index])
 				{
-					if (prgStr == gameShortcut && prgCmdtabStat[A_Index] != "-editor")
+					if (prgStr == gameShortcut && (!inStr(prgCmdtabStat[A_Index], "-editor")))
 					continue
 					else
 					{
@@ -1547,7 +1547,7 @@ AllocatedtoSlotArrayCt := 0
 
 	loop, % prgNo
 	{
-		if (addGameShortCutIndex && (strTmp := prgPathtabStat[A_Index] ) && (strTmp == gameShortcut) && (prgCmdtabStat[A_Index] != "-editor"))
+		if (addGameShortCutIndex && (strTmp := prgPathtabStat[A_Index]) && (strTmp == gameShortcut) && (!inStr(prgCmdtabStat[A_Index], "-editor")))
 		prgPathtabStat[A_Index] := "??"
 	}
 
@@ -1602,10 +1602,11 @@ AllocatedtoSlotArrayCt := 0
 
 				IniWrite, % strTmp, %gameIniPath%, Prg%A_Index%, PrgPath
 
+					msgbox % prgCmdtabStat[A_Index] " strTmp " strTmp " gameShortcut " gameShortcut
 					; Problematic if non TES prgs have "-editor" in their command line
 					if (strTmp == gameShortcut)
 					{
-						if (prgCmdtabStat[A_Index] == "-editor")
+						if (instr(prgCmdtabStat[A_Index], "-editor"))
 						{
 							switch tabStat
 							{
@@ -1622,8 +1623,9 @@ AllocatedtoSlotArrayCt := 0
 						}
 						else
 						{
-						if (addGameShortCutIndex)
-						IniWrite, % "*" . gameListtabStat , %gameIniPath%, Prg%A_Index%, PrgName
+						; Add game
+							if (addGameShortCutIndex)
+							IniWrite, % "*" . gameListtabStat , %gameIniPath%, Prg%A_Index%, PrgName
 						}
 					}
 					else
@@ -3029,6 +3031,9 @@ retVal := RunChm("LnchPad Setup`\LnchPad Setup", "UpdateExisting")
 else
 if (ItemHandle == overWriteIniHwnd)
 retVal := RunChm("LnchPad Setup`\LnchPad Setup", "overWriteExisting")
+else
+if (ItemHandle == addGameShortCutHwnd)
+retVal := RunChm("LnchPad Setup`\LnchPad Setup", "includeGame")
 else
 {
 	Loop, % maxGames
