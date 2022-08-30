@@ -3016,7 +3016,7 @@ Class Splashy
 				if (This.hGDIPLUS := DllCall("LoadLibrary", "Str", "GdiPlus.dll", "Ptr"))
 				{
 				spr := 0
-				VarSetCapacity(SI, (A_PtrSize = 8 ? 24 : 16), 0), Numput(1, SI, 0, "Int")
+				VarSetCapacity(SI, (A_PtrSize == 8 ? 24 : 16), 0), Numput(1, SI, 0, "Int")
 				DllCall("GdiPlus.dll\GdiplusStartup", "UPtr*", spr, "Ptr", &SI, "Ptr", 0)
 				; for return value see status enumeration in  gdiplustypes.h 
 				pToken := spr
@@ -3306,6 +3306,17 @@ Class PrgLnchOpt
 		get
 		{
 		return this._regovar
+		}
+	}
+	ListPrgStr
+	{
+		set
+		{
+		this._ListPrgStr := value
+		}
+		get
+		{
+		return this._ListPrgStr
 		}
 	}
 
@@ -3666,7 +3677,6 @@ Dynamic := 0
 Tmp := 1
 allModes := 0
 
-PrgChoiceNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgLnkInf := ["", "", "", "", "", "", "", "", "", "", "", ""] ; Can contain either working directory and resolved lnk path for same Prg as well as other meta
 PrgVer := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -4105,7 +4115,7 @@ GuiControlGet, txtPrgChoice, PrgLnchOpt:, PrgChoice
 
 
 Gui, PrgLnchOpt: Show, Hide
-WinMover(PrgLnchOpt.Hwnd(), "d r")   ; "dr" means "down, right"
+WinMover(PrgLnchOpt.Hwnd(), "d r")	; "dr" means "down, right"
 
 	if (defPrgStrng != "None")
 	FindStoredRes(ResIndex, ResIndexHwnd)
@@ -4655,6 +4665,8 @@ boundListBtchCtl := 1
 	if (temp == BtchPrgHwnd) ;actually clicked the Listbox
 	{
 	GuiControlGet, listPrgVar, PrgLnch:, listPrg
+
+
 	fTemp := PrgListIndex[listPrgVar]
 	if (PrgBdyBtchTog[listPrgVar] == MonStr(PrgMonToRn, fTemp))
 	{
@@ -6299,7 +6311,7 @@ Gui, PrgLnch: Font
 
 PopBtchListBox(PrgMonToRn, ByRef PrgBdyBtchTog, ByRef PrgListIndex, ByRef batchPrgNo, AtLoad := 0)
 {
-fTemp := 0, strTemp2 := "", strTemp := "|" ;vital, or listBox won't refresh
+fTemp := 0, strRetVal := "", strTemp2 := "", strTemp := "|" ;vital, or listBox won't refresh
 
 
 if (AtLoad)
@@ -6308,11 +6320,11 @@ if (AtLoad)
 	Loop % PrgLnchOpt.PrgNo
 	{
 	strTemp2 := PrgLnchOpt.GetPrgChoiceNames(A_Index)
-	if (strTemp2)
+		if (strTemp2)
 		{
 		batchPrgNo++
 		; Following requ'd to init Listbox!??
-		strTemp := strTemp . strTemp2 . "|"
+		strTemp .= strTemp2 . "|"
 
 		PrgListIndex[batchPrgNo] := A_Index
 		PrgBdyBtchTog[batchPrgNo] := "" ;sanitize as well!
@@ -6325,15 +6337,19 @@ if (AtLoad)
 else
 {
 	Loop % batchPrgNo
+	{
+	fTemp := PrgListIndex[A_Index]
+	strTemp2 := MonStr(PrgMonToRn, fTemp)
+		if (PrgBdyBtchTog[A_Index] == strTemp2)
 		{
-		fTemp := PrgListIndex[A_Index]
-		strTemp2 := MonStr(PrgMonToRn, fTemp)
-			if (PrgBdyBtchTog[A_Index] == strTemp2)
-			strTemp := strTemp . strTemp2 . A_Space . PrgLnchOpt.GetPrgChoiceNames(fTemp) . "|"
-			else
-			strTemp := strTemp . PrgLnchOpt.GetPrgChoiceNames(fTemp) . "|"
+		strRetVal .= PrgLnchOpt.GetPrgChoiceNames(fTemp) . ","
+		strTemp .= strTemp2 . A_Space . PrgLnchOpt.GetPrgChoiceNames(fTemp) . "|"
 		}
+		else
+		strTemp .= PrgLnchOpt.GetPrgChoiceNames(fTemp) . "|"
+	}
 }
+PrgLnchOpt.ListPrgStr := strRetVal
 return strTemp
 }
 MonStr(PrgMonToRn, selPrgChoice)
@@ -6852,12 +6868,9 @@ return
 WM_RBUTTONUP(wParam, lParam, Msg, hWnd)
 {
 Global batchPrgStatusHwnd
-if (hWnd == batchPrgStatusHwnd)
-LBEX_ItemFromCursor(hWnd)
-}
-LBEX_ItemFromCursor(hWnd)
-{
-	; credit to just me
+	if (hWnd == batchPrgStatusHwnd)
+	{
+	; credit to just me :https://www.autohotkey.com/boards/viewtopic.php?t=13008
 	VarSetCapacity(Point, 8, 0) ; POINT structure -> msdn.microsoft.com/en-us/library/dd162805(v=vs.85).aspx
 	DllCall("GetCursorPos", "Ptr", &Point) ; -> msdn.microsoft.com/en-us/library/ms648390(v=vs.85).aspx
 	DllCall("ScreenToClient", "Ptr", hWnd, "Ptr", &Point) ; -> msdn.microsoft.com/en-us/library/dd162952(v=vs.85).aspx
@@ -6866,9 +6879,11 @@ LBEX_ItemFromCursor(hWnd)
 	SendMessage, 0x01A9, 0, % (X + Y), , ahk_id %hWnd% ; LB_ITEMFROMPOINT -> msdn.microsoft.com/en-us/library/bb761323(v=vs.85).aspx
 		if (ErrorLevel & 0xFFFF0000) ; the HIWORD of the return value is one if the cursor is outside the client area.
 		return 0
-
-	DisplayActiveWindowProps((ErrorLevel & 0xFFFF) + 1 )
+	retVal := (ErrorLevel & 0xFFFF) + 1
+	GuiControl, PrgLnch: Choose, %batchPrgStatusHwnd%, %retVal%
+	DisplayActiveWindowProps(retVal)
 	; the return value contains the 0-based index of the item in the LOWORD, so add 1.
+	}
 }
 
 
@@ -7595,6 +7610,8 @@ PrgRnMinMax[selPrgChoice] := fTemp
 
 IniProc(selPrgChoice)
 
+;DisplayActiveWindowProps(selPrgChoice, prgPID)
+
 if (PrgPID) ;test only from config
 {
 	if (fTemp == 1)
@@ -7634,7 +7651,7 @@ GuiControlGet, temp, PrgLnchOpt: FocusV
 	return
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
-
+;DisplayActiveWindowProps(selPrgChoice, prgPID)
 ; get windows
 	if (PrgPID) ;test only from config
 	BordlessProc(targMonitorNum, selPrgChoice, hWndIndex, PrgBordless[selPrgChoice], hWnd)
@@ -10811,26 +10828,30 @@ return 0
 
 SetCoords(checkDestMon, hWnd, PrgPID, targMonitorNum, ByRef firstPIDhWnd, ByRef dx, ByRef dy, ByRef w, ByRef h, lnchPrgIndex, PrgBordlessLnchPrgIndex)
 {
-Static WP := {}, hWndIndex := 0, mdLeft := 0, mdRight := 0, mdTop := 0, mdBottom := 0
+Static WP := "", hWndIndex := 0, mdLeft := 0, mdRight := 0, mdTop := 0, mdBottom := 0, lastTargMonitorNum := 0
 outStr := ""
+
+	; initialise WP 
+	if (WP == "")
+	NumPut(VarSetCapacity(WP, 44, 0), WP, 0, "UInt")
+
+
+	if (targMonitorNum != lastTargMonitorNum)
+	{
+	SysGet, md, MonitorWorkArea, %targMonitorNum%	
+	lastTargMonitorNum := targMonitorNum
+	}
 
 	if (checkDestMon)
 	{
-	SysGet, md, MonitorWorkArea, %targMonitorNum%
 
 		if (!((mdLeft - mdRight) && (mdTop - mdBottom)))
 		outStr := "Incorrect destination co-ordinates.`nIf the monitor has just been configured, a reboot may resolve the issue."
 
-	return outStr
-	}
-
-
-	if (PrgPID)
-	{
-		if (!hWnd)
+		; set firstPIDhWnd 
+		if (PrgPID)
 		{
 		PrgLnchOpt.ZeroHandlesStyles(lnchPrgIndex)
-		VarSetCapacity(WP, 44, 0), NumPut(44, WP, "UInt")
 
 		WinGet, firstPIDhWnd, ID, ahk_pid %PrgPID%
 		Process, Exist, %PrgPID%
@@ -10857,17 +10878,20 @@ outStr := ""
 		hWndIndex := 1
 		}
 
+	return outStr
 	}
 
 
+	;lTemp := "0x" . Splashy.ToBase(hWnd, 16)
 	if (!DllCall("User32.dll\GetWindowPlacement", "Ptr", hWnd, "Ptr", &WP))
 	return "GetWindowPlacement failed, so the co-ordinates of the window cannot be determined for "
 
 
-x := NumGet(WP, 28, "Int")
-y := NumGet(WP, 32, "Int")
-w := NumGet(WP, 36, "Int") - x
-h := NumGet(WP, 40, "Int") - y
+x := NumGet(WP, 28, "UInt")
+y := NumGet(WP, 32, "UInt")
+w := NumGet(WP, 36, "UInt") - x
+h := NumGet(WP, 40, "UInt") - y
+;msgbox % "temp == firstPIDIndex " (temp == firstPIDIndex) " ltemp " ltemp " hWnd " hWnd " firstPIDhWnd " firstPIDhWnd "`nPrgLnchOpt.OrderTargMonitorNum " PrgLnchOpt.OrderTargMonitorNum "`nPrgLnchOpt.activeDispMonNamesNo "PrgLnchOpt.activeDispMonNamesNo " targMonitorNum " targMonitorNum "`nmdLeft " mdLeft " mdRight " mdRight " mdTop " mdTop " mdBottom " mdBottom "`ndx " dx " dy " dy "`nmsw " msw " msh " msh " mdw " mdw " mdh " mdh "`nmdw/msw " mdw/msw " mdh/msh " mdh/msh "`nx " x " y " y " w " w " h " h "`nborderToggle " borderToggle " monRatioW " monRatioW " monRatioH " monRatioH
 
 	if (w || h)
 	fTemp := 1
@@ -10919,7 +10943,8 @@ h := NumGet(WP, 40, "Int") - y
 		; not for the Splashy monitor guis
 
 		;Must restore it before moving
-		WinGet, minMaxVar, MinMax, ahk_id%hWnd%
+
+		WinGet, minMaxVar, MinMax, ahk_id %hWnd%
 
 			if (minMaxVar)
 			WinRestore, ahk_id %hWnd%
@@ -10931,17 +10956,18 @@ h := NumGet(WP, 40, "Int") - y
 
 			try
 			{
-			lTemp := "0x" . Splashy.ToBase(hWnd, 16)
-			WinGetPos, , , w, h, ahk_id %lTemp%
 
-				if (wp_IsResizable(lTemp))
+			;WinGetPos, , , w, h, ahk_id %lTemp%
+
+
+				if (wp_IsResizable(hWnd))
 				{
 				w := Round(w * monRatioW)
 				h := Round(h * monRatioH)
 				}
 
 			sleep 50
-			WinMove, ahk_id %lTemp%, , %dx%, %dy%, %w%, %h%
+			WinMove, ahk_id %hWnd%, , %dx%, %dy%, %w%, %h%
 			hWndIndex++
 			}
 			catch x
@@ -10950,7 +10976,7 @@ h := NumGet(WP, 40, "Int") - y
 				if (temp == firstPIDIndex)
 				{
 				sleep, 20
-				WinGetPos, x, y, w, h, ahk_pid %lTemp%
+				WinGetPos, x, y, w, h, ahk_id %hWnd%
 					if (w || h)
 					{
 						if (x == dx && y == dy)
@@ -10967,17 +10993,17 @@ h := NumGet(WP, 40, "Int") - y
 			try
 			{
 			fTemp := 1
-			WinMove, ahk_id %targHWnd%, , %dx%, %dy%, %w%, %h%
+			WinMove, ahk_id %hWnd%, , %dx%, %dy%, %w%, %h%
 			}
 			catch x
 			{
 			sleep, 20
-			WinGetPos, x, y, w, h, ahk_id %targHWnd%
+			WinGetPos, x, y, w, h, ahk_id %hWnd%
 				if (w || h)
 				{
 					if (x == dx && y == dy)
 					{
-					MsgBox, 8192, Moving Splashy form, % " WinMove failed for Splashy " targHWnd "."
+					MsgBox, 8192, Moving Splashy form, % " WinMove failed for Splashy " hWnd "."
 					fTemp := 0
 					}
 				}
@@ -11055,6 +11081,7 @@ hWndArray := WinEnum()
 fTemp := 1
 ffTemp := 1
 strTemp := ""
+firstPIDhWnd := hWndArray[1]
 
 	WinGet, strTemp, ProcessName, ahk_pid %PrgPID%
 	; strTmp could also be zero if the window is orphaned, 
@@ -11123,8 +11150,8 @@ temp := 1
 
 	While(lTemp := hWndArrayPID[temp])
 	{
-		sleep 50
-		outStr := SetCoords(0, hWnd, PrgPIDtmp, targMonitorNum, firstPIDhWnd, dx, dy, w, h, lnchPrgIndex, PrgBordlessLnchPrgIndex)
+	sleep 50
+	outStr := SetCoords(0, lTemp, PrgPIDtmp, targMonitorNum, firstPIDhWnd, dx, dy, w, h, lnchPrgIndex, PrgBordlessLnchPrgIndex)
 	temp++
 	}
 
@@ -11311,7 +11338,7 @@ return gameDir
 FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, ByRef PrgPID, ByRef PrgListPID)
 {
 fTemp := 0
-if (lnchStat == -1)
+	if (lnchStat == -1)
 	{
 		if (PrgPIDtmp == "TERM")
 		PrgPID := 0
@@ -11336,8 +11363,11 @@ if (lnchStat == -1)
 				{
 					if (fTemp != "TERM")
 					{
-					PrgListPID[A_Index] := PrgPIDtmp
-					Break
+						if (A_Index == prgIndex)
+						{
+						PrgListPID[A_Index] := PrgPIDtmp
+						break
+						}
 					}
 				}
 			}
@@ -12242,8 +12272,7 @@ GetPrgLnchMonNum(iDevNumArray, fromMouse := 0)
 {
 iDevNumb := 0, monitorHandle := 0,  MONITOR_DEFAULTTONULL := 0, strTemp := ""
 
-VarSetCapacity(monitorInfo, 40)
-NumPut(40, monitorInfo)
+NumPut(VarSetCapacity(monitorInfo, 40), monitorInfo, 0, "UInt")
 
 
 hWnd := PrgLnchOpt.Hwnd()
@@ -12897,8 +12926,8 @@ retVal := 0
 		{
 
 		cbDISPDEV := OffsetDWORD + OffsetDWORD + offsetWORDStr + 3 * OffsetLongStr
-		VarSetCapacity(DISPLAY_DEVICE, cbDISPDEV, 0)
-		NumPut(cbDISPDEV, DISPLAY_DEVICE, 0) ; initialising cb (byte counts) or size member
+		
+		NumPut(VarSetCapacity(DISPLAY_DEVICE, cbDISPDEV, 0), DISPLAY_DEVICE, 0, "UInt") ; initialising cb (byte counts) or size member
 
 			if (!DllCall("EnumDisplayDevices" . (A_IsUnicode? "W": "A"), "PTR", 0, "UInt", iDevNumb, "PTR", &DISPLAY_DEVICE, "UInt", 0))
 			{
@@ -13108,7 +13137,7 @@ Static ENUM_CURRENT_SETTINGS := -1, ENUM_REGISTRY_SETTINGS := -2
 	Numput(mdLeft + 1, DM_Position, 0, "UInt")
 	Numput(mdTop + 1, DM_Position, 4, "UInt")
 
-	Numput(&DM_Position, Device_Mode, 44 + OffsetWORD/2)
+	Numput(&DM_Position, Device_Mode, 44 + OffsetWORD/2) ; type defaults to UPtr
 	}
 
 	NumPut(devFlags, Device_Mode, 40 + OffsetWORD/2, "UInt")
@@ -13678,60 +13707,134 @@ DisplayNonStockRes(canonicalMonitorList, ResList)
 	gui, NonStockResDlg: Destroy
 	return 0
 }
-DisplayActiveWindowProps(index := -1)
+
+DisplayActiveWindowProps(index, prgPIDIn := 0)
 {
-fTemp := 0
+static WS_EX_CONTEXTHELP := 0x00000400
+static AWPPrgPriority, AWPPrgMinMax, AWPBordless
+static AWPPrgMinMax1, AWPPrgMinMax2, AWPPrgMinMax3, AWPPrgMinMax4, AWPPrgMinMax5, AWPPrgMinMax6, AWPPrgMinMax7, AWPPrgMinMax8, AWPPrgMinMax9, AWPPrgMinMax10, AWPPrgMinMax11, AWPPrgMinMax12
+static AWPBordless1, AWPBordless2, AWPBordless3, AWPBordless4, AWPBordless5, AWPBordless6, AWPBordless7, AWPBordless8, AWPBordless9, AWPBordless10, AWPBordless11, AWPBordless12 
+fTemp := 1, temp := 0, strTemp := ""
+winNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
+
+if (!prgPIDIn)
+{
+		loop, Parse, % PrgLnchOpt.ListPrgStr, CSV
+		{
+
+			if (A_Index == index && strTemp := A_Loopfield)
+			{
+				loop % PrgLnchOpt.PrgNo
+				{
+					if (strTemp == PrgLnchOpt.GetPrgChoiceNames(A_Index))
+					{
+					temp := A_Index
+					break
+					}
+				}
+
+				if (temp == A_Index)
+				break
+			}
+		}
+
+	if (temp)
+	{
+	index := temp
+	}
+	else
+	MsgBox, 8192, DisplayActiveWindowProps, % "Unexpected error with " . PrgLnchOpt.ListPrgStr(index) . "!"
+}
 	Loop % PrgLnchOpt.PrgNo
 	{
-		if (PrgLnchOpt.GetTestWindowHandles(A_Index))
+		if (temp := PrgLnchOpt.GetTestWindowHandles(A_Index))
+		{
 		fTemp := A_Index
+		WinGetTitle, strTemp, ahk_id %temp%
+		winNames[A_Index] := strTemp
+		}
 		else
+		{
+			if (!prgPIDIn)
+			WinGet, prgPID, PID, % "ahk_id" . PrgLnchOpt.GetTestWindowHandles(1)
 		break
+		}
 	}
+
+	if (prgPIDIn)
+	{
+		if (fTemp == 1)
+		return
+	prgPID := prgPIDIn
+	}
+
 	height := A_ScreenHeight/5, numWMIResolutionmodesTmp := 0
-	WS_EX_CONTEXTHELP := 0x00000400
 
 	gui, ActiveWindowProp: -MaximizeBox -MinimizeBox +E%WS_EX_CONTEXTHELP% HWNDhWndActiveWindowProp
-	Gui, ActiveWindowProp: Font, cTeal Bold, s10
-	gui, ActiveWindowProp: add, text, w%height%, Active Prg Properties
+
+	Gui, ActiveWindowProp: Add, Checkbox, section w%height% vAWPPrgPriority gAWPPrgPriorityChk HWNDAWPPrgPriorityHwnd Check3, Prg Priority (BN-N-H)
+
+	Gui, ActiveWindowProp: Font, cA96915 Bold
+	gui, ActiveWindowProp: add, text, % "section w" . 2.4*height, % "Windows of " PrgLnchOpt.GetPrgChoiceNames(index)
+
+	;check3 enables 3 values in checkbox
+	GuiControl, ActiveWindowProp: Enable, AWPPrgPriority
+	GuiControl, ActiveWindowProp:, AWPPrgPriority, -1
+
 	Gui, ActiveWindowProp: Font
 
-	Gui, ActiveWindowProp: Font, cA96915, s10
 
-	Strng := ""
-		for each in canonicalMonitorList
+;fTemp := 2
+;winNames[1] := "one"
+;winNames[2] := "two"
+	Gui, ActiveWindowProp: Add, Groupbox, % "section" . " w" . 2.4*height . " R" . 2*fTemp
+
+		loop %fTemp%
 		{
-			loop StrLen(canonicalMonitorList[A_Index])
-			Strng .= "-"
-		Strng .= "`n" . canonicalMonitorList[A_Index] . "`n"
-			loop StrLen(canonicalMonitorList[A_Index])
-			Strng .= "-"
-
-			Strng .= "`n" . ResList[A_Index] 
+		Gui, ActiveWindowProp: Font, cA96915 Bold
+		Gui, ActiveWindowProp: Add, text, % "xs+" . height/8 . " yp+" . height/8 . " w" . height, % winNames[A_Index]
+		Gui, ActiveWindowProp: Font
+		Gui, ActiveWindowProp: Add, Checkbox, % "xs+" . height/8 . " yp+" . height/8 . " w" . height . " vAWPPrgMinMax" . A_Index . " gAWPClick Check3", Min-Norm-Max
+		GuiControl, ActiveWindowProp: Enable, AWPPrgMinMax
+		GuiControl, ActiveWindowProp:, AWPPrgMinMax, -1
+		Gui, ActiveWindowProp: Add, Checkbox, % "xp+" . height . " yp wp vAWPBordless" . A_Index . " gAWPClick", Borderless
+		GuiControl, ActiveWindowProp: Enable, AWPBordless
 		}
-	gui, ActiveWindowProp: add, text, w%height%, %Strng%
+
+	Gui, ActiveWindowProp: Font
+
+	;Gui, ActiveWindowProp: Font, cA96915, s10
+
+	;gui, ActiveWindowProp: Font
+	;Gui, ActiveWindowProp: Font, cTeal
 
 
-	gui, ActiveWindowProp: Font
-	Gui, ActiveWindowProp: Font, cTeal
 
+	gui, ActiveWindowProp: show, % "x" . height "w" . 2.5*height, Active Window Properties
 
-	gui, ActiveWindowProp: add, button, gActiveWindowPropClipSave w%height%, Save to Clipboard
-	gui, ActiveWindowProp: add, button, gActiveWindowPropAccept w%height%, Accept
-
-	gui, ActiveWindowProp: show, % "x" . height, Res. Report 
-
-	if (PrgLnchOpt.activeDispMonNamesNo == 1)
-	SetTimer, RnChmWelcome, 3500
+	WinMover(hWndActiveWindowProp, "d r")
 
 	WinWaitClose, ahk_id %hWndActiveWindowProp%
 	return
 
-	ActiveWindowPropClipSave:
-	Clipboard := Strng
+	AWPPrgPriorityChk:
+	;prgPID
+	return
+	AWPClick:
+	clickedindex := 0
+	loop % fTemp
+	{
+		if (InStr(%A_GuiControl%, fTemp - A_Index + 1))
+		{
+		clickedindex := fTemp - A_Index + 1
+		break
+		}
+	}
+	;GetPrgMinMax(index, clickedindex)
+	;GetPrgWindowStyles(index, clickedindex)
 	return
 
-	ActiveWindowPropAccept:
+	AWPQuit:
 	ActiveWindowPropGuiClose:
 	gui, ActiveWindowProp: Destroy
 	return 0
@@ -13798,7 +13901,7 @@ ResNewArray := []
 	;Order of frequencies follows ordered Height
 		for fTemp in tempFreq
 		{
-			Loop, Parse, strHeight, CSV
+			loop, Parse, strHeight, CSV
 			{
 			temp := 0
 			newLoopfield := A_Loopfield
@@ -14179,10 +14282,12 @@ if (Monitors.Count == Monitors.targetMonitorNum)
 	sizeOfmonitorHandleAndDesc := 128 * (A_IsUnicode ? 2 : 1) + ((PrgLnch.64Bit() + 1) * OffsetDWORD)
 
 	VarSetCapacity(monitorHandleandDesc, sizeOfmonitorHandleandDesc, 0)
+	
 	VarSetCapacity(Physical_Monitor, numberOfPhysicalMonitors * sizeOfmonitorHandleandDesc, 0)
+	; no cbsize member
 	; Get Physical Monitor from handle
 
-	;NumPut(Physical_Monitor, Device_Mode, OffsetDWORD + offsetWORDStr, Ushort) ; initialise cbsize member
+	;NumPut(Physical_Monitor, Device_Mode, OffsetDWORD + offsetWORDStr, "Ushort") ; initialise cbsize member
 	if (DllCall("dxva2\GetPhysicalMonitorsFromHMONITOR", "Ptr", hMonitor, "uint", numberOfPhysicalMonitors, "Ptr", &Physical_Monitor))
 	{
 
@@ -14892,7 +14997,7 @@ static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57
 
 	; Redefine/replace current cursor
 		if (!DllCall("SetSystemCursor", "Ptr", hCopy, "UInt", SysCursors[current]))
-		MsgBox, 8192, Set System Cursor, % "Could not set cursor to " . SysCursors[new] . "!"
+		MsgBox, 8192, Set System Cursor, % "Could not set cursor to id " . SysCursors[new] . "!"
 	}
 	else ; Reload system cursors
 	{
