@@ -3547,6 +3547,11 @@ Class PrgLnch
 	DetectHiddenWindows, Off
 	return Height
 	}
+	DoWOw64Revert(disableRedirect, oldRedirectionValue)
+	{
+		if (disableRedirect && oldRedirectionValue)
+		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+	}
 	}
 
 
@@ -5159,20 +5164,16 @@ if (A_GuiEvent == "DoubleClick")
 		sleep, % (!PrgIntervalLnch)? 2000: (PrgIntervalLnch == -1)? 4000: 6000
 		targMonitorNum := PrgMonToRn[lnchPrgIndex]
 
-		; save to old
-		CopyToFromRes(targMonitorNum, 1)
 		StoreFetchPrgRes(1, lnchPrgIndex, PrgLnkInf, targMonitorNum)
-
 		}
 		else
 		{
 		lnchPrgIndex := -PrgBatchIni%btchPrgPresetSel%[batchPrgStatus]
 		temp := PrgChoicePaths[-lnchPrgIndex]
 		targMonitorNum := PrgMonToRn[-lnchPrgIndex]
-		; restore from old
-		CopyToFromRes(targMonitorNum, 1)
 		}
-
+	; save current res to def
+	CopyToFromRes(targMonitorNum, 1)
 	lnchStat := 1
 
 	strRetVal := LnchPrgOff(batchPrgStatus, lnchStat, temp, PrgLnkInf, PrgResolveShortcut, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, PrgMonPID, PrgRnMinMax, PrgRnPriority, PrgBordless, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, btchPowerNames[btchPrgPresetSel])
@@ -10197,11 +10198,11 @@ loop % ((presetNoTest)? currBatchno: 1)
 	if (presetNoTest)
 	{
 	temp := PrgBatchIni%btchPrgPresetSel%[A_Index]
-	; save to old
-	CopyToFromRes(targMonitorNum, 1)
 
 	targMonitorNum := PrgMonToRn[temp]
 	StoreFetchPrgRes(1, temp, PrgLnkInf, targMonitorNum)
+	; save current res to def
+	CopyToFromRes(targMonitorNum, 1)
 
 		if (lnchPrgIndex > 0)
 		{
@@ -10411,7 +10412,7 @@ if (PrgLnch.Monitor != PrgLnchMon)
 		IniWrite, 1, % PrgLnch.SelIniChoicePath, General, LnchPrgMonWarn
 
 		if (lnchStat > 0)
-		MovePrgToMonitor(PrgLnchMon, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[1])
+		MovePrgToMonitor(PrgLnchMon, 0, 0, 0, 0, Splashy.hWndSaved[1])
 	}
 PrgLnch.Monitor := PrgLnchMon
 }
@@ -10490,8 +10491,7 @@ if (lnchPrgIndex > 0) ;Running
 		strRetVal := WorkingDirectory(PrgPaths, 1)
 			if (strRetVal)
 			{
-				if (disableRedirect && oldRedirectionValue)
-				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+			PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
 			return strRetVal
 			}
 		}
@@ -10531,8 +10531,7 @@ if (lnchPrgIndex > 0) ;Running
 
 						if (retVal == 2)
 						{
-							if (disableRedirect && oldRedirectionValue)
-							DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+						PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
 						return "Cancelled!"
 						}
 
@@ -10561,8 +10560,7 @@ if (lnchPrgIndex > 0) ;Running
 					}
 					else
 					{
-						if (disableRedirect && oldRedirectionValue)
-						DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+					PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
 					return "Cancelled!"
 					}
 				}
@@ -10576,8 +10574,7 @@ if (lnchPrgIndex > 0) ;Running
 		{
 			if (!(InitDOSBoxGameDir(PrgPaths)))
 			{
-				if (disableRedirect && oldRedirectionValue) ; doubt it for DOSBox- just to be sure
-				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+			PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue) ; doubt it for DOSBox- just to be sure
 			return "No Game selected!"
 			}
 		}
@@ -10593,26 +10590,22 @@ if (lnchPrgIndex > 0) ;Running
 		if (A_LastError)
 		{
 		sleep, 30
+		PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
 			if (A_LastError == ERROR_FILE_NOT_FOUND || A_LastError == ERROR_ACCESS_DENIED || A_LastError == ERROR_CANCELLED)
 			{
 				if (A_IsAdmin)
 				{
 				outStr := PrgLnchOpt.GetPrgChoiceNames(lnchPrgIndex) . " cannot launch with error " . A_LastError . ".`nIs it a system file, or does it have special permissions?"
-					if (disableRedirect && oldRedirectionValue)
-					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 				return outStr
 				}
 				else
 				retVal := TaskDialog("Prg Launch", "Prg Launch failed: Retry elevated?", , PrgLnchOpt.GetPrgChoiceNames(lnchPrgIndex) . " cannot launch with error " A_LastError ".`nIs it a system file, or does it have special permissions?`nPrgLnch might be able to launch it with Admin privileges.", "", "Attempt to restart PrgLnch as Admin", "Do not restart PrgLnch")
 
-				;Try elevation?
-				if (disableRedirect && oldRedirectionValue)
-				DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-
-				if (retVal == 1)
-				return RestartPrgLnch(1)
-				else
-				return "Prg could not be run with the current credentials."
+					;Try elevation?
+					if (retVal == 1)
+					return RestartPrgLnch(1)
+					else
+					return "Prg could not be run with the current credentials."
 			}
 			else
 			{
@@ -10621,8 +10614,6 @@ if (lnchPrgIndex > 0) ;Running
 				FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
 				;WinShow ahk_class Shell_TrayWnd
 				outStr := PrgLnchOpt.GetPrgChoiceNames(lnchPrgIndex) . " could not launch with error " . A_LastError
-					if (disableRedirect && oldRedirectionValue)
-					DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 				return outStr
 			}
 		}
@@ -10633,6 +10624,12 @@ if (lnchPrgIndex > 0) ;Running
 		ReplaceSystemCursor(,"IDC_WAIT")
 			if (Instr(PrgPaths, "Wrye Bash.exe"))
 			{
+				if (WinExist(, "splitterWindow"))
+				{
+				PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
+				ReplaceSystemCursor()
+				return "Wrye Bash already active!"
+				}
 			temp := 0
 			fTemp := 0
 				while (fTemp < 2)
@@ -10654,9 +10651,13 @@ if (lnchPrgIndex > 0) ;Running
 				sleep 300
 				}
 			PrgPIDtmp := temp
-			WinWait, , splitterWindow, 25
+			WinWait, , splitterWindow, 30
 				if (ErrorLevel)
+				{
+				PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
+				ReplaceSystemCursor()
 				return "Wrye Bash took too long to launch.`nIs it active already?"
+				}
 			}
 			else
 			{
@@ -10695,15 +10696,16 @@ if (lnchPrgIndex > 0) ;Running
 	Process, Priority, PrgPIDtmp, % PrgPrty
 	;Add to PID list
 
-	Sleep 50
+	Sleep 20
 	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
-	Sleep 50
+	Sleep 20
 
 		if (lnchStat == 1)
 		PrgMonPID[PrgPIDtmp] := targMonitorNum
 
-		if (outStr := MovePrgToMonitor(targMonitorNum, PrgPIDtmp, PrgBordless[lnchPrgIndex], disableRedirect, oldRedirectionValue, lnchPrgIndex, borderToggle))
+		if (outStr := MovePrgToMonitor(targMonitorNum, PrgPIDtmp, PrgBordless[lnchPrgIndex], lnchPrgIndex, borderToggle))
 		{
+		PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
 		ReplaceSystemCursor()
 		return outStr
 		}
@@ -10716,9 +10718,10 @@ if (lnchPrgIndex > 0) ;Running
 			DopowerPlan(btchPowerName)
 		}
 
-		if (disableRedirect && oldRedirectionValue)
-		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
-	; Path links etc cannot be cancelled as they do not return a PID:
+		PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
+		ReplaceSystemCursor()
+
+		; Path links etc cannot be cancelled as they do not return a PID:
 		if (InStr(PrgLnkInflnchPrgIndex, "|", false))
 		return "|"
 
@@ -10732,8 +10735,7 @@ if (lnchPrgIndex > 0) ;Running
 	PrgPIDtmp := "TERM"
 	FixPrgPIDStatus(currBatchno, prgIndex, lnchStat, PrgPIDtmp, PrgPID, PrgListPID)
 	outStr := "Unable to determine the location of `n" . PrgPaths
-		if (disableRedirect && oldRedirectionValue)
-		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
+	PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
 	return outStr
 	}
 
@@ -10894,10 +10896,7 @@ outStr := "", fTemp := 0
 				While (!firstPIDhWnd)
 				{
 					if (A_Index == 5)
-					{
-					ReplaceSystemCursor()
 					return "Cannot locate the window to move for "
-					}
 
 				sleep 250
 				WinGet, firstPIDhWnd, ID, ahk_pid %PrgPID%
@@ -10906,10 +10905,7 @@ outStr := "", fTemp := 0
 			else
 			{
 				if (!firstPIDhWnd)
-				{
-				ReplaceSystemCursor()
 				return "Process ended, and unable to find window to move for "
-				}
 			; Getting here has happened before - the window is orphaned.
 			}
 		hWndIndex := 1
@@ -11001,7 +10997,6 @@ h := NumGet(WP, 40, "UInt") - y
 			cursorPosY := Round(dy + h/2)
 			}
 
-			msgbox % "hWndIndex " hWndIndex " cursorPosX " cursorPosX " cursorPosY " cursorPosY
 			try
 			{
 			;WinGetPos, , , w, h, ahk_id %lTemp%
@@ -11081,7 +11076,7 @@ return outStr
 }
 
 
-MovePrgToMonitor(targMonitorNum, PrgPIDtmp, PrgBordlessLnchPrgIndex, disableRedirect, oldRedirectionValue, lnchPrgIndex, borderToggle, targHWnd := 0)
+MovePrgToMonitor(targMonitorNum, PrgPIDtmp, PrgBordlessLnchPrgIndex, lnchPrgIndex, borderToggle, targHWnd := 0)
 {
 isTESConstructionSet := 0
 cursorPosX := 0, cursorPosY := 0
@@ -11090,6 +11085,7 @@ outStr := ""
 
 DetectHiddenWindows, On
 
+	; "refresh" busy cursosr
 	if (!targHWnd)
 	{
 	ReplaceSystemCursor()
@@ -11099,11 +11095,7 @@ DetectHiddenWindows, On
 
 	if (outStr := SetCoords(1, targHWnd, PrgPIDtmp, targMonitorNum, firstPIDhWnd, lnchPrgIndex, PrgBordlessLnchPrgIndex))
 	{
-		if (disableRedirect && oldRedirectionValue)
-		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 	DetectHiddenWindows, Off
-		if (!targHWnd)
-		ReplaceSystemCursor()
 	return outStr
 
 	}
@@ -11223,9 +11215,6 @@ DetectHiddenWindows, On
 
 
 DetectHiddenWindows, Off
-
-	if (!targHWnd)
-	ReplaceSystemCursor()
 
 return outStr
 }
@@ -11402,7 +11391,6 @@ fTemp := 0
 		PrgPID := 0
 		else
 		PrgPID := PrgPIDtmp
-
 	}
 	else
 	{
@@ -11566,7 +11554,6 @@ Thread, Priority, -536870911 ; https://autohotkey.com/boards/viewtopic.php?f=13&
 		Process, Exist, %PrgPID%
 			if (!ErrorLevel)
 			{
-			msgbox % PrgPID PrgPID
 			PrgPID := 0
 			CleanupPID(currBatchNo, targMonitorNum, lastMonitorUsedInBatch, PrgMonToRn, presetNoTest, PrgListPID%btchPrgPresetSel%, PrgBordless, PrgLnchHide, PrgPID, PrgChgResOnClose, selPrgChoice, waitBreak)
 				if (!batchActive)
@@ -13336,7 +13323,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 		gui, MonitorSelectDlg: add, button, % "xs+" . height/2 . " ys+" . (A_Index - 1) * height + height/2 . " W" . 2 * height . " H" . height/2 . " gGuiMonitorSelect" . " vguiMonitorSelect" . A_Index, % "Monitor" . resultResolutionMons[A_Index]
 		SplashyProc("*", A_Index, resultResolutionMons[A_Index], monitors[resultResolutionMons[A_Index]])
 		resultResolutionMons[A_Index] := A_Index
-		MovePrgToMonitor(A_Index, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[A_Index + 1])
+		MovePrgToMonitor(A_Index, 0, 0, 0, 0, Splashy.hWndSaved[A_Index + 1])
 		}
 
 	gui, MonitorSelectDlg: add, button, % "Section xp w" . 2 * height . " ys" . height * (PrgLnchOpt.activeDispMonNamesNo + 1) . " gGuiMonitorSelectDlgAccept", Accept
@@ -13369,7 +13356,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 		trackMonNames[fTemp] := 1
 
 	SplashyProc("*", fTemp, trackMonNames[fTemp], monitors[trackMonNames[fTemp]])
-	MovePrgToMonitor(fTemp, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[fTemp + 1])
+	MovePrgToMonitor(fTemp, 0, 0, 0, 0, Splashy.hWndSaved[fTemp + 1])
 
 	Splashy.NewWndProc.PaintProc()
 
@@ -15448,7 +15435,7 @@ instance := 0
 	if (type == "*Loading" || type == "*Launching")
 	{
 		if (PrgLnch.primaryMonitor != PrgLnch.Monitor)
-		MovePrgToMonitor(PrgLnch.Monitor, 0, 0, 0, 0, 0, 0, Splashy.hWndSaved[1])
+		MovePrgToMonitor(PrgLnch.Monitor, 0, 0, 0, 0, Splashy.hWndSaved[1])
 	}
 
 }
