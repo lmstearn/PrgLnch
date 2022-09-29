@@ -3072,6 +3072,7 @@ Class PrgLnchOpt
 	static PrgChoiceNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	static PrgBordless := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	static PrgMonToRn := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	static PrgRnPriority := [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
 	static PrgChgResOnClose := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 	; up to  9 monitors
@@ -3296,6 +3297,21 @@ Class PrgLnchOpt
 		}
 	}
 
+	; Borderless styles applied or no:
+	; we assume anything with a border style must be either IMAGE_SUBSYSTEM_WINDOWS_CUI or ... _GUI
+	borderToggle
+	{
+		set
+		{
+		this._borderToggle := value
+		}
+		get
+		{
+		return this._borderToggle
+		}
+	}
+
+
 	SetDispAdapterNamesVal(index, adapterName)
 	{
 	This.adapterNames.InsertAt(index, adapterName)
@@ -3364,6 +3380,15 @@ Class PrgLnchOpt
 	GetPrgMonToRn(index)
 	{
 	return This.PrgMonToRn[index]
+	}
+
+	SetPrgRnPriority(index, value)
+	{
+	This.PrgRnPriority.InsertAt(index, value)
+	}
+	GetPrgRnPriority(index)
+	{
+	return This.PrgRnPriority[index]
 	}
 
 	SetPrgChgResOnClose(index, value)
@@ -3651,7 +3676,7 @@ PrgPID := 0 ; PID for test run Prgs
 PrgIntervalLnch := -1
 PrgUrlTest := "" ;temp URL to be verified in "Save URL"
 updateStatus := 1 ; download control
-borderToggle := 0 ; Borderless styles applied or no
+
 UrlPrgIsCompressed := 0
 batchPrgNo := 0 ;actually no of Prgs configured
 currBatchNo := 0 ;no of Prgs in selected preset limited by PrgLnch.maxBatchPrgs
@@ -3670,7 +3695,6 @@ waitBreak := 0 ; Switch to control WatchSwitchOut and WatchSwitchBack
 PrgCmdLine := ["", "", "", "", "", "", "", "", "", "", "", ""]
 PrgChgResOnSwitch := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgRnMinMax := [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] ;In line with the Gui control, indetermined values are "Normal". MinMax in WinGet is 0 for Normal
-PrgRnPriority := [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
 PrgLnchHide := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgResolveShortcut := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 PrgListIndex := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -4123,8 +4147,8 @@ GuiControlGet, txtPrgChoice, PrgLnchOpt:, PrgChoice
 
 	PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd)
 	GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
-	borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, 1)
-	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgLnchHide, 1)
+	PrgLnchOpt.borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, 1)
+	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, selPrgChoice, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgLnchHide, 1)
 
 	GuiControl, PrgLnchOpt: , DefaultPrg, 1
 	}
@@ -5189,7 +5213,7 @@ if (A_GuiEvent == "DoubleClick")
 	CurrResStore(targMonitorNum,, lnchPrgIndex)
 	lnchStat := 1
 
-	strRetVal := LnchPrgOff(batchPrgStatus, lnchStat, temp, PrgLnkInf, PrgResolveShortcut, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, PrgMonPID, PrgRnMinMax, PrgRnPriority, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, btchPowerNames[btchPrgPresetSel])
+	strRetVal := LnchPrgOff(batchPrgStatus, lnchStat, temp, PrgLnkInf, PrgResolveShortcut, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, PrgMonPID, PrgRnMinMax, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, btchPowerNames[btchPrgPresetSel])
 
 
 	loop % currBatchNo
@@ -7677,13 +7701,13 @@ return
 PrgPriorityChk:
 Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
-PrgRnPriority[selPrgChoice] := PrgPriority
+PrgLnchOpt.SetPrgRnPriority(selPrgChoice, PrgPriority)
 IniProc(selPrgChoice)
-if (PrgPID) ;test only from config
-{
-(!PrgPriority)? temp := "B": (PrgPriority == 1)? temp := "H": temp := "N"
-Process, priority, %PrgPID%, % temp
-}
+	if (PrgPID) ;when test prg active from config
+	{
+	(!PrgPriority)? temp := "B": (PrgPriority == 1)? temp := "H": temp := "N"
+	Process, priority, %PrgPID%, % temp
+	}
 return
 
 BordlessChk:
@@ -7759,7 +7783,7 @@ strTemp := PrgLnchOpt.GetPrgChoiceNames(selPrgChoice)
 		GuiControl, PrgLnchOpt: Enable, PrgMinMax
 		GuiControl, PrgLnchOpt: Enable, Bordless
 		GuiControl, PrgLnchOpt: Enable, PrgLAA
-		borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, 1)
+		PrgLnchOpt.borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, 1)
 		SetTimer, CheckVerPrg, 5000
 		}
 		else
@@ -8018,7 +8042,7 @@ SetResDefaults(targMonitorNum, 1)
 	PrgLnchOpt.SetPrgMonToRn(selPrgChoice, targMonitorNum)
 	IniProc(selPrgChoice)
 
-	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgLnchHide, 1)
+	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, selPrgChoice, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgLnchHide, 1)
 	FindStoredRes(targMonitorNum, ResIndex, ResIndexHwnd)
 	}
 	else
@@ -8466,7 +8490,7 @@ SendMessage 0x147, 0, 0, , ahk_id %PrgChoiceHwnd%  ; CB_GETCURSEL
 				GuiControl, PrgLnchOpt:, MkShortcut, % ChgShortcutVar
 				GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 				PrgURLEnable(PrgUrlTest, UrlPrgIsCompressed, selPrgChoice, PrgChoicePaths, selPrgChoiceTimer, PrgResolveShortcut, PrgLnkInf, PrgUrl, PrgVer, PrgVerNew, UpdturlHwnd)
-				borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, 1)
+				PrgLnchOpt.borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, 1)
 
 				GuiControlGet, targMonitorNum, PrgLnchOpt:, iDevNum
 
@@ -8487,7 +8511,7 @@ SendMessage 0x147, 0, 0, , ahk_id %PrgChoiceHwnd%  ; CB_GETCURSEL
 				sleep 20
 
 				FindStoredRes(targMonitorNum, ResIndex, ResIndexHwnd)
-				TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgLnchHide, 1)
+				TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, selPrgChoice, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgLnchHide, 1)
 				}
 				else
 				{
@@ -8809,13 +8833,13 @@ GuiControl, PrgLnchOpt: Enable, RnPrgLnch
 GuiControl, PrgLnchOpt:, RnPrgLnch, &Test Run Prg
 
 
-borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, 1)
+PrgLnchOpt.borderToggle := DcmpExecutable(selPrgChoice, PrgChoicePaths, PrgLnkInf, PrgResolveShortcut, 1)
 
 StoreFetchPrgRes(selPrgChoice, PrgLnkInf, targMonitorNum)
 SetResDefaults(targMonitorNum, 1)
 CheckModesFunc(defPrgStrng, PresetPropHwnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 
-TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, borderToggle, selPrgChoice, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgRnPriority, PrgLnchHide, 1)
+TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, selPrgChoice, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgLnchHide, 1)
 
 GuiControl, PrgLnchOpt: ChooseString, iDevNum, %targMonitorNum%
 
@@ -8858,7 +8882,7 @@ zeroPrgVars:
 	PrgResolveShortcut[selPrgChoice] := 0
 	PrgCmdLine[selPrgChoice] := ""
 	PrgLnchOpt.SetPrgMonToRn(selPrgChoice, 0)
-	PrgRnPriority[selPrgChoice] := -1
+	PrgLnchOpt.SetPrgRnPriority(selPrgChoice, -1)
 	PrgBordless[selPrgChoice] := 0
 	PrgLnchOpt.SetPrgBordless(selPrgChoice, 0)
 	PrgLnchHide[selPrgChoice] := 0
@@ -9895,7 +9919,6 @@ PrgLnkInf = ""
 PrgPIDMast = ""
 PrgResolveShortcut = ""
 PrgRnMinMax = ""
-PrgRnPriority = ""
 PrgUrl = ""
 PrgVer = ""
 
@@ -10249,7 +10272,7 @@ loop % ((presetNoTest)? currBatchno: 1)
 	; save current res to def
 	CurrResStore(targMonitorNum,, lnchPrgIndex)
 
-	strRetVal := LnchPrgOff(A_Index, lnchStat, (presetNoTest)? temp: strTemp2, PrgLnkInf, PrgResolveShortcut, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, PrgMonPID, PrgRnMinMax, PrgRnPriority, borderToggle, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, btchPowerNames[btchPrgPresetSel])
+	strRetVal := LnchPrgOff(A_Index, lnchStat, (presetNoTest)? temp: strTemp2, PrgLnkInf, PrgResolveShortcut, (presetNoTest)? currBatchno: 1, lnchPrgIndex, PrgCmdLine, iDevNumArray, PrgMonPID, PrgRnMinMax, targMonitorNum, PrgPID, PrgListPID%btchPrgPresetSel%, btchPowerNames[btchPrgPresetSel])
 
 	if (strRetVal)
 	{  ;Lnch failed for current Prg
@@ -10411,7 +10434,7 @@ Thread, NoTimers, false
 return
 
 
-LnchPrgOff(prgIndex, lnchStat, PrgPaths, PrgLnkInf, PrgResolveShortcut, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, ByRef PrgMonPID, PrgRnMinMax, PrgRnPriority, borderToggle, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, btchPowerName)
+LnchPrgOff(prgIndex, lnchStat, PrgPaths, PrgLnkInf, PrgResolveShortcut, currBatchno, lnchPrgIndex, PrgCmdLine, iDevNumArray, ByRef PrgMonPID, PrgRnMinMax, ByRef targMonitorNum, ByRef PrgPID, ByRef PrgListPID, btchPowerName)
 {
 PrgLnchMon := 0, disableRedirect := 0, PrgPIDtmp := 0, PrgPrty := "N", IsaPrgLnk := 0, PrgLnkInflnchPrgIndex := PrgLnkInf[lnchPrgIndex]
 temp := 0, fTemp := 0, strRetVal := "", wkDir := "", PrgPathsAssocCommandLine := ""
@@ -10431,7 +10454,7 @@ if (PrgLnch.Monitor != PrgLnchMon)
 		IniWrite, 1, % PrgLnch.SelIniChoicePath, General, LnchPrgMonWarn
 
 		if (lnchStat > 0)
-		MovePrgToMonitor(PrgLnchMon, 0, 0, 0, Splashy.hWndSaved[1])
+		MovePrgToMonitor(PrgLnchMon, 0, 0, Splashy.hWndSaved[1])
 	}
 PrgLnch.Monitor := PrgLnchMon
 }
@@ -10440,7 +10463,7 @@ PrgLnch.Monitor := PrgLnchMon
 if (lnchPrgIndex > 0) ;Running
 {
 	;Fix priority
-	temp := (PrgRnPriority[lnchPrgIndex])
+	temp := PrgLnchOpt.GetPrgRnPriority(lnchPrgIndex)
 	(!temp)? PrgPrty := "B": (temp == 1)? PrgPrty := "H": PrgPrty := "N"
 	PrgPaths := ExtractPrgPath(lnchPrgIndex, 0, PrgPaths, PrgLnkInf, PrgResolveShortcut, IsaPrgLnk)
 
@@ -10683,6 +10706,7 @@ if (lnchPrgIndex > 0) ;Running
 			; wait for a window
 				if (Instr(PrgPaths, "-editor -notimeout"))
 				{
+				fTemp := 0
 				temp := 0
 					while (!temp)
 					{
@@ -10694,9 +10718,20 @@ if (lnchPrgIndex > 0) ;Running
 							if (InStr(strTemp, "TESConstructionSet.exe"))
 							temp := proc.ProcessId
 						}
+					fTemp++
+
+						if (fTemp == 10)
+						break
+					}
+				WinWaitActive, , TES Construction Set, 6
+
+					if (!temp || errorlevel)
+					{
+					PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
+					ReplaceSystemCursor()
+					return "CSE cancelled"
 					}
 				PrgPIDtmp := temp 
-				WinWaitActive, , TES Construction Set, 10
 				sleep 300
 				}
 				else
@@ -10722,7 +10757,7 @@ if (lnchPrgIndex > 0) ;Running
 		if (lnchStat == 1)
 		PrgMonPID[PrgPIDtmp] := targMonitorNum
 
-		if (outStr := MovePrgToMonitor(targMonitorNum, PrgPIDtmp, lnchPrgIndex, borderToggle))
+		if (outStr := MovePrgToMonitor(targMonitorNum, PrgPIDtmp, lnchPrgIndex))
 		{
 		PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
 		ReplaceSystemCursor()
@@ -10881,6 +10916,7 @@ return 0
 SetCoords(checkDestMon, hWnd, PrgPID, targMonitorNum, ByRef firstPIDhWnd, lnchPrgIndex, ByRef cursorPosX := 0, ByRef cursorPosY := 0)
 {
 Static WP := "", hWndIndex := 0, mdLeft := 0, mdRight := 0, mdTop := 0, mdBottom := 0, lastTargMonitorNum := 0
+Static SW_SHOWMAXIMIZED := 3, SW_SHOWMINIMIZED := 2, SW_SHOWNORMAL := 1
 monRatioW := 1, monRatioH := 1
 ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
 
@@ -10941,6 +10977,7 @@ x := NumGet(WP, 28, "UInt")
 y := NumGet(WP, 32, "UInt")
 w := NumGet(WP, 36, "UInt") - x
 h := NumGet(WP, 40, "UInt") - y
+showCmd := NumGet(WP, 8, "UInt")
 
 	if (w || h)
 	fTemp := 1
@@ -10991,11 +11028,9 @@ h := NumGet(WP, 40, "UInt") - y
 		{
 		; not for the Splashy monitor guis
 
-		WinGet, minMaxVar, MinMax, ahk_id %hWnd%
-
-			;Must restore it before moving
-			if (minMaxVar)
-			WinRestore, ahk_id %hWnd%
+		;Must restore it before moving
+		if (showCmd != SW_SHOWNORMAL)
+		WinRestore, ahk_id %hWnd%
 
 			if (msw)
 			monRatioW := mdw/msw
@@ -11061,7 +11096,7 @@ h := NumGet(WP, 40, "UInt") - y
 ; If fTemp = = 0, anything goes !!??
 
 
-	if (fTemp && borderToggle)
+	if (fTemp && PrgLnchOpt.borderToggle)
 	{
 	dx := mdLeft
 	dy := mdTop
@@ -11072,11 +11107,11 @@ h := NumGet(WP, 40, "UInt") - y
 	}
 
 	; Restore min/max
-	if (minMaxVar == 1)
+	if (showCmd == SW_SHOWMAXIMIZED)
 	WinMaximize, ahk_id %hWnd%
 	else
 	{
-		if (minMaxVar == -1)
+		if (showCmd == SW_SHOWMINIMIZED)
 		WinMinimize, ahk_id %hWnd%
 	}
 
@@ -11093,7 +11128,7 @@ return outStr
 }
 
 
-MovePrgToMonitor(targMonitorNum, PrgPIDtmp, lnchPrgIndex, borderToggle, targHWnd := 0)
+MovePrgToMonitor(targMonitorNum, PrgPIDtmp, lnchPrgIndex, targHWnd := 0)
 {
 isTESConstructionSet := 0
 cursorPosX := 0, cursorPosY := 0
@@ -11114,8 +11149,7 @@ DetectHiddenWindows, On
 	if (outStr := SetCoords(1, targHWnd, PrgPIDtmp, targMonitorNum, firstPIDhWnd, lnchPrgIndex))
 	{
 	DetectHiddenWindows, Off
-	return outStr
-
+	return outStr . PrgLnchOpt.PrgNames[lnchPrgIndex] . "!"
 	}
 
 
@@ -13357,7 +13391,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 		gui, MonitorSelectDlg: add, button, % "xs+" . height/2 . " ys+" . (A_Index - 1) * height + height/2 . " W" . 2 * height . " H" . height/2 . " gGuiMonitorSelect" . " vguiMonitorSelect" . A_Index, % "Monitor" . resultResolutionMons[A_Index]
 		SplashyProc("*", A_Index, resultResolutionMons[A_Index], monitors[resultResolutionMons[A_Index]])
 		resultResolutionMons[A_Index] := A_Index
-		MovePrgToMonitor(A_Index, 0, 0, 0, Splashy.hWndSaved[A_Index + 1])
+		MovePrgToMonitor(A_Index, 0, 0, Splashy.hWndSaved[A_Index + 1])
 		}
 
 	gui, MonitorSelectDlg: add, button, % "Section xp w" . 2 * height . " ys" . height * (PrgLnchOpt.activeDispMonNamesNo + 1) . " gGuiMonitorSelectDlgAccept", Accept
@@ -13390,7 +13424,7 @@ WS_EX_CONTEXTHELP := 0x00000400
 		trackMonNames[fTemp] := 1
 
 	SplashyProc("*", fTemp, trackMonNames[fTemp], monitors[trackMonNames[fTemp]])
-	MovePrgToMonitor(fTemp, 0, 0, 0, Splashy.hWndSaved[fTemp + 1])
+	MovePrgToMonitor(fTemp, 0, 0, Splashy.hWndSaved[fTemp + 1])
 
 	Splashy.NewWndProc.PaintProc()
 
@@ -13899,13 +13933,14 @@ gui, ActiveWindowProp: -MaximizeBox -MinimizeBox +E%WS_EX_CONTEXTHELP% +OwnerPrg
 Gui, PrgLnch: +Disabled
 
 gui, ActiveWindowProp: Add, Checkbox, section w%height% vAWPPrgPriority gAWPPrgPriorityChk HWNDAWPPrgPriorityHwnd Check3, Prg Priority (BN-N-H)
+;check3 enables 3 values in checkbox
+GuiControl, ActiveWindowProp: Enable, AWPPrgPriority
+GuiControl, ActiveWindowProp:, AWPPrgPriority, % PrgLnchOpt.GetPrgRnPriority(selPrgChoice)
+
 
 gui, ActiveWindowProp: Font, cA96915 Bold
 gui, ActiveWindowProp: add, text, % "section w" . 2.4*height, % "Windows of " PrgLnchOpt.GetPrgChoiceNames(selPrgChoice)
 
-;check3 enables 3 values in checkbox
-GuiControl, ActiveWindowProp: Enable, AWPPrgPriority
-GuiControl, ActiveWindowProp:, AWPPrgPriority, -1
 
 Gui, ActiveWindowProp: Font
 
@@ -13934,7 +13969,10 @@ Gui, ActiveWindowProp: Add, Groupbox, % "section" . " w" . 2.4*height . " R" . 2
 
 		GuiControl, ActiveWindowProp:, % "AWPPrgMinMax" . A_Index, %fTemp%
 		Gui, ActiveWindowProp: Add, Checkbox, % "xp+" . height . " yp wp vAWPBordless" . A_Index . " gAWPClick", Borderless
-		GuiControl, ActiveWindowProp: Enable, AWPBordless
+
+			; not available if lnk or alien IMAGE_SUBSYSTEM etc.
+			if (PrgLnchOpt.borderToggle)
+			GuiControl, ActiveWindowProp: Enable, AWPBordless
 		}
 	}
 
@@ -13950,7 +13988,14 @@ gui, ActiveWindowProp: show
 return 0
 
 AWPPrgPriorityChk:
-;prgPID
+Gui, ActiveWindowProp: Submit, Nohide
+
+PrgLnchOpt.SetPrgRnPriority(selPrgChoice, AWPPrgPriority)
+IniProc(selPrgChoice)
+
+(!AWPPrgPriority)? temp := "B": (PrgPriority == 1)? temp := "H": temp := "N"
+Process, priority, %PrgPID%, % temp
+
 return 0
 
 AWPClick:
@@ -14336,7 +14381,7 @@ retVal := 0, scrWidth := 0, scrHeight := 0, scrFreq := 0
 		if (retrieveRes > 0 && PrgLnchOpt.GetPrgChgResOnClose(retrieveRes))
 		{
 		scrWidth := scrWidthBefChg[retrieveRes], scrHeight := scrHeightBefChg[retrieveRes], scrFreq := scrFreqBefChg[retrieveRes]
-			if (DefResNoMatchRes(targMonitorNum, , scrWidth, scrHeight, scrFreq))
+			if (DefResNoMatchRes(targMonitorNum, 1, scrWidth, scrHeight, scrFreq))
 			{
 			retVal := 1
 			PrgLnchOpt.scrWidth := scrWidth
@@ -15571,7 +15616,7 @@ instance := 0
 	if (type == "*Loading" || type == "*Launching")
 	{
 		if (PrgLnch.primaryMonitor != PrgLnch.Monitor)
-		MovePrgToMonitor(PrgLnch.Monitor, 0, 0, 0, Splashy.hWndSaved[1])
+		MovePrgToMonitor(PrgLnch.Monitor, 0, 0, Splashy.hWndSaved[1])
 	}
 
 }
@@ -15608,7 +15653,7 @@ x := 0, y := 0, ix:= 0, iy := 0, w := 0, h:= 0
 }
 
 ; Enables controls as per prg/monitor specs.
-TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, borderToggle := 0, selPrgChoice := 0, PrgChgResOnSwitch := 0, PrgChoicePaths := 0, PrgLnkInf := 0, PrgRnMinMax := -1, PrgRnPriority := -1, PrgLnchHide := 0, CtrlsOn := 0)
+TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, selPrgChoice := 0, PrgChgResOnSwitch := 0, PrgChoicePaths := 0, PrgLnkInf := 0, PrgRnMinMax := -1, PrgLnchHide := 0, CtrlsOn := 0)
 {
 
 ctlEnable := (LNKFlag(PrgLnkInf[selPrgChoice]) == -1)? "Disable": "Enable"
@@ -15671,10 +15716,10 @@ if (CtrlsOn)
 
 	GuiControl, PrgLnchOpt:, PrgMinMax, % PrgRnMinMax[selPrgChoice]
 	GuiControl, PrgLnchOpt: Enable, PrgPriority
-	GuiControl, PrgLnchOpt:, PrgPriority, % PrgRnPriority[selPrgChoice]
+	GuiControl, PrgLnchOpt:, PrgPriority, % PrgLnchOpt.GetPrgRnPriority(selPrgChoice)
 	GuiControl, PrgLnchOpt: Text, Bordless, Ext. Borderless
-		if (borderToggle)
-		{
+		if (PrgLnchOpt.borderToggle)
+		{ 
 		GuiControl, PrgLnchOpt: Enable, Bordless
 		GuiControl, PrgLnchOpt:, Bordless, % PrgLnchOpt.GetPrgBordless(selPrgChoice)
 		}
@@ -15957,7 +16002,7 @@ IniProcStart:
 		PrgRnMinMax[A_Index] := -1
 
 
-		spr := PrgLnchOpt.GetPrgMonToRn(A_Index) . "," . PrgLnchOpt.GetPrgChgResOnClose(A_Index) . "," . PrgChgResOnSwitch[A_Index] . ",-1," . PrgRnPriority[A_Index] . "," . PrgLnchOpt.GetPrgBordless(A_Index) . "," . PrgLnchHide[A_Index] . ",0"
+		spr := PrgLnchOpt.GetPrgMonToRn(A_Index) . "," . PrgLnchOpt.GetPrgChgResOnClose(A_Index) . "," . PrgChgResOnSwitch[A_Index] . ",-1," . PrgLnchOpt.GetPrgRnPriority(A_Index) . "," . PrgLnchOpt.GetPrgBordless(A_Index) . "," . PrgLnchHide[A_Index] . ",0"
 
 		IniWrite, % spr, % PrgLnch.SelIniChoicePath, Prg%A_Index%, PrgMisc
 
@@ -16460,7 +16505,7 @@ IniProcStart:
 									spr .= "," . PrgLnchOpt.GetPrgChgResOnClose(selPrgChoice)
 									spr .= "," . PrgChgResOnSwitch[selPrgChoice]
 									spr .= "," . PrgRnMinMax[selPrgChoice]
-									spr .= "," . PrgRnPriority[selPrgChoice]
+									spr .= "," . PrgLnchOpt.GetPrgRnPriority(selPrgChoice)
 									spr .= "," . PrgLnchOpt.GetPrgBordless(selPrgChoice)
 									spr .= "," . PrgLnchHide[selPrgChoice]
 									spr .= "," . PrgResolveShortcut[selPrgChoice]
@@ -16486,7 +16531,7 @@ IniProcStart:
 									case 4:
 									PrgRnMinMax[recCount] := A_LoopField
 									case 5:
-									PrgRnPriority[recCount] := A_LoopField
+									PrgLnchOpt.SetPrgRnPriority(recCount, A_LoopField)
 									case 6:
 									PrgLnchOpt.SetPrgBordless(recCount, A_LoopField)
 									case 7:
