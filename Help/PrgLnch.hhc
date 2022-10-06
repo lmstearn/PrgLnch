@@ -38,8 +38,16 @@
 		<param name="Local" value="PrgLnch Properties\PrgLnch Properties.htm">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="Active Window Properties">
+		<param name="Local" value="Active Window Properties\Active Window Properties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="LnchPad Setup">
 		<param name="Local" value="LnchPad Setup\LnchPad Setup.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="About PrgLnch">
+		<param name="Local" value="About PrgLnch.htm">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="PrgLnch FAQ">
@@ -48,10 +56,6 @@
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Why PrgLnch?">
 		<param name="Local" value="Why PrgLnch.htm">
-		</OBJECT>
-	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="About PrgLnch">
-		<param name="Local" value="About PrgLnch.htm">
 		</OBJECT>
 </UL>
 </BODY></HTML>

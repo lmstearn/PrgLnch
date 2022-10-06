@@ -135,7 +135,7 @@ Advanced Users: If a Prg is run on the same monitor as PrgLnch at a resolution o
 Window Minimised, Normal, or Maximised:
 </td>
 <td>
-Provisional on certain window properties of Prg, the default value is Norm (Normal) for its expected window positions and dimensions, else the Prg can be run maximised or minimised. Disabled for <B>*.lnk</B> files which have their own window settings configurable through explorer. Can be applied while the Prg is active.
+Provisional on certain window properties of Prg, the default value is Norm (Normal) for its saved window positions and dimensions, else the Prg can be run maximised or minimised. Disabled for <B>*.lnk</B> files which have their own window settings configurable through explorer. While it can be applied while the test Prg is active, the values are not saved. If Prg has more than one window, the <a href="Active Window Properties/Active Window Properties.htm">Active Window Properties</a> dialog shows.
 </td>
  </tr>
 <tr href="#" id="Priority">
@@ -155,8 +155,9 @@ The <a href="PrgLnch FAQ.htm#BorderlessPoint">Borderless</a> check (available fo
 <STRONG>Ext. Borderless</STRONG>:
 When checked, <a href="https://docs.microsoft.com/en-us/windows/desktop/winmsg/extended-window-styles">extended</a> borderless styles are detected in addition to the commonly used size and caption styles.<br>
 <STRONG>Apply Borderless</STRONG>:
-The regular and optionally extended borderless styles are available for toggle only on <a href="PrgLnch Config/PrgLnch Config.htm#TestRunPrg">Test Runs</a> for Prgs which are not <a href="PrgLnch Config/PrgLnch Config.htm#ResolveShortcut">unresolved</a> <B>.lnk</B> files. Borderless windows are resized to match the dimensions of the target monitor, with a notable exception in the resizing of  console (or command) windows.<br>
-<STRONG>Note:</STRONG> Resizing after border adjustments isn't optional, thus there is a possibility of conflict with it and a few legacy 3D engines which may rely on positional screen attributes.
+The regular and optionally extended borderless styles are available for toggle only on <a href="PrgLnch Config/PrgLnch Config.htm#TestRunPrg">Test Runs</a> for Prgs which are not <a href="PrgLnch Config/PrgLnch Config.htm#ResolveShortcut">unresolved</a> <B>.lnk</B> files. For borderless windows to match the dimensions of the target monitor, maximise them first. If Prg has more than one window, the <a href="Active Window Properties/Active Window Properties.htm">Active Window Properties</a> dialog shows.<br>
+<STRONG>Note:</STRONG>
+Resizing console (or command) windows or programs driven by legacy 3D engines (based on fixed screen co-ordinates), before removing borders may not always produce the desired effects.<br>
 </td>
  </tr>
 <tr href="#" id="HidePrgLnchonRun">
