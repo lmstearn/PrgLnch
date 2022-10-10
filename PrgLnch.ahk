@@ -3599,6 +3599,7 @@ Class PrgLnch
 	}
 	DoWOw64Revert(disableRedirect, oldRedirectionValue)
 	{
+		; disableRedirect is only set when PrgLnch is not 64Bit
 		if (disableRedirect && oldRedirectionValue)
 		DllCall("Wow64RevertWow64FsRedirection", "Ptr", oldRedirectionValue)
 	}
@@ -3896,7 +3897,7 @@ FileInstall PrgLnch.ico, PrgLnch.ico
 
 ; Restarted PrgLnch (see above): Must happen after initialising PrgPID, PrgListPID.
 temp := 0
-if (strTemp)
+	if (strTemp)
 	{
 		; restart same ini
 		if (PrgLnch.SelIniChoicePath == oldSelIniChoicePath)
@@ -7086,10 +7087,11 @@ static AWPPrgPriority
 Global AWPPrgMinMax1 := 0, AWPPrgMinMax2 := 0, AWPPrgMinMax3 := 0, AWPPrgMinMax4 := 0, AWPPrgMinMax5 := 0, AWPPrgMinMax6 := 0, AWPPrgMinMax7 := 0, AWPPrgMinMax8 := 0, AWPPrgMinMax9 := 0, AWPPrgMinMax10, AWPPrgMinMax11 := 0, AWPPrgMinMax12 := 0
 Global AWPPrgPriorityHWnd := 0, AWPPrgMinMaxHWnd := 0, AWPBordlessHWnd := 0
 Global AWPBordless1 := 0, AWPBordless2 := 0, AWPBordless3 := 0, AWPBordless4 := 0, AWPBordless5 := 0, AWPBordless6 := 0, AWPBordless7 := 0, AWPBordless8 := 0, AWPBordless9 := 0, AWPBordless10 := 0, AWPBordless11 := 0, AWPBordless12 := 0
-static selPrgChoice := 0, windowHandlesNo := 1
-temp := 0, strTemp := "", visibleWindowHandlesNo := 0, prgPID := 0
+static selPrgChoice := 0, windowHandlesNo := 1, prgPID := 0, prgPIDInStatic := 0
+temp := 0, fTemp = 0, strTemp := "", visibleWindowHandlesNo := 0, hWnd := 0
 static winNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
+prgPIDInStatic := prgPIDIn ; else 0 in AWP labels
 	if (prgPIDIn)
 	selPrgChoice := indexIn
 	else
@@ -7126,22 +7128,26 @@ static winNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		if (temp := PrgLnchOpt.GetTestWindowHandles(selPrgChoice, A_Index))
 		{
 		windowHandlesNo := A_Index
-		; Hidden windows will be blank.
-		WinGetTitle, strTemp, ahk_id %temp%
-		winNames[A_Index] := strTemp
-			if (strTemp)
+
+			; leave for later passes
+			if (winNames[A_Index])
 			visibleWindowHandlesNo++
+			else
+			{
+			WinGetTitle, strTemp, ahk_id %temp%
+			winNames[A_Index] := strTemp
+		; Hidden windows will be blank.
+				if (strTemp)
+				visibleWindowHandlesNo++
+			}
 		}
 		else
 		{
-			if (!prgPIDIn)
+			if (!prgPIDIn) ; test for first window
 			{
 			WinGet, prgPID, PID, % "ahk_id" . PrgLnchOpt.GetTestWindowHandles(selPrgChoice, 1)
 				if (!PrgPID)
-				{
-				MsgBox, 8192, Display Active Window, Cannot find the Prg PID!
-				return 0
-				}
+				fTemp = 1
 			}
 
 			if (!visibleWindowHandlesNo)
@@ -7153,6 +7159,26 @@ static winNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 		}
 	}
 
+	if (fTemp)
+	{
+		Loop %windowHandlesNo%
+		{
+			if (winNames[A_Index])
+			{
+			WinGet, prgPID, PID, % "ahk_id" . PrgLnchOpt.GetTestWindowHandles(selPrgChoice, A_Index)
+				if (PrgPID)
+				break
+			}
+		}
+
+		if (!PrgPID)
+		{
+		MsgBox, 8192, Display Active Window, Cannot find the Prg PID!
+		return 0
+		}
+	}
+
+
 	if (prgPIDIn)
 	{
 		if (visibleWindowHandlesNo < 2)
@@ -7160,7 +7186,7 @@ static winNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 	prgPID := prgPIDIn
 	}
 
-height := A_ScreenHeight/5, numWMIResolutionmodesTmp := 0
+height := A_ScreenHeight/5
 
 gui, ActiveWindowProp: -MaximizeBox -MinimizeBox +E%WS_EX_CONTEXTHELP% +OwnerPrgLnch HWNDhWndActiveWindowProp
 
@@ -7195,29 +7221,45 @@ Gui, ActiveWindowProp: Add, Groupbox, % "section" . " w" . 2.4*height . " R" . 2
 		; Hidden windows are not considered
 		if (winNames[A_Index])
 		{
+		hWnd := PrgLnchOpt.GetTestWindowHandles(selPrgChoice, A_Index)
+		strTemp := (lTemp := WinExist("ahk_id" hWnd))?"Enable":"Disable"
+
 		Gui, ActiveWindowProp: Font, cA96915 Bold S8
 		Gui, ActiveWindowProp: Add, text, % "xs+" . height/8 . " yp+" . height/10 . " w" . height, % winNames[A_Index]
 		Gui, ActiveWindowProp: Font
-		Gui, ActiveWindowProp: Add, Checkbox, % "xs+" . height/8 . " yp+" . height/8 . " w" . height . " vAWPPrgMinMax" . A_Index . " gAWPClick Check3" . (A_Index == 1?" HWNDAWPPrgMinMaxHWnd":), Min-Norm-Max
-		GuiControl, ActiveWindowProp: Enable, % "AWPPrgMinMax" . A_Index
-		WinGet, fTemp, MinMax , % "ahk_id" . PrgLnchOpt.GetTestWindowHandles(selPrgChoice, A_Index)
-			if (fTemp == -1 )
-			fTemp := 0
-			else
-			{
-				if (!fTemp)
-				fTemp := -1
-			}
+
+		Gui, ActiveWindowProp: Add, Checkbox, % "xs+" . height/8 . " yp+" . height/8 . " w" . height . " vAWPPrgMinMax" . A_Index . " gAWPClick Check3", Min-Norm-Max
+
+			if (A_Index == 1)
+			Gui, ActiveWindowProp: +HWNDAWPPrgMinMaxHWnd
 		
+		; also refer to restrictions on borderToggle below, however.
+		; a window without borders can be programmatically min/maxed.
+		GuiControl, ActiveWindowProp: %strTemp%, AWPPrgMinMax%A_Index%
+			if (lTemp)
+			{
+			WinGet, fTemp, MinMax , ahk_id %hWnd%
+				if (fTemp == -1)
+				fTemp := 0
+				else
+				{
+					if (!fTemp)
+					fTemp := -1
+				}
 
-		GuiControl, ActiveWindowProp:, % "AWPPrgMinMax" . A_Index, %fTemp%
-		Gui, ActiveWindowProp: Add, Checkbox, % "xp+" . height . " yp wp vAWPBordless" . A_Index . " gAWPClick" . (A_Index == 1?" HWNDAWPBordlessHWnd":), Borderless
+			GuiControl, ActiveWindowProp:, AWPPrgMinMax%A_Index%, %fTemp%
+			}
+		Gui, ActiveWindowProp: Add, Checkbox, % "xp+" . height . " yp wp vAWPBordless" . A_Index . " gAWPClick", Borderless
 
-		; Not correct if user has changed since launch!
-		GuiControl, ActiveWindowProp: , % "AWPPrgMinMax" . A_Index, % PrgLnchOpt.GetPrgMinMax(selPrgChoice, A_Index)
-			; not available if lnk or alien IMAGE_SUBSYSTEM etc.
-			if (PrgLnchOpt.borderToggle)
-			GuiControl, ActiveWindowProp: Enable, AWPBordless
+			if (A_Index == 1)
+			Gui, ActiveWindowProp: +HWNDAWPBordlessHWnd
+
+			; PrgLnchOpt.borderToggle: not available if lnk or alien IMAGE_SUBSYSTEM etc.
+			if (PrgLnchOpt.borderToggle && BordlessProc(0, selPrgChoice, clickedindex, hWnd, 2))
+			GuiControl, ActiveWindowProp: %strTemp%, AWPBordless%A_Index%
+			else
+			GuiControl, ActiveWindowProp: Disable, AWPBordless%A_Index%
+
 		}
 	}
 
@@ -7239,6 +7281,7 @@ PrgLnchOpt.SetPrgRnPriority(selPrgChoice, AWPPrgPriority)
 IniProc(selPrgChoice)
 
 (!AWPPrgPriority)? temp := "B": (AWPPrgPriority == 1)? temp := "H": temp := "N"
+
 Process, priority, %PrgPID%, % temp
 
 return 0
@@ -7255,53 +7298,62 @@ clickedindex := 0
 		break
 		}
 	}
-hWnd := PrgLnchOpt.GetTestWindowHandles(selPrgChoice, clickedindex)
-GuiControlGet, temp, ActiveWindowProp: , % A_GuiControl
 
-	if (InStr(A_GuiControl, "PrgMinMax"))
+	if (hWnd := PrgLnchOpt.GetTestWindowHandles(selPrgChoice, clickedindex))
 	{
-	WinGet, fTemp, MinMax , % "ahk_id" . PrgLnchOpt.GetTestWindowHandles(selPrgChoice, clickedindex)
-	; make it consistent with the switch statement below
-	lTemp := temp
-	CheckMinMax(fTemp, temp)
+	GuiControlGet, temp, ActiveWindowProp: , % A_GuiControl
 
-		if (lTemp != temp)
-		GuiControl, ActiveWindowProp:, % "AWPPrgMinMax" . clickedindex, %temp%
-
-
-		; assume the prg is launched as 
-		switch (temp)
+		if (InStr(A_GuiControl, "PrgMinMax"))
 		{
-		case -1:
-		WinRestore, ahk_id %hWnd%
-		case 0:
-		WinMinimize, ahk_id %hWnd%
-		case 1:
+		WinGet, fTemp, MinMax , ahk_id %hWnd%
+		; make it consistent with the switch statement below
+		lTemp := temp
+		CheckMinMax(fTemp, temp)
+
+			; assume the prg is launched as 
+			switch (temp)
+			{
+			case -1:
+			WinRestore, ahk_id %hWnd%
+			case 0:
+			WinMinimize, ahk_id %hWnd%
+			case 1:
+			{
+			WinMaximize, ahk_id %hWnd%
+			sleep 20
+				if (PrgLnchOpt.GetPrgMonToRn(selPrgChoice) == Prglnch.Monitor)
+				{
+					if (prgPIDInStatic)
+					WinActivate, % "ahk_id" PrgLnchOpt.HWnd()
+					else
+					WinActivate, % "ahk_id" PrgLnch.HWnd()
+				}
+				
+			;WinActivate, ahk_id %hWndActiveWindowProp%
+			}
+			}
+
+		PrgLnchOpt.SetPrgMinMax(selPrgChoice, clickedindex, temp)
+
+			if (lTemp != temp)
+			GuiControl, ActiveWindowProp:, AWPPrgMinMax%clickedindex%, %temp%
+		}
+		else
 		{
-		WinMaximize, ahk_id %hWnd%
-		sleep 20
-			if (PrgLnchOpt.GetPrgMonToRn(selPrgChoice) == Prglnch.Monitor)
-			WinActivate, % "ahk_id" PrgLnch.HWnd()
-		;WinActivate, ahk_id %hWndActiveWindowProp%
-		}
-		}
-	PrgLnchOpt.SetPrgMinMax(selPrgChoice, clickedindex, temp)
+			if (!InStr(A_GuiControl, "Bordless"))
+			return 0 ; just in case
+		BordlessProc(0, selPrgChoice, clickedindex, hWnd)
+		}	
 	}
-	else
-	{
-		if (!InStr(A_GuiControl, "Bordless"))
-		return 0 ; just in case
-	BordlessProc(0, selPrgChoice, clickedindex, hWnd)
-	}	
-
 return 0
 
 AWPQuit:
 ActiveWindowPropGuiClose:
 ActiveWindowPropGuiEscape:
 gui, ActiveWindowProp: Destroy
+sleep 20
 
-	if (prgPIDIn)
+	if (prgPIDInStatic)
 	{
 	Gui, PrgLnchOpt: -Disabled
 	WinActivate, % "ahk_id" PrgLnchOpt.HWnd()
@@ -7311,6 +7363,9 @@ gui, ActiveWindowProp: Destroy
 	Gui, PrgLnch: -Disabled
 	WinActivate, % "ahk_id" PrgLnch.HWnd()
 	}
+
+; In case priority is changed 
+GuiControl, PrgLnchOpt:, PrgPriority, % PrgLnchOpt.GetPrgRnPriority(selPrgChoice)
 
 return 0
 }
@@ -8075,8 +8130,8 @@ Gui, PrgLnchOpt: Submit, Nohide
 Tooltip
 
 GuiControlGet, temp, PrgLnchOpt:, PrgMinMax
-;DisplayActiveWindowProps(selPrgChoice, prgPID)
-;msgbox % prgpid
+
+
 	if (PrgPID) ;test only from config
 	{
 	Thread, Notimers
@@ -8109,13 +8164,11 @@ GuiControlGet, temp, PrgLnchOpt:, PrgMinMax
 			}
 		}
 		else
-		; In case priority is changed in AWP
-		GuiControl, PrgLnchOpt:, PrgPriority, % PrgLnchOpt.GetPrgRnPriority(selPrgChoice)
+		GuiControl, PrgLnchOpt:, PrgMinMax, % PrgRnMinMax[selPrgChoice]
 	}
 	else ; only save the setting when prg is not running.
 	{
 	PrgRnMinMax[selPrgChoice] := temp
-
 	IniProc(selPrgChoice)
 	}
 
@@ -8153,8 +8206,7 @@ Tooltip
 		BordlessProc(targMonitorNum, selPrgChoice, 1, hWnd)
 		}
 		else
-		; In case priority is changed in AWP
-		GuiControl, PrgLnchOpt:, PrgPriority, % PrgLnchOpt.GetPrgRnPriority(selPrgChoice)
+		GuiControl, PrgLnchOpt:, Bordless, 0
 	}
 	else
 	{
@@ -11150,11 +11202,11 @@ if (lnchPrgIndex > 0) ;Running
 						}
 					fTemp++
 
-						if (fTemp == 10)
+						if (fTemp == 15)
 						break
 					}
-				WinWaitActive, , TES Construction Set, 6
-
+				WinWaitActive, ahk_class TES Construction Set,, 10
+				; Attempts to wait on other windows fails
 					if (!temp || errorlevel)
 					{
 					PrgLnch.DoWOw64Revert(disableRedirect, oldRedirectionValue)
@@ -11162,7 +11214,7 @@ if (lnchPrgIndex > 0) ;Running
 					return "CSE cancelled"
 					}
 				PrgPIDtmp := temp 
-				sleep 300
+				sleep 6000
 				}
 				else
 				{
@@ -11352,11 +11404,6 @@ ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, msRight := 0, msLeft :
 
 outStr := "", fTemp := 0
 
-	; initialise WP 
-	if (WP == "")
-	NumPut(VarSetCapacity(WP, 44, 0), WP, 0, "UInt")
-
-
 	if (targMonitorNum != lastTargMonitorNum)
 	{
 	SysGet, md, MonitorWorkArea, %targMonitorNum%	
@@ -11398,6 +11445,12 @@ outStr := "", fTemp := 0
 	return outStr
 	}
 
+
+	; initialise WP 
+	if (WP == "")
+	NumPut(VarSetCapacity(WP, 44, 0), WP, 0, "UInt")
+
+
 	;lTemp := "0x" . Splashy.ToBase(hWnd, 16)
 	if (!DllCall("User32.dll\GetWindowPlacement", "Ptr", hWnd, "Ptr", &WP))
 	return "GetWindowPlacement failed, so the co-ordinates of the window cannot be determined for "
@@ -11416,6 +11469,7 @@ showCmd := NumGet(WP, 8, "UInt")
 
 ; Consider the (default) window co-ords in another monitor from a previous run here
 ; don't bother moving if the window is already located in the destination monitor
+
 
 	if (!(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom))
 	{
@@ -11446,10 +11500,19 @@ showCmd := NumGet(WP, 8, "UInt")
 		dx := mdLeft + (x - msLeft) * (mdw/msw)
 		dy := mdTop + (y - msTop) * (mdh/msh)
 		}
-		else ; prg isn't located in a monitor- possibly a result of DWM doing funky things
+		else
 		{
-		dx := mdLeft
-		dy := mdTop
+			if (hWndIndex == 1) ; prg isn't located in a monitor- possibly a result of DWM doing funky things
+			{
+			dx := mdLeft
+			dy := mdTop
+			}
+			else ; Move sibling window to monitor.
+			{
+			dx := mdLeft + hWndIndex * 10
+			dy := mdTop + hWndIndex * 10
+			}
+			
 		}
 
 
@@ -11523,7 +11586,7 @@ showCmd := NumGet(WP, 8, "UInt")
 	else
 	outStr := "None"
 
-; If fTemp = = 0, anything goes !!??
+; If fTemp == 0, anything goes !!??
 
 
 	if (fTemp && PrgLnchOpt.borderToggle)
@@ -11592,7 +11655,7 @@ DetectHiddenWindows, On
 	fTemp := 1
 	strTemp := ""
 
-		WinGet, strTemp, ProcessName, ahk_pid %PrgPID%
+		WinGet, strTemp, ProcessName, ahk_pid %PrgPIDtmp%
 		; strTmp could also be zero if the window is orphaned, 
 
 		if (InStr(strTemp, "TESConstructionSet.exe"))
@@ -13298,13 +13361,23 @@ WinGet, S, Style, ahk_id%hWnd%
 	if (queryOnly)
 	{
 	;Initialises PrgStyle
-	GuiControl, PrgLnchOpt:, Bordless, 0
-	GuiControl, PrgLnchOpt: Text, Bordless, Apply Borderless
-		if (PrgStyleTmp)
-		return 1
-		else
-		GuiControl, PrgLnchOpt: Disable, Bordless
-	return 0
+		if (queryOnly == 1)
+		{
+		GuiControl, PrgLnchOpt:, Bordless, 0
+		GuiControl, PrgLnchOpt: Text, Bordless, Apply Borderless
+			if (PrgStyleTmp)
+			return 1
+			else
+			GuiControl, PrgLnchOpt: Disable, Bordless
+		return 0
+		}
+		else ; from AWP
+		{
+			if (PrgStyleTmp)
+			return 1
+			else
+			return 0
+		}
 	}
 
 
