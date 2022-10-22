@@ -19,15 +19,11 @@
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Back To Prglnch">
-		<param name="Local" value="PrgLnch Config\PrgLnch Config.htm#BackToPrglnch">
+		<param name="Local" value="PrgLnch Config\PrgLnch Config.htm">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Batch Preset Name">
-		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm#BatchPresetName">
-		</OBJECT>
-	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Batch Preset Name">
-		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm#BatchPresetName">
+		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Batch Prgs List">
@@ -63,11 +59,11 @@
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="List All Compatible Res Modes">
-		<param name="Local" value="PrgLnch Config\PrgLnch Config.htm#ListAllCompatible">
+		<param name="Local" value="PrgLnch Config\PrgLnch Config.htm">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="List of Batch Presets">
-		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm#BatchPresets">
+		<param name="Local" value="PrgLnch Batch\PrgLnch Batch.htm">
 		</OBJECT>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="LnchPad Config">

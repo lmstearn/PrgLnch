@@ -312,8 +312,8 @@ prgUrl6 := ["", "", "", "", "", "", "", "", "", "", "", ""]
 prgInfUrl1 := ["https://www.nexusmods.com/morrowind/mods/45439", "https://github.com/rfuzzo/mlox", "https://www.nexusmods.com/morrowind/mods/19510", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "http://mwedit.sourceforge.net", "https://www.nexusmods.com/morrowind/mods/46870", "http://mw.modhistory.com/download-95-5289", "https://www.nexusmods.com/morrowind/mods/3874", "http://mw.modhistory.com/download--1662", "https://mw.modhistory.com/download-p2-i25-95", "https://mw.modhistory.com/download-95-15293", "https://www.nexusmods.com/morrowind/mods/23065"]
 prgInfUrl2 := ["https://www.nexusmods.com/oblivion/mods/22368", "https://boss-developers.github.io", "https://www.nexusmods.com/oblivion/mods/36370", "http://tes5edit.github.io", "https://www.nexusmods.com/oblivion/mods/3311", "https://www.nexusmods.com/oblivion/mods/41447", "https://www.nexusmods.com/oblivion/mods/40549", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/oblivion/mods/15781", "https://www.nexusmods.com/skyrim/mods/5755", "https://github.com/matortheeternal/merge-plugins", "https://www.nexusmods.com/oblivion/mods/30519"]
 prgInfUrl3 := ["https://www.nexusmods.com/skyrimspecialedition/mods/6837", "https://www.nexusmods.com/skyrimspecialedition/mods/6194", "https://loot.github.io", "http://tes5edit.github.io", "https://www.nexusmods.com/skyrimspecialedition/mods/974", "https://www.nexusmods.com/skyrimspecialedition/mods/201", "https://www.nexusmods.com/skyrim/mods/59721", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/skyrimspecialedition/mods/3826", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://store.steampowered.com/app/1946180/Skyrim_Special_Edition_Creation_Kit", "https://www.nexusmods.com/skyrimspecialedition/mods/6642"]
-prgInfUrl4 := ["https://www.nexusmods.com/fallout3/mods/11336", "https://www.nexusmods.com/newvegas/mods/54991", "https://www.nexusmods.com/fallout3/mods/23425", "https://www.nexusmods.com/fallout3/mods/637", "https://loot.github.io", "https://www.nexusmods.com/fallout3/mods/21174", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/fallout3/mods/6769", "http://modsreloaded.com/fo3dump", "https://www.nexusmods.com/fallout3/mods/2631"]
-prgInfUrl5 := ["https://www.nexusmods.com/newvegas/mods/35003", "https://www.nexusmods.com/newvegas/mods/54991", "https://www.nexusmods.com/newvegas/mods/64888", "https://www.nexusmods.com/newvegas/mods/34703", "https://loot.github.io", "https://www.nexusmods.com/newvegas/mods/58562", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/newvegas/mods/64745", "https://www.nexusmods.com/newvegas/mods/40442", "https://www.nexusmods.com/newvegas/mods/36471", "https://www.nexusmods.com/newvegas/mods/37649"]
+prgInfUrl4 := ["https://www.nexusmods.com/fallout3/mods/11336", "https://www.nexusmods.com/newvegas/mods/54991", "https://www.nexusmods.com/fallout3/mods/23425", "https://www.nexusmods.com/fallout3/mods/637", "https://loot.github.io", "https://www.nexusmods.com/fallout3/mods/21174", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/fallout4/mods/63243", "https://www.nexusmods.com/fallout3/mods/6769", "http://modsreloaded.com/fo3dump", "https://www.nexusmods.com/fallout3/mods/2631"]
+prgInfUrl5 := ["https://www.nexusmods.com/newvegas/mods/35003", "https://www.nexusmods.com/newvegas/mods/54991", "https://www.nexusmods.com/newvegas/mods/64888", "https://www.nexusmods.com/newvegas/mods/34703", "https://loot.github.io", "https://www.nexusmods.com/newvegas/mods/58562", "https://www.nexusmods.com/skyrim/mods/69905", "http://niftools.sourceforge.net/wiki/NifSkope", "https://www.nexusmods.com/fallout4/mods/63243", "https://www.nexusmods.com/newvegas/mods/40442", "https://www.nexusmods.com/newvegas/mods/36471", "https://www.nexusmods.com/newvegas/mods/37649"]
 prgInfUrl6 := ["https://www.nexusmods.com/fallout4/mods/20032", "https://github.com/ModOrganizer2/modorganizer", "https://loot.github.io", "https://www.nexusmods.com/fallout4/mods/2737", "https://www.nexusmods.com/fallout4/mods/78", "https://www.nexusmods.com/fallout4/mods/25", "https://www.nexusmods.com/fallout4/mods/102", "http://niftools.sourceforge.net/wiki/NifSkope", "https://store.steampowered.com/app/1946160/Fallout_4_Creation_Kit", "https://www.nexusmods.com/skyrimspecialedition/mods/134", "https://www.nexusmods.com/skyrimspecialedition/mods/1756", "https://www.nexusmods.com/fallout4/mods/3635"]
 listboxIndices := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 WS_CLIPSIBLINGS := 0x4000000
@@ -1102,14 +1102,20 @@ gameIniPath := A_ScriptDir . "\" . gameList[tabStat] . ".ini"
 
 		if (overWriteIniFile)
 		{
-			if (strTmp)
+			if (strTmp) ; preferred to overwrite
 			FileRecycle, % gameIniPath
-		FileCopy, %PrgLnchIniPath%, %gameIniPath%
+		sleep 20
+			if (strTmp := FileCopy(PrgLnchIniPath, gameIniPath))
+			MsgBox, 8192, FileCopy, %strTmp%
+
 		}
 		else
 		{
 			if (!strTmp)
-			FileCopy, %PrgLnchIniPath%, %gameIniPath%
+			{
+				if (strTmp := FileCopy(PrgLnchIniPath, gameIniPath))
+				MsgBox, 8192, FileCopy, %strTmp%
+			}
 		}
 
 		if (ErrorLevel)
@@ -1404,7 +1410,7 @@ IniWrite, %A_Space%, %gameIniPath%, Prgs, PresetNames
 ;Get primary monitor if non-standard config
 IniRead, monitorOrder, %gameIniPath%, General, monitorOrder
 monitorOrder := SubStr(monitorOrder, 1, 1)
-strTmp := monitorOrder . ",0,0,-1,-1,0,0,0"
+strTmp := monitorOrder . ",0,0,-1,-1,0,0,0,-1"
 
 
 	loop % prgNo
@@ -1602,7 +1608,6 @@ AllocatedtoSlotArrayCt := 0
 
 				IniWrite, % strTmp, %gameIniPath%, Prg%A_Index%, PrgPath
 
-					msgbox % prgCmdtabStat[A_Index] " strTmp " strTmp " gameShortcut " gameShortcut
 					; Problematic if non TES prgs have "-editor" in their command line
 					if (strTmp == gameShortcut)
 					{
@@ -1690,12 +1695,19 @@ UpdateAllIni(prgNo, iniSel, PrgLnchIni, IniChoiceNames)
 {
 spr := "", strTmp := "", tmp := 0
 IniChoicePaths := ["", "", "", "", "", "", "", "", "", "", "", ""]
+fileExistRec := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 strTmp := (IniChoiceNames[iniSel])? IniChoiceNames[iniSel]: A_Space
 
 	; inipad slot currently selected?
 	if (FileExist(PrgLnchIni))
 	IniRead, existSelIniChoiceName, %PrgLnchIni%, General, SelIniChoiceName
+	else
+	{
+	MsgBox, 8208, Ini File Read,Unable to locate the PrgLnch ini file!`nPlease rerun PrgLnch to recreate it.
+	return
+	}
+
 	
 	if (existSelIniChoiceName == "ERROR")
 	existSelIniChoiceName := ""
@@ -1713,14 +1725,13 @@ strTmp := (IniChoiceNames[iniSel])? IniChoiceNames[iniSel]: A_Space
 	}
 
 
-
 	Loop % prgNo
 	{
 		if (IniChoiceNames[A_Index])
 		{
 		spr .= IniChoiceNames[A_Index] . ","
 		IniChoicePaths[A_Index] := A_ScriptDir . "\" . IniChoiceNames[A_Index] . ".ini"
-			if (FileExist(IniChoicePaths[A_Index]))
+			if (fileExistRec[A_Index] := FileExist(IniChoicePaths[A_Index]))
 			{
 				if (tmp)
 				IniWrite, %strTmp%, % IniChoicePaths[A_Index], General, SelIniChoiceName
@@ -1738,40 +1749,34 @@ strTmp := (IniChoiceNames[iniSel])? IniChoiceNames[iniSel]: A_Space
 				IfMsgBox, No
 				return
 			}
-		sleep, 20
+		sleep, 10
 		}
 		else
 		spr .= ","
 
 	}
 	
-	if (FileExist(PrgLnchIni))
-	{
-		if (tmp)
-		IniWrite, %strTmp%, %PrgLnchIni%, General, SelIniChoiceName
-	}
-	else
-	{
-	MsgBox, 8208, LnchPad: Prglnch ini Update, The PrgLnch ini file cannot be written to!
-	return
-	}
+	if (tmp)
+	IniWrite, %strTmp%, %PrgLnchIni%, General, SelIniChoiceName
+
+
 	if (Errorlevel)
 	MsgBox, 8192, LnchPad: PrgLnch Ini Update, % "The following (possibly blank) value could not be written to PrgLnch.ini:`n" strTmp
 	
 	
-	sleep, 20
+	sleep, 10
 	; Trim last ","
 	spr := SubStr(spr, 1, StrLen(spr) - 1)
 	Loop % prgNo
 	{
-		if (IniChoicePaths[A_Index] && FileExist(IniChoicePaths[A_Index]))
+		if (IniChoicePaths[A_Index] && fileExistRec[A_Index])
 		{
 		IniWrite, %spr%, % IniChoicePaths[A_Index], General, IniChoiceNames
-		sleep, 20
+		sleep, 10
 		}
 	}
 	IniWrite, %spr%, %PrgLnchIni%, General, IniChoiceNames
-	sleep, 20
+	sleep, 10
 }
 
 LnchPadTab:
@@ -2234,6 +2239,19 @@ s := ""
 return substr(s, 2)
 }
 
+FileCopy(Src, Dst, Overwrite := 0)
+{
+strRetVal := ""
+	Try
+	{
+	FileCopy, %Src%, %Dst%, %Overwrite%
+	}
+	Catch e
+	{
+	strRetVal := Src . " could not be copied with error: " . e
+	}
+return strRetVal
+}
 ; https://www.autohotkey.com/boards/viewtopic.php?f=6&t=68842
 ; path:
 ;	where to search, drive or fully specified folder, for example C:\folder

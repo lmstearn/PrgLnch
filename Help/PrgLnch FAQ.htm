@@ -91,9 +91,13 @@ Config.htm#TestRunPrg">Test Run</a>, or monitored in the PrgLnch <a href="PrgLnc
 </dt>
 <dd>As of 2.2, it has not been tested with either of these features, so not explicitly.
 </dd>
-<dt href="#" id="Browser">New browser instances opened through PrgLnch cannot be controlled by PrgLnch.
+<dt href="#" id="Browser">Can new browser instances opened through PrgLnch be controlled by PrgLnch?
 </dt>
 <dd>Modern browsers typically run under one process ID, so they require different handling, currently not on offer by PrgLnch.
+</dd>
+<dt href="#" id="Windows">If a prg has more than one sibling window, can they be assigned different monitors?
+</dt>
+<dd>No, in fact, as of version 3.0, PrgLnch will attempt to move them to the same monitor as the main window, which may not be desirable.
 </dd>
 </dl>
 
