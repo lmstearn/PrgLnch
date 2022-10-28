@@ -3748,7 +3748,7 @@ GoConfigTxt = Prg Config
 iniSel := 0
 selPrgChoice := 1
 selPrgChoiceTimer := 0
-ResShortcut := 0
+ResShortcut := 0 ; Resolve Shortcut variable
 PrgLnch.regoVar := 0
 
 
@@ -7197,7 +7197,7 @@ Global AWPPrgMinMax1 := 0, AWPPrgMinMax2 := 0, AWPPrgMinMax3 := 0, AWPPrgMinMax4
 Global AWPPrgPriorityHWnd := 0, AWPPrgMinMaxHWnd := 0, AWPBordlessHWnd := 0
 Global AWPBordless1 := 0, AWPBordless2 := 0, AWPBordless3 := 0, AWPBordless4 := 0, AWPBordless5 := 0, AWPBordless6 := 0, AWPBordless7 := 0, AWPBordless8 := 0, AWPBordless9 := 0, AWPBordless10 := 0, AWPBordless11 := 0, AWPBordless12 := 0
 static selPrgChoice := 0, selPrgChoiceOld := 0, windowHandlesNo := 1, prgPID := 0, prgPIDInStatic := 0
-temp := 0, fTemp = 0, strTemp := "", visibleWindowHandlesNo := 0, hWnd := 0
+temp := 0, fTemp = 0, lTemp := 0, strTemp := "", visibleWindowHandlesNo := 0, hWnd := 0
 static winNames := ["", "", "", "", "", "", "", "", "", "", "", ""]
 
 prgPIDInStatic := prgPIDIn ; else 0 in AWP labels
@@ -7250,7 +7250,19 @@ prgPIDInStatic := prgPIDIn ; else 0 in AWP labels
 			visibleWindowHandlesNo++
 			else
 			{
+			WinGet, lTemp, MinMax , ahk_id %temp%
+
+				if (lTemp < 0)
+				{
+				WinRestore, ahk_id %temp%
+				sleep 30
+				}
+
+			; Title is not always retrieved for minimised windows
 			WinGetTitle, strTemp, ahk_id %temp%
+
+				if (lTemp < 0)
+				WinMinimize, ahk_id %temp%
 
 			; Hidden windows will be blank.
 				if (strTemp)
@@ -7260,12 +7272,12 @@ prgPIDInStatic := prgPIDIn ; else 0 in AWP labels
 				}
 			}
 		
-		if (A_Index == PrgLnchOpt.PrgNo)
-		{
-		WinGet, prgPID, PID, % "ahk_id" . PrgLnchOpt.GetTestWindowHandles(selPrgChoice, 1)
-			if (!prgPID)
-			fTemp = 1
-		}
+			if (A_Index == PrgLnchOpt.PrgNo)
+			{
+			WinGet, prgPID, PID, % "ahk_id" . PrgLnchOpt.GetTestWindowHandles(selPrgChoice, 1)
+				if (!prgPID)
+				fTemp = 1
+			}
 
 		}
 		else
@@ -8277,6 +8289,7 @@ GuiControlGet, temp, PrgLnchOpt:, PrgMinMax
 		if (DisplayActiveWindowProps(selPrgChoice, prgPID))
 		{
 		hwnd := PrgLnchOpt.GetTestWindowHandles(selPrgChoice, 1)
+
 		WinGet, fTemp, MinMax , ahk_id %hwnd%
 
 		lTemp := temp
@@ -8302,7 +8315,7 @@ GuiControlGet, temp, PrgLnchOpt:, PrgMinMax
 			}
 		}
 		else
-		GuiControl, PrgLnchOpt:, PrgMinMax, % PrgRnMinMax[selPrgChoice]
+		GuiControl, PrgLnchOpt:, PrgMinMax, %temp%]
 	}
 	else ; only save the setting when prg is not running.
 	{
@@ -8653,13 +8666,15 @@ CheckModesFunc(defPrgStrng, PresetPropHWnd, fTemp, iDevNumArray, ResIndexList, a
 	if (temp := iDevNumArray[fTemp] >= 10)
 	SetResDefaults(fTemp, 1)
 
-	if (temp && (txtPrgChoice != "None") && PrgLnchOpt.GetPrgMonToRn(selPrgChoice)) ; save it if a Prg
+	if (temp)
 	{
 	; use if not an invalid monitor
 	targMonitorNum := fTemp
-	PrgLnchOpt.SetPrgMonToRn(selPrgChoice, targMonitorNum)
-	IniProc(selPrgChoice)
-
+		if (txtPrgChoice != "None" && PrgLnchOpt.GetPrgMonToRn(selPrgChoice)) ; save it if a Prg
+		{
+		PrgLnchOpt.SetPrgMonToRn(selPrgChoice, targMonitorNum)
+		IniProc(selPrgChoice)
+		}
 	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, targMonitorNum, selPrgChoice, PrgChgResOnSwitch, PrgChoicePaths, PrgLnkInf, PrgRnMinMax, PrgLnchHide, 1)
 	}
 	else
@@ -11130,7 +11145,7 @@ if (lnchPrgIndex > 0) ;Running
 		}
 	}
 
-	if (!FileExist(PrgPaths))
+	if (!(fTemp := FileExist(PrgPaths)))
 	{
 	; https://www.autohotkey.com/boards/viewtopic.php?f=76&t=31269
 		if (A_Is64bitOS && !PrgLnch.64Bit())
@@ -11141,7 +11156,7 @@ if (lnchPrgIndex > 0) ;Running
 	sleep 20
 	}
 
-	if (FileExist(PrgPaths))
+	if (fTemp)
 	;If Notepad, copy Notepad exe to  %A_ScriptDir% and it will not run! (Windows 10 1607)
 	{
 
@@ -11360,8 +11375,10 @@ if (lnchPrgIndex > 0) ;Running
 				}
 				else
 				{
-				if (PrgPIDtmp)
-				WinWait, ahk_pid %PrgPIDtmp%,, 10
+					if (Instr(PrgPaths, "CreationKit.exe"))
+					WinWait, Object Window, , 30
+					if (PrgPIDtmp)
+					WinWait, ahk_pid %PrgPIDtmp%,, 10
 				}
 			}
 		}
@@ -11754,13 +11771,13 @@ MovePrgToMonitor(targMonitorNum, PrgPIDtmp, lnchPrgIndex, targHWnd := 0, Init :=
 {
 isTESConstructionSet := 0
 cursorPosX := 0, cursorPosY := 0
-firstPIDIndex := 0
+firstPIDIndex := 0, firstPIDhWnd := 0
 hWndArray := [], hWndArrayPID := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 outStr := "", outStr1 := ""
 
 DetectHiddenWindows, On
 
-	if (Init)
+	if (Init) ; Detect existing Prg at launch
 	firstPIDhWnd := Init
 	else
 	{
@@ -11770,7 +11787,6 @@ DetectHiddenWindows, On
 		ReplaceSystemCursor()
 		ReplaceSystemCursor(,"IDC_WAIT")
 		}
-
 
 		if (outStr := SetCoords(1, targHWnd, PrgPIDtmp, targMonitorNum, firstPIDhWnd, lnchPrgIndex))
 		{
@@ -13797,9 +13813,9 @@ retVal := 0
 			}
 
 
-
-		devFlags := NumGet(DISPLAY_DEVICE, OffsetDWORD + offsetWORDStr + OffsetLongStr, "UInt")
-		devKey := StrGet(&DISPLAY_DEVICE + OffsetDWORD + OffsetDWORD + offsetWORDStr + OffsetLongStr + OffsetLongStr, OffsetLongStr)
+		devFlags := NumGet(&DISPLAY_DEVICE, OffsetDWORD + offsetWORDStr + OffsetLongStr, "UInt")
+		; no adjustments for  length (2nd parm)  for strget, as is already determined by AHK
+		devKey := StrGet(&DISPLAY_DEVICE + OffsetDWORD + OffsetDWORD + offsetWORDStr + OffsetLongStr + OffsetLongStr, 128)
 
 		; extract guid if necessary
 		;startPos := Instr(DeviceKey, "{")
@@ -13844,11 +13860,11 @@ retVal := 0
 				else
 				iDevNumArray[iDevNumb] := iLocDevNumArray[iDevNumb]
 
-			monName := StrGet(&DISPLAY_DEVICE + OffsetDWORD, offsetWORDStr)
+			monName := StrGet(&DISPLAY_DEVICE + OffsetDWORD, 32)
 
 			PrgLnchOpt.SetDispMonNamesVal(iDevNumb, monName)
 			; adapter name	
-			PrgLnchOpt.SetDispAdapterNamesVal(StrGet(&DISPLAY_DEVICE + OffsetDWORD + offsetWORDStr, offsetWORDStr))
+			PrgLnchOpt.SetDispAdapterNamesVal(StrGet(&DISPLAY_DEVICE + OffsetDWORD + offsetWORDStr, 32))
 
 				if (!monName)
 				{
@@ -15069,7 +15085,8 @@ if (Monitors.Count == Monitors.targetMonitorNum)
 			; Get Monitor description
 			temp := &Physical_Monitor + (PrgLnch.64Bit() + 1) * OffsetDWORD + (A_Index - 1)*(sizeOfmonitorHandleAndDesc + (PrgLnch.64Bit() + 1) * OffsetDWORD)
 
-			temp := StrGet(temp, sizeOfmonitorHandleAndDesc, "UTF-16")
+			fTemp := 128 + ((PrgLnch.64Bit() + 1) * OffsetDWORD) ; not "sizeOfmonitorHandleAndDesc" as Unicode is already accounted for
+			temp := StrGet(temp, fTemp, "UTF-16")
 
 			;Horizontal scan HZ
 			fTemp := NumGet(MC_TIMING_REPORT, 0, "Int")
