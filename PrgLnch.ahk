@@ -7176,9 +7176,7 @@ Thread, NoTimers
 		return
 	break
 	}
-;DisplayActiveWindowProps(fTemp)
 
-;gui, ActiveWindowProp: Destroy
 	; create a different thread with "slow".
 	callback := RegisterCallback("DisplayActiveWindowProps", , 1)
 	DllCall(callback, "int", fTemp)
@@ -12853,13 +12851,8 @@ return strRetVal
 
 ChkExistingProcess(PrgLnkInf, presetNoTest, selPrgChoice, currBatchNo, PrgBatchIni, PrgChoicePaths, PrgResolveShortcut, btchRun := 0, multiInst := 0, ByRef foundPID := 0)
 {
-strComputer := ".", dupList := "", temp := 0, strTemp := "", strTemp2 := "", IsaPrgLnk := 0 ; IsaPrgLnk: placeholder
-static Flags := 0
-	if (!Flags)
-	{
-	wbemFlagForwardOnly := 0x20, wbemFlagReturnImmediately := 0x10
-	Flags := wbemFlagForwardOnly & wbemFlagReturnImmediately
-	}
+dupList := "", temp := 0, strTemp := "", strTemp2 := "", IsaPrgLnk := 0 ; IsaPrgLnk: placeholder
+
 
 
 if (presetNoTest && btchRun)
@@ -12876,15 +12869,14 @@ if (presetNoTest && btchRun)
 		return "BadPath"
 	strTemp2 := ""
 	; Does not work for lnk files. "Select *" means full paths and names and commandlines!
-	; ExecutablePath maybe null if insufficent permission
-		for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" . strComputer . "\root\cimv2").ExecQuery("Select Name, Processid from Win32_Process where ExecutablePath is not null",,%Flags%)
-		{
-			if (strTemp == process.Name)
-			; process.ExecutablePath was also possible (Select Name, ExecutablePath from Win32_Process)
-			{
-			WinGet, fTemp, ID , % "ahk_pid" . process.ProcessId
 
-			; For tree processes, ParentProcessId is rather involved to handle, so instead do a window check
+		for processName, pid in WTSEnumProcesses()
+		{
+			if (strTemp == processName)
+			{
+			WinGet, fTemp, ID , % "ahk_pid" . pid
+
+			; For tree processes, WMI ParentProcessId is rather involved to handle, so instead do a window check
 			; It's no good, but covers most cases.
 
 				if (fTemp)
@@ -12917,17 +12909,18 @@ else
 		return "BadPath"
 
 	strTemp2 := ""
-		for process in ComObjGet("winmgmts:{impersonationLevel=impersonate}!\\" . strComputer . "\root\cimv2").ExecQuery("Select Name, ProcessId from Win32_Process where ExecutablePath is not null",,%Flags%)
+
+		for processName, pid in WTSEnumProcesses()
 		{
-			if (strTemp == process.Name) ; || instr(strTemp, process.Name) || instr(process.Name, strTemp))
+			if (strTemp == processName) ; || instr(strTemp, processName) || instr(processName, strTemp))
 			{
-				WinGet, fTemp, ID , % "ahk_pid" . process.ProcessId
+			WinGet, fTemp, ID , % "ahk_pid" . pid
 
 				if (fTemp)
 				{
 				duplist .= strTemp2 . strTemp
-					if (!foundPID)
-					foundPID := process.ProcessId
+					if (foundPID == -1)
+					foundPID := pid
 
 					if (multiInst)
 					strTemp2 := "|"
@@ -12937,8 +12930,33 @@ else
 			}
 		}
 }
-
+process := ""
 return duplist
+}
+
+
+WTSEnumProcesses()
+{
+; By SKAN,  http://goo.gl/6Zwnwu,  CD:24/Aug/2014 | MD:25/Aug/2014 
+tPtr := 0, pPtr := 0, nTTL := 0, List := [], name := "", piOffset := (PrgLnch.64bit()?24:16)
+
+	if not DllCall("Wtsapi32\WTSEnumerateProcesses", "Ptr", 0, "Int", 0, "Int", 1, "PtrP", pPtr, "PtrP", nTTL)
+	{
+	DllCall("SetLastError", "Int", -1)
+	return List
+	}
+
+tPtr := pPtr
+	loop %nTTL%
+	{
+	name := StrGet(NumGet(tPtr + 8 ))
+	List[name] := NumGet(tPtr + 4, "UInt")
+	tPtr += piOffset ; sizeof( WTS_PROCESS_INFO ) 
+	}
+
+DllCall("Wtsapi32\WTSFreeMemory", "Ptr", pPtr) ; No return value
+DllCall("SetLastError", "UInt", nTTL)
+Return LIST
 }
 
 InitBatchActivePrgs(PrgBatchIniA_Index, ByRef PrgListPID)
@@ -13035,7 +13053,7 @@ IniRead, WarnAlreadyRunning, % PrgLnch.SelIniChoicePath, General, WarnAlreadyRun
 	{
 		if (PrgChoicePaths[A_Index] && PrgPIDMast[A_Index])
 		{
-		windowedPID := 0
+		windowedPID := -1
 
 			if (strRetVal := ChkExistingProcess(PrgLnkInf, 0, A_Index, 0, 0, PrgChoicePaths, PrgResolveShortcut, 0, 1, windowedPID))
 			{
@@ -17750,8 +17768,8 @@ full_command_line := DllCall("GetCommandLine", "str") ; no Parms: "str" is Cdecl
 		catch fTemp
 		{
 		MsgBox, 8192, ReLaunch, % "PrgLnch could not restart with error " fTemp "."
-		KleenupPrgLnchFiles()
 		}
+	KleenupPrgLnchFiles()
 	SetTimer, NewThreadforDownload, Delete ;Cleanup
 	Thread, NoTimers, false
 	ExitApp
