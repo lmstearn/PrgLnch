@@ -1407,10 +1407,26 @@ IniWrite, %A_Space%, %gameIniPath%, Prgs, PresetNames
 		if (tmp == 1)
 		break
 	}
-;Get primary monitor if non-standard config
-IniRead, monitorOrder, %gameIniPath%, General, monitorOrder
-monitorOrder := SubStr(monitorOrder, 1, 1)
-strTmp := monitorOrder . ",0,0,-1,-1,0,0,0,-1"
+
+
+;Get primary monitor if non-standard config, ensure longest entry is always primary monitor
+tmp := 0
+IniRead, strTmp, %gameIniPath%, Prgs, PrgMon
+	Loop, parse, strTmp, CSV , %A_Space%%A_Tab%
+	{
+		if (strLen(A_Loopfield) == 3)
+		{
+		tmp := A_Index
+		break
+		}
+	}
+
+	; no primary?
+	if (!tmp)
+	tmp := 1
+
+
+strTmp := tmp . ",0,0,-1,-1,0,0,0,-1"
 
 
 	loop % prgNo

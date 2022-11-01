@@ -4090,7 +4090,6 @@ Gui, PrgLnchOpt: Add, ListBox, vResIndex gResListBox HWNDResIndexHWnd
 
 CheckModesFunc(defPrgStrng, PresetPropHWnd, targMonitorNum, iDevNumArray, ResIndexList, allModes)
 
-
 GuiControl, PrgLnchOpt:, Monitors, % PrgLnchOpt.GetDispMonNamesVal(targMonitorNum)
 ;Build monitor list once only: the results shown in TogglePrgOptCtrls()below
 
@@ -6646,6 +6645,7 @@ local MousePosY    := NumGet(lParam + 24 + PrgLnch.64Bit() * 8, "int")
 
 	if (retVal) ; error
 	{
+		; also ref https://github.com/lmstearn/PrgLnch/issues/13
 		if (retVal < 0)
 		MsgBox, 8192, PrgLnch Help, Could not find the Help file. Has it, or the script been moved?
 		else
@@ -7248,26 +7248,31 @@ prgPIDInStatic := prgPIDIn ; else 0 in AWP labels
 			visibleWindowHandlesNo++
 			else
 			{
-			WinGet, lTemp, MinMax , ahk_id %temp%
 
-				if (lTemp < 0)
-				{
-				WinRestore, ahk_id %temp%
-				sleep 30
-				}
-
-			; Title is not always retrieved for minimised windows
+			; can work even if temp is invalid handle!
 			WinGetTitle, strTemp, ahk_id %temp%
 
-				if (lTemp < 0)
-				WinMinimize, ahk_id %temp%
+				if (strTemp == "")
+				{
+				WinGet, lTemp, MinMax , ahk_id %temp%
 
-			; Hidden windows will be blank.
+					if (lTemp < 0)
+					{
+					WinRestore, ahk_id %temp%
+					sleep 30
+					; Title is not always retrieved for minimised windows
+						if (strTemp == "")
+						WinGetTitle, strTemp, ahk_id %temp%
+					WinMinimize, ahk_id %temp%
+					}
+				}
+
 				if (strTemp)
 				{
 				winNames[A_Index] := SubStr(strTemp, 1, 21) . "..."
 				visibleWindowHandlesNo++
 				}
+				; else hidden windows will be blank.
 			}
 		
 			if (A_Index == PrgLnchOpt.PrgNo)
@@ -8313,7 +8318,7 @@ GuiControlGet, temp, PrgLnchOpt:, PrgMinMax
 			}
 		}
 		else
-		GuiControl, PrgLnchOpt:, PrgMinMax, %temp%]
+		GuiControl, PrgLnchOpt:, PrgMinMax, %temp%
 	}
 	else ; only save the setting when prg is not running.
 	{
@@ -8743,7 +8748,7 @@ CheckModesFunc(defPrgStrng, PresetPropHWnd, targMonitorNum, iDevNumArray, ResInd
 Tooltip
 return
 
-CheckModesFunc(defPrgStrng, PresetPropHWnd, targMonitorNum, ByRef iDevNumArray, ByRef ResIndexList, ByRef allModes, setPrgLnchOptDefs := 0, selCurrRes := 0)
+CheckModesFunc(defPrgStrng, PresetPropHWnd, targMonitorNum, iDevNumArray, ByRef ResIndexList, ByRef allModes, setPrgLnchOptDefs := 0, selCurrRes := 0)
 {
 static oldResStrng := [], oldTargMonitorNum := 0, oldAllModes := 0
 ; resArray and all others are one-based now
@@ -11364,12 +11369,14 @@ if (lnchPrgIndex > 0) ;Running
 					}
 				PrgPIDtmp := temp
 				Process, Exist, %PrgPIDtmp%
-					if (!ErrorLevel)
-					sleep 6000
+				
+					if (ErrorLevel)
+					sleep 4750
+					else
+					sleep 6250
 				Process, Exist, %PrgPIDtmp%
-				if (!ErrorLevel)
-				return "CSE not accessible"
-
+					if (!ErrorLevel)
+					return "CSE not accessible"
 				}
 				else
 				{
@@ -11556,7 +11563,7 @@ return 0
 SetCoords(checkDestMon, hWnd, PrgPID, targMonitorNum, ByRef firstPIDhWnd, lnchPrgIndex, ByRef cursorPosX := 0, ByRef cursorPosY := 0)
 {
 Static WP := "", hWndIndex := 0, mdLeft := 0, mdRight := 0, mdTop := 0, mdBottom := 0, lastTargMonitorNum := 0
-Static SW_SHOWMAXIMIZED := 3, SW_SHOWMINIMIZED := 2, SW_SHOWNORMAL := 1
+Static SW_SHOWMAXIMIZED := 3, SW_SHOWMINIMIZED := 2, SW_SHOWNORMAL := 1, ERROR_INVALID_WINDOW_HANDLE := 1400
 monRatioW := 1, monRatioH := 1
 ms := 0, md := 0, msw := 0, mdw := 0, msh := 0, mdh := 0, msRight := 0, msLeft := 0, msBottom := 0, msTop := 0
 
@@ -11595,14 +11602,28 @@ outStr := "", fTemp := 0
 
 	;lTemp := "0x" . Splashy.ToBase(hWnd, 16)
 	if (!DllCall("User32.dll\GetWindowPlacement", "Ptr", hWnd, "Ptr", &WP))
-	return "GetWindowPlacement failed, so the co-ordinates of the window cannot be determined for "
+	{
+		if (A_LastError == ERROR_INVALID_WINDOW_HANDLE)
+		return
+		; No chance the window can be moved by name a hWnd is all we have
+		; No error generated either (policy)
+		else
+		return "GetWindowPlacement failed, so the co-ordinates of the window cannot be determined for "
+	}
 
 
-x := NumGet(WP, 28, "UInt")
-y := NumGet(WP, 32, "UInt")
-w := NumGet(WP, 36, "UInt") - x
-h := NumGet(WP, 40, "UInt") - y
-showCmd := NumGet(WP, 8, "UInt")
+	x := NumGet(WP, 28, "UInt")
+	y := NumGet(WP, 32, "UInt")
+	w := NumGet(WP, 36, "UInt") - x
+	h := NumGet(WP, 40, "UInt") - y
+	showCmd := NumGet(WP, 8, "UInt")
+
+
+	; might be in other monitor
+	if (w < 0)
+	WinGetPos, , , w, , ahk_id %hWnd%
+	if (h < 0)
+	WinGetPos, , , , h, ahk_id %hWnd%
 
 	if (w || h)
 	fTemp := 1
@@ -11611,7 +11632,6 @@ showCmd := NumGet(WP, 8, "UInt")
 
 ; Consider the (default) window co-ords in another monitor from a previous run here
 ; don't bother moving if the window is already located in the destination monitor
-
 
 	if (!(x >= mdLeft && x <= mdRight && y >= mdTop && y <= mdBottom))
 	{
@@ -11663,9 +11683,12 @@ showCmd := NumGet(WP, 8, "UInt")
 		{
 		; not for the Splashy monitor guis
 
-		;Must restore it before moving
-		if (showCmd != SW_SHOWNORMAL)
-		WinRestore, ahk_id %hWnd%
+			;Must restore it before moving
+			if (showCmd != SW_SHOWNORMAL)
+			{
+			WinRestore, ahk_id %hWnd%
+			sleep, 20
+			}
 
 			if (msw)
 			monRatioW := mdw/msw
@@ -11876,8 +11899,8 @@ DetectHiddenWindows, On
 
 		for each, lTemp in hWndArray
 		{
-		if ((temp := fTemp + each) <= PrgLnchOpt.PrgNo)
-		PrgLnchOpt.SetTestWindowHandles(lnchPrgIndex, temp, lTemp)
+			if ((temp := fTemp + each) <= PrgLnchOpt.PrgNo)
+			PrgLnchOpt.SetTestWindowHandles(lnchPrgIndex, temp, lTemp)
 		}
 
 	if (Init)
@@ -13143,6 +13166,7 @@ hWnd := PrgLnchOpt.HWnd()
 			PrgLnch.primaryMonitor := -SubStr(iDevNumArray[A_Index], 1, 1)
 		}
 	}
+	;  primary monitor set as negative, if not, problems later
 
 	if (fromMouse)
 	{
@@ -14765,6 +14789,10 @@ scrWidthLast := 0, scrHeightLast := 0, scrDPILast := 0, scrInterlaceLast := 0, s
 			; Set the primary here
 			if (PrgLnch.primaryMonitor < 0)
 			PrgLnch.primaryMonitor := MonitorOrder[-(PrgLnch.primaryMonitor)]
+			else ; problems- as no primary monitor detected- try 1
+			PrgLnch.primaryMonitor := 1
+
+
 		}
 		case 3: ; check the defaults just set in the next case block when switching monitors
 		{
