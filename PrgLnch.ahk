@@ -6902,7 +6902,7 @@ return
 ; LnchPad launch and other misc file related routines
 LnchLnchPad(SelIniChoiceName)
 {
-static ERROR_FILE_NOT_FOUND := 0x2, ERROR_ACCESS_DENIED := 0x5, ERROR_CANCELLED := 0x4C7
+static firstRun := 1, ERROR_FILE_NOT_FOUND := 0x2, ERROR_ACCESS_DENIED := 0x5, ERROR_CANCELLED := 0x4C7
 strTemp := ""
 
 PrgPropertiesClose()
@@ -6923,8 +6923,12 @@ strRetVal := WorkingDirectory(A_ScriptDir, 1)
 		if (FileExist(strTemp2))
 		{
 		; no version checking, however this is good enough
-			if (!SelIniChoiceName)
+			if (firstRun)
+			{
 			FileInstall LnchPadInit.exe, LnchPadInit.exe, 1
+			UnBlockFile(strTemp2)
+			firstRun := 0
+			}
 		}
 		else
 		{
@@ -8683,7 +8687,8 @@ CheckModesFunc(defPrgStrng, PresetPropHWnd, fTemp, iDevNumArray, ResIndexList, a
 	else
 	TogglePrgOptCtrls(txtPrgChoice, ResShortcut, iDevNum, iDevNumArray, fTemp)
 
-temp := !temp
+; Warn on configured prg 
+temp := !temp || (txtPrgChoice == "None") || (ChkPrgNames(txtPrgChoice))
 FindStoredRes(targMonitorNum, ResIndex, ResIndexHWnd, temp)
 
 return
@@ -14524,7 +14529,15 @@ strTemp := "", fTemp := 0, retVal := 0
 			ResArrayTmp[3, A_Index] := Round((monitor.MonitorSourceModes[sourceIndex].VerticalRefreshRateNumerator)/(monitor.MonitorSourceModes[sourceIndex].VerticalRefreshRateDenominator))
 			}
 
-		ResArrayTmp := SortSourceModes(dispMon, numWMIResolutionmodes, ResArrayTmp)
+
+			if (ResArrayTmp[1, 1])
+			ResArrayTmp := SortSourceModes(dispMon, numWMIResolutionmodes, ResArrayTmp)
+			else
+			{
+			MsgBox, 8208, WMI Failure, Zero Monitor Width!`nCritical error, exiting.
+			KleenupPrgLnchFiles()
+			ExitApp
+			}
 
 
 			Loop, % numWMIResolutionmodes[dispMon]
@@ -14590,6 +14603,7 @@ strTemp := "", fTemp := 0, retVal := 0
 		if (modes[monitorOrder[targMonitorNum]])
 		return modes[monitorOrder[targMonitorNum]]
 	}
+
 return
 }
 
@@ -14657,12 +14671,9 @@ ResNewArray := []
 
 	if (dispMon != dispMonIn)
 	{
-	dispMon := dispMonIn
-
 	;reset stuff
 	dispMon := dispMonIn
-	numWMIResolutionmodesSaved := numWMIResolutionmodes[dispMon]
-	numWMIResolutionmodesTmp := numWMIResolutionmodesSaved
+	numWMIResolutionmodesTmp := numWMIResolutionmodesSaved := numWMIResolutionmodes[dispMon]
 	}
 
 	While (numWMIResolutionmodesTmp)
@@ -14700,6 +14711,7 @@ ResNewArray := []
 			}
 		}
 
+
 	strHeightOld := strHeight
 	Sort strHeight, N D, 
 
@@ -14721,27 +14733,24 @@ ResNewArray := []
 					}
 				}
 			ResNewArray[2, resOffset + fTemp] := A_Loopfield
+
 				if (temp)
 				break
 			}
 		}
 
+	tempHeight := InsertionSort(tempHeight)
 	temp := 0
 	fTemp := 0
+		
 		Loop, Parse, strFreq, CSV
 		{
 			if (A_Loopfield)
 			{
+
 			; Remove processed entries and adjust counter
-				if (fTemp)
-				{
-					if (tempHeight[A_Index] > fTemp)
-					fTemp := tempHeight[A_Index]
-					else
-					fTemp := tempHeight[A_Index] - 1
-				}
-				else
-				fTemp := tempHeight[A_Index]
+
+			fTemp := tempHeight[A_Index]
 
 				if (!(ResArray[1].RemoveAt(fTemp) && ResArray[2].RemoveAt(fTemp) && ResArray[3].RemoveAt(fTemp)))
 				MsgBox, 8192, SortSourceModes, Unexpected error!
@@ -14753,8 +14762,6 @@ ResNewArray := []
 	}
 Return ResNewArray
 }
-
-
 
 
 GetResInfo(targMonitorNum, getCurrentRes := 0, allModes := 0, iDevNumArray := 0, setPrgLnchOptDefs := 0)
@@ -15789,7 +15796,31 @@ PrgURLGui(ByRef PrgUrl, ByRef PrgUrlTest, SelPrgChoice, NoSaveURL := 0)
 
 
 
+
+
+
+
+
+
+
+
 ;Misc functions
+InsertionSort(ar) ; https://www.autohotkey.com/boards/viewtopic.php?f=76&t=12054&p=496438
+{
+	Loop % ar.MaxIndex()
+	{
+	index := ar[A_Index]
+	j := A_Index - 1
+		While (j > 0 && ar[j] < index)
+		{
+		ar[j + 1] := ar[j]
+		j--
+		}
+	ar[j + 1] := index
+	}
+Return ar
+}
+
 ReplaceSystemCursor(current := "", new := "")
 {
 static IMAGE_CURSOR := 2, SPI_SETCURSORS := 0x57

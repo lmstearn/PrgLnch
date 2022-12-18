@@ -1281,8 +1281,13 @@ LnchPadProps.Fallout4 := RTrim(tmp, "\")
 RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\FalloutNV, Installed Path
 LnchPadProps.FalloutNV := RTrim(tmp, "\")
 
-SetRegView 64
-RegRead, SSE, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Skyrim Special Edition, Installed Path
+SetRegView 32
+RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Skyrim Special Edition, Installed Path
+	if (!tmp)
+	{
+	SetRegView 64
+	RegRead, tmp, HKEY_LOCAL_MACHINE\Software\Bethesda Softworks\Skyrim Special Edition, Installed Path
+	}
 LnchPadProps.SSE := RTrim(tmp, "\")
 }
 
